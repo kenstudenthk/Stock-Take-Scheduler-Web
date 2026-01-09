@@ -30,14 +30,24 @@ export const Settings: React.FC<SettingsProps> = ({ token, onUpdateToken }) => {
           
           <Alert
             message="Manual Token Update Required"
-            description="Since Azure App Registration is restricted, you must manually provide a fresh Graph API token to sync with SharePoint. Tokens typically expire every 60-90 minutes."
+            description={
+              <span>
+                Since Azure App Registration is restricted, you must manually provide a fresh Graph API token to sync with SharePoint. 
+                {" "}<strong><a href="https://developer.microsoft.com/en-us/graph/graph-explorer" target="_blank" rel="noreferrer">Click Here</a></strong> to get a new token from Graph Explorer.
+              </span>
+            }
             type="info"
             showIcon
             icon={<InfoCircleOutlined />}
           />
 
           <div>
-            <Text strong className="text-xs text-slate-500 uppercase block mb-2">Active Access Token</Text>
+            <div className="flex justify-between items-end mb-2">
+              <Text strong className="text-xs text-slate-500 uppercase block">Active Access Token</Text>
+              <Text copyable={{ text: "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8" }} className="text-xs text-teal-600 font-bold cursor-pointer">
+                Copy API URL Here
+              </Text>
+            </div>
             <Input.TextArea 
               rows={8} 
               value={tempToken} 

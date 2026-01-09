@@ -1,0 +1,21 @@
+/* 修復全站捲動問題 */
+.st-scroll-container {
+  height: calc(100vh - 64px);
+  overflow-y: auto !important;
+  scroll-behavior: smooth;
+}
+
+/* 匹配截圖的圓角與陰影 */
+.ant-card {
+  border-radius: 16px !important;
+  border: 1px solid #f1f5f9 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+/* 摺疊面板美化 */
+.ant-collapse-item {
+  background: white !important;
+  margin-bottom: 12px !important;
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+}

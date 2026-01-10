@@ -1,20 +1,30 @@
 import React, { useMemo, useState } from 'react';
 import { Card, Tag, Space, Button, Row, Col, Progress, Empty, DatePicker, Typography, Radio } from 'antd';
 import { 
-  ShopOutlined, LockOutlined, HourglassOutlined, 
-  EnvironmentOutlined, CalendarOutlined, CloseCircleOutlined 
+  ShopOutlined, 
+  LockOutlined, 
+  HourglassOutlined, 
+  EnvironmentOutlined, 
+  CalendarOutlined, 
+  CloseCircleOutlined,
+  CheckCircleOutlined // ✅ 補上這個圖標，修復報錯
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shop, View } from '../types';
 
 const { Text } = Typography;
 
-export const Dashboard: React.FC<{ shops: Shop[], onNavigate?: (v: View) => void }> = ({ shops, onNavigate }) => {
-  // 1. 狀態管理
+interface DashboardProps {
+  shops: Shop[];
+  onNavigate?: (view: View) => void;
+}
+
+export const Dashboard: React.FC<DashboardProps> = ({ shops, onNavigate }) => {
+  // 默認顯示今天
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [groupFilter, setGroupFilter] = useState<number | 'all'>('all');
 
-  // 2. 頂部數據統計
+  // 1. 頂部總體統計
   const stats = useMemo(() => {
     const total = shops.length;
     const completed = shops.filter(s => s.status === 'completed').length;
@@ -24,50 +34,87 @@ export const Dashboard: React.FC<{ shops: Shop[], onNavigate?: (v: View) => void
     return { total, completed, closed, pending, percent };
   }, [shops]);
 
-  // 3. 核心過濾邏輯 (修復日期匹配)
+  // 2. 過濾當天排程 (對應 field_2)
   const scheduledShops = useMemo(() => {
     return shops.filter(shop => {
-      if (!shop.scheduledDate) return false;
-      // 確保格式統一為 YYYY-MM-DD 再比對
+      if (!shop.scheduledDate) return false; // 如果 field_2 是空的，不顯示
+      
       const shopDate = dayjs(shop.scheduledDate).format('YYYY-MM-DD');
       const matchDate = shopDate === selectedDate;
       const matchGroup = groupFilter === 'all' || shop.groupId === groupFilter;
+      
       return matchDate && matchGroup;
     });
   }, [shops, selectedDate, groupFilter]);
 
-  // 4. Group 樣式設定
+  // 3. Group 視覺樣式
   const getGroupStyle = (groupId: number) => {
     const groupName = `Group ${String.fromCharCode(64 + groupId)}`;
     switch (groupId) {
-      case 1: return { name: groupName, color: '#e0f2fe', textColor: '#0369a1' }; // Group A - Blue
-      case 2: return { name: groupName, color: '#f3e8ff', textColor: '#7e22ce' }; // Group B - Purple
-      case 3: return { name: groupName, color: '#ffedd5', textColor: '#c2410c' }; // Group C - Orange
+      case 1: return { name: groupName, color: '#e0f2fe', textColor: '#0369a1' }; // A - 藍
+      case 2: return { name: groupName, color: '#f3e8ff', textColor: '#7e22ce' }; // B - 紫
+      case 3: return { name: groupName, color: '#ffedd5', textColor: '#c2410c' }; // C - 橙
       default: return { name: groupName, color: '#f1f5f9', textColor: '#475569' };
     }
   };
 
   return (
     <div className="flex flex-col gap-8 pb-10">
+      {/* 歡迎區 */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 mb-1">Stock Take Dashboard</h1>
-          <p className="text-slate-500 font-medium">Daily inventory operations</p>
+          <p className="text-slate-500 font-medium">Daily operations for {selectedDate}</p>
         </div>
-        <Button className="rounded-xl border-slate-200 font-bold px-6 h-11 bg-white" onClick={() => window.print()}>
+        <Button 
+          className="rounded-xl border-slate-200 font-bold px-6 h-11 bg-white"
+          onClick={() => window.print()}
+        >
           Generate Report
         </Button>
       </div>
 
-      {/* 統計卡片區域 */}
+      {/* 統計卡片 */}
       <Row gutter={24}>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><StatisticCard label="Total" value={stats.total} icon={<ShopOutlined />} color="teal" /></Card></Col>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><StatisticCard label="Finished" value={stats.completed} icon={<CheckCircleOutlined />} color="emerald" /></Card></Col>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><StatisticCard label="Closed" value={stats.closed} icon={<LockOutlined />} color="slate" /></Card></Col>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><StatisticCard label="Remaining" value={stats.pending} icon={<HourglassOutlined />} color="orange" /></Card></Col>
+        <Col span={6}>
+          <Card className="rounded-2xl shadow-sm border-none bg-white">
+            <div className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Shops</div>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-black">{stats.total}</span>
+              <ShopOutlined className="text-teal-600 text-xl opacity-20" />
+            </div>
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card className="rounded-2xl shadow-sm border-none bg-white">
+            <div className="text-slate-400 text-[10px] font-bold uppercase mb-1">Finished</div>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-black text-emerald-600">{stats.completed}</span>
+              <CheckCircleOutlined className="text-emerald-500 text-xl opacity-20" />
+            </div>
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card className="rounded-2xl shadow-sm border-none bg-white">
+            <div className="text-slate-400 text-[10px] font-bold uppercase mb-1">Closed</div>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-black text-slate-400">{stats.closed}</span>
+              <LockOutlined className="text-slate-300 text-xl" />
+            </div>
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card className="rounded-2xl shadow-sm border-none bg-white">
+            <div className="text-slate-400 text-[10px] font-bold uppercase mb-1">Remaining</div>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-black text-orange-500">{stats.pending}</span>
+              <HourglassOutlined className="text-orange-200 text-xl" />
+            </div>
+          </Card>
+        </Col>
       </Row>
 
-      {/* 列表與過濾器 */}
+      {/* 列表控制 */}
       <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
         <div className="flex justify-between items-end mb-8">
           <div>
@@ -84,9 +131,8 @@ export const Dashboard: React.FC<{ shops: Shop[], onNavigate?: (v: View) => void
             </div>
           </div>
 
-          {/* ✅ Group Filter 移至右上方 */}
           <div className="flex flex-col items-end">
-            <Text strong className="text-[10px] text-slate-400 uppercase tracking-widest block mb-2">Group Filter</Text>
+            <Text strong className="text-[10px] text-slate-400 uppercase tracking-widest block mb-2">Filter by Group</Text>
             <Radio.Group 
               value={groupFilter} 
               onChange={(e) => setGroupFilter(e.target.value)}
@@ -101,7 +147,7 @@ export const Dashboard: React.FC<{ shops: Shop[], onNavigate?: (v: View) => void
         </div>
 
         {scheduledShops.length === 0 ? (
-          <Empty description={`No shops scheduled for ${selectedDate}`} className="py-10" />
+          <Empty description={`No shops found for ${selectedDate}`} className="py-10" />
         ) : (
           <div className="flex flex-col gap-4">
             {scheduledShops.map(shop => {
@@ -116,19 +162,21 @@ export const Dashboard: React.FC<{ shops: Shop[], onNavigate?: (v: View) => void
                     </div>
                   </div>
                   <div className="flex items-center gap-8">
-                    <div className="flex flex-col">
+                    <div className="flex flex-col w-20">
                       <span className="text-[10px] text-slate-400 font-bold uppercase">District</span>
                       <span className="font-bold text-slate-700 text-xs">{shop.district}</span>
                     </div>
-                    {/* ✅ Group 顯示優化 */}
+                    
                     <div className="px-4 py-1 rounded-lg text-center" style={{ backgroundColor: style.color }}>
                       <span className="font-black text-xs block" style={{ color: style.textColor }}>{style.name}</span>
                     </div>
-                    <Tag color={shop.status === 'completed' ? 'green' : 'blue'} className="rounded-full border-none font-bold text-[10px]">
+
+                    <Tag color={shop.status === 'completed' ? 'green' : 'blue'} className="rounded-full border-none font-bold text-[10px] px-3">
                       {shop.status === 'completed' ? 'DONE' : 'PLANNED'}
                     </Tag>
+
                     <Space>
-                      <Button size="small" className="text-[11px] font-bold rounded-lg">Re-Schedule</Button>
+                      <Button size="small" className="text-[11px] font-bold rounded-lg border-slate-200">Re-Schedule</Button>
                       <Button size="small" danger icon={<CloseCircleOutlined />} className="text-[11px] font-bold rounded-lg">Closed</Button>
                     </Space>
                   </div>
@@ -137,17 +185,13 @@ export const Dashboard: React.FC<{ shops: Shop[], onNavigate?: (v: View) => void
             })}
           </div>
         )}
-        <div className="mt-6 text-center">
-          <Button type="link" onClick={() => onNavigate?.(View.SHOP_LIST)} className="text-slate-400 font-bold">View Full Master Schedule</Button>
+        
+        <div className="mt-8 text-center">
+          <Button type="link" onClick={() => onNavigate?.(View.SHOP_LIST)} className="text-slate-400 font-bold">
+            View Full Master Schedule
+          </Button>
         </div>
       </div>
     </div>
   );
 };
-
-const StatisticCard = ({ label, value, icon, color }: any) => (
-  <div className="flex justify-between items-start">
-    <div><Text strong className="text-[10px] text-slate-400 uppercase block mb-1">{label}</Text><div className="text-2xl font-black">{value}</div></div>
-    <div className={`text-${color}-600 bg-${color}-50 p-2 rounded-lg text-xl`}>{icon}</div>
-  </div>
-);

@@ -38,6 +38,7 @@ function App() {
             district: f.field_16 || '', 
             area: f.field_10 || '',    
             brand: f.field_11 || '',
+            brandIcon: f.field_23 || '', // ✅ 獲取 SharePoint 中的 Logo 網址
             latitude: parseFloat(f.field_20 || '0'),
             longitude: parseFloat(f.field_21 || '0'),
             is_mtr: f.field_17 === 'Yes' || f.field_17 === 'MTR',

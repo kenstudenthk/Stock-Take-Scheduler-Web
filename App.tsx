@@ -11,6 +11,7 @@ import { Locations } from './components/Locations';
 import { Settings } from './components/Settings'; 
 import { Shop, View } from './types';
 import { ShopList } from './components/ShopList';
+import { Generator } from './components/Generator';
 
 const { Content, Header, Sider } = Layout;
 
@@ -108,6 +109,8 @@ function App() {
       case View.SHOP_LIST: return <ShopList shops={allShops} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
       case View.SETTINGS: return <Settings token={graphToken} onUpdateToken={(t) => { setGraphToken(t); localStorage.setItem('stockTakeToken', t); fetchAllData(t); }} />;
+        case 'generator':
+  return <Generator shops={allShops} />
       default: return <div className="p-20 text-center text-slate-400">Section Coming Soon</div>;
     }
   };
@@ -124,6 +127,7 @@ function App() {
             { key: View.DASHBOARD, icon: <HomeOutlined />, label: 'Dashboard' },
             { key: View.SHOP_LIST, icon: <UnorderedListOutlined />, label: 'Master List' },
             { key: View.CALENDAR, icon: <CalendarOutlined />, label: 'Schedules' },
+            { key: 'generator', icon: <ToolOutlined />, label: 'Schedule Generator' },
             { key: View.LOCATIONS, icon: <ShopOutlined />, label: 'Map View' },
             { key: View.SETTINGS, icon: <SettingOutlined />, label: 'Settings' },
           ]}

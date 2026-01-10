@@ -25,6 +25,15 @@ function App() {
         'https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999', 
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      // ✅ 新增：手動刷新函式
+  const handleRefresh = () => {
+    if (graphToken) {
+      message.loading({ content: 'Syncing with SharePoint...', key: 'sync' });
+      fetchAllData(graphToken).then(() => {
+        message.success({ content: 'Data updated!', key: 'sync' });
+      });
+    }
+  };
       const handleUpdateShop = async (shop: Shop, updates: any) => {
   if (!graphToken) {
     message.error("Token 已經過期，請到 Settings 更新！");

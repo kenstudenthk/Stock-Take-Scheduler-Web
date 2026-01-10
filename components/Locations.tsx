@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Table, Card, Row, Col, Space, Select, Input, Badge, Button } from 'antd';
-import { SearchOutlined, EnvironmentOutlined, DownloadOutlined, FilterOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Table, Card, Row, Col, Space, Select, Input, Badge, Button, message, Typography } from 'antd';
+import { SearchOutlined, EnvironmentOutlined, DownloadOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { Shop } from '../types';
+
+const { Text } = Typography;
 
 if (typeof window !== 'undefined') {
   (window as any)._AMapSecurityConfig = { securityJsCode: 'e8fbca88770fac2110a951fab66651ab' };
@@ -11,6 +13,74 @@ if (typeof window !== 'undefined') {
 export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+
+  // --- 1. 狀態管理 ---
+  const [searchText, setSearchText] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
+  const [filteredShops, setFilteredShops] = useState<Shop[]>(shops);
+
+  // --- 2. 動態過濾選項 ---
+  const regionOptions = useMemo(() => 
+    Array.from(new Set(shops.map(s => s.region))).filter(Boolean).sort(), [shops]);
+
+  const districtOptions = useMemo(() => {
+    const filteredByRegion = selectedRegion === 'all' ? shops : shops.filter(s => s.region === selectedRegion);
+    return Array.from(new Set(filteredByRegion.map(s => s.district))).filter(Boolean).sort();
+  }, [shops, selectedRegion]);
+
+  // --- 3. 核心過濾函數 ---
+  const handleApplyFilters = () => {
+    const results = shops.filter(shop => {
+      const matchSearch = shop.name.toLowerCase().includes(searchText.toLowerCase()) || 
+                          shop.id.toLowerCase().includes(searchText.toLowerCase());
+      const matchRegion = selectedRegion === 'all' || shop.region === selectedRegion;
+      const matchDistrict = selectedDistrict === 'all' || shop.district === selectedDistrict;
+      return matchSearch && matchRegion && matchDistrict;
+    });
+    setFilteredShops(results);
+    updateMapMarkers(results);
+    message.success(`Found ${results.length} shops`);
+  };
+
+  const handleReset = () => {
+    setSearchText('');
+    setSelectedRegion('all');
+    setSelectedDistrict('all');
+    setFilteredShops(shops);
+    updateMapMarkers(shops);
+  };
+
+  // --- 4. 地圖控制邏輯 ---
+  const updateMapMarkers = (targetShops: Shop[]) => {
+    if (!mapInstance.current) return;
+
+    // 清除舊標記
+    mapInstance.current.remove(markersRef.current);
+    markersRef.current = [];
+
+    // 加入新標記
+    const newMarkers = targetShops
+      .filter(s => s.latitude && s.longitude)
+      .map(s => {
+        const color = s.status === 'completed' ? '#52c41a' : s.groupId === 1 ? '#1890ff' : '#fa8c16';
+        const marker = new (window as any).AMap.Marker({
+          position: [s.longitude, s.latitude],
+          content: `<div style="background:${color}; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 2px 4px rgba(0,0,0,0.3)"></div>`,
+          extData: s
+        });
+        return marker;
+      });
+
+    markersRef.current = newMarkers;
+    mapInstance.current.add(newMarkers);
+    
+    // 自動調整視野以包含所有點
+    if (newMarkers.length > 0) {
+      mapInstance.current.setFitView(newMarkers);
+    }
+  };
 
   useEffect(() => {
     AMapLoader.load({
@@ -20,69 +90,122 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     }).then((AMap) => {
       if (!mapRef.current) return;
       mapInstance.current = new AMap.Map(mapRef.current, { zoom: 11, center: [114.177, 22.3] });
-      shops.forEach(s => {
-        if (s.latitude && s.longitude) {
-          const color = s.groupId === 1 ? '#fa8c16' : s.groupId === 2 ? '#1890ff' : '#52c41a';
-          const marker = new AMap.Marker({
-             position: [s.longitude, s.latitude],
-             content: `<div style="background:${color}; width:10px; height:10px; border-radius:50%; border:2px solid white; box-shadow:0 0 5px rgba(0,0,0,0.2)"></div>`
-          });
-          mapInstance.current.add(marker);
-        }
-      });
+      updateMapMarkers(shops);
     });
-  }, [shops]);
+    return () => mapInstance.current?.destroy();
+  }, []);
+
+  // --- 5. CSV 導出 ---
+  const handleExport = () => {
+    const headers = "ID,Name,Region,District,Status\n";
+    const csvContent = filteredShops.map(s => `${s.id},${s.name},${s.region},${s.district},${s.status}`).join("\n");
+    const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", "filtered_shops.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
-    <Space direction="vertical" size={20} className="w-full">
-      <Card bodyStyle={{ padding: '12px 24px' }} className="border-none shadow-sm">
-        <Space size="large">
-          <Select defaultValue="all" className="w-48" suffixIcon={<FilterOutlined />}>
-            <Select.Option value="all">All Regions</Select.Option>
-          </Select>
-          <Select defaultValue="all" className="w-48">
-            <Select.Option value="all">All Districts</Select.Option>
-          </Select>
-          <Button className="font-bold">Reset</Button>
-          <Button type="primary" className="bg-teal-600 font-bold px-6">Apply Filters</Button>
-        </Space>
+    <div className="flex flex-col gap-6">
+      {/* 過濾工具欄 */}
+      <Card bodyStyle={{ padding: '16px 24px' }} className="border-none shadow-sm rounded-2xl">
+        <Row gutter={16} align="middle">
+          <Col span={6}>
+            <Input 
+              prefix={<SearchOutlined className="text-slate-400" />} 
+              placeholder="Search Shop Name/ID..." 
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              className="rounded-xl bg-slate-50 border-none h-11"
+            />
+          </Col>
+          <Col span={12}>
+            <Space size="middle">
+              <Select 
+                value={selectedRegion} 
+                onChange={v => { setSelectedRegion(v); setSelectedDistrict('all'); }} 
+                className="w-40 st-select"
+              >
+                <Select.Option value="all">All Regions</Select.Option>
+                {regionOptions.map(r => <Select.Option key={r} value={r}>{r}</Select.Option>)}
+              </Select>
+              <Select 
+                value={selectedDistrict} 
+                onChange={setSelectedDistrict} 
+                className="w-40"
+              >
+                <Select.Option value="all">All Districts</Select.Option>
+                {districtOptions.map(d => <Select.Option key={d} value={d}>{d}</Select.Option>)}
+              </Select>
+              <Button icon={<ReloadOutlined />} onClick={handleReset} className="rounded-xl font-bold h-11">Reset</Button>
+              <Button 
+                type="primary" 
+                onClick={handleApplyFilters} 
+                className="bg-teal-600 font-bold px-8 h-11 rounded-xl"
+              >
+                Apply Filters
+              </Button>
+            </Space>
+          </Col>
+        </Row>
       </Card>
 
+      {/* 統計數值 */}
       <Row gutter={20}>
-        <Col span={6}><Card size="small" title={<span className="text-[10px] uppercase text-slate-400">Total Visible Shops</span>}><div className="text-2xl font-bold">146 <span className="text-xs text-emerald-500 ml-2">+12% vs last month</span></div></Card></Col>
-        <Col span={6}><Card size="small" title={<span className="text-[10px] uppercase text-slate-400">Pending Action</span>}><div className="text-2xl font-bold text-red-500">15</div></Card></Col>
-        <Col span={6}><Card size="small" title={<span className="text-[10px] uppercase text-slate-400">Scheduled</span>}><div className="text-2xl font-bold text-orange-500">42</div></Card></Col>
-        <Col span={6}><Card size="small" title={<span className="text-[10px] uppercase text-slate-400">Completed</span>}><div className="text-2xl font-bold text-emerald-500">89</div></Card></Col>
+        <Col span={6}><StatCard title="Visible Shops" value={filteredShops.length} /></Col>
+        <Col span={6}><StatCard title="Completed" value={filteredShops.filter(s => s.status === 'completed').length} color="text-emerald-500" /></Col>
+        <Col span={6}><StatCard title="Scheduled" value={filteredShops.filter(s => s.status === 'scheduled').length} color="text-orange-500" /></Col>
+        <Col span={6}><StatCard title="Pending" value={filteredShops.filter(s => s.status === 'pending').length} color="text-red-500" /></Col>
       </Row>
 
       <Row gutter={20}>
+        {/* 左側地圖 */}
         <Col span={15}>
-          <div ref={mapRef} style={{ height: '550px', borderRadius: '16px', background: '#e2e8f0', position: 'relative' }}>
-             <div className="absolute top-4 right-4 flex flex-col gap-2">
-                <Button icon={<EnvironmentOutlined />} className="shadow-md" />
-             </div>
+          <div className="relative group">
+            <div ref={mapRef} style={{ height: '580px', borderRadius: '24px', overflow: 'hidden', border: '1px solid #f1f5f9' }} />
+            <div className="absolute top-4 right-4 flex flex-col gap-2">
+              <Button 
+                icon={<EnvironmentOutlined />} 
+                className="shadow-lg border-none hover:text-teal-600 h-10 w-10 flex items-center justify-center rounded-xl bg-white" 
+                onClick={() => mapInstance.current?.setZoom(11)}
+              />
+            </div>
           </div>
         </Col>
+
+        {/* 右側表格 */}
         <Col span={9}>
-          <Card title="Shop List" extra={<Space><FilterOutlined /><DownloadOutlined /></Space>} className="border-none shadow-sm h-[550px] overflow-hidden flex flex-col">
-             <Table 
-                dataSource={shops.slice(0, 5)} 
-                pagination={false}
-                size="small"
-                columns={[
-                   { title: 'ST', dataIndex: 'status', width: 40, render: (s) => <Badge color={s === 'completed' ? 'green' : 'orange'} /> },
-                   { title: 'ID', dataIndex: 'id', width: 60, render: (t) => <span className="text-xs font-bold text-slate-400">KLN {t.slice(-3)}</span> },
-                   { title: 'SHOP NAME', dataIndex: 'name', render: (t) => <span className="text-xs font-bold text-slate-700">{t}</span> },
-                   { title: 'DISTRICT', dataIndex: 'area', render: (t) => <span className="text-xs font-medium text-slate-400">{t}</span> }
-                ]}
-             />
-             <div className="mt-auto pt-4 flex justify-between items-center text-xs text-slate-400 font-bold">
-                <span>Total 948 shops</span>
-                <Space><span>1</span> <span>2</span> <span>3</span> <span>...</span> <span>95</span></Space>
-             </div>
+          <Card 
+            title={<Text strong>Filtered Shop List</Text>} 
+            extra={<Space><Button type="text" icon={<DownloadOutlined />} onClick={handleExport} /></Space>} 
+            className="border-none shadow-sm h-[580px] flex flex-col rounded-3xl"
+            bodyStyle={{ padding: 0, flex: 1, overflow: 'hidden' }}
+          >
+            <Table 
+              dataSource={filteredShops} 
+              pagination={{ pageSize: 10, size: 'small' }}
+              size="small"
+              rowKey="id"
+              scroll={{ y: 440 }}
+              columns={[
+                { title: 'Status', dataIndex: 'status', width: 80, render: (s) => <Badge status={s === 'completed' ? 'success' : 'processing'} text={s === 'completed' ? 'Done' : 'Wait'} /> },
+                { title: 'ID', dataIndex: 'id', width: 90, render: (t) => <Text className="font-mono text-xs text-slate-400">{t}</Text> },
+                { title: 'Shop Name', dataIndex: 'name', render: (t) => <Text strong className="text-xs">{t}</Text> },
+              ]}
+            />
           </Card>
         </Col>
       </Row>
-    </Space>
+    </div>
   );
 };
+
+const StatCard = ({ title, value, color = "text-slate-900" }: any) => (
+  <Card size="small" className="border-none shadow-sm rounded-xl">
+    <div className="text-[10px] uppercase font-black text-slate-400 mb-1 tracking-widest">{title}</div>
+    <div className={`text-2xl font-black ${color}`}>{value}</div>
+  </Card>
+);

@@ -63,7 +63,7 @@ function App() {
 const renderContent = () => {
     switch (selectedMenuKey) {
       case View.DASHBOARD:
-        return <Dashboard shops={allShops} />;
+        return <Dashboard shops={allShops} onNavigate={(v) => setSelectedMenuKey(v)} />;
       case View.LOCATIONS:
         return <Locations shops={allShops} />;
     case View.SHOP_LIST: // ✅ 新增頁面渲染

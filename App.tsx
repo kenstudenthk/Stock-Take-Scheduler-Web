@@ -58,7 +58,30 @@ function App() {
     }
   };
 
-  useEffect(() => { if (graphToken) fetchAllData(graphToken); }, [graphToken]);
+ // --- 1. 原有的初始化抓取 ---
+  useEffect(() => {
+    if (graphToken) {
+      fetchAllData(graphToken);
+    }
+  }, [graphToken]);
+
+  // --- 2. ✅ 新增：每 30 分鐘自動刷新邏輯 ---
+  useEffect(() => {
+    // 定義 30 分鐘的毫秒數 (30 * 60 * 1000)
+    const REFRESH_INTERVAL = 30 * 60 * 1000;
+
+    const autoRefresh = setInterval(() => {
+      if (graphToken) {
+        console.log("Auto-syncing with SharePoint...");
+        // 執行刷新，並在畫面上方顯示一個小的自動同步提示
+        message.info({ content: 'Auto-syncing data...', key: 'autoSync', duration: 2 });
+        fetchAllData(graphToken);
+      }
+    }, REFRESH_INTERVAL);
+
+    // ✅ 重要：當組件卸載時清除定時器，避免內存洩漏
+    return () => clearInterval(autoRefresh);
+  }, [graphToken]); // 當 Token 改變時，定時器會重新啟動
 
   // --- 2. 手動刷新功能 ---
   const handleRefresh = () => {

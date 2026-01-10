@@ -19,3 +19,73 @@
   border-radius: 12px !important;
   border: 1px solid #e2e8f0 !important;
 }
+
+/* ✅ 將此段加入你的 CSS 檔案 */
+.bin-button {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background-color: #f8fafc; /* 淺灰背景 */
+  border: 1px solid #e2e8f0;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition-duration: .3s;
+  overflow: hidden;
+  position: relative;
+}
+
+.bin-svgIcon {
+  width: 14px;
+  transition-duration: .3s;
+}
+
+.bin-svgIcon path {
+  fill: #ef4444; /* 紅色圖示 */
+}
+
+.bin-button:hover {
+  width: 120px;
+  border-radius: 50px;
+  transition-duration: .3s;
+  background-color: #ef4444; /* 懸停變紅 */
+  align-items: center;
+  border: none;
+}
+
+.bin-button:hover .bin-svgIcon {
+  width: 25px;
+  transition-duration: .3s;
+  transform: translateY(60%);
+}
+
+.bin-button:hover .bin-svgIcon path {
+  fill: white; /* 懸停圖示變白 */
+}
+
+.bin-button::before {
+  position: absolute;
+  top: -20px;
+  content: "CLOSE"; /* ✅ 改為 CLOSE */
+  color: white;
+  transition-duration: .3s;
+  font-size: 2px;
+}
+
+.bin-button:hover::before {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 1;
+  transform: translateY(32px);
+  transition-duration: .3s;
+}
+
+/* 處理禁用狀態 */
+.bin-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+  filter: grayscale(1);
+}

@@ -53,17 +53,67 @@ export const Dashboard: React.FC<{shops: Shop[], onUpdateShop: any}> = ({ shops,
       </Row>
 
       {/* 3. Main Data Area */}
-      <Card className="rounded-[32px] border-none shadow-sm overflow-hidden" bodyStyle={{ padding: 0 }}>
-        {/* Group Tabs */}
-        <div className="px-8 pt-6 border-b border-slate-50">
-          <Radio.Group value={groupFilter} onChange={e => setGroupFilter(e.target.value)} className="custom-tabs pb-4">
-            <Radio.Button value="all">ALL GROUPS</Radio.Button>
-            <Radio.Button value={1}>GROUP A</Radio.Button>
-            <Radio.Button value={2}>GROUP B</Radio.Button>
-            <Radio.Button value={3}>GROUP C</Radio.Button>
-          </Radio.Group>
+ <Card className="rounded-[32px] border-none shadow-sm overflow-hidden" bodyStyle={{ padding: 0 }}>
+  {/* ✅ 替換後的自定義 Group Tabs */}
+  <div className="px-8 pt-6 pb-6 border-b border-slate-50">
+    <div className="wrapper">
+      {/* Option: ALL GROUPS */}
+      <label className="option">
+        <input 
+          className="input" 
+          type="radio" 
+          name="group-filter" 
+          checked={groupFilter === 'all'} 
+          onChange={() => setGroupFilter('all')}
+        />
+        <div className="btn">
+          <span className="span">ALL GROUPS</span>
         </div>
+      </label>
 
+      {/* Option: GROUP A */}
+      <label className="option">
+        <input 
+          className="input" 
+          type="radio" 
+          name="group-filter" 
+          checked={groupFilter === 1} 
+          onChange={() => setGroupFilter(1)}
+        />
+        <div className="btn">
+          <span className="span">GROUP A</span>
+        </div>
+      </label>
+
+      {/* Option: GROUP B */}
+      <label className="option">
+        <input 
+          className="input" 
+          type="radio" 
+          name="group-filter" 
+          checked={groupFilter === 2} 
+          onChange={() => setGroupFilter(2)}
+        />
+        <div className="btn">
+          <span className="span">GROUP B</span>
+        </div>
+      </label>
+
+      {/* Option: GROUP C */}
+      <label className="option">
+        <input 
+          className="input" 
+          type="radio" 
+          name="group-filter" 
+          checked={groupFilter === 3} 
+          onChange={() => setGroupFilter(3)}
+        />
+        <div className="btn">
+          <span className="span">GROUP C</span>
+        </div>
+      </label>
+    </div>
+  </div>
         {/* Date Filter Bar */}
         <div className="px-8 py-5 bg-slate-50/50 flex items-center justify-between">
           <Space direction="vertical" size={0}>

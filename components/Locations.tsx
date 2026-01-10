@@ -52,7 +52,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     updateMapMarkers(shops);
   };
 
-  // --- 4. 地圖控制邏輯 ---
+ // --- 4. 地圖控制邏輯 ---
   const updateMapMarkers = (targetShops: Shop[]) => {
     if (!mapInstance.current) return;
 
@@ -60,23 +60,57 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     mapInstance.current.remove(markersRef.current);
     markersRef.current = [];
 
+    // 建立一個通用的 InfoWindow 實例
+    const infoWindow = new (window as any).AMap.InfoWindow({
+      offset: new (window as any).AMap.Pixel(0, -15),
+      closeWhenClickMap: true
+    });
+
     // 加入新標記
     const newMarkers = targetShops
       .filter(s => s.latitude && s.longitude)
       .map(s => {
-        const color = s.status === 'completed' ? '#52c41a' : s.groupId === 1 ? '#1890ff' : '#fa8c16';
+        // 根據狀態決定標籤顏色
+        const color = s.status === 'completed' ? '#10b981' : s.groupId === 1 ? '#0ea5e9' : '#f59e0b';
+        
         const marker = new (window as any).AMap.Marker({
           position: [s.longitude, s.latitude],
-          content: `<div style="background:${color}; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 2px 4px rgba(0,0,0,0.3)"></div>`,
+          content: `<div style="background:${color}; width:14px; height:14px; border-radius:50%; border:2px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3); cursor:pointer;"></div>`,
           extData: s
         });
+
+        // ✅ 監聽標記點擊事件
+        marker.on('click', (e: any) => {
+          const shop = e.target.getExtData();
+          
+          // 定義資訊窗體的 HTML 內容 (採用你的設計風格)
+          const content = `
+            <div style="padding: 12px; min-width: 200px; font-family: sans-serif;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">${shop.brand}</span>
+                <span style="background: ${shop.status === 'completed' ? '#ecfdf5' : '#eff6ff'}; color: ${shop.status === 'completed' ? '#10b981' : '#3b82f6'}; padding: 2px 8px; border-radius: 99px; font-size: 9px; font-weight: bold;">${shop.status.toUpperCase()}</span>
+              </div>
+              <div style="font-weight: bold; color: #1e293b; font-size: 14px; margin-bottom: 4px;">${shop.name}</div>
+              <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">ID: ${shop.id}</div>
+              <div style="border-top: 1px solid #f1f5f9; pt: 8px; margin-top: 8px;">
+                <div style="font-size: 11px; color: #475569; line-height: 1.4;">
+                  <strong style="color: #0d9488;">Area:</strong> ${shop.district} / ${shop.area || 'N/A'}<br/>
+                  <strong style="color: #0d9488;">Address:</strong> ${shop.address}
+                </div>
+              </div>
+            </div>
+          `;
+
+          infoWindow.setContent(content);
+          infoWindow.open(mapInstance.current, e.target.getPosition());
+        });
+
         return marker;
       });
 
     markersRef.current = newMarkers;
     mapInstance.current.add(newMarkers);
     
-    // 自動調整視野以包含所有點
     if (newMarkers.length > 0) {
       mapInstance.current.setFitView(newMarkers);
     }

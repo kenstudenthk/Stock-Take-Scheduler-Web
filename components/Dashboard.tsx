@@ -7,7 +7,7 @@ import {
   EnvironmentOutlined, 
   CalendarOutlined, 
   CloseCircleOutlined,
-  CheckCircleOutlined // ✅ 補上這個圖標，修復報錯
+  CheckCircleOutlined 
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shop, View } from '../types';
@@ -20,11 +20,9 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ shops, onNavigate }) => {
-  // 默認顯示今天
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [groupFilter, setGroupFilter] = useState<number | 'all'>('all');
 
-  // 1. 頂部總體統計
   const stats = useMemo(() => {
     const total = shops.length;
     const completed = shops.filter(s => s.status === 'completed').length;
@@ -34,47 +32,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ shops, onNavigate }) => {
     return { total, completed, closed, pending, percent };
   }, [shops]);
 
-  // 2. 過濾當天排程 (對應 field_2)
   const scheduledShops = useMemo(() => {
     return shops.filter(shop => {
-      if (!shop.scheduledDate) return false; // 如果 field_2 是空的，不顯示
-      
+      if (!shop.scheduledDate) return false;
       const shopDate = dayjs(shop.scheduledDate).format('YYYY-MM-DD');
       const matchDate = shopDate === selectedDate;
       const matchGroup = groupFilter === 'all' || shop.groupId === groupFilter;
-      
       return matchDate && matchGroup;
     });
   }, [shops, selectedDate, groupFilter]);
 
-  // 3. Group 視覺樣式
   const getGroupStyle = (groupId: number) => {
     const groupName = `Group ${String.fromCharCode(64 + groupId)}`;
     switch (groupId) {
-      case 1: return { name: groupName, color: '#e0f2fe', textColor: '#0369a1' }; // A - 藍
-      case 2: return { name: groupName, color: '#f3e8ff', textColor: '#7e22ce' }; // B - 紫
-      case 3: return { name: groupName, color: '#ffedd5', textColor: '#c2410c' }; // C - 橙
+      case 1: return { name: groupName, color: '#e0f2fe', textColor: '#0369a1' }; 
+      case 2: return { name: groupName, color: '#f3e8ff', textColor: '#7e22ce' }; 
+      case 3: return { name: groupName, color: '#ffedd5', textColor: '#c2410c' }; 
       default: return { name: groupName, color: '#f1f5f9', textColor: '#475569' };
     }
   };
 
   return (
     <div className="flex flex-col gap-8 pb-10">
-      {/* 歡迎區 */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 mb-1">Stock Take Dashboard</h1>
           <p className="text-slate-500 font-medium">Daily operations for {selectedDate}</p>
         </div>
-        <Button 
-          className="rounded-xl border-slate-200 font-bold px-6 h-11 bg-white"
-          onClick={() => window.print()}
-        >
+        <Button className="rounded-xl border-slate-200 font-bold px-6 h-11 bg-white" onClick={() => window.print()}>
           Generate Report
         </Button>
       </div>
 
-      {/* 統計卡片 */}
       <Row gutter={24}>
         <Col span={6}>
           <Card className="rounded-2xl shadow-sm border-none bg-white">
@@ -114,7 +103,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ shops, onNavigate }) => {
         </Col>
       </Row>
 
-      {/* 列表控制 */}
       <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
         <div className="flex justify-between items-end mb-8">
           <div>
@@ -133,11 +121,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ shops, onNavigate }) => {
 
           <div className="flex flex-col items-end">
             <Text strong className="text-[10px] text-slate-400 uppercase tracking-widest block mb-2">Filter by Group</Text>
-            <Radio.Group 
-              value={groupFilter} 
-              onChange={(e) => setGroupFilter(e.target.value)}
-              buttonStyle="solid"
-            >
+            <Radio.Group value={groupFilter} onChange={(e) => setGroupFilter(e.target.value)} buttonStyle="solid">
               <Radio.Button value="all">ALL</Radio.Button>
               <Radio.Button value={1}>GROUP A</Radio.Button>
               <Radio.Button value={2}>GROUP B</Radio.Button>
@@ -153,31 +137,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ shops, onNavigate }) => {
             {scheduledShops.map(shop => {
               const style = getGroupStyle(shop.groupId);
               return (
-                <div key={shop.id} className="bg-slate-50/50 border border-slate-100 p-5 rounded-2xl flex items-center justify-between hover:bg-white transition-all">
-                  <div className="flex items-center gap-4">
+                <div key={shop.id} className="bg-slate-50/50 border border-slate-100 p-5 rounded-2xl flex items-center justify-between hover:bg-white transition-all shadow-sm">
+                  <div className="flex items-center gap-4 flex-1">
                     <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm"><ShopOutlined /></div>
-                    <div>
-                      <h4 className="font-bold text-slate-800 m-0">{shop.name}</h4>
-                      <Text type="secondary" className="text-[11px]">{shop.address}</Text>
+                    <div style={{ maxWidth: '250px' }}>
+                      <h4 className="font-bold text-slate-800 m-0 truncate">{shop.name}</h4>
+                      <Text type="secondary" className="text-[11px] truncate block"><EnvironmentOutlined /> {shop.address}</Text>
                     </div>
                   </div>
-                  <div className="flex items-center gap-8">
-                    <div className="flex flex-col w-20">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase">District</span>
-                      <span className="font-bold text-slate-700 text-xs">{shop.district}</span>
+                  
+                  <div className="flex items-center gap-6 text-right" style={{ flex: 2, justifyContent: 'flex-end' }}>
+                    {/* ✅ District & Area 欄位 */}
+                    <div className="flex flex-col w-28 text-left">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">District / Area</span>
+                      <span className="font-bold text-slate-700 text-xs truncate">{shop.district || 'N/A'}</span>
+                      <span className="text-[10px] text-slate-400 truncate">{shop.area || '-'}</span>
                     </div>
                     
-                    <div className="px-4 py-1 rounded-lg text-center" style={{ backgroundColor: style.color }}>
-                      <span className="font-black text-xs block" style={{ color: style.textColor }}>{style.name}</span>
+                    {/* Group Tag */}
+                    <div className="px-3 py-1 rounded-lg text-center min-w-[85px]" style={{ backgroundColor: style.color }}>
+                      <span className="font-black text-[11px] block" style={{ color: style.textColor }}>{style.name}</span>
                     </div>
 
-                    <Tag color={shop.status === 'completed' ? 'green' : 'blue'} className="rounded-full border-none font-bold text-[10px] px-3">
+                    {/* Status Tag */}
+                    <Tag color={shop.status === 'completed' ? 'green' : 'blue'} className="rounded-full border-none font-bold text-[9px] px-3 m-0">
                       {shop.status === 'completed' ? 'DONE' : 'PLANNED'}
                     </Tag>
 
-                    <Space>
-                      <Button size="small" className="text-[11px] font-bold rounded-lg border-slate-200">Re-Schedule</Button>
-                      <Button size="small" danger icon={<CloseCircleOutlined />} className="text-[11px] font-bold rounded-lg">Closed</Button>
+                    {/* Actions */}
+                    <Space size="small">
+                      <Button size="small" className="text-[10px] font-bold rounded-lg border-slate-200">Re-Schedule</Button>
+                      <Button size="small" danger icon={<CloseCircleOutlined />} className="text-[10px] font-bold rounded-lg" />
                     </Space>
                   </div>
                 </div>
@@ -187,7 +177,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ shops, onNavigate }) => {
         )}
         
         <div className="mt-8 text-center">
-          <Button type="link" onClick={() => onNavigate?.(View.SHOP_LIST)} className="text-slate-400 font-bold">
+          <Button type="link" onClick={() => onNavigate?.(View.SHOP_LIST)} className="text-slate-400 font-bold hover:text-teal-600">
             View Full Master Schedule
           </Button>
         </div>

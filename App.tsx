@@ -115,4 +115,45 @@ const renderContent = () => {
   );
 }
 
+const updateSharePointItem = async (shop: Shop, updates: Record<string, any>) => {
+  if (!token) {
+    message.error("No active token found! Please go to Settings.");
+    return;
+  }
+
+  // 這裡需要根據你的 SharePoint List 實際的 internal name 修改
+  // 假設：field_2 = Date, field_3 = Group, field_10 = Schedule Status
+  const fieldMapping: Record<string, any> = {};
+  
+  if (updates.scheduledDate) fieldMapping.field_2 = updates.scheduledDate;
+  if (updates.groupId) fieldMapping.field_3 = `Group ${String.fromCharCode(64 + updates.groupId)}`; // 轉為 "Group A" 等字串
+  if (updates.scheduleStatus) fieldMapping.field_10 = updates.scheduleStatus; // 例如 "Rescheduled" 或 "Closed"
+  if (updates.clearGroup) fieldMapping.field_3 = null; // 清除 Group
+
+  try {
+    const response = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(fieldMapping)
+      }
+    );
+
+    if (response.ok) {
+      message.success("SharePoint updated successfully!");
+      // 重新抓取資料以同步 UI
+      fetchAllData();
+    } else {
+      throw new Error("Failed to update SharePoint");
+    }
+  } catch (error) {
+    console.error(error);
+    message.error("Update failed. Check your token permissions.");
+  }
+};
+
 export default App;

@@ -139,9 +139,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ shops, onNavigate }) => {
               return (
                 <div key={shop.id} className="bg-slate-50/50 border border-slate-100 p-5 rounded-2xl flex items-center justify-between hover:bg-white transition-all shadow-sm">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm"><ShopOutlined /></div>
+                    {/* ✅ 優化後的 Logo 顯示區域 */}
+                    <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center shadow-sm overflow-hidden border border-slate-100">
+                      {shop.brandIcon ? (
+                        <img 
+                          src={shop.brandIcon} 
+                          alt={shop.brand} 
+                          className="h-full w-full object-contain p-1" // object-contain 確保 Logo 不會變形
+                          onError={(e) => {
+                            // 如果圖片載入失敗，顯示預設圖示
+                            (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/606/606201.png'; 
+                          }}
+                        />
+                      ) : (
+                        <ShopOutlined className="text-slate-300 text-xl" />
+                      )}
+                    </div>
+                    
                     <div style={{ maxWidth: '250px' }}>
-                      <h4 className="font-bold text-slate-800 m-0 truncate">{shop.name}</h4>
+                      <div className="flex items-center gap-2">
+                         <h4 className="font-bold text-slate-800 m-0 truncate">{shop.name}</h4>
+                         {/* 加入品牌名稱的小標籤 */}
+                         <span className="text-[9px] bg-slate-200 px-1.5 rounded font-black text-slate-500 uppercase">{shop.brand}</span>
+                      </div>
                       <Text type="secondary" className="text-[11px] truncate block"><EnvironmentOutlined /> {shop.address}</Text>
                     </div>
                   </div>

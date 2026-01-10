@@ -134,65 +134,69 @@ export const Dashboard: React.FC<DashboardProps> = ({ shops, onNavigate }) => {
           <Empty description={`No shops found for ${selectedDate}`} className="py-10" />
         ) : (
           <div className="flex flex-col gap-4">
-            {scheduledShops.map(shop => {
-              const style = getGroupStyle(shop.groupId);
-              return (
-                <div key={shop.id} className="bg-slate-50/50 border border-slate-100 p-5 rounded-2xl flex items-center justify-between hover:bg-white transition-all shadow-sm">
-                  <div className="flex items-center gap-4 flex-1">
-                    {/* ✅ 優化後的 Logo 顯示區域 */}
-                    <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center shadow-sm overflow-hidden border border-slate-100">
-                      {shop.brandIcon ? (
-                        <img 
-                          src={shop.brandIcon} 
-                          alt={shop.brand} 
-                          className="h-full w-full object-contain p-1" // object-contain 確保 Logo 不會變形
-                          onError={(e) => {
-                            // 如果圖片載入失敗，顯示預設圖示
-                            (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/606/606201.png'; 
-                          }}
-                        />
-                      ) : (
-                        <ShopOutlined className="text-slate-300 text-xl" />
-                      )}
-                    </div>
-                    
-                    <div style={{ maxWidth: '250px' }}>
-                      <div className="flex items-center gap-2">
-                         <h4 className="font-bold text-slate-800 m-0 truncate">{shop.name}</h4>
-                         {/* 加入品牌名稱的小標籤 */}
-                         <span className="text-[9px] bg-slate-200 px-1.5 rounded font-black text-slate-500 uppercase">{shop.brand}</span>
-                      </div>
-                      <Text type="secondary" className="text-[11px] truncate block"><EnvironmentOutlined /> {shop.address}</Text>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-6 text-right" style={{ flex: 2, justifyContent: 'flex-end' }}>
-                    {/* ✅ District & Area 欄位 */}
-                    <div className="flex flex-col w-28 text-left">
-                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">District / Area</span>
-                      <span className="font-bold text-slate-700 text-xs truncate">{shop.district || 'N/A'}</span>
-                      <span className="text-[10px] text-slate-400 truncate">{shop.area || '-'}</span>
-                    </div>
-                    
-                    {/* Group Tag */}
-                    <div className="px-3 py-1 rounded-lg text-center min-w-[85px]" style={{ backgroundColor: style.color }}>
-                      <span className="font-black text-[11px] block" style={{ color: style.textColor }}>{style.name}</span>
-                    </div>
+{scheduledShops.map(shop => {
+  const style = getGroupStyle(shop.groupId);
+  return (
+    <div key={shop.id} className="bg-slate-50/50 border border-slate-100 p-6 rounded-3xl flex items-center justify-between hover:bg-white transition-all shadow-sm">
+      <div className="flex items-center gap-8 flex-1">
+        
+        {/* --- ✅ 品牌區域：放大 Logo 並將名稱置於下方 --- */}
+        <div className="flex flex-col items-center gap-2 min-w-[100px]">
+          <div className="h-20 w-20 bg-white rounded-2xl flex items-center justify-center shadow-sm overflow-hidden border border-slate-50 p-2">
+            {shop.brandIcon ? (
+              <img 
+                src={shop.brandIcon} 
+                alt={shop.brand} 
+                className="h-full w-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/606/606201.png'; 
+                }}
+              />
+            ) : (
+              <ShopOutlined className="text-slate-200 text-3xl" />
+            )}
+          </div>
+          {/* 品牌名稱移至此處 */}
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center leading-tight">
+            {shop.brand}
+          </span>
+        </div>
+        
+        {/* --- 門市資訊 --- */}
+        <div style={{ maxWidth: '300px' }}>
+          <h4 className="font-bold text-slate-900 m-0 text-lg truncate mb-1">
+            {shop.name}
+          </h4>
+          <Text type="secondary" className="text-xs truncate block font-medium">
+            <EnvironmentOutlined className="mr-1 text-teal-500" /> {shop.address}
+          </Text>
+        </div>
+      </div>
+      
+      {/* --- 右側數據欄位保持不變 --- */}
+      <div className="flex items-center gap-8 text-right" style={{ flex: 2, justifyContent: 'flex-end' }}>
+        <div className="flex flex-col w-32 text-left">
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">District / Area</span>
+          <span className="font-bold text-slate-700 text-xs truncate">{shop.district || 'N/A'}</span>
+          <span className="text-[10px] text-slate-400 truncate">{shop.area || '-'}</span>
+        </div>
+        
+        <div className="px-4 py-2 rounded-xl text-center min-w-[90px]" style={{ backgroundColor: style.color }}>
+          <span className="font-black text-xs block" style={{ color: style.textColor }}>{style.name}</span>
+        </div>
 
-                    {/* Status Tag */}
-                    <Tag color={shop.status === 'completed' ? 'green' : 'blue'} className="rounded-full border-none font-bold text-[9px] px-3 m-0">
-                      {shop.status === 'completed' ? 'DONE' : 'PLANNED'}
-                    </Tag>
+        <Tag color={shop.status === 'completed' ? 'green' : 'blue'} className="rounded-full border-none font-bold text-[10px] px-4 py-1 m-0">
+          {shop.status === 'completed' ? 'DONE' : 'PLANNED'}
+        </Tag>
 
-                    {/* Actions */}
-                    <Space size="small">
-                      <Button size="small" className="text-[10px] font-bold rounded-lg border-slate-200">Re-Schedule</Button>
-                      <Button size="small" danger icon={<CloseCircleOutlined />} className="text-[10px] font-bold rounded-lg" />
-                    </Space>
-                  </div>
-                </div>
-              );
-            })}
+        <Space size="middle">
+          <Button size="middle" className="text-xs font-bold rounded-xl border-slate-200 hover:text-teal-600">Re-Schedule</Button>
+          <Button size="middle" danger icon={<CloseCircleOutlined />} className="rounded-xl border-none bg-red-50" />
+        </Space>
+      </div>
+    </div>
+  );
+})}
           </div>
         )}
         

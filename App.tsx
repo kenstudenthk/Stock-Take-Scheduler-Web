@@ -25,6 +25,53 @@ function App() {
         'https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999', 
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      const handleUpdateShop = async (shop: Shop, updates: any) => {
+  if (!graphToken) {
+    message.error("Token 已經過期，請到 Settings 更新！");
+    return;
+  }
+
+  // 根據你的要求準備資料包
+  const fieldMapping: any = {};
+  
+  if (updates.status === 'Rescheduled') {
+    fieldMapping.Status = 'Rescheduled';      // 狀態改為 Rescheduled
+    fieldMapping.field_2 = updates.date;      // 更新為選擇的新日期 (Schedule Date)
+    if (updates.group) {
+      fieldMapping.Schedule_x0020_Group = `Group ${String.fromCharCode(64 + Number(updates.group))}`; // 更新 Group
+    }
+  }
+  
+  if (updates.status === 'Closed') {
+    fieldMapping.Status = 'Closed';           // 狀態改為 Closed
+    fieldMapping.Schedule_x0020_Group = null; // 移除 Group 的值
+  }
+
+  try {
+    const response = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${graphToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(fieldMapping)
+      }
+    );
+
+    if (response.ok) {
+      message.success(`${shop.name} 已同步至 SharePoint！`);
+      fetchAllData(graphToken); // ✅ 成功後自動刷新 UI
+    } else {
+      const errorData = await response.json();
+      console.error("SPO Error:", errorData);
+      message.error("同步失敗，請檢查權限或欄位名稱。");
+    }
+  } catch (error) {
+    message.error("網路連線錯誤，無法連接到 Microsoft Graph。");
+  }
+};
       const data = await res.json();
       if (data.value) {
         const mapped = data.value.map((item: any) => {

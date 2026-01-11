@@ -3,7 +3,6 @@ import { Table, Input, Select, Card, Typography, Space, Tag, Empty, Row, Col, Bu
 import { SearchOutlined, FilterOutlined, ReloadOutlined, DatabaseOutlined } from '@ant-design/icons';
 import { InventoryItem } from '../types';
 import { INV_FIELDS } from '../constants';
-import { Inventory } from './components/Inventory'; // ✅ 加入這一行
 
 const { Title, Text } = Typography;
 const { Option } = Select;

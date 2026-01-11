@@ -17,7 +17,7 @@ const getGroupRowStyle = (groupId: number) => {
 };
 
 if (typeof window !== 'undefined') {
-  (window as any)._AMapSecurityConfig = { securityJsCode: 'a444f584e377f930c102c6b0b2cb118e' };
+  (window as any)._AMapSecurityConfig = { securityJsCode: 'e8fbca88770fac2110a951fab66651ab' };
 }
 
 export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
@@ -128,7 +128,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
   useEffect(() => {
     AMapLoader.load({
-      key: "e8fbca88770fac2110a951fab66651ab",
+      key: "a444f584e377f930c102c6b0b2cb118e",
       version: "2.0",
       plugins: ['AMap.Marker'],
     }).then((AMap) => {

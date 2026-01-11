@@ -15,10 +15,15 @@ const getGroupRowStyle = (groupId: number) => {
     default: return {};
   }
 };
+const [filteredShops, setFilteredShops] = useState<Shop[]>(shops);
 
 if (typeof window !== 'undefined') {
   (window as any)._AMapSecurityConfig = { securityJsCode: 'e8fbca88770fac2110a951fab66651ab' };
-}
+};
+
+useEffect(() => {
+  setFilteredShops(shops);
+}, [shops]);
 
 export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const mapRef = useRef<HTMLDivElement>(null);

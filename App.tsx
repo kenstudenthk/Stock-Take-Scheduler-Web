@@ -23,7 +23,6 @@ function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [isTokenExpired, setIsTokenExpired] = useState(false);
 
-  // 顯示 Token 過期通知
   const showTokenWarning = () => {
     notification.error({
       message: 'Access Token Expired',
@@ -39,7 +38,6 @@ function App() {
     });
   };
 
-  // --- 1. 從 SharePoint 抓取資料 (單一函式定義) ---
   const fetchAllData = async (token: string) => {
     if (!token) return;
     try {
@@ -107,7 +105,6 @@ function App() {
 
   const handleUpdateShop = async (shop: Shop, updates: any) => {
     if (!graphToken || isTokenExpired) return message.error("Please update Token first");
-    // 更新邏輯...
     try {
       const res = await fetch(
         `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
@@ -131,7 +128,6 @@ function App() {
       case View.DASHBOARD:
         return <Dashboard shops={allShops} onUpdateShop={handleUpdateShop} onNavigate={(v) => setSelectedMenuKey(v)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
-      // ✅ 這裡現在正確傳遞了 handleRefresh 給 ShopList
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={handleRefresh} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
       case View.SETTINGS: 
@@ -176,17 +172,9 @@ function App() {
              <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" />
           </Space>
         </Header>
-        
         {isTokenExpired && (
-          <Alert
-            message="Attention: Session Expired"
-            description="Your Microsoft Graph access token has expired."
-            type="error"
-            showIcon
-            action={<Button size="small" danger onClick={() => setSelectedMenuKey(View.SETTINGS)}>Fix Now</Button>}
-          />
+          <Alert message="Session Expired" type="error" showIcon action={<Button size="small" danger onClick={() => setSelectedMenuKey(View.SETTINGS)}>Fix Now</Button>} />
         )}
-
         <Content className="overflow-y-auto p-8 h-full">
           <div className="max-w-7xl mx-auto">{renderContent()}</div>
         </Content>

@@ -142,6 +142,8 @@ function App() {
         return <Generator shops={allShops} />;
       default: 
         return <div className="p-20 text-center text-slate-400">Section Coming Soon</div>;
+      case View.INVENTORY:
+        return <Inventory invToken={invToken} />;
     }
   };
 
@@ -160,6 +162,7 @@ function App() {
             { key: 'generator', icon: <ToolOutlined />, label: 'Schedule Generator' },
             { key: View.LOCATIONS, icon: <ShopOutlined />, label: 'Map View' },
             { key: View.SETTINGS, icon: <SettingOutlined />, label: 'Settings' },
+            { key: View.INVENTORY, icon: <UnorderedListOutlined />, label: 'Inventory List' },
           ]}
         />
       </Sider>

@@ -1,10 +1,20 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Table, Card, Row, Col, Space, Select, Input, Badge, Button, message, Typography } from 'antd';
+import { Avatar, Table, Card, Row, Col, Space, Select, Input, Badge, Button, message, Typography } from 'antd';
 import { SearchOutlined, EnvironmentOutlined, DownloadOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { Shop } from '../types';
 
 const { Text } = Typography;
+
+// Helper to get group-related background colors matching your Calendar.tsx
+const getGroupRowStyle = (groupId: number) => {
+  switch (groupId) {
+    case 1: return { backgroundColor: '#f0f9ff' }; // Light Blue for Group A
+    case 2: return { backgroundColor: '#faf5ff' }; // Light Purple for Group B
+    case 3: return { backgroundColor: '#fff7ed' }; // Light Orange for Group C
+    default: return {};
+  }
+};
 
 if (typeof window !== 'undefined') {
   (window as any)._AMapSecurityConfig = { securityJsCode: 'e8fbca88770fac2110a951fab66651ab' };
@@ -212,34 +222,63 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
         {/* 右側表格 */}
         <Col span={9}>
-          <Card 
-            title={<Text strong>Filtered Shop List</Text>} 
-            extra={<Space><Button type="text" icon={<DownloadOutlined />} onClick={handleExport} /></Space>} 
-            className="border-none shadow-sm h-[580px] flex flex-col rounded-3xl"
-            bodyStyle={{ padding: 0, flex: 1, overflow: 'hidden' }}
+       <Card 
+  title={<Text strong>Filtered Shop List</Text>} 
+  extra={<Space><Button type="text" icon={<DownloadOutlined />} onClick={handleExport} /></Space>} 
+  className="border-none shadow-sm h-[580px] flex flex-col rounded-3xl"
+  bodyStyle={{ padding: 0, flex: 1, overflow: 'hidden' }}
+>
+  <Table 
+    dataSource={filteredShops} 
+    pagination={{ pageSize: 10, size: 'small' }}
+    size="small"
+    rowKey="id"
+    scroll={{ y: 440 }}
+    // ✅ Fill the row with Group related color
+    onRow={(record) => ({
+      style: getGroupRowStyle(record.groupId),
+      className: 'transition-colors hover:brightness-95 cursor-default'
+    })}
+    columns={[
+      // ✅ Added Shop Logo
+      { 
+        title: '', 
+        dataIndex: 'brandIcon', 
+        width: 50, 
+        render: (src) => (
+          <Avatar 
+            src={src} 
+            shape="square" 
+            className="bg-white p-0.5 border border-slate-100 shadow-sm" 
+          />
+        ) 
+      },
+      // ✅ Shop Name kept
+      { 
+        title: 'Shop Name', 
+        dataIndex: 'name', 
+        render: (t) => <Text strong className="text-xs text-slate-800">{t}</Text> 
+      },
+      // ✅ Added Area column
+      { 
+        title: 'Area', 
+        dataIndex: 'area', 
+        render: (t) => <Text type="secondary" className="text-xs">{t || 'N/A'}</Text> 
+      },
+      // ✅ Changed Status to Schedule Status Value
+      { 
+        title: 'Status', 
+        dataIndex: 'status', 
+        width: 110, 
+        render: (s) => (
+          <Tag 
+            className="rounded-full border-none px-3 font-bold text-[10px]"
+            color={s === 'completed' ? 'success' : 'processing'}
           >
-            <Table 
-              dataSource={filteredShops} 
-              pagination={{ pageSize: 10, size: 'small' }}
-              size="small"
-              rowKey="id"
-              scroll={{ y: 440 }}
-              columns={[
-                { title: 'Status', dataIndex: 'status', width: 80, render: (s) => <Badge status={s === 'completed' ? 'success' : 'processing'} text={s === 'completed' ? 'Done' : 'Wait'} /> },
-                { title: 'ID', dataIndex: 'id', width: 90, render: (t) => <Text className="font-mono text-xs text-slate-400">{t}</Text> },
-                { title: 'Shop Name', dataIndex: 'name', render: (t) => <Text strong className="text-xs">{t}</Text> },
-              ]}
-            />
-          </Card>
-        </Col>
-      </Row>
-    </div>
-  );
-};
-
-const StatCard = ({ title, value, color = "text-slate-900" }: any) => (
-  <Card size="small" className="border-none shadow-sm rounded-xl">
-    <div className="text-[10px] uppercase font-black text-slate-400 mb-1 tracking-widest">{title}</div>
-    <div className={`text-2xl font-black ${color}`}>{value}</div>
-  </Card>
-);
+            {s ? s.toUpperCase() : 'PENDING'}
+          </Tag>
+        ) 
+      },
+    ]}
+  />
+</Card>

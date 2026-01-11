@@ -367,3 +367,107 @@ body {
   color: white;
   box-shadow: 0 10px 20px -10px rgba(13, 148, 136, 0.5);
 }
+
+/* --- Uiverse Form Styles --- */
+.st-modal-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.st-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  width: 100%;
+  flex-direction: column;
+  gap: 35px;
+  background: #f3f4f6; /* 稍微調整為配合 App 的淺灰 */
+  box-shadow: 12px 12px 24px #d1d5db, -12px -12px 24px #ffffff;
+  border-radius: 16px;
+  padding: 30px;
+}
+
+.st-login-title {
+  color: #0d9488; /* 使用你的 Teal 主色 */
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  display: block;
+  font-weight: bold;
+  font-size: x-large;
+}
+
+.st-inputBox {
+  position: relative;
+  width: 280px;
+}
+
+.st-inputBox input {
+  width: 100%;
+  padding: 10px;
+  outline: none;
+  border: none;
+  color: #000;
+  font-size: 1em;
+  background: transparent;
+  border-left: 2px solid #0d9488;
+  border-bottom: 2px solid #0d9488;
+  transition: 0.1s;
+  border-bottom-left-radius: 8px;
+}
+
+.st-inputBox span {
+  margin-top: 5px;
+  position: absolute;
+  left: 0;
+  transform: translateY(-4px);
+  margin-left: 10px;
+  padding: 10px;
+  pointer-events: none;
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  transition: 0.5s;
+  letter-spacing: 3px;
+  border-radius: 8px;
+}
+
+/* 當輸入框有文字(valid)或被選中(focus)時 */
+.st-inputBox input:valid ~ span,
+.st-inputBox input:focus ~ span {
+  transform: translateX(113px) translateY(-25px);
+  font-size: 0.8em;
+  padding: 5px 10px;
+  background: #0d9488;
+  letter-spacing: 0.2em;
+  color: #fff;
+}
+
+.st-inputBox input:valid,
+.st-inputBox input:focus {
+  border: 2px solid #0d9488;
+  border-radius: 8px;
+  background: white;
+}
+
+.st-enter-btn {
+  height: 45px;
+  width: 140px;
+  border-radius: 8px;
+  border: 2px solid #0d9488;
+  cursor: pointer;
+  background-color: transparent;
+  transition: 0.5s;
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: #0d9488;
+}
+
+.st-enter-btn:hover {
+  background-color: #0d9488;
+  color: white;
+}

@@ -19,6 +19,7 @@ const { Content, Header, Sider } = Layout;
 function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
+const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [isTokenExpired, setIsTokenExpired] = useState(false);
@@ -131,23 +132,22 @@ function App() {
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={handleRefresh} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
       case View.SETTINGS: 
+  case View.SETTINGS: 
   return (
     <Settings 
-      // Shop List 部分
       token={graphToken} 
       onUpdateToken={(t) => { 
         setGraphToken(t); 
         localStorage.setItem('stockTakeToken', t); 
         fetchAllData(t); 
       }} 
-      // Inventory List 部分
-      invToken={invToken}
-      onUpdateInvToken={(t) => {
+      invToken={invToken} // ✅ 新增這行
+      onUpdateInvToken={(t) => { // ✅ 新增這行
         setInvToken(t);
         localStorage.setItem('stockTakeInvToken', t);
-        // 未來這裡可以加入 fetchInventoryData(t);
       }}
     />
+  );
   );
       case 'generator': return <Generator shops={allShops} />;
       default: return <div className="p-20 text-center text-slate-400">Section Coming Soon</div>;

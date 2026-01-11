@@ -147,3 +147,95 @@
 .input:checked + .btn .span {
   color: var(--font-color-light);
 }
+
+/* Dashboard Summary Cards */
+.st-stat-card {
+  --primary-clr: #1C204B;
+  --dot-clr: #BBC0FF;
+  width: 100%; /* 適應 Ant Design Grid */
+  height: 160px;
+  border-radius: 15px;
+  font-family: "Arial";
+  color: #fff;
+  display: grid;
+  cursor: pointer;
+  grid-template-rows: 40px 1fr; /* 縮小頂部顏色條高度 */
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.st-stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.st-stat-card:hover .img-section svg {
+  transform: translateY(5px);
+}
+
+.card-desc {
+  border-radius: 15px;
+  padding: 15px 20px;
+  position: relative;
+  top: -10px;
+  display: grid;
+  gap: 5px;
+  background: var(--primary-clr);
+  z-index: 2;
+}
+
+.card-time {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.img-section {
+  transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 20px;
+  overflow: hidden;
+}
+
+.img-section svg {
+  width: 50px;
+  height: 50px;
+  transition: 0.3s ease;
+  opacity: 0.8;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.card-title {
+  flex: 1;
+  font-size: 0.9em;
+  font-weight: 500;
+  color: var(--dot-clr);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.card-menu {
+  display: flex;
+  gap: 3px;
+}
+
+.card-menu .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--dot-clr);
+}
+
+.recent-text {
+  font-size: 0.75em;
+  color: var(--dot-clr);
+  opacity: 0.7;
+}

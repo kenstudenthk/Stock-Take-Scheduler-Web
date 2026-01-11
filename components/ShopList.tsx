@@ -135,65 +135,6 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
   return (
     <div className="flex flex-col gap-8 pb-10">
-      <style>{`
-        /* ✅ New Shop Button */
-        .new-shop-btn {
-          padding: 1.1em 2.5em;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: 2.5px;
-          font-weight: 700;
-          color: #000;
-          background-color: #fff;
-          border: none;
-          border-radius: 45px;
-          box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
-          transition: all 0.3s ease 0s;
-          cursor: pointer;
-          outline: none;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .new-shop-btn:hover {
-          background-color: #23c483;
-          box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);
-          color: #fff;
-          transform: translateY(-7px);
-        }
-        .new-shop-btn:active { transform: translateY(-1px); }
-
-        /* ✅ Edit Button */
-        .edit-button {
-          width: 40px; height: 40px; border-radius: 50%;
-          background-color: rgb(20, 20, 20); border: none;
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer; transition-duration: 0.3s; position: relative;
-          animation: fadeInRight 0.3s ease;
-        }
-        @keyframes fadeInRight {
-          from { opacity: 0; transform: translateX(20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        .edit-svgIcon { width: 17px; transition-duration: 0.3s; }
-        .edit-svgIcon path { fill: white; }
-        .edit-button:hover { width: 120px; border-radius: 50px; background-color: rgb(255, 69, 69); }
-        .edit-button:hover .edit-svgIcon { transform: translateY(0) rotate(360deg); }
-        .edit-button::before {
-          content: "EDIT"; display: none; color: white;
-          font-size: 13px; font-weight: 800; transition-duration: 0.3s;
-        }
-        .edit-button:hover::before { display: block; padding-right: 10px; }
-
-        .st-master-table .ant-table-thead > tr > th {
-          background-color: #0d9488 !important;
-          color: white !important;
-          font-weight: 800 !important;
-          text-transform: uppercase;
-          font-size: 11px;
-        }
-      `}</style>
-
       <div className="flex justify-between items-end">
         <div>
           <Title level={2} className="m-0 text-slate-900">Shop Master List</Title>

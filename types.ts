@@ -5,7 +5,8 @@ export enum View {
   LOCATIONS = 'shop-locations',
   SHOP_LIST = 'shop-list', // ✅ 新增：解決 ts(2339) 報錯
   REPORTS = 'reports',
-  SETTINGS = 'settings'
+  SETTINGS = 'settings',
+  INVENTORY = 'inventory'
 }
 
 export interface Shop {

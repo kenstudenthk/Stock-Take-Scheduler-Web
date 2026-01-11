@@ -45,13 +45,76 @@ export const Dashboard: React.FC<{shops: Shop[], onUpdateShop: any}> = ({ shops,
         </Button>
       </div>
 
-      {/* 2. 4 Summary Boxes (參考之前設計) */}
-      <Row gutter={[24, 24]}>
-        <Col span={6}><StatCard label="Total Shop" value={stats.total} icon={<ShopOutlined />} color="text-teal-500" /></Col>
-        <Col span={6}><StatCard label="Completed" value={stats.completed} icon={<CheckCircleOutlined />} color="text-emerald-500" /></Col>
-        <Col span={6}><StatCard label="Closed" value={stats.closed} icon={<LockOutlined />} color="text-slate-300" /></Col>
-        <Col span={6}><StatCard label="Remaining" value={stats.pending} icon={<HourglassOutlined />} color="text-orange-500" /></Col>
-      </Row>
+   // 在 Dashboard.tsx 中定義或替換
+const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
+  <div className="st-stat-card">
+    <div className="img-section" style={{ backgroundColor: bgColor }}>
+      {icon}
+    </div>
+    <div className="card-desc">
+      <div className="card-header">
+        <div className="card-title">{label}</div>
+        <div className="card-menu">
+          <div className="dot"></div>
+          <div className="dot"></div>
+          <div className="dot"></div>
+        </div>
+      </div>
+      <div className="card-time">{value}</div>
+      <p className="recent-text">{subtext}</p>
+    </div>
+  </div>
+);
+
+// 在 Dashboard 組件內的渲染部分
+const renderSummaryBoxes = () => (
+  <Row gutter={[24, 24]} className="mb-8">
+    <Col span={6}>
+      <SummaryCard 
+        label="Total Shop" 
+        value={stats.total} 
+        subtext="Overall target list"
+        bgColor="hsl(195, 74%, 62%)" // Play Blue
+        icon={<ShopOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.5)', marginTop: '5px' }} />}
+      />
+    </Col>
+    <Col span={6}>
+      <SummaryCard 
+        label="Completed" 
+        value={stats.completed} 
+        subtext="Success synchronization"
+        bgColor="hsl(145, 58%, 55%)" // Work Green
+        icon={<CheckCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.5)', marginTop: '5px' }} />}
+      />
+    </Col>
+    <Col span={6}>
+      {/* ✅ 這是你指定的 Closed SVG 版本 */}
+      <SummaryCard 
+        label="Closed" 
+        value={stats.closed} 
+        subtext="Exceptions handled"
+        bgColor="#ff4545" // Study/Self Care Red
+        icon={
+          <svg viewBox="0 0 48 48" fill="white" style={{ width: '45px', height: '45px', marginTop: '8px' }}>
+            <g id="Health_Icons">
+              <path d="M45.8,16.4v-.3L40.8,5.2A2,2,0,0,0,39,4H11.5c-.4,0-.6.5-.3.9L14.3,8H37.7L42,17.6a2.1,2.1,0,0,1-.4,1.5,2.1,2.1,0,0,1-1.8.9h-1a2.1,2.1,0,0,1-2.2-2.1,2.1,2.1,0,0,0-1.7-2,2,2,0,0,0-2.3,2A2.1,2.1,0,0,1,30.4,20H28.2A2.1,2.1,0,0,1,26,17.9a2,2,0,0,0-2-2,2.1,2.1,0,0,0-1.3.5L30.3,24h.1a6.3,6.3,0,0,0,4.2-1.6A5.9,5.9,0,0,0,38,23.9v7.8l3.1,3.1c.4.3.9.1.9-.3V23.6a6.9,6.9,0,0,0,2.8-2A6,6,0,0,0,45.8,16.4Z"></path>
+              <path d="M5.4,4.6a1.9,1.9,0,0,0-2.8,0,1.9,1.9,0,0,0,0,2.8L5.1,9.9,2.3,16.1v.3a6,6,0,0,0,1,5.2,6.9,6.9,0,0,0,2.8,2V41a3,3,0,0,0,3,3H39.2l1.4,1.4a1.9,1.9,0,0,0,2.8,0,1.9,1.9,0,0,0,0-2.8Zm6.4,12.1a2.1,2.1,0,0,0-.4,1.2A2.1,2.1,0,0,1,9.2,20h-1a2.1,2.1,0,0,1-1.8-.9A2.1,2.1,0,0,1,6,17.6l2.1-4.7ZM10,40V23.9a5.9,5.9,0,0,0,3.4-1.5A6.3,6.3,0,0,0,17.6,24h1.6l3,3H13V37H24V28.8l4,4V40Z"></path>
+            </g>
+          </svg>
+        }
+      />
+    </Col>
+    <Col span={6}>
+      <SummaryCard 
+        label="Remaining" 
+        value={stats.pending} 
+        subtext="Pending inventory"
+        bgColor="#f1c40f" // Exercise Yellow/Orange
+        icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.5)', marginTop: '5px' }} />}
+      />
+    </Col>
+  </Row>
+);
 
       {/* 3. Main Content Card */}
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>

@@ -22,15 +22,25 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterGroup, setFilterGroup] = useState<number | 'all'>('all');
   const [filterDate, setFilterDate] = useState<string | null>(null);
+  
+  // ✅ State to track which row is selected for the Edit button
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
   // ✅ Helper for Group Row Coloring
-  const getGroupRowStyle = (groupId: number) => {
+  const getGroupRowStyle = (groupId: number, isSelected: boolean) => {
+    let baseStyle: React.CSSProperties = {};
     switch (groupId) {
-      case 1: return { backgroundColor: '#f0f9ff' }; // Group A
-      case 2: return { backgroundColor: '#faf5ff' }; // Group B
-      case 3: return { backgroundColor: '#fff7ed' }; // Group C
-      default: return {};
+      case 1: baseStyle = { backgroundColor: '#f0f9ff' }; break; // Group A
+      case 2: baseStyle = { backgroundColor: '#faf5ff' }; break; // Group B
+      case 3: baseStyle = { backgroundColor: '#fff7ed' }; break; // Group C
+      default: baseStyle = {};
     }
+
+    // Add a border if selected
+    if (isSelected) {
+      return { ...baseStyle, border: '2px solid #23c483', cursor: 'pointer' };
+    }
+    return { ...baseStyle, cursor: 'pointer' };
   };
 
   const filteredData = useMemo(() => {
@@ -54,7 +64,6 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     closed: filteredData.filter(s => s.status === 'closed').length,
   }), [filteredData]);
 
-  // --- 3. 表格欄位定義 (Updated as per request) ---
   const columns = [
     { 
       title: '', 
@@ -70,14 +79,14 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     { 
       title: 'Area', 
       dataIndex: 'area', 
-      render: (t: string) => <Text className="text-xs font-semibold">{t}</Text>
+      render: (t: string) => <Text className="text-xs font-semibold">{t || 'N/A'}</Text>
     },
     { 
       title: 'Location Details', 
       render: (_: any, r: Shop) => (
         <div className="flex flex-col gap-0.5">
-          <Text strong style={{ fontSize: '12px' }} className="text-slate-500">{r.district}</Text>
-          <Text type="secondary" style={{ fontSize: '10px' }} className="uppercase tracking-widest">{r.region}</Text>
+          <Text strong style={{ fontSize: '11px' }} className="text-slate-500">{r.district}</Text>
+          <Text type="secondary" style={{ fontSize: '9px' }} className="uppercase tracking-widest">{r.region}</Text>
         </div>
       )
     },
@@ -91,25 +100,43 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       dataIndex: 'status', 
       render: (s: string) => (
         <Tag color={s === 'completed' ? 'green' : s === 'closed' ? 'red' : 'blue'} className="rounded-full px-4 border-none font-bold uppercase text-[9px]">
-          {s}
+          {s || 'PENDING'}
         </Tag>
       )
     },
     { 
       title: 'Group', 
       dataIndex: 'groupId', 
-      width: 120,
+      width: 100,
       render: (g: number) => {
         const labels: Record<number, string> = { 1: 'Group A', 2: 'Group B', 3: 'Group C' };
         return g > 0 ? <Badge status="processing" color={g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange'} text={labels[g]} /> : '-';
       }
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: 130,
+      align: 'right' as const,
+      render: (_: any, record: Shop) => (
+        <div style={{ minHeight: '40px', display: 'flex', justifyContent: 'flex-end', paddingRight: '10px' }}>
+          {/* ✅ Edit button visible only on selection */}
+          {selectedRowId === record.id && (
+            <button className="edit-button" onClick={(e) => { e.stopPropagation(); console.log('Edit clicked for:', record.id); }}>
+              <svg className="edit-svgIcon" viewBox="0 0 512 512">
+                <path d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"></path>
+              </svg>
+            </button>
+          )}
+        </div>
+      ),
     },
   ];
 
   return (
     <div className="flex flex-col gap-8 pb-10">
       <style>{`
-        /* ✅ New Shop Button CSS */
+        /* ✅ New Shop Button */
         .new-shop-btn {
           padding: 1.1em 2.5em;
           font-size: 12px;
@@ -136,14 +163,34 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         }
         .new-shop-btn:active { transform: translateY(-1px); }
 
-        /* ✅ Table Custom Styling */
+        /* ✅ Edit Button */
+        .edit-button {
+          width: 40px; height: 40px; border-radius: 50%;
+          background-color: rgb(20, 20, 20); border: none;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; transition-duration: 0.3s; position: relative;
+          animation: fadeInRight 0.3s ease;
+        }
+        @keyframes fadeInRight {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .edit-svgIcon { width: 17px; transition-duration: 0.3s; }
+        .edit-svgIcon path { fill: white; }
+        .edit-button:hover { width: 120px; border-radius: 50px; background-color: rgb(255, 69, 69); }
+        .edit-button:hover .edit-svgIcon { transform: translateY(0) rotate(360deg); }
+        .edit-button::before {
+          content: "EDIT"; display: none; color: white;
+          font-size: 13px; font-weight: 800; transition-duration: 0.3s;
+        }
+        .edit-button:hover::before { display: block; padding-right: 10px; }
+
         .st-master-table .ant-table-thead > tr > th {
           background-color: #0d9488 !important;
           color: white !important;
           font-weight: 800 !important;
           text-transform: uppercase;
           font-size: 11px;
-          padding: 16px !important;
         }
       `}</style>
 
@@ -152,7 +199,6 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           <Title level={2} className="m-0 text-slate-900">Shop Master List</Title>
           <p className="text-slate-500 font-medium mb-6">Manage across {shops.length} stores with advanced filters.</p>
           
-          {/* ✅ New Shop Button */}
           <button className="new-shop-btn">
             <PlusOutlined /> New Shop
           </button>
@@ -160,4 +206,69 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         <Button 
           type="primary" 
           icon={<FileExcelOutlined />} 
-          className="bg-emerald-600 hover:bg-emerald-700 border-none h-12 px-8 rounded-2xl font
+          className="bg-emerald-600 hover:bg-emerald-700 border-none h-12 px-8 rounded-2xl font-bold shadow-lg"
+        >
+          Export to Excel
+        </Button>
+      </div>
+
+      {/* Statistics Cards */}
+      <Row gutter={20}>
+        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Filtered Result" value={stats.total} prefix={<ShopOutlined className="text-teal-600 mr-2" />} /></Card></Col>
+        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Completed" value={stats.completed} prefix={<CheckCircleOutlined className="text-emerald-500 mr-2" />} /></Card></Col>
+        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Pending" value={stats.pending} prefix={<ClockCircleOutlined className="text-blue-500 mr-2" />} /></Card></Col>
+        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Closed" value={stats.closed} prefix={<StopOutlined className="text-slate-300 mr-2" />} /></Card></Col>
+      </Row>
+
+      {/* Filter Toolbar */}
+      <Card className="rounded-2xl shadow-sm border-none bg-white" bodyStyle={{ padding: '24px' }}>
+        <Space wrap size="large">
+          <Input 
+            placeholder="Search Name/ID..." 
+            prefix={<SearchOutlined />} 
+            style={{ width: 220 }} 
+            onChange={e => setSearchText(e.target.value)}
+            className="rounded-xl bg-slate-50 border-none h-11"
+          />
+          <Space>
+            <Select placeholder="Group" style={{ width: 120 }} onChange={setFilterGroup} value={filterGroup}>
+              <Select.Option value="all">All Groups</Select.Option>
+              <Select.Option value={1}>Group A</Select.Option>
+              <Select.Option value={2}>Group B</Select.Option>
+              <Select.Option value={3}>Group C</Select.Option>
+            </Select>
+            <DatePicker 
+              placeholder="Filter Date" 
+              className="h-11 rounded-xl bg-slate-50 border-none w-40"
+              onChange={(date) => setFilterDate(date ? date.format('YYYY-MM-DD') : null)}
+            />
+            <Divider type="vertical" />
+            <Select placeholder="Status" style={{ width: 130 }} onChange={setFilterStatus} value={filterStatus}>
+              <Select.Option value="all">All Status</Select.Option>
+              <Select.Option value="completed">Completed</Select.Option>
+              <Select.Option value="pending">Pending</Select.Option>
+              <Select.Option value="closed">Closed</Select.Option>
+            </Select>
+            <Button onClick={() => { setSearchText(''); setFilterGroup('all'); setFilterDate(null); setSelectedRowId(null); }} icon={<FilterOutlined />}>Reset</Button>
+          </Space>
+        </Space>
+      </Card>
+
+      {/* Main Table */}
+      <Card className="rounded-[32px] shadow-sm border-none overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>
+        <Table 
+          columns={columns} 
+          dataSource={filteredData} 
+          rowKey="id"
+          className="st-master-table"
+          pagination={{ pageSize: 15, showSizeChanger: true, className: 'px-6 py-4' }}
+          scroll={{ x: 1000 }}
+          onRow={(record) => ({
+            onClick: () => setSelectedRowId(record.id),
+            style: getGroupRowStyle(record.groupId, selectedRowId === record.id),
+          })}
+        />
+      </Card>
+    </div>
+  );
+};

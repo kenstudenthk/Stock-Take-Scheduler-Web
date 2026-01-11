@@ -23,4 +23,5 @@ export const SP_FIELDS = {
   PHONE: 'field_37',
   CONTACT: 'field_38',
   REMARK: 'Remark' // 根據你的資料，Remark 是唯一一個直接用名稱的
+  SCHEDULE_GROUP: 'Schedule_x0020_Group' // ✅ Add this for Group mapping
 };

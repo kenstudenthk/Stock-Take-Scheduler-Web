@@ -12,38 +12,25 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shop } from '../types';
-import { AddShopModal } from './AddShopModal';   // ✅ You will create this next
-import { EditShopModal } from './EditShopModal'; // ✅ You will create this next
 
 const { Text, Title } = Typography;
 
-// ✅ Added graphToken and onRefresh to the Props
-export const ShopList: React.FC<{ 
-  shops: Shop[], 
-  graphToken: string, 
-  onRefresh: () => void 
-}> = ({ shops, graphToken, onRefresh }) => {
-  
-  // --- 狀態管理 ---
+export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
+  // --- 1. State ---
   const [searchText, setSearchText] = useState('');
   const [filterRegion, setFilterRegion] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterGroup, setFilterGroup] = useState<number | 'all'>('all');
   const [filterDate, setFilterDate] = useState<string | null>(null);
-  
-  // ✅ Modal States
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditOpen] = useState(false);
-  const [editingShop, setEditingShop] = useState<Shop | null>(null);
 
-  // ✅ 分組行顏色邏輯
+  // --- 2. Row Styling ---
   const getGroupRowStyle = (groupId: number, isSelected: boolean) => {
     let baseStyle: React.CSSProperties = {};
     switch (groupId) {
-      case 1: baseStyle = { backgroundColor: '#f0f9ff' }; break; 
-      case 2: baseStyle = { backgroundColor: '#faf5ff' }; break; 
-      case 3: baseStyle = { backgroundColor: '#fff7ed' }; break; 
+      case 1: baseStyle = { backgroundColor: '#f0f9ff' }; break; // Group A
+      case 2: baseStyle = { backgroundColor: '#faf5ff' }; break; // Group B
+      case 3: baseStyle = { backgroundColor: '#fff7ed' }; break; // Group C
       default: baseStyle = {};
     }
     if (isSelected) {
@@ -52,16 +39,15 @@ export const ShopList: React.FC<{
     return { ...baseStyle, cursor: 'pointer' };
   };
 
-  // --- 1. 過濾邏輯 ---
+  // --- 3. Filter Logic ---
   const filteredData = useMemo(() => {
     return shops.filter(shop => {
       const search = searchText.toLowerCase();
-      const matchSearch = (shop.name || '').toLowerCase().includes(search);
+      const matchSearch = (shop.name || '').toLowerCase().includes(search) || (shop.id || '').toLowerCase().includes(search);
       const matchRegion = filterRegion === 'all' || shop.region === filterRegion;
       const matchStatus = filterStatus === 'all' || shop.status === filterStatus;
       const matchGroup = filterGroup === 'all' || shop.groupId === filterGroup;
       const matchDate = !filterDate || (shop.scheduledDate && dayjs(shop.scheduledDate).format('YYYY-MM-DD') === filterDate);
-
       return matchSearch && matchRegion && matchStatus && matchGroup && matchDate;
     });
   }, [shops, searchText, filterRegion, filterStatus, filterGroup, filterDate]);
@@ -73,7 +59,7 @@ export const ShopList: React.FC<{
     closed: filteredData.filter(s => s.status === 'closed').length,
   }), [filteredData]);
 
-  // --- 2. 表格欄位定義 ---
+  // --- 4. Table Columns ---
   const columns = [
     { 
       title: '', 
@@ -93,7 +79,7 @@ export const ShopList: React.FC<{
       )
     },
     { 
-      title: 'Schedule', 
+      title: 'Schedule Date', 
       dataIndex: 'scheduledDate', 
       render: (d: string) => d ? <span className="font-mono text-blue-600 font-bold">{dayjs(d).format('YYYY-MM-DD')}</span> : <Text type="secondary">Not Set</Text> 
     },
@@ -123,11 +109,7 @@ export const ShopList: React.FC<{
       render: (_: any, record: Shop) => (
         <div style={{ minHeight: '40px', display: 'flex', justifyContent: 'flex-end', paddingRight: '10px' }}>
           {selectedRowId === record.id && (
-            <button className="edit-button" onClick={(e) => { 
-              e.stopPropagation(); 
-              setEditingShop(record); 
-              setIsEditOpen(true); 
-            }}>
+            <button className="edit-button" onClick={(e) => { e.stopPropagation(); console.log('Edit:', record.id); }}>
               <svg className="edit-svgIcon" viewBox="0 0 512 512">
                 <path d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"></path>
               </svg>
@@ -143,24 +125,21 @@ export const ShopList: React.FC<{
       <div className="flex justify-between items-end">
         <div>
           <Title level={2} className="m-0 text-slate-900">Shop Master List</Title>
-          <p className="text-slate-500 font-medium mb-6">Manage stores and schedules.</p>
-          {/* ✅ Now opens Add Modal */}
-          <button className="new-shop-btn" onClick={() => setIsAddModalOpen(true)}>
+          <p className="text-slate-500 font-medium mb-6">Manage across {shops.length} stores with advanced filters.</p>
+          <button className="new-shop-btn">
             <PlusOutlined /> New Shop
           </button>
         </div>
         <Button type="primary" icon={<FileExcelOutlined />} className="bg-emerald-600 border-none h-12 px-8 rounded-2xl font-bold shadow-lg">Export Excel</Button>
       </div>
 
-      {/* 統計卡片... (Statistics same as before) */}
       <Row gutter={20}>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Result" value={stats.total} prefix={<ShopOutlined className="text-teal-600 mr-2" />} /></Card></Col>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Done" value={stats.completed} prefix={<CheckCircleOutlined className="text-emerald-500 mr-2" />} /></Card></Col>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Wait" value={stats.pending} prefix={<ClockCircleOutlined className="text-blue-500 mr-2" />} /></Card></Col>
+        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Total" value={stats.total} prefix={<ShopOutlined className="text-teal-600 mr-2" />} /></Card></Col>
+        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Completed" value={stats.completed} prefix={<CheckCircleOutlined className="text-emerald-500 mr-2" />} /></Card></Col>
+        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Pending" value={stats.pending} prefix={<ClockCircleOutlined className="text-blue-500 mr-2" />} /></Card></Col>
         <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Closed" value={stats.closed} prefix={<StopOutlined className="text-slate-300 mr-2" />} /></Card></Col>
       </Row>
 
-      {/* 篩選工具... (Filters same as before) */}
       <Card className="rounded-2xl shadow-sm border-none bg-white" bodyStyle={{ padding: '24px' }}>
         <Space wrap size="large">
           <Input placeholder="Search Name..." prefix={<SearchOutlined />} style={{ width: 220 }} onChange={e => setSearchText(e.target.value)} className="rounded-xl bg-slate-50 border-none h-11" />
@@ -177,14 +156,13 @@ export const ShopList: React.FC<{
         </Space>
       </Card>
 
-      {/* 主表格 */}
       <Card className="rounded-[32px] shadow-sm border-none overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>
         <Table 
           columns={columns} 
           dataSource={filteredData} 
           rowKey="id"
           className="st-master-table"
-          pagination={{ pageSize: 15, showSizeChanger: true, className: 'px-6 py-4' }}
+          pagination={{ pageSize: 15 }}
           scroll={{ x: 1000 }}
           onRow={(record) => ({
             onClick: () => setSelectedRowId(record.id),
@@ -192,23 +170,6 @@ export const ShopList: React.FC<{
           })}
         />
       </Card>
-
-      {/* ✅ Add New Shop Modal */}
-      <AddShopModal 
-        visible={isAddModalOpen} 
-        onCancel={() => setIsAddModalOpen(false)} 
-        onSuccess={() => { setIsAddModalOpen(false); onRefresh(); }} 
-        graphToken={graphToken} 
-      />
-
-      {/* ✅ Edit Shop Modal */}
-      <EditShopModal 
-        visible={isEditModalOpen} 
-        shop={editingShop} 
-        onCancel={() => setIsEditOpen(false)} 
-        onSuccess={() => { setIsEditOpen(false); onRefresh(); }} 
-        graphToken={graphToken} 
-      />
     </div>
   );
 };

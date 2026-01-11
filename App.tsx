@@ -179,8 +179,13 @@ function App() {
       case View.DASHBOARD:
         return <Dashboard shops={allShops} onUpdateShop={handleUpdateShop} onNavigate={(v) => setSelectedMenuKey(v)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
-      case View.SHOP_LIST: return <ShopList shops={allShops} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
+        case View.SHOP_LIST: 
+  return <ShopList 
+    shops={allShops} 
+    graphToken={graphToken} 
+    onRefresh={handleRefresh} 
+  />;
       case View.SETTINGS: 
         return <Settings token={graphToken} onUpdateToken={(t) => { 
           setGraphToken(t); 

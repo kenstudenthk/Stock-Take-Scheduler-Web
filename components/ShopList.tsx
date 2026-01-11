@@ -195,6 +195,16 @@ const [targetShop, setTargetShop] = useState<Shop | null>(null);
           })}
         />
       </Card>
+          <ShopFormModal 
+      visible={formOpen}
+      shop={targetShop}
+      onCancel={() => setFormOpen(false)}
+      onSuccess={() => {
+        setFormOpen(false);
+        onRefresh(); // 重新抓取 SharePoint 資料
+      }}
+      graphToken={graphToken}
+    />
     </div>
   );
 };

@@ -471,3 +471,65 @@ body {
   background-color: #0d9488;
   color: white;
 }
+
+
+/* --- 強化版 Uiverse 表單佈局 --- */
+.st-card-full {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  background: #f8fafc;
+  padding: 40px;
+  border-radius: 16px;
+  width: 100%;
+}
+
+.st-inputBox-full {
+  position: relative;
+  width: 100%; /* 改為 100% 以適應 Grid */
+  margin-bottom: 5px;
+}
+
+.st-inputBox-full input {
+  width: 100%;
+  padding: 12px;
+  outline: none;
+  border: none;
+  color: #000;
+  font-size: 14px;
+  background: white; /* 增加背景色更像表單 */
+  border-left: 2px solid #0d9488;
+  border-bottom: 2px solid #0d9488;
+  transition: 0.2s;
+  border-bottom-left-radius: 8px;
+}
+
+.st-inputBox-full span {
+  position: absolute;
+  left: 0;
+  transform: translateY(12px);
+  margin-left: 10px;
+  padding: 0 5px;
+  pointer-events: none;
+  font-size: 12px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  transition: 0.5s;
+  letter-spacing: 2px;
+}
+
+.st-inputBox-full input:valid ~ span,
+.st-inputBox-full input:focus ~ span {
+  transform: translateX(10px) translateY(-10px);
+  font-size: 0.75em;
+  padding: 2px 8px;
+  background: #0d9488;
+  color: #fff;
+  border-radius: 4px;
+}
+
+.st-inputBox-full input:valid,
+.st-inputBox-full input:focus {
+  border: 2px solid #0d9488;
+  border-radius: 8px;
+}

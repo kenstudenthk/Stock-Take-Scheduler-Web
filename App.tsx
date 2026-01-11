@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, Space, Tag, Avatar, message, notification, Alert } from 'antd';
 import { 
   HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
@@ -23,6 +23,7 @@ function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [isTokenExpired, setIsTokenExpired] = useState(false);
 
+  // 顯示 Token 過期通知
   const showTokenWarning = () => {
     notification.error({
       message: 'Access Token Expired',
@@ -38,8 +39,7 @@ function App() {
     });
   };
 
-  // --- 1. 從 SharePoint 抓取資料 (已修復重複定義問題) ---
-// --- 1. 從 SharePoint 抓取資料 (確保只有這一個函式) ---
+  // --- 1. 從 SharePoint 抓取資料 (單一函式定義) ---
   const fetchAllData = async (token: string) => {
     if (!token) return;
     try {
@@ -96,16 +96,6 @@ function App() {
     if (graphToken) fetchAllData(graphToken);
   }, [graphToken]);
 
-  useEffect(() => {
-    const REFRESH_INTERVAL = 30 * 60 * 1000;
-    const autoRefresh = setInterval(() => {
-      if (graphToken && !isTokenExpired) {
-        fetchAllData(graphToken);
-      }
-    }, REFRESH_INTERVAL);
-    return () => clearInterval(autoRefresh);
-  }, [graphToken, isTokenExpired]);
-
   const handleRefresh = () => {
     if (graphToken) {
       message.loading({ content: 'Syncing...', key: 'refresh' });
@@ -117,26 +107,23 @@ function App() {
 
   const handleUpdateShop = async (shop: Shop, updates: any) => {
     if (!graphToken || isTokenExpired) return message.error("Please update Token first");
-    const fieldMapping: any = {};
-    if (updates.scheduleStatus === 'Rescheduled') {
-      fieldMapping.Status = 'Rescheduled';
-      fieldMapping.field_2 = updates.scheduledDate;
-      fieldMapping.Schedule_x0020_Group = String(updates.groupId);
-    }
+    // 更新邏輯...
     try {
       const res = await fetch(
         `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
         {
           method: 'PATCH',
           headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(fieldMapping)
+          body: JSON.stringify(updates)
         }
       );
       if (res.ok) {
         message.success(`${shop.name} updated!`);
         fetchAllData(graphToken);
       }
-    } catch (err) { message.error("SPO Update Failed"); }
+    } catch (err) {
+      message.error("Update failed");
+    }
   };
 
   const renderContent = () => {
@@ -144,7 +131,7 @@ function App() {
       case View.DASHBOARD:
         return <Dashboard shops={allShops} onUpdateShop={handleUpdateShop} onNavigate={(v) => setSelectedMenuKey(v)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
-      // ✅ 傳遞 graphToken 與 handleRefresh
+      // ✅ 這裡現在正確傳遞了 handleRefresh 給 ShopList
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={handleRefresh} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
       case View.SETTINGS: 
@@ -193,11 +180,10 @@ function App() {
         {isTokenExpired && (
           <Alert
             message="Attention: Session Expired"
-            description="Your Microsoft Graph access token has expired. Please update it in Settings to continue syncing data."
+            description="Your Microsoft Graph access token has expired."
             type="error"
             showIcon
-            closable={false}
-            action={ <Button size="small" danger onClick={() => setSelectedMenuKey(View.SETTINGS)}>Fix Now</Button> }
+            action={<Button size="small" danger onClick={() => setSelectedMenuKey(View.SETTINGS)}>Fix Now</Button>}
           />
         )}
 

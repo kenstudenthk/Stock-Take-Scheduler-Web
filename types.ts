@@ -34,3 +34,30 @@ export interface NavItemProps {
   onClick: (view: View) => void;
   filled?: boolean;
 }
+
+export interface InventoryItem {
+  id: string; // SharePoint Item ID
+  mirrorId: string;
+  shopCode: string;
+  businessUnit: string;
+  shopBrand: string;
+  shopName: string;
+  productTypeEng: string;
+  productTypeChi: string;
+  stockTakeStatus: string;
+  recordTime: string;
+  assetItemId: string;
+  brand: string;
+  assetName: string;
+  cmdb: string;
+  serialNo: string;
+  ipAddress: string;
+  inUseStatus: string;
+  productStatus: string;
+  stockTake2026Status: string;
+  appSyncStatus: string;
+  remarks: string;
+  wToW: string;
+  uploadPhoto: string;
+  createdBy: string;
+}

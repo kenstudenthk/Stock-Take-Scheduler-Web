@@ -16,37 +16,41 @@ import { Shop } from '../types';
 const { Text, Title } = Typography;
 
 export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
-  // --- 狀態管理 ---
+  // --- 1. State Management ---
   const [searchText, setSearchText] = useState('');
   const [filterRegion, setFilterRegion] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterGroup, setFilterGroup] = useState<number | 'all'>('all');
   const [filterDate, setFilterDate] = useState<string | null>(null);
   
-  // ✅ 追蹤目前選中的行 ID，用來顯示 Edit 按鈕
+  // ✅ Track which row is selected for the "Edit" button to appear
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
-  // ✅ 分組行顏色邏輯
+  // --- 2. Row Styling Logic ---
   const getGroupRowStyle = (groupId: number, isSelected: boolean) => {
     let baseStyle: React.CSSProperties = {};
     switch (groupId) {
-      case 1: baseStyle = { backgroundColor: '#f0f9ff' }; break; // Group A
-      case 2: baseStyle = { backgroundColor: '#faf5ff' }; break; // Group B
-      case 3: baseStyle = { backgroundColor: '#fff7ed' }; break; // Group C
+      case 1: baseStyle = { backgroundColor: '#f0f9ff' }; break; // Group A (Blue)
+      case 2: baseStyle = { backgroundColor: '#faf5ff' }; break; // Group B (Purple)
+      case 3: baseStyle = { backgroundColor: '#fff7ed' }; break; // Group C (Orange)
       default: baseStyle = {};
     }
-    // 如果選中了，加上邊框強化視覺
+
+    // Apply a border if the row is selected
     if (isSelected) {
       return { ...baseStyle, border: '2px solid #23c483', cursor: 'pointer' };
     }
     return { ...baseStyle, cursor: 'pointer' };
   };
 
-  // --- 1. 過濾邏輯 ---
+  // --- 3. Filtering Logic ---
   const filteredData = useMemo(() => {
     return shops.filter(shop => {
       const search = searchText.toLowerCase();
-      const matchSearch = (shop.name || '').toLowerCase().includes(search);
+      const name = (shop.name || '').toLowerCase();
+      const code = (shop.id || '').toLowerCase();
+      
+      const matchSearch = name.includes(search) || code.includes(search);
       const matchRegion = filterRegion === 'all' || shop.region === filterRegion;
       const matchStatus = filterStatus === 'all' || shop.status === filterStatus;
       const matchGroup = filterGroup === 'all' || shop.groupId === filterGroup;
@@ -63,7 +67,7 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     closed: filteredData.filter(s => s.status === 'closed').length,
   }), [filteredData]);
 
-  // --- 2. 表格欄位定義 ---
+  // --- 4. Table Columns ---
   const columns = [
     { 
       title: '', 
@@ -84,14 +88,14 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     { 
       title: 'Location', 
       render: (_: any, r: Shop) => (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
           <Text strong style={{ fontSize: '11px' }} className="text-slate-500">{r.district}</Text>
           <Text type="secondary" style={{ fontSize: '9px' }} className="uppercase tracking-widest">{r.region}</Text>
         </div>
       )
     },
     { 
-      title: 'Schedule', 
+      title: 'Schedule Date', 
       dataIndex: 'scheduledDate', 
       render: (d: string) => d ? <span className="font-mono text-blue-600 font-bold">{dayjs(d).format('YYYY-MM-DD')}</span> : <Text type="secondary">Not Set</Text> 
     },
@@ -120,7 +124,7 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       align: 'right' as const,
       render: (_: any, record: Shop) => (
         <div style={{ minHeight: '40px', display: 'flex', justifyContent: 'flex-end', paddingRight: '10px' }}>
-          {/* ✅ 只有被選中的行才會顯示 Edit 按鈕 */}
+          {/* ✅ Edit button only visible when row is selected */}
           {selectedRowId === record.id && (
             <button className="edit-button" onClick={(e) => { e.stopPropagation(); console.log('Edit:', record.id); }}>
               <svg className="edit-svgIcon" viewBox="0 0 512 512">
@@ -135,38 +139,55 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
   return (
     <div className="flex flex-col gap-8 pb-10">
-      {/* 標題與 New Shop 按鈕 */}
+      {/* --- Header Section --- */}
       <div className="flex justify-between items-end">
         <div>
           <Title level={2} className="m-0 text-slate-900">Shop Master List</Title>
-          <p className="text-slate-500 font-medium mb-6">Manage stores and schedules.</p>
+          <p className="text-slate-500 font-medium mb-6">Manage across {shops.length} stores with advanced filters.</p>
           
-          <button className="new-shop-btn">
+          {/* ✅ New Shop Button */}
+          <button className="new-shop-btn" onClick={() => console.log('Add New Shop Clicked')}>
             <PlusOutlined /> New Shop
           </button>
         </div>
         <Button 
           type="primary" 
           icon={<FileExcelOutlined />} 
-          className="bg-emerald-600 border-none h-12 px-8 rounded-2xl font-bold shadow-lg"
+          className="bg-emerald-600 hover:bg-emerald-700 border-none h-12 px-8 rounded-2xl font-bold shadow-lg"
         >
-          Export Excel
+          Export to Excel
         </Button>
       </div>
 
-      {/* 統計卡片 */}
+      {/* --- Statistics Cards --- */}
       <Row gutter={20}>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Result" value={stats.total} prefix={<ShopOutlined className="text-teal-600 mr-2" />} /></Card></Col>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Done" value={stats.completed} prefix={<CheckCircleOutlined className="text-emerald-500 mr-2" />} /></Card></Col>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Wait" value={stats.pending} prefix={<ClockCircleOutlined className="text-blue-500 mr-2" />} /></Card></Col>
-        <Col span={6}><Card className="rounded-2xl border-none shadow-sm"><Statistic title="Closed" value={stats.closed} prefix={<StopOutlined className="text-slate-300 mr-2" />} /></Card></Col>
+        <Col span={6}>
+          <Card className="rounded-2xl border-none shadow-sm">
+            <Statistic title="Result" value={stats.total} prefix={<ShopOutlined className="text-teal-600 mr-2" />} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card className="rounded-2xl border-none shadow-sm">
+            <Statistic title="Completed" value={stats.completed} prefix={<CheckCircleOutlined className="text-emerald-500 mr-2" />} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card className="rounded-2xl border-none shadow-sm">
+            <Statistic title="Pending" value={stats.pending} prefix={<ClockCircleOutlined className="text-blue-500 mr-2" />} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card className="rounded-2xl border-none shadow-sm">
+            <Statistic title="Closed" value={stats.closed} prefix={<StopOutlined className="text-slate-300 mr-2" />} />
+          </Card>
+        </Col>
       </Row>
 
-      {/* 篩選工具 */}
+      {/* --- Filter Toolbar --- */}
       <Card className="rounded-2xl shadow-sm border-none bg-white" bodyStyle={{ padding: '24px' }}>
         <Space wrap size="large">
           <Input 
-            placeholder="Search Name..." 
+            placeholder="Search Name/ID..." 
             prefix={<SearchOutlined />} 
             style={{ width: 220 }} 
             onChange={e => setSearchText(e.target.value)}
@@ -184,12 +205,19 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
               className="h-11 rounded-xl bg-slate-50 border-none w-40"
               onChange={(date) => setFilterDate(date ? date.format('YYYY-MM-DD') : null)}
             />
+            <Divider type="vertical" />
+            <Select placeholder="Status" style={{ width: 130 }} onChange={setFilterStatus} value={filterStatus}>
+              <Select.Option value="all">All Status</Select.Option>
+              <Select.Option value="completed">Completed</Select.Option>
+              <Select.Option value="pending">Pending</Select.Option>
+              <Select.Option value="closed">Closed</Select.Option>
+            </Select>
             <Button onClick={() => { setSearchText(''); setFilterGroup('all'); setFilterDate(null); setSelectedRowId(null); }} icon={<FilterOutlined />}>Reset</Button>
           </Space>
         </Space>
       </Card>
 
-      {/* 主表格 */}
+      {/* --- Main Table --- */}
       <Card className="rounded-[32px] shadow-sm border-none overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>
         <Table 
           columns={columns} 
@@ -199,7 +227,7 @@ export const ShopList: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           pagination={{ pageSize: 15, showSizeChanger: true, className: 'px-6 py-4' }}
           scroll={{ x: 1000 }}
           onRow={(record) => ({
-            // ✅ 點擊行時更新選中的 ID
+            // ✅ Click to select the row
             onClick: () => setSelectedRowId(record.id),
             style: getGroupRowStyle(record.groupId, selectedRowId === record.id),
           })}

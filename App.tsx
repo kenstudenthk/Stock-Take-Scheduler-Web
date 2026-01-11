@@ -39,6 +39,7 @@ function App() {
   };
 
   // --- 1. 從 SharePoint 抓取資料 (已修復重複定義問題) ---
+// --- 1. 從 SharePoint 抓取資料 (確保只有這一個函式) ---
   const fetchAllData = async (token: string) => {
     if (!token) return;
     try {
@@ -59,8 +60,8 @@ function App() {
         notification.destroy('tokenExpiry');
 
         const mapped = data.value.map((item: any) => {
-  const f = item.fields || {};
-  return {
+          const f = item.fields || {};
+          return {
             sharePointItemId: item.id,
             id: f[SP_FIELDS.SHOP_CODE] || item.id,
             name: f[SP_FIELDS.SHOP_NAME] || '',

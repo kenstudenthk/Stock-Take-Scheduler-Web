@@ -5,38 +5,25 @@ import { SP_FIELDS } from '../constants';
 
 interface Props {
   visible: boolean;
-  shop: Shop | null; // 如果是 null 則為新增，有值則為編輯
+  shop: Shop | null;
   onCancel: () => void;
   onSuccess: () => void;
   graphToken: string;
 }
 
 export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSuccess, graphToken }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    code: '',
-    region: '',
-    district: ''
-  });
+  const [formData, setFormData] = useState({ name: '', code: '', district: '' });
 
-  // 當選中的 shop 改變時（切換編輯對象或開啟新表單），更新 state
   useEffect(() => {
     if (shop) {
-      setFormData({
-        name: shop.name || '',
-        code: shop.id || '',
-        region: shop.region || '',
-        district: shop.district || ''
-      });
+      setFormData({ name: shop.name, code: shop.id, district: shop.district });
     } else {
-      setFormData({ name: '', code: '', region: '', district: '' });
+      setFormData({ name: '', code: '', district: '' });
     }
   }, [shop, visible]);
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.code) {
-      return message.warning("Please fill in Name and Code");
-    }
+    if (!formData.name || !formData.code) return message.error("Please fill required fields");
 
     const isEdit = !!shop;
     const url = isEdit 
@@ -47,7 +34,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       fields: {
         [SP_FIELDS.SHOP_NAME]: formData.name,
         [SP_FIELDS.SHOP_CODE]: formData.code,
-        [SP_FIELDS.REGION]: formData.region,
         [SP_FIELDS.DISTRICT]: formData.district,
       }
     };
@@ -55,77 +41,41 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     try {
       const res = await fetch(url, {
         method: isEdit ? 'PATCH' : 'POST',
-        headers: { 
-          'Authorization': `Bearer ${graphToken}`, 
-          'Content-Type': 'application/json' 
-        },
+        headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(isEdit ? payload.fields : payload)
       });
-
       if (res.ok) {
-        message.success(isEdit ? "Update Successful!" : "Shop Created!");
+        message.success(isEdit ? "Updated!" : "Created!");
         onSuccess();
       }
-    } catch (err) {
-      message.error("Sync Failed");
-    }
+    } catch (err) { message.error("Action failed"); }
   };
 
   return (
-    <Modal
-      open={visible}
-      onCancel={onCancel}
-      footer={null} // 使用自定義 Enter 按鈕
-      width={450}
-      centered
-      bodyStyle={{ padding: 0 }}
-    >
-      <div className="st-form-container">
-        <a className="st-form-title">{shop ? 'Edit Store' : 'New Store'}</a>
-        
-        <div className="st-inputBox">
-          <input 
-            type="text" 
-            required 
-            value={formData.name} 
-            onChange={e => setFormData({...formData, name: e.target.value})}
-          />
-          <span>Shop Name</span>
-        </div>
+    <Modal open={visible} onCancel={onCancel} footer={null} centered width={400} bodyStyle={{ padding: 0 }}>
+      <div className="st-modal-container">
+        <div className="st-card">
+          <a className="st-login-title">{shop ? 'Edit Shop' : 'New Shop'}</a>
+          
+          <div className="st-inputBox">
+            <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            <span>Shop Name</span>
+          </div>
 
-        <div className="st-inputBox">
-          <input 
-            type="text" 
-            required 
-            value={formData.code} 
-            onChange={e => setFormData({...formData, code: e.target.value})}
-          />
-          <span>Shop Code</span>
-        </div>
+          <div className="st-inputBox">
+            <input type="text" required value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} />
+            <span>Shop Code</span>
+          </div>
 
-        <div className="st-inputBox">
-          <input 
-            type="text" 
-            required 
-            value={formData.region} 
-            onChange={e => setFormData({...formData, region: e.target.value})}
-          />
-          <span>Region (e.g. HK/KLN)</span>
-        </div>
+          <div className="st-inputBox">
+            <input type="text" required value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} />
+            <span>District</span>
+          </div>
 
-        <div className="st-inputBox">
-          <input 
-            type="text" 
-            required 
-            value={formData.district} 
-            onChange={e => setFormData({...formData, district: e.target.value})}
-          />
-          <span>District</span>
+          <button className="st-enter-btn" onClick={handleSubmit}>
+            {shop ? 'Update' : 'Create'}
+          </button>
         </div>
-
-        <button className="st-form-enter" onClick={handleSubmit}>
-          {shop ? 'Update' : 'Confirm'}
-        </button>
       </div>
     </Modal>
   );

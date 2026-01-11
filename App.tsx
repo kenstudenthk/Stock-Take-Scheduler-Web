@@ -19,7 +19,7 @@ const { Content, Header, Sider } = Layout;
 function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
-const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
+  const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [isTokenExpired, setIsTokenExpired] = useState(false);

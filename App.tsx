@@ -5,6 +5,7 @@ import {
   SettingOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
   UnorderedListOutlined, SyncOutlined 
 } from '@ant-design/icons';
+import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
 import { Calendar } from './components/Calendar';
 import { Locations } from './components/Locations';
@@ -54,36 +55,62 @@ function App() {
         return;
       }
 
-      const data = await res.json();
-      if (data.value) {
-        setIsTokenExpired(false); // 成功則重置狀態
-        notification.destroy('tokenExpiry'); // 關閉過期通知
-        const mapped = data.value.map((item: any) => {
-          const f = item.fields || {};
-          return {
-            id: f.field_6 || item.id,
-            sharePointItemId: item.id,
-            name: f.field_7 || '',
-            address: f.field_14 || '',
-            region: f.field_9 || '',   
-            district: f.field_16 || '', 
-            area: f.field_10 || '',    
-            brand: f.field_11 || '',
-            brandIcon: f.field_23 || '',
-            latitude: parseFloat(f.field_20 || '0'),
-            longitude: parseFloat(f.field_21 || '0'),
-            is_mtr: f.field_17 === 'Yes' || f.field_17 === 'MTR',
-            status: f.Status || 'PLANNED',
-            groupId: parseInt(f.Schedule_x0020_Group || "0"),
-            scheduledDate: f.field_2 || ''
-          };
-        });
-        setAllShops(mapped);
-      }
-    } catch (err) {
-      message.error("SPO Sync Failed");
+      const fetchAllData = async (token: string) => {
+  if (!token) return;
+  try {
+    const res = await fetch(
+      'https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999', 
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (res.status === 401) {
+      setIsTokenExpired(true);
+      showTokenWarning();
+      return;
     }
-  };
+
+    const data = await res.json();
+    if (data.value) {
+      setIsTokenExpired(false);
+      notification.destroy('tokenExpiry');
+
+      const mapped = data.value.map((item: any) => {
+        const f = item.fields || {};
+        
+        // 使用 SP_FIELDS 常數來抓取資料，這能防止拼錯字且易於維護
+        return {
+          sharePointItemId: item.id,
+          id: f[SP_FIELDS.SHOP_CODE] || item.id,
+          name: f[SP_FIELDS.SHOP_NAME] || '',
+          address: f[SP_FIELDS.ADDRESS_ENG] || f[SP_FIELDS.ADDRESS_CHI] || '',
+          region: f[SP_FIELDS.REGION] || '',
+          district: f[SP_FIELDS.DISTRICT] || '',
+          area: f[SP_FIELDS.AREA] || '',
+          brand: f[SP_FIELDS.BRAND] || '',
+          brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
+          latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
+          longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
+          status: f.Status || f[SP_FIELDS.STATUS] || 'PLANNED', 
+          scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
+          groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
+          
+          // ✅ 這裡現在抓取了完整的所有欄位資料
+          sys: f[SP_FIELDS.SYS] || '',
+          businessUnit: f[SP_FIELDS.BUSINESS_UNIT] || '',
+          phone: f[SP_FIELDS.PHONE] || '',
+          contactName: f[SP_FIELDS.CONTACT] || '',
+          remark: f[SP_FIELDS.REMARK] || '',
+          is_mtr: f[SP_FIELDS.MTR] === 'Yes' || f[SP_FIELDS.MTR] === 'MTR'
+        };
+      });
+      
+      setAllShops(mapped);
+    }
+  } catch (err) {
+    console.error("Fetch error:", err);
+    message.error("SPO Sync Failed");
+  }
+};
 
   useEffect(() => {
     if (graphToken) fetchAllData(graphToken);

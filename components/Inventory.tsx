@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Input, Select, Card, Typography, Space, Tag, Empty, Row, Col, Button } from 'antd';
-import { SearchOutlined, FilterOutlined, ReloadOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { Table, Input, Select, Card, Typography, Space, Tag, Button, Row, Col, message } from 'antd';
+import { SearchOutlined, ReloadOutlined, DatabaseOutlined, FilterOutlined } from '@ant-design/icons';
 import { InventoryItem } from '../types';
-import { INV_FIELDS } from '../constants';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -24,61 +23,81 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
     serialNo: ''
   });
 
-  // --- 從 SPO 抓取資料 ---
   const fetchInventory = async () => {
-    if (!invToken) return;
+    if (!invToken) {
+      message.warning("Please set Inventory Access Token in Settings first.");
+      return;
+    }
     setLoading(true);
     try {
-      const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752E-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${invToken}` } });
+      // ✅ 使用您提供的新正確 List ID
+      const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/2f2dff1c-8ce1-4B7B-9FF8-083A0BA1BB48/items?$expand=fields($select=*)&$top=999`;
+      
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${invToken}` }
+      });
       const json = await res.json();
       
       if (json.value) {
-        const mapped: InventoryItem[] = json.value.map((item: any) => {
+        const mapped = json.value.map((item: any) => {
           const f = item.fields || {};
+          // 🕵️‍♂️ 這裡進行精準的欄位映射 (StaticName 匹配)
           return {
             id: item.id,
-            shopName: f[INV_FIELDS.SHOP_NAME] || '',
-            shopBrand: f[INV_FIELDS.SHOP_BRAND] || '',
-            productTypeEng: f[INV_FIELDS.PRODUCT_TYPE_ENG] || '',
-            productTypeChi: f[INV_FIELDS.PRODUCT_TYPE_CHI] || '',
-            cmdb: f[INV_FIELDS.CMDB] || '',
-            serialNo: f[INV_FIELDS.SERIAL_NO] || '',
-            assetName: f[INV_FIELDS.ASSET_NAME] || '',
-            inUseStatus: f[INV_FIELDS.IN_USE_STATUS] || 'N/A',
+            shopName: f['Shop_x0020_Name'] || f['ShopName'] || '',
+            shopBrand: f['Shop_x0020_Brand'] || '',
+            productTypeEng: f['Product_x0020_Type_x0020__x0028_'] || '',
+            productTypeChi: f['Product_x0020_Type_x0020__x0028_0'] || '',
+            cmdb: f['CMDB'] || '',
+            serialNo: f['SerialNo'] || '',
+            assetName: f['Asset_x0020_Name'] || '',
+            inUseStatus: f['In_x0020_Use_x0020_Status'] || 'N/A',
           };
         });
         setData(mapped);
+        if (mapped.length > 0) message.success(`Loaded ${mapped.length} assets`);
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      message.error("Failed to fetch inventory from SPO");
+      console.error(err);
+    }
     setLoading(false);
   };
 
-  useEffect(() => { fetchInventory(); }, [invToken]);
+  useEffect(() => {
+    fetchInventory();
+  }, [invToken]);
 
-  // --- 過濾邏輯 (Flexible logic) ---
+  // --- 過濾邏輯 ---
   const filteredData = useMemo(() => {
     return data.filter(item => {
-      const matchShop = item.shopName.toLowerCase().includes(filters.shopName.toLowerCase());
-      const matchBrand = item.shopBrand.toLowerCase().includes(filters.shopBrand.toLowerCase());
-      const matchStatus = filters.status === 'All' || item.inUseStatus === filters.status;
-      const matchCMDB = item.cmdb.toLowerCase().includes(filters.cmdb.toLowerCase());
-      const matchSerial = item.serialNo.toLowerCase().includes(filters.serialNo.toLowerCase());
-      return matchShop && matchBrand && matchStatus && matchCMDB && matchSerial;
+      return (
+        item.shopName.toLowerCase().includes(filters.shopName.toLowerCase()) &&
+        item.shopBrand.toLowerCase().includes(filters.shopBrand.toLowerCase()) &&
+        (filters.status === 'All' || item.inUseStatus === filters.status) &&
+        item.cmdb.toLowerCase().includes(filters.cmdb.toLowerCase()) &&
+        item.serialNo.toLowerCase().includes(filters.serialNo.toLowerCase())
+      );
     });
   }, [data, filters]);
 
-  // --- 表格欄位定義 ---
+  // --- 表格定義 ---
   const columns = [
     {
-      title: 'Shop Name',
-      dataIndex: 'shopName',
-      key: 'shopName',
+      title: 'Shop Details',
+      key: 'shop',
+      width: '20%',
+      render: (record: InventoryItem) => (
+        <Space direction="vertical" size={0}>
+          <Text strong>{record.shopName}</Text>
+          <Tag color="blue" style={{ fontSize: '10px' }}>{record.shopBrand}</Tag>
+        </Space>
+      ),
       sorter: (a: any, b: any) => a.shopName.localeCompare(b.shopName),
     },
     {
       title: 'Product Type',
-      key: 'productType',
+      key: 'type',
       render: (record: InventoryItem) => (
         <div className="flex flex-col">
           <Text strong style={{ fontSize: '13px' }}>{record.productTypeEng}</Text>
@@ -87,61 +106,67 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
       ),
     },
     {
-      title: 'CMDB / Unique ID',
-      dataIndex: 'cmdb',
-      key: 'cmdb',
-      render: (val: string) => <Text code>{val}</Text>,
-      sorter: (a: any, b: any) => a.cmdb.localeCompare(b.cmdb),
-    },
-    {
-      title: 'Serial No.',
-      dataIndex: 'serialNo',
-      key: 'serialNo',
-    },
-    {
-      title: 'Asset Name',
-      dataIndex: 'assetName',
-      key: 'assetName',
+      title: 'Asset Info',
+      key: 'asset',
+      render: (record: InventoryItem) => (
+        <Space direction="vertical" size={0}>
+          <Text style={{ fontSize: '12px' }}>{record.assetName}</Text>
+          <Space>
+            <Tag icon={<DatabaseOutlined />} color="cyan">{record.cmdb}</Tag>
+            <Text type="secondary" size="small">SN: {record.serialNo}</Text>
+          </Space>
+        </Space>
+      ),
     },
     {
       title: 'Status',
       dataIndex: 'inUseStatus',
       key: 'status',
+      width: 120,
       render: (status: string) => {
-        let color = status === 'Verified' ? 'green' : status === 'New Item' ? 'blue' : 'orange';
-        return <Tag color={color}>{status}</Tag>;
+        let color = 'default';
+        if (status === 'Verified') color = 'green';
+        if (status === 'New Item') color = 'blue';
+        if (status === 'Not Found') color = 'red';
+        return <Tag color={color} className="font-bold">{status}</Tag>;
       }
     }
   ];
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex justify-between items-center">
-        <Title level={3}><DatabaseOutlined /> Inventory Asset Master</Title>
-        <Button icon={<ReloadOutlined />} onClick={fetchInventory} loading={loading}>Sync Data</Button>
+      <div className="flex justify-between items-end">
+        <div>
+          <Title level={2} style={{ margin: 0 }}>Inventory Asset List</Title>
+          <Text type="secondary">Real-time data from SPO Inventory List</Text>
+        </div>
+        <Button 
+          type="primary" 
+          icon={<ReloadOutlined />} 
+          onClick={fetchInventory} 
+          loading={loading}
+          className="rounded-lg h-10 shadow-md bg-teal-600"
+        >
+          Sync Inventory
+        </Button>
       </div>
 
-      {/* --- 篩選控制面板 --- */}
-      <Card className="rounded-2xl shadow-sm border-none">
+      {/* 搜尋過濾器 */}
+      <Card className="rounded-2xl border-none shadow-sm">
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={8}>
-            <Text type="secondary" className="text-xs">SHOP NAME / BRAND</Text>
-            <div className="flex gap-2 mt-1">
-              <Input 
-                placeholder="Search Shop..." 
-                prefix={<SearchOutlined />} 
-                onChange={e => setFilters({...filters, shopName: e.target.value})}
-              />
-              <Input 
-                placeholder="Brand..." 
-                onChange={e => setFilters({...filters, shopBrand: e.target.value})}
-              />
-            </div>
+          <Col span={6}>
+            <Text strong className="text-xs mb-1 block">SEARCH SHOP</Text>
+            <Input 
+              prefix={<SearchOutlined className="text-slate-300" />} 
+              placeholder="Shop name..." 
+              onChange={e => setFilters({...filters, shopName: e.target.value})}
+              className="rounded-lg h-10"
+            />
           </Col>
-          <Col xs={24} md={4}>
-            <Text type="secondary" className="text-xs">STATUS</Text>
+          <Col span={6}>
+            <Text strong className="text-xs mb-1 block">IN USE STATUS</Text>
             <Select 
-              className="w-full mt-1" 
+              className="w-full h-10" 
               defaultValue="All" 
               onChange={val => setFilters({...filters, status: val})}
             >
@@ -151,34 +176,34 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
               <Option value="New Item">New Item</Option>
             </Select>
           </Col>
-          <Col xs={24} md={6}>
-            <Text type="secondary" className="text-xs">CMDB UNIQUE NO.</Text>
+          <Col span={6}>
+            <Text strong className="text-xs mb-1 block">CMDB / UNIQUE ID</Text>
             <Input 
-              className="mt-1"
-              placeholder="Type CMDB ID..." 
+              placeholder="Search CMDB..." 
               onChange={e => setFilters({...filters, cmdb: e.target.value})}
+              className="rounded-lg h-10"
             />
           </Col>
-          <Col xs={24} md={6}>
-            <Text type="secondary" className="text-xs">SERIAL NO.</Text>
+          <Col span={6}>
+            <Text strong className="text-xs mb-1 block">SERIAL NO.</Text>
             <Input 
-              className="mt-1"
-              placeholder="Type Serial..." 
+              placeholder="Search Serial..." 
               onChange={e => setFilters({...filters, serialNo: e.target.value})}
+              className="rounded-lg h-10"
             />
           </Col>
         </Row>
       </Card>
 
-      {/* --- 資料表格 --- */}
-      <Card className="rounded-2xl shadow-sm border-none overflow-hidden">
+      {/* 表格 */}
+      <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
         <Table 
           columns={columns} 
           dataSource={filteredData} 
-          rowKey="id"
+          rowKey="id" 
           loading={loading}
-          pagination={{ pageSize: 12 }}
-          className="st-inventory-table"
+          pagination={{ pageSize: 12, showSizeChanger: false }}
+          locale={{ emptyText: <Empty description="No Inventory Data Found" /> }}
         />
       </Card>
     </div>

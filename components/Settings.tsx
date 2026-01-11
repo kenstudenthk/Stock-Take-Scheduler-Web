@@ -29,7 +29,7 @@ export const Settings: React.FC<Props> = ({
 }) => {
   
   const shopListUrl = "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8";
-  const invListUrl = "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752E-7609-4468-81f8-8babaf503ad8";
+  const invListUrl = "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/2f2dff1c-8ce1-4B7B-9FF8-083A0BA1BB48";
   const graphExplorerUrl = "https://developer.microsoft.com/en-us/graph/graph-explorer";
 
   const handleCopy = (text: string, label: string) => {

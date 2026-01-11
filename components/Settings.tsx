@@ -1,81 +1,113 @@
-import React, { useState } from 'react';
-import { Card, Input, Button, Typography, Space, Alert, Divider, Tag } from 'antd';
-import { KeyOutlined, SaveOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import React from 'react';
+import { Card, Input, Typography, Button, Space, message, Divider, Row, Col, Alert } from 'antd';
+import { CopyOutlined, KeyOutlined, LinkOutlined, DatabaseOutlined, ShopOutlined } from '@ant-design/icons';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
-interface SettingsProps {
+interface Props {
   token: string;
-  onUpdateToken: (newToken: string) => void;
+  onUpdateToken: (t: string) => void;
+  invToken: string;
+  onUpdateInvToken: (t: string) => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ token, onUpdateToken }) => {
-  const [tempToken, setTempToken] = useState(token);
+export const Settings: React.FC<Props> = ({ token, onUpdateToken, invToken, onUpdateInvToken }) => {
+  
+  const shopListUrl = "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8";
+  const invListUrl = "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752E-7609-4468-81f8-8babaf503ad8";
 
-  const handleSave = () => {
-    onUpdateToken(tempToken);
-    alert('Token updated and saved to local storage!');
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    message.success(`${label} copied to clipboard!`);
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <Title level={2}>Settings</Title>
-      <p style={{ color: '#64748b' }}>Manage your application configuration and API connections.</p>
-      
-      <Card className="rounded-2xl shadow-sm border-slate-100 mt-6">
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <div className="flex items-center gap-2 text-slate-800 font-bold uppercase tracking-widest text-xs">
-            <KeyOutlined className="text-teal-600" /> Microsoft Graph API Configuration
-          </div>
-          
-          <Alert
-            message="Manual Token Update Required"
-            description={
-              <span>
-                Since Azure App Registration is restricted, you must manually provide a fresh Graph API token to sync with SharePoint. 
-                {" "}<strong><a href="https://developer.microsoft.com/en-us/graph/graph-explorer" target="_blank" rel="noreferrer">Click Here</a></strong> to get a new token from Graph Explorer.
-              </span>
-            }
-            type="info"
-            showIcon
-            icon={<InfoCircleOutlined />}
-          />
+    <div className="max-w-5xl mx-auto py-8">
+      <div className="mb-8">
+        <Title level={2}>System Connection Settings</Title>
+        <Text type="secondary">Manage your Microsoft Graph API connections and Access Tokens for SharePoint synchronization.</Text>
+      </div>
 
-          <div>
-            <div className="flex justify-between items-end mb-2">
-              <Text strong className="text-xs text-slate-500 uppercase block">Active Access Token</Text>
-              <Text copyable={{ text: "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8" }} className="text-xs text-teal-600 font-bold cursor-pointer">
-                Copy API URL Here
-              </Text>
-            </div>
-            <Input.TextArea 
-              rows={8} 
-              value={tempToken} 
-              onChange={(e) => setTempToken(e.target.value)}
-              placeholder="Paste Bearer token here..."
-              className="font-mono text-xs bg-slate-50 rounded-xl border-none p-4"
-            />
-          </div>
-
-          <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl">
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-slate-700">Token Status</span>
-              <span className="text-xs text-slate-400">Current connection health</span>
-            </div>
-            {token ? <Tag color="success" className="rounded-full px-4 border-none font-bold">ACTIVE</Tag> : <Tag color="error">DISCONNECTED</Tag>}
-          </div>
-
-          <Button 
-            type="primary" 
-            size="large" 
-            icon={<SaveOutlined />} 
-            onClick={handleSave}
-            className="bg-teal-600 h-12 rounded-xl font-bold w-full"
+      <Row gutter={[24, 24]}>
+        {/* --- 第一部分：Shop Master List --- */}
+        <Col span={24}>
+          <Card 
+            title={<Space><ShopOutlined className="text-teal-600" /><span>Shop Master List Configuration</span></Space>}
+            className="rounded-2xl shadow-sm border-none"
           >
-            Update Connection
-          </Button>
-        </Space>
-      </Card>
+            <div className="mb-6">
+              <Text strong className="block mb-2">Endpoint URL (Read/Write)</Text>
+              <Input 
+                value={shopListUrl} 
+                readOnly 
+                suffix={
+                  <Button type="text" icon={<CopyOutlined />} onClick={() => handleCopy(shopListUrl, "Shop List URL")} />
+                }
+                className="bg-slate-50 font-mono text-xs py-2"
+              />
+            </div>
+
+            <div>
+              <Text strong className="block mb-2">Access Token</Text>
+              <TextArea 
+                placeholder="Paste Shop List Access Token here..."
+                rows={4}
+                value={token}
+                onChange={(e) => onUpdateToken(e.target.value)}
+                className="rounded-xl font-mono text-xs"
+              />
+              <div className="mt-3 flex justify-between items-center">
+                <Text type="secondary" size="small">Last Updated: {token ? 'Active' : 'Missing'}</Text>
+                <Button type="primary" ghost size="small" icon={<KeyOutlined />} onClick={() => onUpdateToken('')}>Clear Token</Button>
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        {/* --- 第二部分：Inventory SPO List --- */}
+        <Col span={24}>
+          <Card 
+            title={<Space><DatabaseOutlined className="text-blue-600" /><span>Inventory SPO List Configuration</span></Space>}
+            className="rounded-2xl shadow-sm border-none"
+          >
+            <div className="mb-6">
+              <Text strong className="block mb-2">Endpoint URL (Inventory Data)</Text>
+              <Input 
+                value={invListUrl} 
+                readOnly 
+                suffix={
+                  <Button type="text" icon={<CopyOutlined />} onClick={() => handleCopy(invListUrl, "Inventory URL")} />
+                }
+                className="bg-slate-50 font-mono text-xs py-2"
+              />
+            </div>
+
+            <div>
+              <Text strong className="block mb-2">Inventory Access Token</Text>
+              <TextArea 
+                placeholder="Paste Inventory List Access Token here..."
+                rows={4}
+                value={invToken}
+                onChange={(e) => onUpdateInvToken(e.target.value)}
+                className="rounded-xl font-mono text-xs border-blue-200 focus:border-blue-400"
+              />
+              <div className="mt-3 flex justify-between items-center">
+                <Text type="secondary" size="small">Status: {invToken ? 'Token Present' : 'Awaiting Token'}</Text>
+                <Button type="primary" ghost danger size="small" onClick={() => onUpdateInvToken('')}>Clear Token</Button>
+              </div>
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      <Alert
+        className="mt-8 rounded-xl"
+        message="Token Usage Tip"
+        description="Usually, if both lists are in the same SharePoint Site, you can use the same token for both. If they belong to different environments, please paste the corresponding tokens above."
+        type="info"
+        showIcon
+      />
     </div>
   );
 };

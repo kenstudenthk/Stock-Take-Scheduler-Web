@@ -268,3 +268,102 @@ body {
 .st-master-table .ant-table-row {
   transition: all 0.2s;
 }
+
+/* ============================================================
+   7. Uiverse 風格表單 (自定義輸入框動畫)
+   ============================================================ */
+.st-form-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 30px;
+  background: #f8fafc; /* 淺灰背景配合 App */
+  padding: 40px 20px;
+  border-radius: 12px;
+}
+
+.st-form-title {
+  color: #0d9488; /* Teal 600 */
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  display: block;
+  font-weight: bold;
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.st-inputBox {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+}
+
+.st-inputBox input {
+  width: 100%;
+  padding: 12px;
+  outline: none;
+  border: none;
+  color: #1e293b;
+  font-size: 1em;
+  background: transparent;
+  border-left: 2px solid #0d9488;
+  border-bottom: 2px solid #0d9488;
+  transition: 0.1s;
+  border-bottom-left-radius: 8px;
+}
+
+.st-inputBox span {
+  position: absolute;
+  left: 0;
+  transform: translateY(12px);
+  margin-left: 10px;
+  padding: 0 10px;
+  pointer-events: none;
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  transition: 0.5s;
+  letter-spacing: 2px;
+}
+
+/* 當輸入框有文字或被選中時的動畫 */
+.st-inputBox input:valid ~ span,
+.st-inputBox input:focus ~ span {
+  transform: translateX(10px) translateY(-10px);
+  font-size: 0.75em;
+  padding: 4px 10px;
+  background: #0d9488;
+  color: #fff;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+
+.st-inputBox input:valid,
+.st-inputBox input:focus {
+  border: 2px solid #0d9488;
+  border-radius: 8px;
+  background: white;
+}
+
+.st-form-enter {
+  height: 48px;
+  width: 160px;
+  border-radius: 8px;
+  border: 2px solid #0d9488;
+  cursor: pointer;
+  background-color: transparent;
+  transition: 0.5s;
+  text-transform: uppercase;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #0d9488;
+  margin-top: 20px;
+}
+
+.st-form-enter:hover {
+  background-color: #0d9488;
+  color: white;
+  box-shadow: 0 10px 20px -10px rgba(13, 148, 136, 0.5);
+}

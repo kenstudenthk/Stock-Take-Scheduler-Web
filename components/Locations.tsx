@@ -282,3 +282,15 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     ]}
   />
 </Card>
+
+          // ✅ 補回缺失的統計卡片組件
+const StatCard = ({ title, value, color = "text-slate-900" }: any) => (
+  <Card size="small" className="border-none shadow-sm rounded-2xl bg-white h-full">
+    <div className="flex flex-col p-2">
+      <Text type="secondary" className="text-[10px] uppercase font-bold tracking-wider mb-1">{title}</Text>
+      <Text className={`text-2xl font-black ${color}`}>{value}</Text>
+    </div>
+  </Card>
+);
+
+export default Locations;

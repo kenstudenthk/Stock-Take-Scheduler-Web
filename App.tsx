@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Space, Tag, Avatar, message, notification, Alert } from 'antd'; // ✅ 加入 notification, Alert
+import { Layout, Menu, Button, Space, Tag, Avatar, message, notification, Alert } from 'antd';
 import { 
   HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
   SettingOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
@@ -21,14 +21,13 @@ function App() {
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [collapsed, setCollapsed] = useState(false);
-  const [isTokenExpired, setIsTokenExpired] = useState(false); // ✅ 新增：追蹤 Token 狀態
+  const [isTokenExpired, setIsTokenExpired] = useState(false);
 
-  // ✅ 新增：顯示 Token 過期通知函式
   const showTokenWarning = () => {
     notification.error({
       message: 'Access Token Expired',
       description: 'Your Microsoft Graph session has expired. Please update the token in Settings to resume data sync.',
-      duration: 0, // 除非手動關閉否則一直顯示
+      duration: 0,
       key: 'tokenExpiry',
       placement: 'topRight',
       btn: (
@@ -39,7 +38,7 @@ function App() {
     });
   };
 
-  // --- 1. 從 SharePoint 抓取資料 ---
+  // --- 1. 從 SharePoint 抓取資料 (已修復重複定義問題) ---
   const fetchAllData = async (token: string) => {
     if (!token) return;
     try {
@@ -48,69 +47,49 @@ function App() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // ✅ 偵測 401 Unauthorized
       if (res.status === 401) {
         setIsTokenExpired(true);
         showTokenWarning();
         return;
       }
 
-      const fetchAllData = async (token: string) => {
-  if (!token) return;
-  try {
-    const res = await fetch(
-      'https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999', 
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+      const data = await res.json();
+      if (data.value) {
+        setIsTokenExpired(false);
+        notification.destroy('tokenExpiry');
 
-    if (res.status === 401) {
-      setIsTokenExpired(true);
-      showTokenWarning();
-      return;
+        const mapped = data.value.map((item: any) => {
+          const f = item.fields || {};
+          return {
+            sharePointItemId: item.id,
+            id: f[SP_FIELDS.SHOP_CODE] || item.id,
+            name: f[SP_FIELDS.SHOP_NAME] || '',
+            address: f[SP_FIELDS.ADDRESS_ENG] || f[SP_FIELDS.ADDRESS_CHI] || '',
+            region: f[SP_FIELDS.REGION] || '',
+            district: f[SP_FIELDS.DISTRICT] || '',
+            area: f[SP_FIELDS.AREA] || '',
+            brand: f[SP_FIELDS.BRAND] || '',
+            brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
+            latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
+            longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
+            status: f.Status || f[SP_FIELDS.STATUS] || 'PLANNED', 
+            scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
+            groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
+            sys: f[SP_FIELDS.SYS] || '',
+            businessUnit: f[SP_FIELDS.BUSINESS_UNIT] || '',
+            phone: f[SP_FIELDS.PHONE] || '',
+            contactName: f[SP_FIELDS.CONTACT] || '',
+            remark: f[SP_FIELDS.REMARK] || '',
+            is_mtr: f[SP_FIELDS.MTR] === 'Yes' || f[SP_FIELDS.MTR] === 'MTR'
+          };
+        });
+        setAllShops(mapped);
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      message.error("SPO Sync Failed");
     }
-
-    const data = await res.json();
-    if (data.value) {
-      setIsTokenExpired(false);
-      notification.destroy('tokenExpiry');
-
-      const mapped = data.value.map((item: any) => {
-        const f = item.fields || {};
-        
-        // 使用 SP_FIELDS 常數來抓取資料，這能防止拼錯字且易於維護
-        return {
-          sharePointItemId: item.id,
-          id: f[SP_FIELDS.SHOP_CODE] || item.id,
-          name: f[SP_FIELDS.SHOP_NAME] || '',
-          address: f[SP_FIELDS.ADDRESS_ENG] || f[SP_FIELDS.ADDRESS_CHI] || '',
-          region: f[SP_FIELDS.REGION] || '',
-          district: f[SP_FIELDS.DISTRICT] || '',
-          area: f[SP_FIELDS.AREA] || '',
-          brand: f[SP_FIELDS.BRAND] || '',
-          brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
-          latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
-          longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
-          status: f.Status || f[SP_FIELDS.STATUS] || 'PLANNED', 
-          scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
-          groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
-          
-          // ✅ 這裡現在抓取了完整的所有欄位資料
-          sys: f[SP_FIELDS.SYS] || '',
-          businessUnit: f[SP_FIELDS.BUSINESS_UNIT] || '',
-          phone: f[SP_FIELDS.PHONE] || '',
-          contactName: f[SP_FIELDS.CONTACT] || '',
-          remark: f[SP_FIELDS.REMARK] || '',
-          is_mtr: f[SP_FIELDS.MTR] === 'Yes' || f[SP_FIELDS.MTR] === 'MTR'
-        };
-      });
-      
-      setAllShops(mapped);
-    }
-  } catch (err) {
-    console.error("Fetch error:", err);
-    message.error("SPO Sync Failed");
-  }
-};
+  };
 
   useEffect(() => {
     if (graphToken) fetchAllData(graphToken);
@@ -119,9 +98,7 @@ function App() {
   useEffect(() => {
     const REFRESH_INTERVAL = 30 * 60 * 1000;
     const autoRefresh = setInterval(() => {
-      if (graphToken && !isTokenExpired) { // ✅ Token 過期就不再背景刷新
-        console.log("Auto-syncing with SharePoint...");
-        message.info({ content: 'Auto-syncing data...', key: 'autoSync', duration: 2 });
+      if (graphToken && !isTokenExpired) {
         fetchAllData(graphToken);
       }
     }, REFRESH_INTERVAL);
@@ -139,18 +116,12 @@ function App() {
 
   const handleUpdateShop = async (shop: Shop, updates: any) => {
     if (!graphToken || isTokenExpired) return message.error("Please update Token first");
-
     const fieldMapping: any = {};
     if (updates.scheduleStatus === 'Rescheduled') {
       fieldMapping.Status = 'Rescheduled';
       fieldMapping.field_2 = updates.scheduledDate;
       fieldMapping.Schedule_x0020_Group = String(updates.groupId);
     }
-    if (updates.scheduleStatus === 'Closed') {
-      fieldMapping.Status = 'Closed';
-      fieldMapping.Schedule_x0020_Group = null; 
-    }
-
     try {
       const res = await fetch(
         `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
@@ -160,18 +131,11 @@ function App() {
           body: JSON.stringify(fieldMapping)
         }
       );
-      if (res.status === 401) {
-        setIsTokenExpired(true);
-        showTokenWarning();
-        return;
-      }
       if (res.ok) {
         message.success(`${shop.name} updated!`);
         fetchAllData(graphToken);
       }
-    } catch (err) {
-      message.error("SPO Update Failed");
-    }
+    } catch (err) { message.error("SPO Update Failed"); }
   };
 
   const renderContent = () => {
@@ -179,23 +143,18 @@ function App() {
       case View.DASHBOARD:
         return <Dashboard shops={allShops} onUpdateShop={handleUpdateShop} onNavigate={(v) => setSelectedMenuKey(v)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
+      // ✅ 傳遞 graphToken 與 handleRefresh
+      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={handleRefresh} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
-        case View.SHOP_LIST: 
-  return <ShopList 
-    shops={allShops} 
-    graphToken={graphToken} 
-    onRefresh={handleRefresh} 
-  />;
       case View.SETTINGS: 
         return <Settings token={graphToken} onUpdateToken={(t) => { 
           setGraphToken(t); 
           localStorage.setItem('stockTakeToken', t); 
-          setIsTokenExpired(false); // ✅ 更新 Token 時重置狀態
-          notification.destroy('tokenExpiry'); // ✅ 移除通知
+          setIsTokenExpired(false);
+          notification.destroy('tokenExpiry');
           fetchAllData(t); 
         }} />;
-      case 'generator':
-        return <Generator shops={allShops} />;
+      case 'generator': return <Generator shops={allShops} />;
       default: return <div className="p-20 text-center text-slate-400">Section Coming Soon</div>;
     }
   };
@@ -230,7 +189,6 @@ function App() {
           </Space>
         </Header>
         
-        {/* ✅ ✅ ✅ 在內容區上方加入警告橫幅 ✅ ✅ ✅ */}
         {isTokenExpired && (
           <Alert
             message="Attention: Session Expired"
@@ -238,11 +196,7 @@ function App() {
             type="error"
             showIcon
             closable={false}
-            action={
-              <Button size="small" danger onClick={() => setSelectedMenuKey(View.SETTINGS)}>
-                Fix Now
-              </Button>
-            }
+            action={ <Button size="small" danger onClick={() => setSelectedMenuKey(View.SETTINGS)}>Fix Now</Button> }
           />
         )}
 

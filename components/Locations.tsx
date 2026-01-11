@@ -1,42 +1,43 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Avatar, Table, Card, Row, Col, Space, Select, Input, Badge, Button, message, Typography } from 'antd';
-import { SearchOutlined, EnvironmentOutlined, DownloadOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Avatar, Table, Card, Row, Col, Space, Select, Input, Badge, Button, message, Typography, Tag } from 'antd'; // ✅ 補上 Tag 匯入
+import { SearchOutlined, EnvironmentOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { Shop } from '../types';
 
 const { Text } = Typography;
 
-// Helper to get group-related background colors matching your Calendar.tsx
+// --- 1. 輔助函數 (放在外部是正確的) ---
 const getGroupRowStyle = (groupId: number) => {
   switch (groupId) {
-    case 1: return { backgroundColor: '#f0f9ff' }; // Light Blue for Group A
-    case 2: return { backgroundColor: '#faf5ff' }; // Light Purple for Group B
-    case 3: return { backgroundColor: '#fff7ed' }; // Light Orange for Group C
+    case 1: return { backgroundColor: '#f0f9ff' }; // Group A - Light Blue
+    case 2: return { backgroundColor: '#faf5ff' }; // Group B - Light Purple
+    case 3: return { backgroundColor: '#fff7ed' }; // Group C - Light Orange
     default: return {};
   }
 };
-const [filteredShops, setFilteredShops] = useState<Shop[]>(shops);
 
+// 安全密鑰配置
 if (typeof window !== 'undefined') {
   (window as any)._AMapSecurityConfig = { securityJsCode: 'e8fbca88770fac2110a951fab66651ab' };
-};
-
-useEffect(() => {
-  setFilteredShops(shops);
-}, [shops]);
+}
 
 export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
 
-  // --- 1. 狀態管理 ---
+  // --- 2. 狀態管理 (必須在組件內部) ---
   const [searchText, setSearchText] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
   const [filteredShops, setFilteredShops] = useState<Shop[]>(shops);
 
-  // --- 2. 動態過濾選項 ---
+  // ✅ 關鍵修復：當外部 shops 數據更新時，同步更新內部狀態
+  useEffect(() => {
+    setFilteredShops(shops);
+  }, [shops]);
+
+  // --- 3. 動態過濾選項 ---
   const regionOptions = useMemo(() => 
     Array.from(new Set(shops.map(s => s.region))).filter(Boolean).sort(), [shops]);
 
@@ -45,7 +46,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     return Array.from(new Set(filteredByRegion.map(s => s.district))).filter(Boolean).sort();
   }, [shops, selectedRegion]);
 
-  // --- 3. 核心過濾函數 ---
+  // --- 4. 核心過濾函數 ---
   const handleApplyFilters = () => {
     const results = shops.filter(shop => {
       const matchSearch = shop.name.toLowerCase().includes(searchText.toLowerCase()) || 
@@ -67,68 +68,51 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     updateMapMarkers(shops);
   };
 
- // --- 4. 地圖控制邏輯 ---
+  // --- 5. 地圖控制邏輯 ---
   const updateMapMarkers = (targetShops: Shop[]) => {
     if (!mapInstance.current) return;
-
-    // 清除舊標記
     mapInstance.current.remove(markersRef.current);
     markersRef.current = [];
 
-    // 建立一個通用的 InfoWindow 實例
     const infoWindow = new (window as any).AMap.InfoWindow({
       offset: new (window as any).AMap.Pixel(0, -15),
       closeWhenClickMap: true
     });
 
-    // 加入新標記
     const newMarkers = targetShops
       .filter(s => s.latitude && s.longitude)
       .map(s => {
-        // 根據狀態決定標籤顏色
         const color = s.status === 'completed' ? '#10b981' : s.groupId === 1 ? '#0ea5e9' : '#f59e0b';
-        
         const marker = new (window as any).AMap.Marker({
           position: [s.longitude, s.latitude],
           content: `<div style="background:${color}; width:14px; height:14px; border-radius:50%; border:2px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3); cursor:pointer;"></div>`,
           extData: s
         });
 
-        // ✅ 監聽標記點擊事件
         marker.on('click', (e: any) => {
           const shop = e.target.getExtData();
-          
-          // 定義資訊窗體的 HTML 內容 (採用你的設計風格)
           const content = `
             <div style="padding: 12px; min-width: 200px; font-family: sans-serif;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">${shop.brand}</span>
-                <span style="background: ${shop.status === 'completed' ? '#ecfdf5' : '#eff6ff'}; color: ${shop.status === 'completed' ? '#10b981' : '#3b82f6'}; padding: 2px 8px; border-radius: 99px; font-size: 9px; font-weight: bold;">${shop.status.toUpperCase()}</span>
+                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">${shop.brand}</span>
+                <span style="background: ${shop.status === 'completed' ? '#ecfdf5' : '#eff6ff'}; color: ${shop.status === 'completed' ? '#10b981' : '#3b82f6'}; padding: 2px 8px; border-radius: 99px; font-size: 9px; font-weight: bold;">${(shop.status || 'pending').toUpperCase()}</span>
               </div>
               <div style="font-weight: bold; color: #1e293b; font-size: 14px; margin-bottom: 4px;">${shop.name}</div>
-              <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">ID: ${shop.id}</div>
-              <div style="border-top: 1px solid #f1f5f9; pt: 8px; margin-top: 8px;">
-                <div style="font-size: 11px; color: #475569; line-height: 1.4;">
-                  <strong style="color: #0d9488;">Area:</strong> ${shop.district} / ${shop.area || 'N/A'}<br/>
-                  <strong style="color: #0d9488;">Address:</strong> ${shop.address}
-                </div>
+              <div style="border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 8px; font-size: 11px; color: #475569;">
+                <strong>Area:</strong> ${shop.district}<br/>
+                <strong>Address:</strong> ${shop.address}
               </div>
             </div>
           `;
-
           infoWindow.setContent(content);
           infoWindow.open(mapInstance.current, e.target.getPosition());
         });
-
         return marker;
       });
 
     markersRef.current = newMarkers;
     mapInstance.current.add(newMarkers);
-    
-    if (newMarkers.length > 0) {
-      mapInstance.current.setFitView(newMarkers);
-    }
+    if (newMarkers.length > 0) mapInstance.current.setFitView(newMarkers);
   };
 
   useEffect(() => {
@@ -144,17 +128,14 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     return () => mapInstance.current?.destroy();
   }, []);
 
-  // --- 5. CSV 導出 ---
   const handleExport = () => {
-    const headers = "ID,Name,Region,District,Status\n";
-    const csvContent = filteredShops.map(s => `${s.id},${s.name},${s.region},${s.district},${s.status}`).join("\n");
+    const headers = "Name,Region,District,Status\n";
+    const csvContent = filteredShops.map(s => `${s.name},${s.region},${s.district},${s.status}`).join("\n");
     const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", "filtered_shops.csv");
-    document.body.appendChild(link);
+    link.download = "filtered_shops.csv";
     link.click();
-    document.body.removeChild(link);
   };
 
   return (
@@ -165,7 +146,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           <Col span={6}>
             <Input 
               prefix={<SearchOutlined className="text-slate-400" />} 
-              placeholder="Search Shop Name/ID..." 
+              placeholder="Search Shop Name..." 
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
               className="rounded-xl bg-slate-50 border-none h-11"
@@ -173,30 +154,16 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           </Col>
           <Col span={12}>
             <Space size="middle">
-              <Select 
-                value={selectedRegion} 
-                onChange={v => { setSelectedRegion(v); setSelectedDistrict('all'); }} 
-                className="w-40 st-select"
-              >
+              <Select value={selectedRegion} onChange={v => { setSelectedRegion(v); setSelectedDistrict('all'); }} className="w-40">
                 <Select.Option value="all">All Regions</Select.Option>
                 {regionOptions.map(r => <Select.Option key={r} value={r}>{r}</Select.Option>)}
               </Select>
-              <Select 
-                value={selectedDistrict} 
-                onChange={setSelectedDistrict} 
-                className="w-40"
-              >
+              <Select value={selectedDistrict} onChange={setSelectedDistrict} className="w-40">
                 <Select.Option value="all">All Districts</Select.Option>
                 {districtOptions.map(d => <Select.Option key={d} value={d}>{d}</Select.Option>)}
               </Select>
-              <Button icon={<ReloadOutlined />} onClick={handleReset} className="rounded-xl font-bold h-11">Reset</Button>
-              <Button 
-                type="primary" 
-                onClick={handleApplyFilters} 
-                className="bg-teal-600 font-bold px-8 h-11 rounded-xl"
-              >
-                Apply Filters
-              </Button>
+              <Button icon={<ReloadOutlined />} onClick={handleReset} className="rounded-xl h-11">Reset</Button>
+              <Button type="primary" onClick={handleApplyFilters} className="bg-teal-600 h-11 rounded-xl">Apply Filters</Button>
             </Space>
           </Col>
         </Row>
@@ -211,84 +178,46 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       </Row>
 
       <Row gutter={20}>
-        {/* 左側地圖 */}
         <Col span={15}>
-          <div className="relative group">
-            <div ref={mapRef} style={{ height: '580px', borderRadius: '24px', overflow: 'hidden', border: '1px solid #f1f5f9' }} />
-            <div className="absolute top-4 right-4 flex flex-col gap-2">
-              <Button 
-                icon={<EnvironmentOutlined />} 
-                className="shadow-lg border-none hover:text-teal-600 h-10 w-10 flex items-center justify-center rounded-xl bg-white" 
-                onClick={() => mapInstance.current?.setZoom(11)}
-              />
-            </div>
-          </div>
+          <div ref={mapRef} style={{ height: '580px', borderRadius: '24px', overflow: 'hidden', border: '1px solid #f1f5f9' }} />
         </Col>
 
-        {/* 右側表格 */}
         <Col span={9}>
-       <Card 
-  title={<Text strong>Filtered Shop List</Text>} 
-  extra={<Space><Button type="text" icon={<DownloadOutlined />} onClick={handleExport} /></Space>} 
-  className="border-none shadow-sm h-[580px] flex flex-col rounded-3xl"
-  bodyStyle={{ padding: 0, flex: 1, overflow: 'hidden' }}
->
-  <Table 
-    dataSource={filteredShops} 
-    pagination={{ pageSize: 10, size: 'small' }}
-    size="small"
-    rowKey="id"
-    scroll={{ y: 440 }}
-    // ✅ Fill the row with Group related color
-    onRow={(record) => ({
-      style: getGroupRowStyle(record.groupId),
-      className: 'transition-colors hover:brightness-95 cursor-default'
-    })}
-    columns={[
-      // ✅ Added Shop Logo
-      { 
-        title: '', 
-        dataIndex: 'brandIcon', 
-        width: 50, 
-        render: (src) => (
-          <Avatar 
-            src={src} 
-            shape="square" 
-            className="bg-white p-0.5 border border-slate-100 shadow-sm" 
-          />
-        ) 
-      },
-      // ✅ Shop Name kept
-      { 
-        title: 'Shop Name', 
-        dataIndex: 'name', 
-        render: (t) => <Text strong className="text-xs text-slate-800">{t}</Text> 
-      },
-      // ✅ Added Area column
-      { 
-        title: 'Area', 
-        dataIndex: 'area', 
-        render: (t) => <Text type="secondary" className="text-xs">{t || 'N/A'}</Text> 
-      },
-      // ✅ Changed Status to Schedule Status Value
-      { 
-        title: 'Status', 
-        dataIndex: 'status', 
-        width: 110, 
-        render: (s) => (
-          <Tag 
-            className="rounded-full border-none px-3 font-bold text-[10px]"
-            color={s === 'completed' ? 'success' : 'processing'}
+          <Card 
+            title={<Text strong>Filtered Shop List</Text>} 
+            extra={<Button type="text" icon={<DownloadOutlined />} onClick={handleExport} />} 
+            className="border-none shadow-sm h-[580px] flex flex-col rounded-3xl"
+            bodyStyle={{ padding: 0, flex: 1, overflow: 'hidden' }}
           >
-            {s ? s.toUpperCase() : 'PENDING'}
-          </Tag>
-        ) 
-      },
-    ]}
-  />
-</Card>
+            <Table 
+              dataSource={filteredShops} 
+              pagination={{ pageSize: 10, size: 'small' }}
+              size="small"
+              rowKey="id"
+              scroll={{ y: 440 }}
+              onRow={(record) => ({
+                style: getGroupRowStyle(record.groupId),
+                className: 'transition-colors hover:brightness-95'
+              })}
+              columns={[
+                { title: '', dataIndex: 'brandIcon', width: 50, render: (src) => <Avatar src={src} shape="square" size="small" /> },
+                { title: 'Shop Name', dataIndex: 'name', render: (t) => <Text strong className="text-xs">{t}</Text> },
+                { title: 'Area', dataIndex: 'area', render: (t) => <Text type="secondary" className="text-xs">{t || 'N/A'}</Text> },
+                { title: 'Status', dataIndex: 'status', width: 110, render: (s) => (
+                  <Tag className="rounded-full border-none px-3 font-bold text-[10px]" color={s === 'completed' ? 'success' : 'processing'}>
+                    {(s || 'pending').toUpperCase()}
+                  </Tag>
+                )},
+              ]}
+            />
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
+};
 
-          // ✅ 補回缺失的統計卡片組件
+// --- 6. 統計卡片組件 ---
 const StatCard = ({ title, value, color = "text-slate-900" }: any) => (
   <Card size="small" className="border-none shadow-sm rounded-2xl bg-white h-full">
     <div className="flex flex-col p-2">

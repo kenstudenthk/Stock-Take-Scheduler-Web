@@ -149,7 +149,9 @@ const [targetShop, setTargetShop] = useState<Shop | null>(null);
         <div>
           <Title level={2} className="m-0 text-slate-900">Shop Master List</Title>
           <p className="text-slate-500 font-medium mb-6">Manage across {shops.length} stores with advanced filters.</p>
-          <button className="new-shop-btn">
+          <button className="new-shop-btn" onClick={() => { setTargetShop(null); setFormOpen(true); }}>
+  <PlusOutlined /> New Shop
+</button>
             <PlusOutlined /> New Shop
           </button>
         </div>

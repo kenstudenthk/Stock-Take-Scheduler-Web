@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Space, Tag, Avatar, message } from 'antd';
+import { Layout, Menu, Button, Space, Tag, Avatar, message, notification, Alert } from 'antd'; // ✅ 加入 notification, Alert
 import { 
   HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
   SettingOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
@@ -20,6 +20,23 @@ function App() {
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [collapsed, setCollapsed] = useState(false);
+  const [isTokenExpired, setIsTokenExpired] = useState(false); // ✅ 新增：追蹤 Token 狀態
+
+  // ✅ 新增：顯示 Token 過期通知函式
+  const showTokenWarning = () => {
+    notification.error({
+      message: 'Access Token Expired',
+      description: 'Your Microsoft Graph session has expired. Please update the token in Settings to resume data sync.',
+      duration: 0, // 除非手動關閉否則一直顯示
+      key: 'tokenExpiry',
+      placement: 'topRight',
+      btn: (
+        <Button type="primary" size="small" onClick={() => setSelectedMenuKey(View.SETTINGS)}>
+          Go to Settings
+        </Button>
+      ),
+    });
+  };
 
   // --- 1. 從 SharePoint 抓取資料 ---
   const fetchAllData = async (token: string) => {
@@ -29,8 +46,18 @@ function App() {
         'https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999', 
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // ✅ 偵測 401 Unauthorized
+      if (res.status === 401) {
+        setIsTokenExpired(true);
+        showTokenWarning();
+        return;
+      }
+
       const data = await res.json();
       if (data.value) {
+        setIsTokenExpired(false); // 成功則重置狀態
+        notification.destroy('tokenExpiry'); // 關閉過期通知
         const mapped = data.value.map((item: any) => {
           const f = item.fields || {};
           return {
@@ -46,7 +73,7 @@ function App() {
             latitude: parseFloat(f.field_20 || '0'),
             longitude: parseFloat(f.field_21 || '0'),
             is_mtr: f.field_17 === 'Yes' || f.field_17 === 'MTR',
-            status: f.Status || 'PLANNED', // 直接使用 SPO 的 Status 欄位
+            status: f.Status || 'PLANNED',
             groupId: parseInt(f.Schedule_x0020_Group || "0"),
             scheduledDate: f.field_2 || ''
           };
@@ -58,42 +85,33 @@ function App() {
     }
   };
 
- // --- 1. 原有的初始化抓取 ---
   useEffect(() => {
-    if (graphToken) {
-      fetchAllData(graphToken);
-    }
+    if (graphToken) fetchAllData(graphToken);
   }, [graphToken]);
 
-  // --- 2. ✅ 新增：每 30 分鐘自動刷新邏輯 ---
   useEffect(() => {
-    // 定義 30 分鐘的毫秒數 (30 * 60 * 1000)
     const REFRESH_INTERVAL = 30 * 60 * 1000;
-
     const autoRefresh = setInterval(() => {
-      if (graphToken) {
+      if (graphToken && !isTokenExpired) { // ✅ Token 過期就不再背景刷新
         console.log("Auto-syncing with SharePoint...");
-        // 執行刷新，並在畫面上方顯示一個小的自動同步提示
         message.info({ content: 'Auto-syncing data...', key: 'autoSync', duration: 2 });
         fetchAllData(graphToken);
       }
     }, REFRESH_INTERVAL);
-
-    // ✅ 重要：當組件卸載時清除定時器，避免內存洩漏
     return () => clearInterval(autoRefresh);
-  }, [graphToken]); // 當 Token 改變時，定時器會重新啟動
+  }, [graphToken, isTokenExpired]);
 
-  // --- 2. 手動刷新功能 ---
   const handleRefresh = () => {
     if (graphToken) {
       message.loading({ content: 'Syncing...', key: 'refresh' });
-      fetchAllData(graphToken).then(() => message.success({ content: 'Data updated!', key: 'refresh' }));
+      fetchAllData(graphToken).then(() => {
+        if (!isTokenExpired) message.success({ content: 'Data updated!', key: 'refresh' });
+      });
     }
   };
 
-  // --- 3. 更新 SharePoint 資料 ---
   const handleUpdateShop = async (shop: Shop, updates: any) => {
-    if (!graphToken) return message.error("Token invalid");
+    if (!graphToken || isTokenExpired) return message.error("Please update Token first");
 
     const fieldMapping: any = {};
     if (updates.scheduleStatus === 'Rescheduled') {
@@ -115,6 +133,11 @@ function App() {
           body: JSON.stringify(fieldMapping)
         }
       );
+      if (res.status === 401) {
+        setIsTokenExpired(true);
+        showTokenWarning();
+        return;
+      }
       if (res.ok) {
         message.success(`${shop.name} updated!`);
         fetchAllData(graphToken);
@@ -131,9 +154,16 @@ function App() {
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.SHOP_LIST: return <ShopList shops={allShops} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
-      case View.SETTINGS: return <Settings token={graphToken} onUpdateToken={(t) => { setGraphToken(t); localStorage.setItem('stockTakeToken', t); fetchAllData(t); }} />;
-        case 'generator':
-  return <Generator shops={allShops} />
+      case View.SETTINGS: 
+        return <Settings token={graphToken} onUpdateToken={(t) => { 
+          setGraphToken(t); 
+          localStorage.setItem('stockTakeToken', t); 
+          setIsTokenExpired(false); // ✅ 更新 Token 時重置狀態
+          notification.destroy('tokenExpiry'); // ✅ 移除通知
+          fetchAllData(t); 
+        }} />;
+      case 'generator':
+        return <Generator shops={allShops} />;
       default: return <div className="p-20 text-center text-slate-400">Section Coming Soon</div>;
     }
   };
@@ -161,10 +191,29 @@ function App() {
           <Button type="text" icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} onClick={() => setCollapsed(!collapsed)} />
           <Space size="large">
              <Button icon={<SyncOutlined />} onClick={handleRefresh} className="rounded-lg font-bold">Refresh Data</Button>
-             <Tag color="cyan" className="font-bold">POOL: {allShops.length}</Tag>
+             <Tag color={isTokenExpired ? "error" : "cyan"} className="font-bold">
+               {isTokenExpired ? "TOKEN EXPIRED" : `POOL: ${allShops.length}`}
+             </Tag>
              <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" />
           </Space>
         </Header>
+        
+        {/* ✅ ✅ ✅ 在內容區上方加入警告橫幅 ✅ ✅ ✅ */}
+        {isTokenExpired && (
+          <Alert
+            message="Attention: Session Expired"
+            description="Your Microsoft Graph access token has expired. Please update it in Settings to continue syncing data."
+            type="error"
+            showIcon
+            closable={false}
+            action={
+              <Button size="small" danger onClick={() => setSelectedMenuKey(View.SETTINGS)}>
+                Fix Now
+              </Button>
+            }
+          />
+        )}
+
         <Content className="overflow-y-auto p-8 h-full">
           <div className="max-w-7xl mx-auto">{renderContent()}</div>
         </Content>

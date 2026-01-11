@@ -1,15 +1,16 @@
 import React from 'react';
-import { Card, Input, Typography, Button, Space, message, Collapse, Divider } from 'antd';
+import { Card, Input, Typography, Button, Space, message, Collapse, Divider, Alert } from 'antd';
 import { 
   CopyOutlined, 
   KeyOutlined, 
   DatabaseOutlined, 
   ShopOutlined,
-  LinkOutlined,
-  CaretRightOutlined
+  CaretRightOutlined,
+  QuestionCircleOutlined,
+  ExportOutlined
 } from '@ant-design/icons';
 
-const { Title, Text } = Typography;
+const { Title, Text, Link } = Typography;
 const { TextArea } = Input;
 const { Panel } = Collapse;
 
@@ -29,6 +30,7 @@ export const Settings: React.FC<Props> = ({
   
   const shopListUrl = "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8";
   const invListUrl = "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752E-7609-4468-81f8-8babaf503ad8";
+  const graphExplorerUrl = "https://developer.microsoft.com/en-us/graph/graph-explorer";
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -38,13 +40,30 @@ export const Settings: React.FC<Props> = ({
   return (
     <div className="max-w-4xl mx-auto py-6 px-4">
       {/* 標題 */}
-      <div className="mb-8">
+      <div className="mb-6">
         <Title level={2}>System Settings</Title>
         <Text type="secondary">Manage your SharePoint List connections and security tokens.</Text>
       </div>
 
+      {/* --- 新增：如何獲取 Token 的指南 --- */}
+      <Alert
+        className="mb-8 rounded-2xl border-teal-100 bg-teal-50"
+        message={<Text strong style={{ color: '#0d9488' }}>How to get an Access Token?</Text>}
+        description={
+          <div className="mt-2">
+            <ol className="pl-4 text-slate-600 text-xs space-y-2">
+              <li>1. Open <Link href={graphExplorerUrl} target="_blank" strong underline>Microsoft Graph Explorer <ExportOutlined /></Link> and sign in with your corporate account.</li>
+              <li>2. Ensure the URL below is copied and pasted into the Graph Explorer search bar to test permissions.</li>
+              <li>3. Click on the <strong>"Access token"</strong> tab in Graph Explorer, copy the long string, and paste it into the boxes below.</li>
+            </ol>
+          </div>
+        }
+        type="info"
+        showIcon={<QuestionCircleOutlined style={{ color: '#0d9488' }} />}
+      />
+
       <Card className="rounded-2xl shadow-sm border-none mb-6">
-        {/* --- 第一部分：URL 連結行 (重複兩行) --- */}
+        {/* --- URL 連結行 --- */}
         <Space direction="vertical" className="w-full" size="large">
           <div>
             <Text strong className="block mb-2 text-slate-400 text-xs uppercase tracking-wider">
@@ -77,10 +96,13 @@ export const Settings: React.FC<Props> = ({
 
         <Divider className="my-8" />
 
-        {/* --- 第二部分：Token 輸入框 (可展開/收縮) --- */}
-        <Text strong className="block mb-4 text-slate-400 text-xs uppercase tracking-wider">
-          <KeyOutlined /> Security Access Tokens
-        </Text>
+        {/* --- Token 輸入框 (可展開/收縮) --- */}
+        <div className="mb-4 flex justify-between items-center">
+          <Text strong className="text-slate-400 text-xs uppercase tracking-wider">
+            <KeyOutlined /> Security Access Tokens
+          </Text>
+          <Text type="secondary" style={{ fontSize: '11px' }}>Tokens expire every 60-90 mins</Text>
+        </div>
 
         <Collapse
           bordered={false}
@@ -95,11 +117,11 @@ export const Settings: React.FC<Props> = ({
             className="mb-4 bg-white border border-slate-100 rounded-xl overflow-hidden"
           >
             <TextArea 
-              placeholder="Paste Shop List Access Token here..."
+              placeholder="Paste Access Token from Graph Explorer here..."
               rows={4}
               value={token}
               onChange={(e) => onUpdateToken(e.target.value)}
-              className="rounded-lg font-mono text-xs mb-2"
+              className="rounded-lg font-mono text-xs mb-2 border-none bg-slate-50 focus:bg-white transition-all"
             />
             <Button type="link" size="small" danger onClick={() => onUpdateToken('')} className="p-0">
               Clear Shop Token
@@ -113,11 +135,11 @@ export const Settings: React.FC<Props> = ({
             className="bg-white border border-slate-100 rounded-xl overflow-hidden"
           >
             <TextArea 
-              placeholder="Paste Inventory List Access Token here..."
+              placeholder="Paste Inventory Access Token here..."
               rows={4}
               value={invToken}
               onChange={(e) => onUpdateInvToken(e.target.value)}
-              className="rounded-lg font-mono text-xs mb-2"
+              className="rounded-lg font-mono text-xs mb-2 border-none bg-slate-50 focus:bg-white transition-all"
             />
             <Button type="link" size="small" danger onClick={() => onUpdateInvToken('')} className="p-0">
               Clear Inventory Token
@@ -127,8 +149,8 @@ export const Settings: React.FC<Props> = ({
       </Card>
 
       <div className="text-center mt-10">
-        <Text type="secondary" style={{ fontSize: '12px' }}>
-          App Version 1.0.4 | Connection Type: Microsoft Graph API (V1.0)
+        <Text type="secondary" style={{ fontSize: '11px' }}>
+          Authentication Method: OAuth 2.0 Bearer Token | Microsoft Graph API v1.0
         </Text>
       </div>
     </div>

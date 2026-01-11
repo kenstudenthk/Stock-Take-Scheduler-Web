@@ -1,37 +1,179 @@
-/* 修復全站捲動問題 */
-.st-scroll-container {
-  height: calc(100vh - 64px);
-  overflow-y: auto !important;
-  scroll-behavior: smooth;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-clr: #1C204B;
+  --dot-clr: #BBC0FF;
 }
 
-/* 匹配截圖的圓角與陰影 */
-.ant-card {
-  border-radius: 16px !important;
-  border: 1px solid #f1f5f9 !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc; /* slate-50 */
 }
 
-/* 摺疊面板美化 */
-.ant-collapse-item {
-  background: white !important;
-  margin-bottom: 12px !important;
-  border-radius: 12px !important;
-  border: 1px solid #e2e8f0 !important;
+/* ============================================================
+   1. Summary Box - 標籤式統計卡片 (參考 Uiverse)
+   ============================================================ */
+.st-stat-card {
+  width: 100%;
+  height: 160px;
+  border-radius: 15px;
+  color: #fff;
+  display: grid;
+  cursor: pointer;
+  grid-template-rows: 45px 1fr;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
-/* ✅ 將此段加入你的 CSS 檔案 */
-.bin-button {
-  width: 45px;
-  height: 45px;
+.st-stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.st-stat-card .img-section {
+  transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 20px;
+}
+
+.st-stat-card .card-desc {
+  border-radius: 15px;
+  padding: 15px 20px;
+  position: relative;
+  top: -10px;
+  display: grid;
+  background: var(--primary-clr);
+  z-index: 2;
+}
+
+.st-stat-card .card-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.st-stat-card .card-title {
+  flex: 1;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--dot-clr);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.st-stat-card .card-time {
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.st-stat-card .recent-text {
+  font-size: 0.75em;
+  color: var(--dot-clr);
+  opacity: 0.7;
+  margin-top: 5px;
+}
+
+.st-stat-card .card-menu {
+  display: flex;
+  gap: 3px;
+}
+
+.st-stat-card .dot {
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  background-color: #f8fafc; /* 淺灰背景 */
-  border: 1px solid #e2e8f0;
+  background: var(--dot-clr);
+}
+
+/* ============================================================
+   2. Group Tabs - 黑色粗邊框切換器 (參考 Uiverse)
+   ============================================================ */
+.wrapper {
+  --font-color-dark: #323232;
+  --font-color-light: #FFF;
+  --bg-color: #fff;
+  --main-color: #323232;
+  position: relative;
+  width: 380px; /* 增加寬度以容納 4 個選項 */
+  height: 40px;
+  background-color: var(--bg-color);
+  border: 2px solid var(--main-color);
+  border-radius: 34px;
+  display: flex;
+  flex-direction: row;
+  box-shadow: 4px 4px var(--main-color);
+}
+
+.option {
+  flex: 1;
+  height: 30px;
+  position: relative;
+  top: 3px;
+  margin: 0 2px;
+}
+
+.input {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  appearance: none;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.btn {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-color);
+  border-radius: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.span {
+  color: var(--font-color-dark);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.input:checked + .btn {
+  background-color: var(--main-color);
+}
+
+.input:checked + .btn .span {
+  color: var(--font-color-light);
+}
+
+/* ============================================================
+   3. Bin Button - 關閉按鈕動畫 (參考 Uiverse)
+   ============================================================ */
+.bin-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #fee2e2; /* red-100 */
+  border: none;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.05);
   cursor: pointer;
   transition-duration: .3s;
   overflow: hidden;
@@ -44,32 +186,31 @@
 }
 
 .bin-svgIcon path {
-  fill: #ef4444; /* 紅色圖示 */
+  fill: #ef4444; /* red-500 */
 }
 
 .bin-button:hover {
-  width: 120px;
+  width: 110px;
   border-radius: 50px;
   transition-duration: .3s;
-  background-color: #ef4444; /* 懸停變紅 */
+  background-color: #ef4444; /* red-500 */
   align-items: center;
-  border: none;
 }
 
 .bin-button:hover .bin-svgIcon {
-  width: 25px;
+  width: 35px;
   transition-duration: .3s;
   transform: translateY(60%);
 }
 
 .bin-button:hover .bin-svgIcon path {
-  fill: white; /* 懸停圖示變白 */
+  fill: white;
 }
 
 .bin-button::before {
   position: absolute;
   top: -20px;
-  content: "CLOSE"; /* ✅ 改為 CLOSE */
+  content: "CLOSE";
   color: white;
   transition-duration: .3s;
   font-size: 2px;
@@ -83,159 +224,19 @@
   transition-duration: .3s;
 }
 
-/* 處理禁用狀態 */
 .bin-button:disabled {
   cursor: not-allowed;
-  opacity: 0.3;
-  filter: grayscale(1);
+  background-color: #f1f5f9;
+  opacity: 0.5;
 }
 
-
-/* From Uiverse.io by andrew-demchenk0 */ 
-.wrapper {
-  --font-color-dark: #323232;
-  --font-color-light: #FFF;
-  --bg-color: #fff;
-  --main-color: #323232;
-  position: relative;
-  width: 500px; /* ✅ 從 250px 改為 350px 以容納 4 個選項 */
-  height: 36px;
-  background-color: var(--bg-color);
-  border: 2px solid var(--main-color);
-  border-radius: 34px;
-  display: flex;
-  flex-direction: row;
-  box-shadow: 4px 4px var(--main-color);
+.bin-button:disabled .bin-svgIcon path {
+  fill: #cbd5e1;
 }
 
-.option {
-  width: 125.5px;
-  height: 28px;
-  position: relative;
-  top: 2px;
-  left: 2px;
-}
-
-.input {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  left: 0;
-  top: 0;
-  appearance: none;
-  cursor: pointer;
-}
-
-.btn {
-  width: 100%;
-  height: 100%;
-  background-color: var(--bg-color);
-  border-radius: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.span {
-  color: var(--font-color-dark);
-}
-
-.input:checked + .btn {
-  background-color: var(--main-color);
-}
-
-.input:checked + .btn .span {
-  color: var(--font-color-light);
-}
-
-/* Dashboard Summary Cards */
-.st-stat-card {
-  --primary-clr: #1C204B;
-  --dot-clr: #BBC0FF;
-  width: 100%; /* 適應 Ant Design Grid */
-  height: 160px;
-  border-radius: 15px;
-  font-family: "Arial";
-  color: #fff;
-  display: grid;
-  cursor: pointer;
-  grid-template-rows: 40px 1fr; /* 縮小頂部顏色條高度 */
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.st-stat-card:hover {
-  transform: translateY(-5px);
-}
-
-.st-stat-card:hover .img-section svg {
-  transform: translateY(5px);
-}
-
-.card-desc {
-  border-radius: 15px;
-  padding: 15px 20px;
-  position: relative;
-  top: -10px;
-  display: grid;
-  gap: 5px;
-  background: var(--primary-clr);
-  z-index: 2;
-}
-
-.card-time {
-  font-size: 2em;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.img-section {
-  transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  display: flex;
-  justify-content: flex-end;
-  padding-right: 20px;
-  overflow: hidden;
-}
-
-.img-section svg {
-  width: 50px;
-  height: 50px;
-  transition: 0.3s ease;
-  opacity: 0.8;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 5px;
-}
-
-.card-title {
-  flex: 1;
-  font-size: 0.9em;
-  font-weight: 500;
-  color: var(--dot-clr);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.card-menu {
-  display: flex;
-  gap: 3px;
-}
-
-.card-menu .dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--dot-clr);
-}
-
-.recent-text {
-  font-size: 0.75em;
-  color: var(--dot-clr);
-  opacity: 0.7;
+/* 列印優化 */
+@media print {
+  .bin-button, .wrapper, .ant-btn {
+    display: none !important;
+  }
 }

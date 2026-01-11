@@ -13,6 +13,8 @@ import { Settings } from './components/Settings';
 import { Shop, View } from './types';
 import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
+// src/App.tsx 頂部
+import { Inventory } from './components/Inventory'; // ✅ 加入這一行
 
 const { Content, Header, Sider } = Layout;
 

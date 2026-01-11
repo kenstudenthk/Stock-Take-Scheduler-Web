@@ -533,3 +533,62 @@ body {
   border: 2px solid #0d9488;
   border-radius: 8px;
 }
+
+
+/* --- 高級感表單佈局 --- */
+.st-form-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.st-inputBox-pro {
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.st-inputBox-pro input {
+  width: 100%;
+  padding: 14px 12px 10px 12px;
+  outline: none;
+  border: 1px solid #cbd5e1; /* 變細灰色線 */
+  color: #1e293b; /* 深色文字 */
+  font-size: 15px;
+  font-weight: 600; /* 資料加粗 */
+  background: #fcfcfc;
+  transition: all 0.3s;
+  border-radius: 8px;
+}
+
+.st-inputBox-pro span {
+  position: absolute;
+  left: 10px;
+  top: 14px;
+  pointer-events: none;
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  transition: 0.3s;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+/* 讓標籤浮動在左上角，但不遮擋資料 */
+.st-inputBox-pro input:focus ~ span,
+.st-inputBox-pro input:valid ~ span {
+  transform: translateY(-24px) translateX(-2px);
+  font-size: 10px;
+  color: #0d9488;
+  background: transparent;
+  padding: 0 4px;
+}
+
+.st-inputBox-pro input:focus {
+  border: 2px solid #0d9488;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
+}

@@ -18,24 +18,22 @@ const { Content, Header, Sider } = Layout;
 
 function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
+  const [collapsed, setCollapsed] = useState(false);
+  
+  // --- Token States ---
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
   const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
+  
   const [allShops, setAllShops] = useState<Shop[]>([]);
-  const [collapsed, setCollapsed] = useState(false);
   const [isTokenExpired, setIsTokenExpired] = useState(false);
 
   const showTokenWarning = () => {
     notification.error({
       message: 'Access Token Expired',
-      description: 'Your Microsoft Graph session has expired. Please update the token in Settings to resume data sync.',
+      description: 'Your Microsoft Graph session has expired. Please update the token in Settings.',
       duration: 0,
       key: 'tokenExpiry',
       placement: 'topRight',
-      btn: (
-        <Button type="primary" size="small" onClick={() => setSelectedMenuKey(View.SETTINGS)}>
-          Go to Settings
-        </Button>
-      ),
     });
   };
 
@@ -57,19 +55,18 @@ function App() {
       if (data.value) {
         setIsTokenExpired(false);
         notification.destroy('tokenExpiry');
-
         const mapped = data.value.map((item: any) => {
           const f = item.fields || {};
           return {
             sharePointItemId: item.id,
             id: f[SP_FIELDS.SHOP_CODE] || item.id,
             name: f[SP_FIELDS.SHOP_NAME] || '',
-            address: f[SP_FIELDS.ADDRESS_ENG] || f[SP_FIELDS.ADDRESS_CHI] || '',
+            address: f[SP_FIELDS.ADDRESS_ENG] || '',
+            address_chi: f[SP_FIELDS.ADDRESS_CHI] || '',
             region: f[SP_FIELDS.REGION] || '',
             district: f[SP_FIELDS.DISTRICT] || '',
             area: f[SP_FIELDS.AREA] || '',
             brand: f[SP_FIELDS.BRAND] || '',
-            brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
             latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
             longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
             status: f.Status || f[SP_FIELDS.STATUS] || 'PLANNED', 
@@ -80,14 +77,14 @@ function App() {
             phone: f[SP_FIELDS.PHONE] || '',
             contactName: f[SP_FIELDS.CONTACT] || '',
             remark: f[SP_FIELDS.REMARK] || '',
-            is_mtr: f[SP_FIELDS.MTR] === 'Yes' || f[SP_FIELDS.MTR] === 'MTR'
+            is_mtr: f[SP_FIELDS.MTR] === 'Yes',
+            building: f[SP_FIELDS.BUILDING] || ''
           };
         });
         setAllShops(mapped);
       }
     } catch (err) {
       console.error("Fetch error:", err);
-      message.error("SPO Sync Failed");
     }
   };
 
@@ -95,17 +92,8 @@ function App() {
     if (graphToken) fetchAllData(graphToken);
   }, [graphToken]);
 
-  const handleRefresh = () => {
-    if (graphToken) {
-      message.loading({ content: 'Syncing...', key: 'refresh' });
-      fetchAllData(graphToken).then(() => {
-        if (!isTokenExpired) message.success({ content: 'Data updated!', key: 'refresh' });
-      });
-    }
-  };
-
   const handleUpdateShop = async (shop: Shop, updates: any) => {
-    if (!graphToken || isTokenExpired) return message.error("Please update Token first");
+    if (!graphToken) return message.error("No Token");
     try {
       const res = await fetch(
         `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
@@ -116,11 +104,11 @@ function App() {
         }
       );
       if (res.ok) {
-        message.success(`${shop.name} updated!`);
+        message.success("Updated!");
         fetchAllData(graphToken);
       }
     } catch (err) {
-      message.error("Update failed");
+      message.error("Failed");
     }
   };
 
@@ -128,27 +116,32 @@ function App() {
     switch (selectedMenuKey) {
       case View.DASHBOARD:
         return <Dashboard shops={allShops} onUpdateShop={handleUpdateShop} onNavigate={(v) => setSelectedMenuKey(v)} />;
-      case View.LOCATIONS: return <Locations shops={allShops} />;
-      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={handleRefresh} />;
-      case View.CALENDAR: return <Calendar shops={allShops} />;
+      case View.LOCATIONS: 
+        return <Locations shops={allShops} />;
+      case View.SHOP_LIST: 
+        return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
+      case View.CALENDAR: 
+        return <Calendar shops={allShops} />;
       case View.SETTINGS: 
-      return (
-        <Settings 
-          token={graphToken} 
-          onUpdateToken={(t) => { 
-            setGraphToken(t); 
-            localStorage.setItem('stockTakeToken', t); 
-            fetchAllData(t); 
-          }} 
-          invToken={invToken} // ✅ 新增這行
-          onUpdateInvToken={(t) => { // ✅ 新增這行
-            setInvToken(t);
-            localStorage.setItem('stockTakeInvToken', t);
-          }}
-        />
-      );
-      case 'generator': return <Generator shops={allShops} />;
-      default: return <div className="p-20 text-center text-slate-400">Section Coming Soon</div>;
+        return (
+          <Settings 
+            token={graphToken} 
+            onUpdateToken={(t) => { 
+              setGraphToken(t); 
+              localStorage.setItem('stockTakeToken', t); 
+              fetchAllData(t); 
+            }} 
+            invToken={invToken}
+            onUpdateInvToken={(t) => {
+              setInvToken(t);
+              localStorage.setItem('stockTakeInvToken', t);
+            }}
+          />
+        ); // ✅ 這裡原本多了一個 ); 導致報錯
+      case 'generator': 
+        return <Generator shops={allShops} />;
+      default: 
+        return <div className="p-20 text-center text-slate-400">Section Coming Soon</div>;
     }
   };
 
@@ -174,16 +167,11 @@ function App() {
         <Header className="bg-white px-8 flex justify-between items-center h-16 border-b border-slate-100">
           <Button type="text" icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} onClick={() => setCollapsed(!collapsed)} />
           <Space size="large">
-             <Button icon={<SyncOutlined />} onClick={handleRefresh} className="rounded-lg font-bold">Refresh Data</Button>
-             <Tag color={isTokenExpired ? "error" : "cyan"} className="font-bold">
-               {isTokenExpired ? "TOKEN EXPIRED" : `POOL: ${allShops.length}`}
-             </Tag>
+             <Button icon={<SyncOutlined />} onClick={() => fetchAllData(graphToken)} className="rounded-lg font-bold">Refresh</Button>
+             <Tag color={isTokenExpired ? "error" : "cyan"}>{isTokenExpired ? "EXPIRED" : `POOL: ${allShops.length}`}</Tag>
              <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" />
           </Space>
         </Header>
-        {isTokenExpired && (
-          <Alert message="Session Expired" type="error" showIcon action={<Button size="small" danger onClick={() => setSelectedMenuKey(View.SETTINGS)}>Fix Now</Button>} />
-        )}
         <Content className="overflow-y-auto p-8 h-full">
           <div className="max-w-7xl mx-auto">{renderContent()}</div>
         </Content>

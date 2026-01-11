@@ -59,8 +59,8 @@ function App() {
         notification.destroy('tokenExpiry');
 
         const mapped = data.value.map((item: any) => {
-          const f = item.fields || {};
-          return {
+  const f = item.fields || {};
+  return {
             sharePointItemId: item.id,
             id: f[SP_FIELDS.SHOP_CODE] || item.id,
             name: f[SP_FIELDS.SHOP_NAME] || '',

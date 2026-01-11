@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Input, Select, Card, Typography, Space, Tag, Button, Row, Col, message } from 'antd';
-import { SearchOutlined, ReloadOutlined, DatabaseOutlined, FilterOutlined } from '@ant-design/icons';
+import { Table, Input, Select, Card, Typography, Space, Tag, Button, Row, Col, message, Empty } from 'antd';
+import { SearchOutlined, ReloadOutlined, DatabaseOutlined, BarcodeOutlined } from '@ant-design/icons';
 import { InventoryItem } from '../types';
 
 const { Title, Text } = Typography;
@@ -11,10 +11,9 @@ interface Props {
 }
 
 export const Inventory: React.FC<Props> = ({ invToken }) => {
-  const [data, setData] = useState<InventoryItem[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // --- 篩選器狀態 ---
   const [filters, setFilters] = useState({
     shopName: '',
     shopBrand: '',
@@ -24,96 +23,87 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
   });
 
   const fetchInventory = async () => {
-    if (!invToken) {
-      message.warning("Please set Inventory Access Token in Settings first.");
-      return;
-    }
+    if (!invToken) return;
     setLoading(true);
     try {
-      // ✅ 使用您提供的新正確 List ID
-      const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/2f2dff1c-8ce1-4B7B-9FF8-083A0BA1BB48/items?$expand=fields($select=*)&$top=999`;
-      
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${invToken}` }
-      });
+      const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/2f2dff1c-8ce1-4b7b-9ff8-083a0ba1bb48/items?$expand=fields($select=*)&$top=999`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${invToken}` } });
       const json = await res.json();
       
       if (json.value) {
         const mapped = json.value.map((item: any) => {
           const f = item.fields || {};
-          // 🕵️‍♂️ 這裡進行精準的欄位映射 (StaticName 匹配)
           return {
             id: item.id,
-            shopName: f['Shop_x0020_Name'] || f['ShopName'] || '',
+            // --- 根據你提供的 MG Graph JSON 進行精準對應 ---
+            shopName: f['Shop_x0020_Name'] || '',
             shopBrand: f['Shop_x0020_Brand'] || '',
+            shopCode: f['ShopCode'] || '',
             productTypeEng: f['Product_x0020_Type_x0020__x0028_'] || '',
             productTypeChi: f['Product_x0020_Type_x0020__x0028_0'] || '',
             cmdb: f['CMDB'] || '',
             serialNo: f['SerialNo'] || '',
             assetName: f['Asset_x0020_Name'] || '',
             inUseStatus: f['In_x0020_Use_x0020_Status'] || 'N/A',
+            brand: f['Brand'] || '',
+            recordTime: f['Record_x0020_Time'] || '',
           };
         });
         setData(mapped);
-        if (mapped.length > 0) message.success(`Loaded ${mapped.length} assets`);
       }
     } catch (err) {
-      message.error("Failed to fetch inventory from SPO");
-      console.error(err);
+      message.error("Sync Failed");
     }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchInventory();
-  }, [invToken]);
+  useEffect(() => { fetchInventory(); }, [invToken]);
 
-  // --- 過濾邏輯 ---
   const filteredData = useMemo(() => {
-    return data.filter(item => {
-      return (
-        item.shopName.toLowerCase().includes(filters.shopName.toLowerCase()) &&
-        item.shopBrand.toLowerCase().includes(filters.shopBrand.toLowerCase()) &&
-        (filters.status === 'All' || item.inUseStatus === filters.status) &&
-        item.cmdb.toLowerCase().includes(filters.cmdb.toLowerCase()) &&
-        item.serialNo.toLowerCase().includes(filters.serialNo.toLowerCase())
-      );
-    });
+    return data.filter(item => 
+      item.shopName.toLowerCase().includes(filters.shopName.toLowerCase()) &&
+      item.shopBrand.toLowerCase().includes(filters.shopBrand.toLowerCase()) &&
+      (filters.status === 'All' || item.inUseStatus === filters.status) &&
+      item.cmdb.toLowerCase().includes(filters.cmdb.toLowerCase()) &&
+      item.serialNo.toLowerCase().includes(filters.serialNo.toLowerCase())
+    );
   }, [data, filters]);
 
-  // --- 表格定義 ---
   const columns = [
     {
-      title: 'Shop Details',
+      title: 'Shop / Store',
       key: 'shop',
-      width: '20%',
-      render: (record: InventoryItem) => (
+      width: '22%',
+      render: (record: any) => (
         <Space direction="vertical" size={0}>
-          <Text strong>{record.shopName}</Text>
-          <Tag color="blue" style={{ fontSize: '10px' }}>{record.shopBrand}</Tag>
+          <Text strong style={{ fontSize: '14px' }}>{record.shopName}</Text>
+          <Space>
+             <Tag color="orange" style={{ fontSize: '10px' }}>{record.shopBrand}</Tag>
+             <Text type="secondary" code style={{ fontSize: '10px' }}>{record.shopCode}</Text>
+          </Space>
         </Space>
       ),
       sorter: (a: any, b: any) => a.shopName.localeCompare(b.shopName),
     },
     {
-      title: 'Product Type',
+      title: 'Product Category',
       key: 'type',
-      render: (record: InventoryItem) => (
+      render: (record: any) => (
         <div className="flex flex-col">
-          <Text strong style={{ fontSize: '13px' }}>{record.productTypeEng}</Text>
-          <Text style={{ fontSize: '11px', color: '#94a3b8' }}>{record.productTypeChi}</Text>
+          <Text strong className="text-teal-700">{record.productTypeEng}</Text>
+          <Text size="small" style={{ color: '#94a3b8', fontSize: '11px' }}>{record.productTypeChi}</Text>
         </div>
       ),
     },
     {
-      title: 'Asset Info',
+      title: 'Asset Detail',
       key: 'asset',
-      render: (record: InventoryItem) => (
+      render: (record: any) => (
         <Space direction="vertical" size={0}>
-          <Text style={{ fontSize: '12px' }}>{record.assetName}</Text>
-          <Space>
-            <Tag icon={<DatabaseOutlined />} color="cyan">{record.cmdb}</Tag>
-            <Text type="secondary" size="small">SN: {record.serialNo}</Text>
+          <Text strong style={{ fontSize: '13px' }}>{record.assetName}</Text>
+          <Space split={<Divider type="vertical" />}>
+            <Text type="secondary" style={{ fontSize: '12px' }}>SN: {record.serialNo}</Text>
+            <Tag icon={<BarcodeOutlined />} color="blue">{record.cmdb}</Tag>
           </Space>
         </Space>
       ),
@@ -122,11 +112,11 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
       title: 'Status',
       dataIndex: 'inUseStatus',
       key: 'status',
-      width: 120,
+      width: 130,
       render: (status: string) => {
         let color = 'default';
-        if (status === 'Verified') color = 'green';
-        if (status === 'New Item') color = 'blue';
+        if (status === 'In Use' || status === 'Verified') color = 'green';
+        if (status === 'New Item' || status === 'New Record') color = 'blue';
         if (status === 'Not Found') color = 'red';
         return <Tag color={color} className="font-bold">{status}</Tag>;
       }
@@ -134,78 +124,75 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
   ];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex justify-between items-end">
-        <div>
-          <Title level={2} style={{ margin: 0 }}>Inventory Asset List</Title>
-          <Text type="secondary">Real-time data from SPO Inventory List</Text>
-        </div>
+    <div className="flex flex-col gap-6 animate-in fade-in duration-500">
+      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm">
+        <Space direction="vertical" size={0}>
+          <Title level={2} style={{ margin: 0 }}>Inventory Database</Title>
+          <Text type="secondary">Connected to SharePoint Online Asset Management List</Text>
+        </Space>
         <Button 
           type="primary" 
           icon={<ReloadOutlined />} 
           onClick={fetchInventory} 
           loading={loading}
-          className="rounded-lg h-10 shadow-md bg-teal-600"
+          size="large"
+          className="bg-teal-600 rounded-xl shadow-lg"
         >
-          Sync Inventory
+          Refresh Data
         </Button>
       </div>
 
-      {/* 搜尋過濾器 */}
       <Card className="rounded-2xl border-none shadow-sm">
         <Row gutter={[16, 16]}>
           <Col span={6}>
-            <Text strong className="text-xs mb-1 block">SEARCH SHOP</Text>
+            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Shop Search</Text>
             <Input 
-              prefix={<SearchOutlined className="text-slate-300" />} 
-              placeholder="Shop name..." 
+              prefix={<SearchOutlined />} 
+              placeholder="Type shop name..." 
               onChange={e => setFilters({...filters, shopName: e.target.value})}
               className="rounded-lg h-10"
             />
           </Col>
           <Col span={6}>
-            <Text strong className="text-xs mb-1 block">IN USE STATUS</Text>
-            <Select 
-              className="w-full h-10" 
-              defaultValue="All" 
-              onChange={val => setFilters({...filters, status: val})}
-            >
+            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">In-Use Status</Text>
+            <Select className="w-full h-10" defaultValue="All" onChange={val => setFilters({...filters, status: val})}>
               <Option value="All">All Status</Option>
+              <Option value="In Use">In Use</Option>
               <Option value="Verified">Verified</Option>
               <Option value="Not Found">Not Found</Option>
-              <Option value="New Item">New Item</Option>
             </Select>
           </Col>
           <Col span={6}>
-            <Text strong className="text-xs mb-1 block">CMDB / UNIQUE ID</Text>
+            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Serial / CMDB</Text>
             <Input 
-              placeholder="Search CMDB..." 
-              onChange={e => setFilters({...filters, cmdb: e.target.value})}
+              placeholder="Serial No..." 
+              onChange={e => setFilters({...filters, serialNo: e.target.value})}
               className="rounded-lg h-10"
             />
           </Col>
           <Col span={6}>
-            <Text strong className="text-xs mb-1 block">SERIAL NO.</Text>
+            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Unique ID</Text>
             <Input 
-              placeholder="Search Serial..." 
-              onChange={e => setFilters({...filters, serialNo: e.target.value})}
+              placeholder="CMDB Number..." 
+              onChange={e => setFilters({...filters, cmdb: e.target.value})}
               className="rounded-lg h-10"
             />
           </Col>
         </Row>
       </Card>
 
-      {/* 表格 */}
       <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
         <Table 
           columns={columns} 
           dataSource={filteredData} 
           rowKey="id" 
           loading={loading}
-          pagination={{ pageSize: 12, showSizeChanger: false }}
-          locale={{ emptyText: <Empty description="No Inventory Data Found" /> }}
+          pagination={{ pageSize: 10, showSizeChanger: false }}
+          className="st-inventory-table"
         />
       </Card>
     </div>
   );
 };
+
+import { Divider } from 'antd'; // 確保有引入 Divider

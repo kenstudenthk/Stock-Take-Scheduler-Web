@@ -1,4 +1,6 @@
-/* 列印優化 */
+/* ============================================================
+   1. 列印優化與 Tailwind 基礎設定
+   ============================================================ */
 @media print {
   .bin-button, .wrapper, .ant-btn {
     display: none !important;
@@ -21,11 +23,11 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc;
+  background-color: #f8fafc; /* slate-50 */
 }
 
 /* ============================================================
-   1. Summary Box - 統計卡片
+   2. Summary Box - 統計卡片 (Dashboard)
    ============================================================ */
 .st-stat-card {
   width: 100%;
@@ -63,6 +65,13 @@ body {
   z-index: 2;
 }
 
+.st-stat-card .card-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
 .st-stat-card .card-title {
   flex: 1;
   font-size: 0.85em;
@@ -78,8 +87,15 @@ body {
   line-height: 1;
 }
 
+.st-stat-card .recent-text {
+  font-size: 0.75em;
+  color: var(--dot-clr);
+  opacity: 0.7;
+  margin-top: 5px;
+}
+
 /* ============================================================
-   2. Group Tabs - 切換器
+   3. Group Tabs - 切換器 (Dashboard)
    ============================================================ */
 .wrapper {
   --font-color-dark: #323232;
@@ -142,7 +158,9 @@ body {
   color: var(--font-color-light);
 }
 
-/* --- New Shop & Edit Buttons --- */
+/* ============================================================
+   4. New Shop 按鈕 (Master List)
+   ============================================================ */
 .new-shop-btn {
   padding: 1.1em 2.5em;
   font-size: 12px;
@@ -151,10 +169,12 @@ body {
   font-weight: 700;
   color: #000;
   background-color: #fff;
+  border: none;
   border-radius: 45px;
   box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  transition: all 0.3s ease 0s;
   cursor: pointer;
+  outline: none;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -162,34 +182,89 @@ body {
 
 .new-shop-btn:hover {
   background-color: #23c483;
+  box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);
   color: #fff;
   transform: translateY(-7px);
 }
 
+.new-shop-btn:active {
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   5. Edit 編輯按鈕 (Master List Row Action)
+   ============================================================ */
 .edit-button {
   width: 40px;
   height: 40px;
   border-radius: 50%;
   background-color: rgb(20, 20, 20);
   border: none;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.164);
   cursor: pointer;
-  transition: 0.3s;
+  transition-duration: 0.3s;
   overflow: hidden;
+  position: relative;
+  animation: fadeInRight 0.3s ease;
+}
+
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.edit-svgIcon {
+  width: 17px;
+  transition-duration: 0.3s;
+}
+
+.edit-svgIcon path {
+  fill: white;
 }
 
 .edit-button:hover {
   width: 120px;
-  background-color: rgb(255, 69, 69);
+  border-radius: 50px;
+  transition-duration: 0.3s;
+  background-color: #23c483; /* 這裡改為綠色或你喜歡的顏色 */
+  align-items: center;
 }
 
-/* --- 全域表格優化 --- */
+.edit-button:hover .edit-svgIcon {
+  width: 20px;
+  transform: translateY(0) rotate(360deg);
+}
+
+.edit-button::before {
+  content: "EDIT";
+  display: none;
+  color: white;
+  transition-duration: 0.3s;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.edit-button:hover::before {
+  display: block;
+  padding-right: 10px;
+}
+
+/* ============================================================
+   6. 全域表格樣式 (Master List Table)
+   ============================================================ */
 .st-master-table .ant-table-thead > tr > th {
-  background-color: #0d9488 !important;
+  background-color: #0d9488 !important; /* Teal 600 */
   color: white !important;
   font-weight: 800 !important;
+  text-transform: uppercase;
   font-size: 11px;
   padding: 16px !important;
+}
+
+.st-master-table .ant-table-row {
+  transition: all 0.2s;
 }

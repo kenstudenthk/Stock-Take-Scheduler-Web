@@ -131,13 +131,24 @@ function App() {
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={handleRefresh} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
       case View.SETTINGS: 
-        return <Settings token={graphToken} onUpdateToken={(t) => { 
-          setGraphToken(t); 
-          localStorage.setItem('stockTakeToken', t); 
-          setIsTokenExpired(false);
-          notification.destroy('tokenExpiry');
-          fetchAllData(t); 
-        }} />;
+  return (
+    <Settings 
+      // Shop List 部分
+      token={graphToken} 
+      onUpdateToken={(t) => { 
+        setGraphToken(t); 
+        localStorage.setItem('stockTakeToken', t); 
+        fetchAllData(t); 
+      }} 
+      // Inventory List 部分
+      invToken={invToken}
+      onUpdateInvToken={(t) => {
+        setInvToken(t);
+        localStorage.setItem('stockTakeInvToken', t);
+        // 未來這裡可以加入 fetchInventoryData(t);
+      }}
+    />
+  );
       case 'generator': return <Generator shops={allShops} />;
       default: return <div className="p-20 text-center text-slate-400">Section Coming Soon</div>;
     }

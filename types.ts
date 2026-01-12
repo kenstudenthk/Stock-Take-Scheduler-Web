@@ -16,15 +16,16 @@ export interface Shop {
   address: string;
   latitude: number;
   longitude: number;
-  region: string;   // field_9
-  district: string; // field_16
-  area: string;     // field_10
-  brand: string;    // field_11
-  is_mtr: boolean;  // field_17
-  status: 'completed' | 'scheduled' | 'pending' | 'closed';
+  region: string;   
+  district: string; 
+  area: string;     
+  brand: string;    
+  brandIcon?: string; // ✅ 加入這一行，允許儲存 Logo 網址
+  is_mtr: boolean;  
+  status: string; // 修正為 string 以相容 'Rescheduled' 等狀態
   scheduleStatus: string;
-  groupId: number;  // Schedule_x0020_Group
-  scheduledDate?: string; // field_2
+  groupId: number;  
+  scheduledDate?: string; 
 }
 
 export interface NavItemProps {

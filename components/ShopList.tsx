@@ -157,14 +157,24 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
               <div className="btn-text">New Shop</div>
             </button>
 
-            {/* 右側：搜尋框與日期篩選併排 */}
-            <Space size="middle">
-              <Input 
-                placeholder="Search shop..." 
-                prefix={<SearchOutlined />} 
-                className="w-72 h-11 rounded-xl bg-slate-50 border-none" 
-                onChange={e => setSearchText(e.target.value)} 
-              />
+      {/* 右側：搜尋框與日期篩選併排 */}
+            <Space size="large" align="center">
+              
+              {/* ✅ 更換後的 Uiverse Floating Label 搜尋框 */}
+              <div className="input-group">
+                <input 
+                  required
+                  type="text" 
+                  name="search" 
+                  autocomplete="off" 
+                  className="custom-search-input" 
+                  value={searchText}
+                  onChange={e => setSearchText(e.target.value)} 
+                />
+                <label className="user-label">Search shop or code...</label>
+              </div>
+              
+              <div className="flex flex-col">
               
               <DatePicker 
                 onChange={d => setFilterDate(d?.format('YYYY-MM-DD') || null)} 

@@ -117,7 +117,15 @@ function App() {
   const renderContent = () => {
     switch (selectedMenuKey) {
       case View.DASHBOARD:
-        return <Dashboard shops={allShops} onUpdateShop={handleUpdateShop} onNavigate={(v) => setSelectedMenuKey(v)} />;
+  return (
+    <Dashboard 
+      shops={allShops} 
+      onUpdateShop={handleUpdateShop} 
+      onNavigate={(v) => setSelectedMenuKey(v)}
+      graphToken={graphToken}   // ✅ 確保傳入
+      onRefresh={() => fetchAllData(graphToken)} // ✅ 確保傳入
+    />
+  );
       case View.LOCATIONS: 
         return <Locations shops={allShops} />;
       case View.SHOP_LIST: 

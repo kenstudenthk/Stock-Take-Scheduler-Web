@@ -1,6 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { Table, Input, Card, Typography, Space, Tag, Empty, message, Modal } from 'antd';
-import { SearchOutlined, PlusOutlined, EnvironmentOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { 
+  SearchOutlined, 
+  PlusOutlined, 
+  EnvironmentOutlined, 
+  CheckCircleOutlined, 
+  ExclamationCircleOutlined 
+} from '@ant-design/icons';
 import { Shop } from '../types';
 import { ShopFormModal } from './ShopFormModal';
 import { SP_FIELDS } from '../constants';
@@ -20,13 +26,13 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
 
-  // --- 新增：處理關閉門市功能 ---
+  // --- 邏輯：完全複刻 Dashboard 的 Closed 功能 ---
   const handleCloseShop = (shop: Shop) => {
     confirm({
-      title: `Close Shop: ${shop.name}?`,
+      title: 'Confirm Closing Shop',
       icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
-      content: 'This will set the status to CLOSED in SharePoint.',
-      okText: 'Confirm Close',
+      content: `Are you sure you want to set ${shop.name} to CLOSED?`,
+      okText: 'Yes, Close it',
       okType: 'danger',
       cancelText: 'Cancel',
       onOk: async () => {
@@ -39,19 +45,15 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
                 'Authorization': `Bearer ${graphToken}`, 
                 'Content-Type': 'application/json' 
               },
-              body: JSON.stringify({
-                [SP_FIELDS.STATUS]: 'CLOSED' // ✅ 執行與 Dashboard 相同的狀態更新
-              })
+              body: JSON.stringify({ [SP_FIELDS.STATUS]: 'CLOSED' })
             }
           );
           if (res.ok) {
-            message.success(`${shop.name} is now CLOSED`);
-            onRefresh(); // 刷新列表數據
-          } else {
-            message.error("Sync failed. Please check token.");
+            message.success("Shop closed successfully");
+            onRefresh();
           }
         } catch (err) {
-          message.error("Network Error");
+          message.error("Sync failed");
         }
       },
     });
@@ -65,17 +67,32 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
     );
   }, [shops, searchText]);
 
+  // --- 恢復所有表格欄位 ---
   const columns = [
     {
       title: 'Shop & Brand',
       key: 'shopInfo',
+      width: '25%',
       render: (record: Shop) => (
         <Space direction="vertical" size={0}>
           <Text strong style={{ fontSize: '15px' }}>{record.name}</Text>
           <Space>
-            <Tag color={record.status === 'CLOSED' ? 'default' : 'blue'}>{record.brand}</Tag>
+            <Tag color="blue" className="rounded-md font-bold">{record.brand}</Tag>
             <Text type="secondary" code>{record.id}</Text>
           </Space>
+        </Space>
+      ),
+    },
+    {
+      title: 'Location Detail',
+      key: 'location',
+      width: '35%',
+      render: (record: Shop) => (
+        <Space direction="vertical" size={0}>
+          <Text size="small">
+            <EnvironmentOutlined className="text-teal-600" /> {record.region} - {record.district}
+          </Text>
+          <Text type="secondary" style={{ fontSize: '12px' }}>{record.address}</Text>
         </Space>
       ),
     },
@@ -83,28 +100,30 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      width: '12%',
       render: (status: string) => (
-        <Tag color={status === 'CLOSED' ? 'red' : 'green'}>{status}</Tag>
+        <Tag color={status === 'CLOSED' ? 'red' : 'green'} className="font-bold">
+          {status}
+        </Tag>
       )
     },
     {
       title: '',
       key: 'actions',
-      width: 220, // 加寬以容納兩個按鈕
       align: 'right' as const,
       render: (_: any, record: Shop) => (
-        <div style={{ minHeight: '40px', display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingRight: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', alignItems: 'center' }}>
           {selectedRowId === record.id && (
             <>
-              {/* --- 🔴 Closed 按鈕 --- */}
+              {/* ✅ 使用 Dashboard 風格的按鈕 */}
               <button 
-                className="close-shop-btn"
+                className="dashboard-close-btn"
                 onClick={(e) => { e.stopPropagation(); handleCloseShop(record); }}
               >
-                <CheckCircleOutlined /> Close
+                <CheckCircleOutlined /> CLOSED
               </button>
 
-              {/* --- 🔵 Edit 按鈕 --- */}
+              {/* ✅ 原本的 Uiverse Edit 按鈕 */}
               <button 
                 className="edit-button" 
                 onClick={(e) => { 
@@ -129,7 +148,7 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
       <div className="flex justify-between items-end bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <Space direction="vertical">
           <Title level={2} style={{ margin: 0 }}>Shop Master List</Title>
-          <Text type="secondary">Total {filteredData.length} locations synced from SPO</Text>
+          <Text type="secondary">Manage your SPO location database</Text>
           
           <button 
             className="new-shop-btn" 
@@ -141,7 +160,7 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
         </Space>
 
         <Input
-          placeholder="Search by name, code or district..."
+          placeholder="Search name, code or district..."
           prefix={<SearchOutlined className="text-slate-400" />}
           className="w-80 h-12 rounded-xl shadow-inner bg-slate-50 border-none"
           onChange={e => setSearchText(e.target.value)}
@@ -158,6 +177,7 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
             onClick: () => setSelectedRowId(record.id === selectedRowId ? null : record.id),
           })}
           rowClassName={(record) => record.id === selectedRowId ? 'selected-row cursor-pointer' : 'cursor-pointer'}
+          locale={{ emptyText: <Empty description="No Shops Found" /> }}
         />
       </Card>
 

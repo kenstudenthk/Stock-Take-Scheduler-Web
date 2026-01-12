@@ -14,7 +14,7 @@ import { Shop, View } from './types';
 import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
-import { ThemeToggle } from './components/ThemeToggle'; // ✅ 引入 Toggle 組件
+import { ThemeToggle } from './components/ThemeToggle';
 
 const { Content, Header, Sider } = Layout;
 
@@ -22,12 +22,11 @@ function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [collapsed, setCollapsed] = useState(false);
   
-  // --- 🌗 Dark Mode 狀態管理 ---
+  // --- 🌗 Theme Management ---
   const [isDarkMode, setIsDarkMode] = useState<boolean>(
     localStorage.getItem('theme') === 'dark'
   );
 
-  // 當 isDarkMode 改變時，自動切換 body 的 class
   useEffect(() => {
     if (isDarkMode) {
       document.body.classList.add('dark');
@@ -38,13 +37,12 @@ function App() {
     }
   }, [isDarkMode]);
 
-  // --- 其他原本的狀態 ---
+  // --- States ---
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
   const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // --- 資料抓取邏輯 (fetchAllData 等) 保持不變 ... ---
   const fetchAllData = async (token: string) => {
     if (!token) return;
     setLoading(true);
@@ -59,8 +57,7 @@ function App() {
             sharePointItemId: item.id,
             id: f[SP_FIELDS.SHOP_CODE] || item.id,
             name: f[SP_FIELDS.SHOP_NAME] || '',
-            brandIcon: f[SP_FIELDS.BRAND_ICON] || '', // ✅ Logo 修正
-            // ... 其他映射保持不變
+            brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
             address: f[SP_FIELDS.ADDRESS_ENG] || '',
             region: f[SP_FIELDS.REGION] || '',
             district: f[SP_FIELDS.DISTRICT] || '',
@@ -79,57 +76,57 @@ function App() {
 
   useEffect(() => { if (graphToken) fetchAllData(graphToken); }, []);
 
-  const handleUpdateShop = async (shop: Shop, updates: any) => { /* ...原本的更新邏輯... */ };
+  const handleUpdateShop = async (shop: Shop, updates: any) => {
+    // SharePoint update logic here
+    message.success("Update triggering...");
+  };
 
+  // ✅ Sidebar 渲染邏輯 (將 Toggle 放在底部)
   const renderSidebar = () => {
-  const menuItems = [
-    { key: View.DASHBOARD, icon: <HomeOutlined />, label: 'Dashboard' },
-    { key: View.SHOP_LIST, icon: <UnorderedListOutlined />, label: 'Master List' },
-    { key: View.CALENDAR, icon: <CalendarOutlined />, label: 'Schedules' },
-    { key: View.GENERATOR, icon: <ToolOutlined />, label: 'Generator' },
-    { key: View.LOCATIONS, icon: <ShopOutlined />, label: 'Map View' },
-    { key: View.INVENTORY, icon: <UnorderedListOutlined />, label: 'Inventory' },
-    { key: View.SETTINGS, icon: <SettingOutlined />, label: 'Settings' },
-  ];
+    const menuItems = [
+      { key: View.DASHBOARD, icon: <HomeOutlined />, label: 'Dashboard' },
+      { key: View.SHOP_LIST, icon: <UnorderedListOutlined />, label: 'Master List' },
+      { key: View.CALENDAR, icon: <CalendarOutlined />, label: 'Schedules' },
+      { key: View.GENERATOR, icon: <ToolOutlined />, label: 'Generator' },
+      { key: View.LOCATIONS, icon: <ShopOutlined />, label: 'Map View' },
+      { key: View.INVENTORY, icon: <UnorderedListOutlined />, label: 'Inventory' },
+      { key: View.SETTINGS, icon: <SettingOutlined />, label: 'Settings' },
+    ];
 
-  return (
-    // ✅ 加入 flex flex-col justify-between h-full 確保底部對齊
-    <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-10`}>
-      <ul>
-        <li className="logo-item">
-          <a href="#">
-            <span className="icon">ST</span>
-            {!collapsed && <span className="title" style={{fontWeight: 800, fontSize: '1.2rem'}}>STOCK PRO</span>}
-          </a>
-        </li>
-        {menuItems.map((item) => (
-          <li 
-            key={item.key} 
-            className={`list ${selectedMenuKey === item.key ? 'active' : ''}`}
-            onClick={() => setSelectedMenuKey(item.key as View)}
-          >
+    return (
+      <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-10`}>
+        <ul>
+          <li className="logo-item">
             <a href="#">
-              <span className="icon">{item.icon}</span>
-              {!collapsed && <span className="title">{item.label}</span>}
+              <span className="icon">ST</span>
+              {!collapsed && <span className="title" style={{fontWeight: 800, fontSize: '1.2rem'}}>STOCK PRO</span>}
             </a>
           </li>
-        ))}
-      </ul>
+          {menuItems.map((item) => (
+            <li 
+              key={item.key} 
+              className={`list ${selectedMenuKey === item.key ? 'active' : ''}`}
+              onClick={() => setSelectedMenuKey(item.key as View)}
+            >
+              <a href="#">
+                <span className="icon">{item.icon}</span>
+                {!collapsed && <span className="title">{item.label}</span>}
+              </a>
+            </li>
+          ))}
+        </ul>
 
-      {/* ✅ 這是底部區塊：將 Toggle 放在這裡 */}
-      <div className="flex justify-center items-center px-4 w-full">
-        <div style={{ 
-          transform: collapsed ? 'scale(0.5)' : 'scale(0.7)', 
-          transition: 'all 0.3s ease' 
-        }}>
-          <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
+        {/* 🌓 Sidebar 底部的切換開關 */}
+        <div className="flex justify-center items-center px-4">
+          <div style={{ transform: collapsed ? 'scale(0.5)' : 'scale(0.7)', transition: '0.3s' }}>
+            <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
-  const renderContent = () => { /* ...原本的 Switch Case... */ 
+  const renderContent = () => {
     switch (selectedMenuKey) {
       case View.DASHBOARD: return <Dashboard shops={allShops} onUpdateShop={handleUpdateShop} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
@@ -142,7 +139,6 @@ function App() {
     }
   };
 
-  // ✅ 這裡是你要替換的 return 部分
   return (
     <Layout className="min-h-screen flex flex-row theme-transition">
       <Sider trigger={null} collapsible collapsed={collapsed} width={260} className="custom-sider">
@@ -150,7 +146,18 @@ function App() {
       </Sider>
 
       <Layout className="flex flex-col overflow-hidden main-content-area">
-         <Space size="large">
+        <Header className="app-header px-8 flex justify-between items-center h-16 border-b">
+          <div className="flex items-center gap-6">
+            <Button 
+              type="text" 
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} 
+              onClick={() => setCollapsed(!collapsed)} 
+              className="toggle-sidebar-btn"
+            />
+            {/* 🔴 Header 內的 Toggle 已移除 */}
+          </div>
+
+          <Space size="large">
              <Button 
                icon={<SyncOutlined spin={loading} />} 
                onClick={() => fetchAllData(graphToken)} 

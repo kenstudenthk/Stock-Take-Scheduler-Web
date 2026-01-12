@@ -67,7 +67,9 @@ function App() {
             groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
             is_mtr: f[SP_FIELDS.MTR] === 'Yes',
             phone: f[SP_FIELDS.PHONE] || '',         // 對應 field_37
-    contactName: f[SP_FIELDS.CONTACT] || '', // 對應 field_38
+    contactName: f[SP_FIELDS.CONTACT] || '', 
+            latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'), 
+      longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),// 對應 field_38
           };
         });
         setAllShops(mapped);

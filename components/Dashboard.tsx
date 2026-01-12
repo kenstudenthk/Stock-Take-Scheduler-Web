@@ -150,13 +150,23 @@ export const Dashboard: React.FC<{
             const isClosed = shop.status?.toLowerCase() === 'closed';
             return (
               <div key={shop.id} className={`p-4 rounded-2xl flex items-center transition-all ${isClosed ? 'opacity-40 grayscale bg-slate-50' : 'bg-white hover:bg-slate-50/80 shadow-sm'}`}>
-                <div className="flex items-center gap-4" style={{ flex: 1 }}>
-                  <img src={shop.brandIcon} className="h-10 w-10 object-contain rounded-lg border border-slate-100 p-1 bg-white" />
-                  <div className="flex flex-col">
-                    <h4 className={`m-0 font-bold text-slate-800 ${isClosed ? 'line-through decoration-red-500' : ''}`}>{shop.name}</h4>
-                    <Text className="text-[10px] font-bold text-slate-400 uppercase">{shop.brand}</Text>
-                  </div>
-                </div>
+<div className="flex items-center gap-4" style={{ flex: 1 }}>
+  {/* 恢復 img 標籤 */}
+  <img 
+    src={shop.brandIcon} 
+    alt={shop.brand}
+    className={`h-10 w-10 object-contain rounded-lg border border-slate-100 p-1 bg-white transition-all ${isClosed ? 'grayscale opacity-50' : ''}`} 
+  />
+  
+  <div className="flex flex-col">
+    <h4 className={`m-0 font-bold text-slate-800 ${isClosed ? 'line-through decoration-red-500' : ''}`}>
+      {shop.name}
+    </h4>
+    <Text className="text-[10px] font-bold text-slate-400 uppercase">
+      {shop.brand} {shop.is_mtr ? '(MTR)' : ''}
+    </Text>
+  </div>
+</div>
                 <div style={{ width: 300 }}><Text className="text-xs text-slate-500 italic">{shop.address}</Text></div>
                 <div style={{ width: 120 }} className="text-center">
                   <Tag className={`m-0 border-none font-black text-[10px] px-3 rounded-md ${isClosed ? 'bg-slate-200' : 'bg-indigo-50 text-indigo-600'}`}>

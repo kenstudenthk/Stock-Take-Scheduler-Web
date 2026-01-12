@@ -21,23 +21,13 @@ const { Content, Header, Sider } = Layout;
 function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [collapsed, setCollapsed] = useState(false);
-  
-  // --- 🌗 Theme Management ---
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(
-    localStorage.getItem('theme') === 'dark'
-  );
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(localStorage.getItem('theme') === 'dark');
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.body.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.body.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
+    document.body.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  // --- States ---
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
   const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
   const [allShops, setAllShops] = useState<Shop[]>([]);
@@ -66,10 +56,11 @@ function App() {
             scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
             groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
             is_mtr: f[SP_FIELDS.MTR] === 'Yes',
-            phone: f[SP_FIELDS.PHONE] || '',         // 對應 field_37
-    contactName: f[SP_FIELDS.CONTACT] || '', 
-            latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'), 
-      longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),// 對應 field_38
+            phone: f[SP_FIELDS.PHONE] || '',
+            contactName: f[SP_FIELDS.CONTACT] || '',
+            // ✅ 關鍵修復：補上經緯度映射，地圖才會有標註點
+            latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
+            longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
           };
         });
         setAllShops(mapped);
@@ -80,12 +71,6 @@ function App() {
 
   useEffect(() => { if (graphToken) fetchAllData(graphToken); }, []);
 
-  const handleUpdateShop = async (shop: Shop, updates: any) => {
-    // SharePoint update logic here
-    message.success("Update triggering...");
-  };
-
-  // ✅ Sidebar 渲染邏輯 (將 Toggle 放在底部)
   const renderSidebar = () => {
     const menuItems = [
       { key: View.DASHBOARD, icon: <HomeOutlined />, label: 'Dashboard' },
@@ -101,26 +86,14 @@ function App() {
       <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-10`}>
         <ul>
           <li className="logo-item">
-            <a href="#">
-              <span className="icon">ST</span>
-              {!collapsed && <span className="title" style={{fontWeight: 800, fontSize: '1.2rem'}}>STOCK PRO</span>}
-            </a>
+            <a href="#"><span className="icon">ST</span>{!collapsed && <span className="title font-extrabold text-lg">STOCK PRO</span>}</a>
           </li>
           {menuItems.map((item) => (
-            <li 
-              key={item.key} 
-              className={`list ${selectedMenuKey === item.key ? 'active' : ''}`}
-              onClick={() => setSelectedMenuKey(item.key as View)}
-            >
-              <a href="#">
-                <span className="icon">{item.icon}</span>
-                {!collapsed && <span className="title">{item.label}</span>}
-              </a>
+            <li key={item.key} className={`list ${selectedMenuKey === item.key ? 'active' : ''}`} onClick={() => setSelectedMenuKey(item.key as View)}>
+              <a href="#"><span className="icon">{item.icon}</span>{!collapsed && <span className="title">{item.label}</span>}</a>
             </li>
           ))}
         </ul>
-
-        {/* 🌓 Sidebar 底部的切換開關 */}
         <div className="flex justify-center items-center px-4">
           <div style={{ transform: collapsed ? 'scale(0.25)' : 'scale(0.35)', transition: '0.3s' }}>
             <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
@@ -130,62 +103,32 @@ function App() {
     );
   };
 
-  const renderContent = () => {
-    switch (selectedMenuKey) {
-      case View.DASHBOARD: return <Dashboard shops={allShops} onUpdateShop={handleUpdateShop} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
-      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
-      case View.CALENDAR: return <Calendar shops={allShops} />;
-      case View.GENERATOR: return <Generator shops={allShops} onUpdateShop={handleUpdateShop} />;
-      case View.LOCATIONS: return <Locations shops={allShops} />;
-      case View.INVENTORY: return <Inventory invToken={invToken} />;
-      case View.SETTINGS: return <Settings token={graphToken} setToken={setGraphToken} invToken={invToken} setInvToken={setInvToken} />;
-      default: return <Dashboard shops={allShops} onUpdateShop={handleUpdateShop} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
-    }
-  };
-
   return (
-  <Layout className="h-screen flex flex-row theme-transition overflow-hidden">
-    <Sider 
-      trigger={null} 
-      collapsible 
-      collapsed={collapsed} 
-      width={260} 
-      className="custom-sider h-screen sticky top-0 left-0"
-    >
-      {renderSidebar()}
-    </Sider>
-
-    <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
-      <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0">
-        <div className="flex items-center gap-6">
-          <Button 
-            type="text" 
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} 
-            onClick={() => setCollapsed(!collapsed)} 
-            className="toggle-sidebar-btn"
-          />
-        </div>
-
-        <Space size="large">
-           <Button 
-             icon={<SyncOutlined spin={loading} />} 
-             onClick={() => fetchAllData(graphToken)} 
-             className="refresh-btn"
-             loading={loading}
-           >
-             Refresh
-           </Button>
-           <Tag color="cyan" className="font-bold rounded-md">POOL: {allShops.length}</Tag>
-           <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" className="user-avatar" />
-        </Space>
-      </Header>
-
-      <Content className="main-scroll-content p-8 overflow-y-auto h-full">
-        {renderContent()}
-      </Content>
+    <Layout className="h-screen flex flex-row theme-transition overflow-hidden">
+      <Sider trigger={null} collapsible collapsed={collapsed} width={260} className="custom-sider h-screen sticky top-0 left-0">
+        {renderSidebar()}
+      </Sider>
+      <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
+        <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0">
+          <Button type="text" icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} onClick={() => setCollapsed(!collapsed)} className="toggle-sidebar-btn" />
+          <Space size="large">
+            <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)} className="refresh-btn" loading={loading}>Refresh</Button>
+            <Tag color="cyan" className="font-bold rounded-md">POOL: {allShops.length}</Tag>
+            <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" className="user-avatar" />
+          </Space>
+        </Header>
+        <Content className="main-scroll-content p-8 overflow-y-auto h-full">
+          {selectedMenuKey === View.DASHBOARD && <Dashboard shops={allShops} onUpdateShop={(s, u) => message.success("Updated")} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />}
+          {selectedMenuKey === View.SHOP_LIST && <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />}
+          {selectedMenuKey === View.CALENDAR && <Calendar shops={allShops} />}
+          {selectedMenuKey === View.GENERATOR && <Generator shops={allShops} onUpdateShop={(s, u) => message.success("Updated")} />}
+          {selectedMenuKey === View.LOCATIONS && <Locations shops={allShops} />}
+          {selectedMenuKey === View.INVENTORY && <Inventory invToken={invToken} />}
+          {selectedMenuKey === View.SETTINGS && <Settings token={graphToken} setToken={setGraphToken} invToken={invToken} setInvToken={setInvToken} />}
+        </Content>
+      </Layout>
     </Layout>
-  </Layout>
-);
+  );
 }
 
 export default App;

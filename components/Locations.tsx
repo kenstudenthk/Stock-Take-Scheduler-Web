@@ -35,6 +35,10 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   // ✅ 關鍵修復：當外部 shops 數據更新時，同步更新內部狀態
   useEffect(() => {
     setFilteredShops(shops);
+  // 如果地圖已經初始化好了，立即更新標註點
+    if (mapInstance.current) {
+      updateMapMarkers(shops);
+    }
   }, [shops]);
 
   // --- 3. 動態過濾選項 ---
@@ -70,7 +74,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
   // --- 5. 地圖控制邏輯 ---
   const updateMapMarkers = (targetShops: Shop[]) => {
-    if (!mapInstance.current) return;
+    if (!mapInstance.current) || !(window as any).AMap) return;
     mapInstance.current.remove(markersRef.current);
     markersRef.current = [];
 
@@ -79,8 +83,10 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       closeWhenClickMap: true
     });
 
+   // 門市座標在 SharePoint 為空時會變成 0。
+    // 修正為檢查數值是否不等於 0 或 undefined。
     const newMarkers = targetShops
-      .filter(s => s.latitude && s.longitude)
+      .filter(s => s.latitude !== 0 && s.longitude !== 0 && s.latitude != null) 
       .map(s => {
         const color = s.status === 'completed' ? '#10b981' : s.groupId === 1 ? '#0ea5e9' : '#f59e0b';
         const marker = new (window as any).AMap.Marker({
@@ -112,7 +118,11 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
     markersRef.current = newMarkers;
     mapInstance.current.add(newMarkers);
-    if (newMarkers.length > 0) mapInstance.current.setFitView(newMarkers);
+    
+    // 如果有標註點，自動調整視野以顯示所有點
+    if (newMarkers.length > 0) {
+      mapInstance.current.setFitView(newMarkers);
+    }
   };
 
   useEffect(() => {

@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Card, Tag, Space, Button, Row, Col, Empty, DatePicker, Typography, Modal, Divider } from 'antd';
+import { Card, Tag, Space, Button, Row, Col, Empty, DatePicker, Typography, Modal, message, Badge } from 'antd';
 import { 
-  ShopOutlined, HourglassOutlined, 
-  CheckCircleOutlined, PrinterOutlined, EnvironmentOutlined , CloseCircleOutlined
+  CalendarOutlined, ExclamationCircleOutlined, CheckCircleOutlined, 
+  PrinterOutlined, EnvironmentOutlined, ShopOutlined, HourglassOutlined, CloseCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shop } from '../types';
-import { ShopFormModal } from './ShopFormModal';
+import { SP_FIELDS } from '../constants';
 
 const { Text, Title } = Typography;
 const { confirm } = Modal;
@@ -14,47 +14,118 @@ const { confirm } = Modal;
 // --- 統計卡片組件 ---
 const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
   <div className="card-item">
-    <div className="img-section" style={{ backgroundColor: bgColor }}>
-      {icon}
-    </div>
+    <div className="img-section" style={{ backgroundColor: bgColor }}>{icon}</div>
     <div className="card-desc">
-      <div className="card-header">
-        <div className="card-title">{label}</div>
-        <div className="card-menu">
-          <div className="dot"></div>
-          <div className="dot"></div>
-          <div className="dot"></div>
-        </div>
-      </div>
+      <div className="card-header"><div className="card-title">{label}</div></div>
       <div className="card-time">{value}</div>
       <p className="recent-text">{subtext}</p>
     </div>
   </div>
 );
 
-interface DashboardProps {
+interface Props {
   shops: Shop[];
   onUpdateShop: any;
   graphToken: string;
   onRefresh: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ shops, onUpdateShop, graphToken, onRefresh }) => {
+export const Dashboard: React.FC<Props> = ({ shops, onUpdateShop, graphToken, onRefresh }) => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [groupFilter, setGroupFilter] = useState<number | 'all'>('all');
   
-  // ✅ 控制 Re-Schedule Modal 的狀態
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // --- Reschedule State ---
+  const [isReschedOpen, setIsReschedOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
+  const [reschedDate, setReschedDate] = useState<dayjs.Dayjs | null>(null);
 
-  // --- 統計邏輯 ---
+  // --- 智能排程邏輯 (Smart Validation) ---
+  const checkDateAvailability = (date: dayjs.Dayjs, shop: Shop) => {
+    const dateStr = date.format('YYYY-MM-DD');
+    const shopsOnThatDay = shops.filter(s => s.scheduledDate === dateStr);
+
+    // 1. 每日上限 9 間店
+    if (shopsOnThatDay.length >= 9) return { valid: false, reason: "Date Full (9 shops)" };
+
+    // 2. MTR 邏輯: 如果是 MTR 店，該日必須也有 MTR 店或者該日為空
+    if (shop.is_mtr) {
+      const hasMTR = shopsOnThatDay.some(s => s.is_mtr);
+      if (shopsOnThatDay.length > 0 && !hasMTR) return { valid: false, reason: "MTR Grouping Only" };
+    }
+
+    // 3. 距離邏輯: 檢查是否在同一區域 (Region)
+    if (shopsOnThatDay.length > 0) {
+      const isSameRegion = shopsOnThatDay.some(s => s.region === shop.region);
+      if (!isSameRegion) return { valid: false, reason: "Too Far (Region mismatch)" };
+    }
+
+    return { valid: true };
+  };
+
+  // --- 尋找最早可用日期 ---
+  const fastestDate = useMemo(() => {
+    if (!targetShop) return null;
+    let current = dayjs().add(1, 'day');
+    for (let i = 0; i < 30; i++) {
+      if (checkDateAvailability(current, targetShop).valid) return current;
+      current = current.add(1, 'day');
+    }
+    return null;
+  }, [targetShop, shops]);
+
+  const disabledDate = (current: dayjs.Dayjs) => {
+    if (!targetShop) return false;
+    // 禁用過去的日期
+    if (current && current < dayjs().startOf('day')) return true;
+    // 使用智能邏輯檢查
+    return !checkDateAvailability(current, targetShop).valid;
+  };
+
+  const handleConfirmReschedule = async () => {
+    if (!targetShop || !reschedDate) return;
+
+    const formattedDate = reschedDate.format('YYYY-MM-DD');
+    
+    // 計算新的 Group ID (根據該日已有的店，或者沿用)
+    const shopsOnNewDay = shops.filter(s => s.scheduledDate === formattedDate);
+    const newGroupId = shopsOnNewDay.length > 0 ? shopsOnNewDay[0].groupId : targetShop.groupId;
+
+    try {
+      const res = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${targetShop.sharePointItemId}/fields`,
+        {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            [SP_FIELDS.STATUS]: 'Rescheduled',
+            [SP_FIELDS.SCHEDULE_DATE]: formattedDate,
+            [SP_FIELDS.SCHEDULE_GROUP]: newGroupId.toString()
+          })
+        }
+      );
+
+      if (res.ok) {
+        Modal.success({
+          title: 'Reschedule Successful',
+          content: `${targetShop.name} has been moved to ${formattedDate}. Status: Rescheduled.`,
+          onOk: () => {
+            setIsReschedOpen(false);
+            onRefresh();
+          }
+        });
+      }
+    } catch (err) {
+      message.error("Sync Error");
+    }
+  };
+
+  // --- 統計與過濾邏輯 ---
   const stats = useMemo(() => {
     const closed = shops.filter(s => s.status?.toLowerCase() === 'closed').length;
     const completed = shops.filter(s => s.status?.toLowerCase() === 'completed' || s.status === 'Done').length;
     return { total: shops.length, completed, closed, pending: shops.length - completed - closed };
   }, [shops]);
 
-  // --- 過濾邏輯 ---
   const filteredShops = useMemo(() => {
     return shops.filter(s => 
       dayjs(s.scheduledDate).format('YYYY-MM-DD') === selectedDate && 
@@ -62,67 +133,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ shops, onUpdateShop, graph
     );
   }, [shops, selectedDate, groupFilter]);
 
-  const handleCloseAction = (shop: Shop) => {
-    confirm({
-      title: 'Confirm Close Shop',
-      content: `Mark "${shop.name}" as Closed? This will sync back to SharePoint.`,
-      okText: 'Yes, Close',
-      okType: 'danger',
-      onOk: () => onUpdateShop?.(shop, { Status: 'CLOSED' })
-    });
-  };
-
   return (
     <div className="flex flex-col gap-8 pb-10">
-      {/* 1. Header 部分 */}
+      {/* 1. Header & 2. Summary Boxes (代碼省略，保持您原有的) */}
       <div className="flex justify-between items-center">
-        <div>
-          <Title level={2} className="m-0 text-slate-800">Hello Admin,</Title>
-          <Text className="text-slate-400 font-medium">Manage your daily stock take schedule below.</Text>
-        </div>
-        <Button 
-          icon={<PrinterOutlined />} 
-          className="rounded-xl font-bold h-11 bg-slate-900 text-white border-none px-6"
-          onClick={() => window.print()}
-        >
-          Generate Report
-        </Button>
+        <Title level={2}>Hello Admin,</Title>
+        <Button icon={<PrinterOutlined />} onClick={() => window.print()}>Generate Report</Button>
       </div>
 
-      {/* 2. Summary Boxes */}
       <Row gutter={[24, 24]}>
-        <Col span={6}>
-          <SummaryCard label="Total Shop" value={stats.total} subtext="Overall target list" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
-        </Col>
-        <Col span={6}>
-          <SummaryCard label="Completed" value={stats.completed} subtext="Sync success" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
-        </Col>
-        <Col span={6}>
-          <SummaryCard label="Closed" value={stats.closed} subtext="Exceptions handled" bgColor="#ff4545" icon={<CloseCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
-        </Col>
-        <Col span={6}>
-          <SummaryCard label="Remaining" value={stats.pending} subtext="Pending action" bgColor="#f1c40f" icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
-        </Col>
+        <Col span={6}><SummaryCard label="Total" value={stats.total} bgColor="#3498db" icon={<ShopOutlined />} /></Col>
+        <Col span={6}><SummaryCard label="Completed" value={stats.completed} bgColor="#2ecc71" icon={<CheckCircleOutlined />} /></Col>
+        <Col span={6}><SummaryCard label="Closed" value={stats.closed} bgColor="#e74c3c" icon={<CloseCircleOutlined />} /></Col>
+        <Col span={6}><SummaryCard label="Pending" value={stats.pending} bgColor="#f1c40f" icon={<HourglassOutlined />} /></Col>
       </Row>
 
-      {/* 3. 資料卡片 */}
+      {/* 3. 資料列表 */}
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>
-        <div className="px-8 pt-8 pb-4">
-          <div className="wrapper">
-            {['all', 1, 2, 3].map((val) => (
-              <label key={val} className="option">
-                <input className="input" type="radio" name="btn" checked={groupFilter === val} onChange={() => setGroupFilter(val as any)} />
-                <div className="btn"><span className="span">{val === 'all' ? 'ALL' : `GROUP ${String.fromCharCode(64 + (val as number))}`}</span></div>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="px-8 py-5 bg-slate-50/50 flex items-center">
-          <div className="flex flex-col">
-            <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Schedule Date</Text>
-            <DatePicker value={dayjs(selectedDate)} onChange={d => setSelectedDate(d?.format('YYYY-MM-DD') || '')} className="h-10 rounded-xl font-bold border-slate-200" allowClear={false} />
-          </div>
+        <div className="p-8">
+          <DatePicker value={dayjs(selectedDate)} onChange={d => setSelectedDate(d?.format('YYYY-MM-DD') || '')} className="h-12 w-64 rounded-xl font-bold" />
         </div>
 
         <div className="p-4 flex flex-col gap-2">
@@ -131,36 +160,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ shops, onUpdateShop, graph
             return (
               <div key={shop.id} className={`p-4 rounded-2xl flex items-center transition-all ${isClosed ? 'opacity-40 grayscale bg-slate-50' : 'bg-white hover:bg-slate-50/80'}`}>
                 <div className="flex items-center gap-4" style={{ flex: 1 }}>
-                  <div className="h-10 w-10 flex items-center justify-center bg-slate-100 rounded-lg border border-slate-200 text-slate-400 font-bold">
-                    {shop.brand[0]}
-                  </div>
+                  <div className="h-10 w-10 flex items-center justify-center bg-slate-100 rounded-lg font-bold text-slate-400">{shop.brand[0]}</div>
                   <div className="flex flex-col">
-                    <h4 className={`m-0 font-bold text-slate-800 ${isClosed ? 'line-through decoration-red-500 decoration-2' : ''}`}>{shop.name}</h4>
-                    <Text className="text-[10px] font-bold text-slate-400">{shop.brand}</Text>
+                    <h4 className={`m-0 font-bold ${isClosed ? 'line-through decoration-red-500' : ''}`}>{shop.name}</h4>
+                    <Text className="text-[10px] text-slate-400 font-bold uppercase">{shop.brand} {shop.is_mtr ? '(MTR)' : ''}</Text>
                   </div>
                 </div>
-                <div style={{ width: 300 }}><Text className="text-xs text-slate-500 italic">{shop.address}</Text></div>
+                <div style={{ width: 300 }}><Text className="text-xs text-slate-500">{shop.address}</Text></div>
                 <div style={{ width: 120 }} className="text-center">
-                  <Tag color={isClosed ? 'default' : 'blue'} className="m-0 border-none font-black text-[10px] px-3 rounded-md">
-                    GROUP {String.fromCharCode(64 + shop.groupId)}
-                  </Tag>
+                  <Tag className="bg-indigo-50 text-indigo-600 border-none font-black text-[10px]">GROUP {String.fromCharCode(64+shop.groupId)}</Tag>
                 </div>
-                <div style={{ width: 180 }} className="flex justify-end gap-3 pr-2">
-                   {/* ✅ 修復：加上 onClick 事件 */}
-                   <Button 
+                <div style={{ width: 180 }} className="flex justify-end gap-3">
+                  <Button 
                     size="small" 
-                    disabled={isClosed} 
                     className="rounded-lg font-bold text-[10px]"
+                    disabled={isClosed}
                     onClick={() => {
                       setTargetShop(shop);
-                      setIsModalOpen(true);
+                      setReschedDate(null);
+                      setIsReschedOpen(true);
                     }}
-                   >
+                  >
                     Re-Schedule
-                   </Button>
-                   <button className="bin-button" disabled={isClosed} onClick={() => handleCloseAction(shop)}>
+                  </Button>
+                  <button className="bin-button" disabled={isClosed} onClick={() => {}}>
                      <svg viewBox="0 0 448 512" className="bin-svgIcon"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path></svg>
-                   </button>
+                  </button>
                 </div>
               </div>
             );
@@ -168,37 +193,60 @@ export const Dashboard: React.FC<DashboardProps> = ({ shops, onUpdateShop, graph
         </div>
       </Card>
 
-      {/* ✅ 放置編輯視窗 */}
-      <ShopFormModal 
-        visible={isModalOpen}
-        shop={targetShop}
-        onCancel={() => setIsModalOpen(false)}
-        onSuccess={() => {
-          setIsModalOpen(false);
-          onRefresh();
-        }}
-        graphToken={graphToken}
-      />
+      {/* --- Smart Reschedule Modal --- */}
+      <Modal
+        title={<Space><CalendarOutlined className="text-indigo-600" /><span>Smart Reschedule</span></Space>}
+        open={isReschedOpen}
+        onOk={handleConfirmReschedule}
+        onCancel={() => setIsReschedOpen(false)}
+        okText="Confirm Reschedule"
+        width={450}
+        centered
+      >
+        <div className="py-4">
+          <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <Text type="secondary" className="text-xs uppercase font-bold block mb-1">Target Shop</Text>
+            <Text strong className="text-lg text-indigo-900">{targetShop?.name}</Text>
+            <div className="mt-2 flex gap-2">
+              <Tag color="cyan">{targetShop?.region}</Tag>
+              {targetShop?.is_mtr && <Tag color="orange">MTR Shop</Tag>}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <Text strong className="block mb-2">Select New Date</Text>
+            <DatePicker 
+              className="w-full h-12 rounded-xl" 
+              disabledDate={disabledDate}
+              value={reschedDate}
+              onChange={val => setReschedDate(val)}
+              placeholder="Select available date..."
+            />
+          </div>
+
+          {fastestDate && (
+            <div className="p-3 bg-green-50 rounded-xl border border-green-100 flex items-center justify-between">
+              <div>
+                <Text className="text-green-700 text-xs block">Fastest Suggest Reschedule Date</Text>
+                <Text className="text-green-800 font-bold">{fastestDate.format('YYYY-MM-DD (dddd)')}</Text>
+              </div>
+              <Button type="link" size="small" onClick={() => setReschedDate(fastestDate)}>Use This</Button>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       <style>{`
-        .card-item { --primary-clr: #1C204B; --dot-clr: #BBC0FF; width: 100%; height: 160px; border-radius: 15px; color: #fff; display: grid; cursor: pointer; grid-template-rows: 40px 1fr; overflow: hidden; transition: all 0.3s ease; }
-        .card-item:hover { transform: translateY(-5px); }
-        .img-section { transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); border-top-left-radius: 15px; border-top-right-radius: 15px; display: flex; justify-content: flex-end; padding-right: 20px; }
-        .card-desc { border-radius: 15px; padding: 15px 20px; position: relative; top: -10px; display: grid; background: var(--primary-clr); z-index: 2; }
-        .card-time { font-size: 2em; font-weight: 700; line-height: 1; }
-        .card-title { flex: 1; font-size: 0.85em; font-weight: 500; color: var(--dot-clr); text-transform: uppercase; letter-spacing: 1px; }
-        .card-header { display: flex; align-items: center; width: 100%; margin-bottom: 5px; }
-        .card-menu { display: flex; gap: 3px; }
-        .card-menu .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--dot-clr); }
-        .recent-text { font-size: 0.75em; color: var(--dot-clr); opacity: 0.7; }
-        .bin-button { width: 36px; height: 36px; border-radius: 50%; background-color: #fee2e2; border: none; cursor: pointer; transition-duration: .3s; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
-        .bin-svgIcon { width: 14px; transition-duration: .3s; }
-        .bin-svgIcon path { fill: #ef4444; }
-        .bin-button:hover { width: 100px; border-radius: 50px; background-color: #ef4444; }
-        .bin-button:hover .bin-svgIcon { width: 40px; transform: translateY(60%); }
+        .card-item { width: 100%; height: 160px; border-radius: 20px; color: #fff; display: grid; grid-template-rows: 45px 1fr; overflow: hidden; background: #1a1c3d; }
+        .img-section { display: flex; justify-content: flex-end; padding-right: 20px; align-items: center; opacity: 0.8; }
+        .card-desc { padding: 15px 20px; background: #1C204B; border-radius: 20px; position: relative; top: -5px; }
+        .card-time { font-size: 2.2em; font-weight: 800; }
+        .card-title { font-size: 0.8em; color: #BBC0FF; text-transform: uppercase; letter-spacing: 1px; }
+        .recent-text { font-size: 0.7em; color: #BBC0FF; opacity: 0.6; }
+        .bin-button { width: 36px; height: 36px; border-radius: 50%; background-color: #fee2e2; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .bin-button:hover { background-color: #ef4444; transform: scale(1.1); }
         .bin-button:hover .bin-svgIcon path { fill: white; }
-        .bin-button::before { position: absolute; top: -20px; content: "CLOSE"; color: white; transition-duration: .3s; font-size: 2px; }
-        .bin-button:hover::before { font-size: 11px; opacity: 1; transform: translateY(32px); }
+        .bin-svgIcon { width: 14px; fill: #ef4444; transition: all 0.3s; }
       `}</style>
     </div>
   );

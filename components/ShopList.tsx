@@ -14,7 +14,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
   const [formOpen, setFormOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
 
-  // 🔴 關閉動作邏輯 (複刻 Dashboard)
+  // 🔴 關閉動作邏輯
   const handleCloseAction = (shop: Shop) => {
     confirm({
       title: 'Confirm Closing Shop',
@@ -94,28 +94,6 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
       render: (_: any, record: Shop) => {
         const isClosed = record.status?.toLowerCase() === 'closed';
         return (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', alignItems: 'center' }}>
-            {selectedRowId === record.id && (
-              <>
-                {/* 🔴 Dashboard 同款 Bin Button */}
-                <button 
-                  className="bin-button" 
-                  disabled={isClosed} 
-                  onClick={(e) => { e.stopPropagation(); handleCloseAction(record); }}
-                >
-                  <svg viewBox="0 0 448 512" className="bin-svgIcon">
-                    <path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path>
-                  </svg>
-                </button>
-
-                {/* 🔵 Edit Button */}
-                {
-      title: '',
-      key: 'actions',
-      align: 'right' as const,
-      render: (_: any, record: Shop) => {
-        const isClosed = record.status?.toLowerCase() === 'closed';
-        return (
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', alignItems: 'center' }}>
             {selectedRowId === record.id && (
               <>
@@ -152,6 +130,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
         );
       },
     },
+  ];
 
   return (
     <div className="flex flex-col gap-8 pb-10">

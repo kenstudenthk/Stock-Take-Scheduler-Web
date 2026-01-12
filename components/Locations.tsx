@@ -1,22 +1,20 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Avatar, Table, Card, Row, Col, Space, Select, Input, Badge, Button, message, Typography, Tag } from 'antd'; // ✅ 補上 Tag 匯入
+import { Avatar, Table, Card, Row, Col, Space, Select, Input, Button, message, Typography, Tag } from 'antd';
 import { SearchOutlined, EnvironmentOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { Shop } from '../types';
 
 const { Text } = Typography;
 
-// --- 1. 輔助函數 (放在外部是正確的) ---
 const getGroupRowStyle = (groupId: number) => {
   switch (groupId) {
-    case 1: return { backgroundColor: '#f0f9ff' }; // Group A - Light Blue
-    case 2: return { backgroundColor: '#faf5ff' }; // Group B - Light Purple
-    case 3: return { backgroundColor: '#fff7ed' }; // Group C - Light Orange
+    case 1: return { backgroundColor: '#f0f9ff' };
+    case 2: return { backgroundColor: '#faf5ff' };
+    case 3: return { backgroundColor: '#fff7ed' };
     default: return {};
   }
 };
 
-// 安全密鑰配置
 if (typeof window !== 'undefined') {
   (window as any)._AMapSecurityConfig = { securityJsCode: 'e8fbca88770fac2110a951fab66651ab' };
 }
@@ -26,22 +24,19 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const mapInstance = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
 
-  // --- 2. 狀態管理 (必須在組件內部) ---
   const [searchText, setSearchText] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
   const [filteredShops, setFilteredShops] = useState<Shop[]>(shops);
 
-  // ✅ 關鍵修復：當外部 shops 數據更新時，同步更新內部狀態
+  // ✅ 關鍵修正：當數據更新時，除了更新列表，也要同步更新地圖點
   useEffect(() => {
     setFilteredShops(shops);
-  // 如果地圖已經初始化好了，立即更新標註點
     if (mapInstance.current) {
       updateMapMarkers(shops);
     }
   }, [shops]);
 
-  // --- 3. 動態過濾選項 ---
   const regionOptions = useMemo(() => 
     Array.from(new Set(shops.map(s => s.region))).filter(Boolean).sort(), [shops]);
 
@@ -50,11 +45,10 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     return Array.from(new Set(filteredByRegion.map(s => s.district))).filter(Boolean).sort();
   }, [shops, selectedRegion]);
 
-  // --- 4. 核心過濾函數 ---
   const handleApplyFilters = () => {
     const results = shops.filter(shop => {
-      const matchSearch = shop.name.toLowerCase().includes(searchText.toLowerCase()) || 
-                          shop.id.toLowerCase().includes(searchText.toLowerCase());
+      const matchSearch = (shop.name || '').toLowerCase().includes(searchText.toLowerCase()) || 
+                          (shop.id || '').toLowerCase().includes(searchText.toLowerCase());
       const matchRegion = selectedRegion === 'all' || shop.region === selectedRegion;
       const matchDistrict = selectedDistrict === 'all' || shop.district === selectedDistrict;
       return matchSearch && matchRegion && matchDistrict;
@@ -72,9 +66,11 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     updateMapMarkers(shops);
   };
 
-  // --- 5. 地圖控制邏輯 ---
+  // ✅ 修正：修復語法錯誤並放寬座標檢查
   const updateMapMarkers = (targetShops: Shop[]) => {
-    if (!mapInstance.current) || !(window as any).AMap) return;
+    // 修正括號：將所有條件放在同一個 if (...) 內
+    if (!mapInstance.current || !(window as any).AMap) return;
+
     mapInstance.current.remove(markersRef.current);
     markersRef.current = [];
 
@@ -83,10 +79,8 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       closeWhenClickMap: true
     });
 
-   // 門市座標在 SharePoint 為空時會變成 0。
-    // 修正為檢查數值是否不等於 0 或 undefined。
     const newMarkers = targetShops
-      .filter(s => s.latitude !== 0 && s.longitude !== 0 && s.latitude != null) 
+      .filter(s => s.latitude !== 0 && s.longitude !== 0 && s.latitude != null)
       .map(s => {
         const color = s.status === 'completed' ? '#10b981' : s.groupId === 1 ? '#0ea5e9' : '#f59e0b';
         const marker = new (window as any).AMap.Marker({
@@ -118,18 +112,14 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
     markersRef.current = newMarkers;
     mapInstance.current.add(newMarkers);
-    
-    // 如果有標註點，自動調整視野以顯示所有點
-    if (newMarkers.length > 0) {
-      mapInstance.current.setFitView(newMarkers);
-    }
+    if (newMarkers.length > 0) mapInstance.current.setFitView(newMarkers);
   };
 
   useEffect(() => {
     AMapLoader.load({
       key: "a444f584e377f930c102c6b0b2cb118e",
       version: "2.0",
-      plugins: ['AMap.Marker'],
+      plugins: ['AMap.Marker', 'AMap.InfoWindow'],
     }).then((AMap) => {
       if (!mapRef.current) return;
       mapInstance.current = new AMap.Map(mapRef.current, { zoom: 11, center: [114.177, 22.3] });
@@ -150,7 +140,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 過濾工具欄 */}
       <Card bodyStyle={{ padding: '16px 24px' }} className="border-none shadow-sm rounded-2xl">
         <Row gutter={16} align="middle">
           <Col span={6}>
@@ -179,7 +168,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         </Row>
       </Card>
 
-      {/* 統計數值 */}
       <Row gutter={20}>
         <Col span={6}><StatCard title="Visible Shops" value={filteredShops.length} /></Col>
         <Col span={6}><StatCard title="Completed" value={filteredShops.filter(s => s.status === 'completed').length} color="text-emerald-500" /></Col>
@@ -227,7 +215,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   );
 };
 
-// --- 6. 統計卡片組件 ---
 const StatCard = ({ title, value, color = "text-slate-900" }: any) => (
   <Card size="small" className="border-none shadow-sm rounded-2xl bg-white h-full">
     <div className="flex flex-col p-2">

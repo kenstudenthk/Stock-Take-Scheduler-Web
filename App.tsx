@@ -82,29 +82,49 @@ function App() {
   const handleUpdateShop = async (shop: Shop, updates: any) => { /* ...原本的更新邏輯... */ };
 
   const renderSidebar = () => {
-    const menuItems = [
-      { key: View.DASHBOARD, icon: <HomeOutlined />, label: 'Dashboard' },
-      { key: View.SHOP_LIST, icon: <UnorderedListOutlined />, label: 'Master List' },
-      { key: View.CALENDAR, icon: <CalendarOutlined />, label: 'Schedules' },
-      { key: View.GENERATOR, icon: <ToolOutlined />, label: 'Generator' },
-      { key: View.LOCATIONS, icon: <ShopOutlined />, label: 'Map View' },
-      { key: View.INVENTORY, icon: <UnorderedListOutlined />, label: 'Inventory' },
-      { key: View.SETTINGS, icon: <SettingOutlined />, label: 'Settings' },
-    ];
+  const menuItems = [
+    { key: View.DASHBOARD, icon: <HomeOutlined />, label: 'Dashboard' },
+    { key: View.SHOP_LIST, icon: <UnorderedListOutlined />, label: 'Master List' },
+    { key: View.CALENDAR, icon: <CalendarOutlined />, label: 'Schedules' },
+    { key: View.GENERATOR, icon: <ToolOutlined />, label: 'Generator' },
+    { key: View.LOCATIONS, icon: <ShopOutlined />, label: 'Map View' },
+    { key: View.INVENTORY, icon: <UnorderedListOutlined />, label: 'Inventory' },
+    { key: View.SETTINGS, icon: <SettingOutlined />, label: 'Settings' },
+  ];
 
-    return (
-      <div className={`navigation ${collapsed ? 'active' : ''}`}>
-        <ul>
-          <li className="logo-item"><a href="#"><span className="icon">ST</span>{!collapsed && <span className="title" style={{fontWeight: 800}}>STOCK PRO</span>}</a></li>
-          {menuItems.map((item) => (
-            <li key={item.key} className={`list ${selectedMenuKey === item.key ? 'active' : ''}`} onClick={() => setSelectedMenuKey(item.key as View)}>
-              <a href="#"><span className="icon">{item.icon}</span>{!collapsed && <span className="title">{item.label}</span>}</a>
-            </li>
-          ))}
-        </ul>
+  return (
+    // ✅ 加入 flex flex-col justify-between h-full 確保底部對齊
+    <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-10`}>
+      <ul>
+        <li className="logo-item">
+          <a href="#">
+            <span className="icon">ST</span>
+            {!collapsed && <span className="title" style={{fontWeight: 800, fontSize: '1.2rem'}}>STOCK PRO</span>}
+          </a>
+        </li>
+        {menuItems.map((item) => (
+          <li 
+            key={item.key} 
+            className={`list ${selectedMenuKey === item.key ? 'active' : ''}`}
+            onClick={() => setSelectedMenuKey(item.key as View)}
+          >
+            <a href="#">
+              <span className="icon">{item.icon}</span>
+              {!collapsed && <span className="title">{item.label}</span>}
+            </a>
+          </li>
+        ))}
+      </ul>
+
+      {/* ✅ 這是底部區塊：將 Toggle 放在這裡 */}
+      <div className="flex justify-center items-center px-4">
+        <div style={{ transform: collapsed ? 'scale(0.5)' : 'scale(0.7)', transition: '0.3s' }}>
+          <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
+        </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   const renderContent = () => { /* ...原本的 Switch Case... */ 
     switch (selectedMenuKey) {

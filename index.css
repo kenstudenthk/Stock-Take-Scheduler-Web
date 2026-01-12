@@ -742,3 +742,50 @@ body {
   filter: grayscale(0.5);
   opacity: 0.8;
 }
+
+/* ============================================================
+   10. CUSTOM SEARCH INPUT (Uiverse Floating Label 搜尋框)
+   ============================================================ */
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.custom-search-input {
+  border: solid 1.5px var(--text-secondary);
+  border-radius: 12px; /* 稍微調整圓角以配合您的設計 */
+  background: none;
+  padding: 10px 15px;
+  font-size: 14px;
+  color: var(--text-main);
+  transition: border 150ms cubic-bezier(0.4,0,0.2,1);
+  width: 280px; /* 固定寬度 */
+  height: 44px; /* 與 DatePicker 高度對齊 */
+}
+
+.user-label {
+  position: absolute;
+  left: 15px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transform: translateY(0px); /* 初始位置居中 */
+  transition: 150ms cubic-bezier(0.4,0,0.2,1);
+  font-size: 14px;
+  background-color: transparent;
+}
+
+/* 當輸入框獲得焦點，或是有內容時 (valid) */
+.custom-search-input:focus, .custom-search-input:valid {
+  outline: none;
+  border: 1.5px solid var(--primary-teal);
+}
+
+.custom-search-input:focus ~ .user-label, 
+.custom-search-input:valid ~ .user-label {
+  transform: translateY(-22px) scale(0.8); /* 向上浮動並縮小 */
+  background-color: var(--bg-header);     /* 遮蓋邊框，自動適應日夜背景 */
+  padding: 0 .4em;
+  color: var(--primary-teal);
+  font-weight: bold;
+}

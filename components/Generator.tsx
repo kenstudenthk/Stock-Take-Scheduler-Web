@@ -174,15 +174,38 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
           </Collapse.Panel>
         </Collapse>
         
-        <div className="flex justify-end mt-12">
-          <Button 
-            type="primary" size="large" icon={<RocketOutlined />} 
-            loading={isCalculating} onClick={handleGenerate}
-            className="bg-teal-600 h-14 px-12 rounded-2xl font-bold shadow-lg border-none"
-          >
-            Generate Schedule
-          </Button>
-        </div>
+        // 找到 Generator.tsx 中原本 "Generate Schedule" 的 Button 位置
+// 替換如下：
+
+<div className="flex justify-end mt-12">
+  <button 
+    className="sparkle-button" 
+    onClick={handleGenerate}
+    disabled={isCalculating}
+  >
+    {/* 旋轉邊框 */}
+    <div className="dots_border"></div>
+
+    {/* 您提供的 Calendar SVG */}
+    <svg 
+      className="calendar-icon-svg"
+      viewBox="0 0 24 24" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <g transform="matrix(0.16 0 0 0.16 12 12)">
+        <path 
+          style={{ stroke: 'none', fill: 'white' }} 
+          transform="translate(-63.5, -64)" 
+          d="M 32 1 C 23.7 1 16.700781 7.1 15.300781 15 L 4 15 C 2.3 15 1 16.3 1 18 L 1 124 C 1 125.7 2.3 127 4 127 L 123 127 C 124.7 127 126 125.7 126 124 L 126 33 C 126 31.3 124.7 30 123 30 C 121.3 30 120 31.3 120 33 L 120 121 L 111 121 L 111 18 C 111 16.3 109.7 15 108 15 L 96.699219 15 C 95.299219 7.1 88.3 1 80 1 C 71.7 1 64.700781 7.1 63.300781 15 L 47.800781 15 C 46.500781 6.8 40.2 1 32 1 z M 32 7 C 36.8 7 40.599219 10.2 41.699219 15 L 21.400391 15 C 22.700391 10.4 27 7 32 7 z M 80 7 C 85 7 89.299609 10.4 90.599609 15 L 69.400391 15 C 70.700391 10.4 75 7 80 7 z M 7 21 L 15.300781 21 C 16.700781 28.9 23.7 35 32 35 C 33.7 35 35 33.7 35 32 C 35 30.3 33.7 29 32 29 C 27 29 22.700391 25.6 21.400391 21 L 63.300781 21 C 64.700781 28.9 71.7 35 80 35 C 81.7 35 83 33.7 83 32 C 83 30.3 81.7 29 80 29 C 75 29 70.700391 25.6 69.400391 21 L 105 21 L 105 121 L 7 121 L 7 49 L 58 49 C 59.7 49 61 47.7 61 46 C 61 44.3 59.7 43 58 43 L 7 43 L 7 21 z M 78 43 C 76.3 43 75 44.3 75 46 C 75 47.7 76.3 49 78 49 L 88 49 C 89.7 49 91 47.7 91 46 C 91 44.3 89.7 43 88 43 L 78 43 z M 58.810547 69.964844 C 58.082031 70.009766 57.363281 70.337891 56.800781 70.900391 L 46.800781 80.900391 C 45.600781 82.100391 45.600781 83.999609 46.800781 85.099609 C 48.000781 86.299609 49.9 86.299609 51 85.099609 L 55.900391 80.199219 L 55.900391 98 C 55.900391 99.7 57.200391 101 58.900391 101 C 60.600391 101 61.900391 99.7 61.900391 98 L 61.900391 73 C 62.000391 71.8 61.299609 70.699219 60.099609 70.199219 C 59.687109 70.011719 59.247656 69.937891 58.810547 69.964844 z" 
+        />
+      </g>
+    </svg>
+
+    <span className="text_button">
+      {isCalculating ? 'Generating...' : 'Generate Schedule'}
+    </span>
+  </button>
+</div>
       </div>
 
       {/* Result Section */}

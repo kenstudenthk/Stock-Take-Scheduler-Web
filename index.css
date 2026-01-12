@@ -315,6 +315,17 @@ body {
   cursor: not-allowed;
   box-shadow: none;
 }
+
+/* 在 5. ACTION BUTTONS 區塊加入綠色設定 */
+.Btn.new-btn-styled {
+  background-color: #23c483; /* 綠色 */
+  width: 45px; /* New Shop 按鈕初始稍大一點點以容納 Plus 圖標 */
+  height: 45px;
+}
+
+.Btn.new-btn-styled:hover {
+  width: 140px; /* 展開寬度稍微增加以容納 "NEW SHOP" 文字 */
+}
 /* ============================================================
    6. TABLE STYLING (表格樣式優化)
    ============================================================ */

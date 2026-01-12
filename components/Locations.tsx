@@ -48,40 +48,40 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   }, [shops, selectedRegion]);
 
   // ✅ 核心更新：更強大的地圖標註邏輯
-  const updateMapMarkers = (targetShops: Shop[]) => {
-    if (!mapInstance.current || !AMapRef.current) return;
+const updateMapMarkers = (targetShops: Shop[]) => {
+  if (!mapInstance.current || !AMapRef.current) return;
 
-    // 1. 清除現有標註
-    mapInstance.current.remove(markersRef.current);
-    markersRef.current = [];
+  const AMap = AMapRef.current;
+  mapInstance.current.remove(markersRef.current);
+  markersRef.current = [];
 
-    const AMap = AMapRef.current;
+  const infoWindow = new AMap.InfoWindow({
+    offset: new AMap.Pixel(0, -15),
+    closeWhenClickMap: true
+  });
 
-    // 2. 建立資訊窗體
-    const infoWindow = new AMap.InfoWindow({
-      offset: new AMap.Pixel(0, -15),
-      closeWhenClickMap: true
+  // ✅ 改進過濾邏輯：確保數值有效且在香港範圍附近 (22~23, 113~115)
+  const validShops = targetShops.filter(s => {
+    const lat = Number(s.latitude);
+    const lng = Number(s.longitude);
+    return !isNaN(lat) && !isNaN(lng) && lat > 10 && lng > 10;
+  });
+
+  // 💡 偵錯日誌：如果還是 0，請檢查 SharePoint 的 field_20/21 是否填寫正確
+  console.log(`Map: Received ${targetShops.length} shops.`);
+  console.log(`Map: Found ${validShops.length} shops with valid coordinates.`);
+  if (validShops.length > 0) {
+    console.log("Sample coordinate:", validShops[0].longitude, validShops[0].latitude);
+  }
+
+  const newMarkers = validShops.map(s => {
+    const color = s.status?.toLowerCase() === 'completed' ? '#10b981' : s.groupId === 1 ? '#0ea5e9' : '#f59e0b';
+    const marker = new AMap.Marker({
+      position: [Number(s.longitude), Number(s.latitude)], // 確保是數字
+      content: `<div style="background:${color}; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3); cursor:pointer;"></div>`,
+      extData: s,
+      anchor: 'center'
     });
-
-    // 3. 過濾有效的座標 (排除 0, null, undefined 和 NaN)
-    const validShops = targetShops.filter(s => 
-      s.latitude && s.longitude && 
-      !isNaN(s.latitude) && !isNaN(s.longitude) && 
-      s.latitude !== 0
-    );
-
-    // 💡 偵錯用：如果地圖沒點，請打開瀏覽器按 F12 查看這行
-    console.log(`Map: Processing ${targetShops.length} shops, Found ${validShops.length} valid coordinates.`);
-
-    // 4. 建立新標註
-    const newMarkers = validShops.map(s => {
-        const color = s.status?.toLowerCase() === 'completed' ? '#10b981' : s.groupId === 1 ? '#0ea5e9' : '#f59e0b';
-        const marker = new AMap.Marker({
-          position: [s.longitude, s.latitude], // [經度, 緯度]
-          content: `<div style="background:${color}; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3); cursor:pointer;"></div>`,
-          extData: s,
-          anchor: 'center'
-        });
 
         marker.on('click', (e: any) => {
           const shop = e.target.getExtData();

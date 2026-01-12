@@ -120,7 +120,7 @@ function App() {
 
         {/* 🌓 Sidebar 底部的切換開關 */}
         <div className="flex justify-center items-center px-4">
-          <div style={{ transform: collapsed ? 'scale(0.5)' : 'scale(0.7)', transition: '0.3s' }}>
+          <div style={{ transform: collapsed ? 'scale(0.25)' : 'scale(0.35)', transition: '0.3s' }}>
             <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
           </div>
         </div>

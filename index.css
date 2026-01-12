@@ -227,91 +227,94 @@ body {
 }
 
 /* ============================================================
-   5. ACTION BUTTONS (各類按鈕樣式)
+   5. ACTION BUTTONS (Uiverse 伸縮樣式 - Attach Style)
    ============================================================ */
-/* 新增門市按鈕 */
-.new-shop-btn {
-  padding: 1.1em 2.5em;
-  font-size: 12px;
-  text-transform: uppercase;
-  font-weight: 700;
-  border-radius: 45px;
-  transition: all 0.3s;
-  cursor: pointer;
+
+/* 基礎按鈕容器 */
+.Btn {
   display: flex;
-  gap: 10px;
-  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
-}
-
-.new-shop-btn:hover {
-  background-color: #23c483;
-  color: #fff;
-  transform: translateY(-7px);
-}
-
-/* 垃圾桶按鈕 (Bin Button) */
-.bin-button {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 35px !important;  /* 鎖定寬度 */
-  height: 35px !important; /* 鎖定高度 */
-  min-width: 35px !important;
-  border-radius: 10px !important;
-  background-color: rgb(255, 95, 95);
-  cursor: pointer;
+  align-items: center;
+  justify-content: flex-start;
+  width: 40px; /* 初始圓形大小 */
+  height: 40px;
   border: none;
-  transition: all 0.3s ease;
+  border-radius: 50%;
+  cursor: pointer;
   position: relative;
   overflow: hidden;
-  padding: 0 !important;
+  transition-duration: .3s;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.15);
 }
 
-.bin-button .bin-svgIcon {
-  width: 16px !important; /* 鎖定圖標大小 */
+/* 關閉按鈕顏色 (紅色系) */
+.Btn.close-btn-styled {
+  background-color: rgb(255, 65, 65);
+}
+
+/* 編輯按鈕顏色 (深色系) */
+.Btn.edit-btn-styled {
+  background-color: rgb(20, 20, 20);
+}
+
+/* 圖標區域 */
+.sign {
+  width: 40px; /* 必須與按鈕初始寬度一致以保持居中 */
+  transition-duration: .3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sign svg {
+  width: 18px;
   fill: white;
 }
 
-.bin-button:hover {
-  background-color: #ef4444;
-  transform: scale(1.1);
+/* 文字區域 */
+.btn-text {
+  position: absolute;
+  right: 0%;
+  width: 0%;
+  opacity: 0;
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  transition-duration: .3s;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-.bin-button:hover svg path {
-  fill: white;
+/* 懸停效果：按鈕變長 */
+.Btn:not(:disabled):hover {
+  width: 105px;
+  border-radius: 40px;
+  transition-duration: .3s;
 }
 
-/* 編輯按鈕 (Edit Button) */
-.edit-button {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 35px !important;  /* 與垃圾桶保持一致 */
-  height: 35px !important;
-  min-width: 35px !important;
-  border-radius: 10px !important;
-  background-color: #141414;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  padding: 0 !important;
+.Btn:not(:disabled):hover .sign {
+  width: 30%;
+  padding-left: 10px;
 }
 
-.edit-button .edit-svgIcon {
-  width: 16px !important;
-  fill: white;
+.Btn:not(:disabled):hover .btn-text {
+  opacity: 1;
+  width: 70%;
+  padding-right: 12px;
 }
 
-.edit-button:hover {
-  background-color: var(--primary-teal);
-   transform: scale(1.1);  
+/* 點擊效果 */
+.Btn:not(:disabled):active {
+  transform: translate(2px, 2px);
 }
 
-/* 防止表格內的按鈕文字意外跑出來 */
-.edit-button::before {
-  content: none !important; /* 暫時移除文字提示以穩定佈局 */
+/* 禁用狀態 */
+.Btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  box-shadow: none;
 }
-
 /* ============================================================
    6. TABLE STYLING (表格樣式優化)
    ============================================================ */

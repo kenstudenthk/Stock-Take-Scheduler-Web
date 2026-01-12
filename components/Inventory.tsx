@@ -163,7 +163,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
             </Select>
           </Col>
           <Col span={6}>
-            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Serial / CMDB</Text>
+            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Serial</Text>
             <Input 
               placeholder="Serial No..." 
               onChange={e => setFilters({...filters, serialNo: e.target.value})}
@@ -171,7 +171,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
             />
           </Col>
           <Col span={6}>
-            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Unique ID</Text>
+            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">CMDB</Text>
             <Input 
               placeholder="CMDB Number..." 
               onChange={e => setFilters({...filters, cmdb: e.target.value})}

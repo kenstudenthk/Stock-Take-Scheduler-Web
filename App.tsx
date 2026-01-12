@@ -65,7 +65,9 @@ function App() {
             status: f[SP_FIELDS.STATUS] || 'PLANNED',
             scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
             groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
-            is_mtr: f[SP_FIELDS.MTR] === 'Yes'
+            is_mtr: f[SP_FIELDS.MTR] === 'Yes',
+            phone: f[SP_FIELDS.PHONE] || '',         // 對應 field_37
+    contactName: f[SP_FIELDS.CONTACT] || '', // 對應 field_38
           };
         });
         setAllShops(mapped);

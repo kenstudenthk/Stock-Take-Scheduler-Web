@@ -118,9 +118,6 @@ function App() {
 
       {/* ✅ 這是底部區塊：將 Toggle 放在這裡 */}
       <div className="flex justify-center items-center px-4">
-        <div style={{ transform: collapsed ? 'scale(0.5)' : 'scale(0.7)', transition: '0.3s' }}>
-          <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
-        </div>
       </div>
     </div>
   );

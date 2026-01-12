@@ -78,18 +78,40 @@ body {
    ============================================================ */
 .custom-sider {
   background: var(--sidebar-bg) !important;
+  height: 100vh !important;
+  position: sticky !important;
+  top: 0;
+  left: 0;
+  z-index: 100;
 }
 
 .navigation {
   position: relative;
   height: 100vh;
   width: 100%;
-  transition: 0.5s;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Prevent sidebar itself from scrolling if possible */
 }
 
 .navigation ul {
+  flex: 1; /* This pushes the theme toggle to the absolute bottom */
   padding-left: 10px;
   margin-top: 20px;
+  overflow-y: auto; /* If you have many menu items, only the menu list scrolls, not the whole sidebar */
+}
+
+/* Ensure the main area fills remaining space correctly */
+.main-content-area {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--bg-main) !important;
 }
 
 .navigation ul li {

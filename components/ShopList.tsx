@@ -26,35 +26,28 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
 
-  // --- 邏輯：完全複刻 Dashboard 的 Closed 功能 ---
   const handleCloseShop = (shop: Shop) => {
     confirm({
       title: 'Confirm Closing Shop',
       icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
-      content: `Are you sure you want to set ${shop.name} to CLOSED?`,
-      okText: 'Yes, Close it',
+      content: `Set status of ${shop.name} to CLOSED?`,
+      okText: 'Confirm',
       okType: 'danger',
-      cancelText: 'Cancel',
       onOk: async () => {
         try {
           const res = await fetch(
             `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
             {
               method: 'PATCH',
-              headers: { 
-                'Authorization': `Bearer ${graphToken}`, 
-                'Content-Type': 'application/json' 
-              },
+              headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ [SP_FIELDS.STATUS]: 'CLOSED' })
             }
           );
           if (res.ok) {
-            message.success("Shop closed successfully");
+            message.success("Status updated to CLOSED");
             onRefresh();
           }
-        } catch (err) {
-          message.error("Sync failed");
-        }
+        } catch (err) { message.error("Sync Error"); }
       },
     });
   };
@@ -62,12 +55,10 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
   const filteredData = useMemo(() => {
     return shops.filter(s => 
       s.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      s.id.toLowerCase().includes(searchText.toLowerCase()) ||
-      s.district.toLowerCase().includes(searchText.toLowerCase())
+      s.id.toLowerCase().includes(searchText.toLowerCase())
     );
   }, [shops, searchText]);
 
-  // --- 恢復所有表格欄位 ---
   const columns = [
     {
       title: 'Shop & Brand',
@@ -77,21 +68,19 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
         <Space direction="vertical" size={0}>
           <Text strong style={{ fontSize: '15px' }}>{record.name}</Text>
           <Space>
-            <Tag color="blue" className="rounded-md font-bold">{record.brand}</Tag>
+            <Tag color="blue" className="font-bold">{record.brand}</Tag>
             <Text type="secondary" code>{record.id}</Text>
           </Space>
         </Space>
       ),
     },
     {
-      title: 'Location Detail',
+      title: 'Location Detail', // ✅ 確保這個欄位回來了
       key: 'location',
       width: '35%',
       render: (record: Shop) => (
         <Space direction="vertical" size={0}>
-          <Text size="small">
-            <EnvironmentOutlined className="text-teal-600" /> {record.region} - {record.district}
-          </Text>
+          <Text size="small"><EnvironmentOutlined className="text-teal-600" /> {record.region} - {record.district}</Text>
           <Text type="secondary" style={{ fontSize: '12px' }}>{record.address}</Text>
         </Space>
       ),
@@ -102,9 +91,7 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
       key: 'status',
       width: '12%',
       render: (status: string) => (
-        <Tag color={status === 'CLOSED' ? 'red' : 'green'} className="font-bold">
-          {status}
-        </Tag>
+        <Tag color={status === 'CLOSED' ? 'red' : 'green'} className="font-bold">{status}</Tag>
       )
     },
     {
@@ -115,15 +102,14 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', alignItems: 'center' }}>
           {selectedRowId === record.id && (
             <>
-              {/* ✅ 使用 Dashboard 風格的按鈕 */}
+              {/* ✅ 使用剛才在 index.css 定義的名稱 */}
               <button 
-                className="dashboard-close-btn"
+                className="st-close-btn"
                 onClick={(e) => { e.stopPropagation(); handleCloseShop(record); }}
               >
                 <CheckCircleOutlined /> CLOSED
               </button>
 
-              {/* ✅ 原本的 Uiverse Edit 按鈕 */}
               <button 
                 className="edit-button" 
                 onClick={(e) => { 
@@ -148,23 +134,12 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
       <div className="flex justify-between items-end bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <Space direction="vertical">
           <Title level={2} style={{ margin: 0 }}>Shop Master List</Title>
-          <Text type="secondary">Manage your SPO location database</Text>
-          
-          <button 
-            className="new-shop-btn" 
-            style={{ marginTop: '10px' }}
-            onClick={() => { setTargetShop(null); setFormOpen(true); }}
-          >
+          <Text type="secondary">Manage location database records</Text>
+          <button className="new-shop-btn" style={{ marginTop: '10px' }} onClick={() => { setTargetShop(null); setFormOpen(true); }}>
             <PlusOutlined /> New Shop
           </button>
         </Space>
-
-        <Input
-          placeholder="Search name, code or district..."
-          prefix={<SearchOutlined className="text-slate-400" />}
-          className="w-80 h-12 rounded-xl shadow-inner bg-slate-50 border-none"
-          onChange={e => setSearchText(e.target.value)}
-        />
+        <Input placeholder="Search..." prefix={<SearchOutlined />} className="w-80 h-12 rounded-xl bg-slate-50 border-none" onChange={e => setSearchText(e.target.value)} />
       </div>
 
       <Card className="rounded-2xl shadow-sm border-slate-100 overflow-hidden st-master-table">
@@ -172,22 +147,12 @@ export const ShopList: React.FC<Props> = ({ shops, graphToken, onRefresh }) => {
           columns={columns} 
           dataSource={filteredData} 
           rowKey="id"
-          pagination={{ pageSize: 10, showSizeChanger: false }}
-          onRow={(record) => ({
-            onClick: () => setSelectedRowId(record.id === selectedRowId ? null : record.id),
-          })}
+          onRow={(record) => ({ onClick: () => setSelectedRowId(record.id === selectedRowId ? null : record.id) })}
           rowClassName={(record) => record.id === selectedRowId ? 'selected-row cursor-pointer' : 'cursor-pointer'}
-          locale={{ emptyText: <Empty description="No Shops Found" /> }}
         />
       </Card>
 
-      <ShopFormModal 
-        visible={formOpen}
-        shop={targetShop}
-        onCancel={() => setFormOpen(false)}
-        onSuccess={() => { setFormOpen(false); onRefresh(); }}
-        graphToken={graphToken}
-      />
+      <ShopFormModal visible={formOpen} shop={targetShop} onCancel={() => setFormOpen(false)} onSuccess={() => { setFormOpen(false); onRefresh(); }} graphToken={graphToken} />
     </div>
   );
 };

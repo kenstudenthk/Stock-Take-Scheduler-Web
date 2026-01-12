@@ -117,7 +117,13 @@ function App() {
       </ul>
 
       {/* ✅ 這是底部區塊：將 Toggle 放在這裡 */}
-      <div className="flex justify-center items-center px-4">
+      <div className="flex justify-center items-center px-4 w-full">
+        <div style={{ 
+          transform: collapsed ? 'scale(0.5)' : 'scale(0.7)', 
+          transition: 'all 0.3s ease' 
+        }}>
+          <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
+        </div>
       </div>
     </div>
   );
@@ -144,22 +150,7 @@ function App() {
       </Sider>
 
       <Layout className="flex flex-col overflow-hidden main-content-area">
-        <Header className="app-header px-8 flex justify-between items-center h-16 border-b">
-          <div className="flex items-center gap-6">
-            <Button 
-              type="text" 
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} 
-              onClick={() => setCollapsed(!collapsed)} 
-              className="toggle-sidebar-btn"
-            />
-            
-            {/* 🌓 加入切換開關 (並稍微縮放以符合 Header 高度) */}
-            <div style={{ transform: 'scale(0.7)', transformOrigin: 'left center' }}>
-              <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
-            </div>
-          </div>
-
-          <Space size="large">
+         <Space size="large">
              <Button 
                icon={<SyncOutlined spin={loading} />} 
                onClick={() => fetchAllData(graphToken)} 

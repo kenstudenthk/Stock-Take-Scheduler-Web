@@ -41,17 +41,18 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
             }
           );
           if (res.ok) {
-            message.success("Status updated to CLOSED.");
+            message.success("Shop status updated successfully.");
             onRefresh();
           }
-        } catch (err) { message.error("Update failed"); }
+        } catch (err) { message.error("Sync Error"); }
       },
     });
   };
 
   const filteredData = useMemo(() => {
     return shops.filter(s => {
-      const matchText = (s.name || '').toLowerCase().includes(searchText.toLowerCase()) || (s.id || '').toLowerCase().includes(searchText.toLowerCase());
+      const matchText = (s.name || '').toLowerCase().includes(searchText.toLowerCase()) || 
+                       (s.id || '').toLowerCase().includes(searchText.toLowerCase());
       const matchDate = filterDate ? dayjs(s.scheduledDate).format('YYYY-MM-DD') === filterDate : true;
       return matchText && matchDate;
     });
@@ -89,7 +90,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
       ),
     },
     {
-      title: 'Contact Info', // ✅ 正確對接 field_37 & field_38
+      title: 'Contact Info',
       key: 'contact',
       width: '20%',
       render: (record: Shop) => (
@@ -140,7 +141,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
 
   return (
     <div className="flex flex-col gap-6 pb-10">
-      {/* 標題與副標題移出容器 */}
+      {/* 1. Title & Subtitle 移出容器 */}
       <div className="mb-2">
         <Title level={2} className="m-0 text-slate-800">Shop Master List</Title>
         <Text className="text-slate-400 font-medium">Manage and filter all store locations across regions.</Text>
@@ -148,6 +149,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
 
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white">
         <div className="p-8">
+          {/* 2 & 3 & 4. New Shop 按鈕、搜尋框、日期篩選併排 */}
           <div className="flex justify-between items-center">
             {/* 左側：New Shop 伸縮按鈕 */}
             <button className="Btn new-btn-styled" onClick={() => { setTargetShop(null); setFormOpen(true); }}>
@@ -157,24 +159,18 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
               <div className="btn-text">New Shop</div>
             </button>
 
-      {/* 右側：搜尋框與日期篩選併排 */}
+            {/* 右側：搜尋框與日期篩選 */}
             <Space size="large" align="center">
-              
-              {/* ✅ 更換後的 Uiverse Floating Label 搜尋框 */}
               <div className="input-group">
                 <input 
                   required
                   type="text" 
-                  name="search" 
-                  autocomplete="off" 
+                  autoComplete="off" 
                   className="custom-search-input" 
-                  value={searchText}
                   onChange={e => setSearchText(e.target.value)} 
                 />
                 <label className="user-label">Search shop or code...</label>
               </div>
-              
-              <div className="flex flex-col">
               
               <DatePicker 
                 onChange={d => setFilterDate(d?.format('YYYY-MM-DD') || null)} 
@@ -197,7 +193,13 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
         </div>
       </Card>
 
-      <ShopFormModal visible={formOpen} shop={targetShop} onCancel={() => setFormOpen(false)} onSuccess={() => { setFormOpen(false); onRefresh(); }} graphToken={graphToken} />
+      <ShopFormModal 
+        visible={formOpen} 
+        shop={targetShop} 
+        onCancel={() => setFormOpen(false)} 
+        onSuccess={() => { setFormOpen(false); onRefresh(); }} 
+        graphToken={graphToken} 
+      />
     </div>
   );
 };

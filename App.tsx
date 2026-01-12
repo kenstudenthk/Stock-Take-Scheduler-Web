@@ -69,6 +69,7 @@ function App() {
             district: f[SP_FIELDS.DISTRICT] || '',
             area: f[SP_FIELDS.AREA] || '',
             brand: f[SP_FIELDS.BRAND] || '',
+            brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
             latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
             longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
             status: f.Status || f[SP_FIELDS.STATUS] || 'PLANNED', 

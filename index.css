@@ -14,6 +14,47 @@
 :root {
   --primary-clr: #1C204B;
   --dot-clr: #BBC0FF;
+   --bg-main: #f8fafc;
+  --bg-header: #ffffff;
+  --text-main: #1e293b;
+  --border-color: #f1f5f9;
+}
+
+/* 2. Dark Mode 覆寫變數 */
+body.dark {
+  --bg-main: #0f172a;   /* 深藍色背景 */
+  --bg-header: #1e293b; /* 稍微淺一點的深藍色 */
+  --text-main: #f8fafc; /* 白色文字 */
+  --border-color: #334155;
+}
+
+/* 3. 將變數應用到 Layout */
+.main-content-area, .main-scroll-content {
+  background-color: var(--bg-main) !important;
+  transition: all 0.3s ease;
+}
+
+.app-header {
+  background-color: var(--bg-header) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-main) !important;
+}
+
+.refresh-btn {
+  background-color: var(--bg-header);
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+
+/* 讓選中的側邊欄缺口顏色跟著背景變 */
+.navigation ul li.active {
+  background: var(--bg-main) !important;
+}
+.navigation ul li.active::before {
+  box-shadow: 10px 10px 0 10px var(--bg-main);
+}
+.navigation ul li.active::after {
+  box-shadow: 10px -10px 0 10px var(--bg-main);
 }
 
 body {

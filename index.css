@@ -1,34 +1,60 @@
 /* ============================================================
-   1. 列印優化與 Tailwind 基礎設定
+   1. GLOBAL THEME & BASE (基礎設定與主題變數)
    ============================================================ */
-@media print {
-  .bin-button, .wrapper, .ant-btn {
-    display: none !important;
-  }
-}
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --primary-clr: #1C204B;
-  --dot-clr: #BBC0FF;
-   --bg-main: #f8fafc;
+  /* 品牌核心色 */
+  --primary-teal: #0d9488;
+  --sidebar-bg: #2b3467;
+  --stat-card-dark: #1C204B;
+  --stat-dot-light: #BBC0FF;
+
+  /* 主題色 - Light Mode (淺色) */
+  --bg-main: #f8fafc;
   --bg-header: #ffffff;
   --text-main: #1e293b;
+  --text-secondary: #64748b;
   --border-color: #f1f5f9;
+  --card-bg: #ffffff;
 }
 
-/* 2. Dark Mode 覆寫變數 */
+/* Dark Mode (深色模式) 變數覆寫 */
 body.dark {
-  --bg-main: #0f172a;   /* 深藍色背景 */
-  --bg-header: #1e293b; /* 稍微淺一點的深藍色 */
-  --text-main: #f8fafc; /* 白色文字 */
+  --bg-main: #0f172a;    /* 極深藍背景 */
+  --bg-header: #1e293b;  /* 稍微淺一點的深藍 Header */
+  --text-main: #f8fafc;  /* 白色主文字 */
+  --text-secondary: #94a3b8;
   --border-color: #334155;
+  --card-bg: #1e293b;
+  
+  /* 深色模式下的統計卡片背景微調 */
+  --stat-card-dark: #1e293b; 
 }
 
-/* 3. 將變數應用到 Layout */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* 列印優化：隱藏不必要的按鈕與導航 */
+@media print {
+  .bin-button, .wrapper, .ant-btn, .navigation, .app-header, .new-shop-btn {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   2. LAYOUT COMPONENTS (框架與 Header)
+   ============================================================ */
 .main-content-area, .main-scroll-content {
   background-color: var(--bg-main) !important;
   transition: all 0.3s ease;
@@ -38,697 +64,32 @@ body.dark {
   background-color: var(--bg-header) !important;
   border-color: var(--border-color) !important;
   color: var(--text-main) !important;
+  transition: all 0.3s ease;
 }
 
 .refresh-btn {
-  background-color: var(--bg-header);
-  color: var(--text-main);
-  border-color: var(--border-color);
-}
-
-/* 讓選中的側邊欄缺口顏色跟著背景變 */
-.navigation ul li.active {
-  background: var(--bg-main) !important;
-}
-.navigation ul li.active::before {
-  box-shadow: 10px 10px 0 10px var(--bg-main);
-}
-.navigation ul li.active::after {
-  box-shadow: 10px -10px 0 10px var(--bg-main);
-}
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc; /* slate-50 */
+  background-color: var(--bg-header) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color) !important;
 }
 
 /* ============================================================
-   2. Summary Box - 統計卡片 (Dashboard)
+   3. CURVED SIDEBAR NAVIGATION (圓弧缺口側邊欄)
    ============================================================ */
-.st-stat-card {
-  width: 100%;
-  height: 160px;
-  border-radius: 15px;
-  color: #fff;
-  display: grid;
-  cursor: pointer;
-  grid-template-rows: 45px 1fr;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-}
-
-.st-stat-card:hover {
-  transform: translateY(-5px);
-}
-
-.st-stat-card .img-section {
-  transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  display: flex;
-  justify-content: flex-end;
-  padding-right: 20px;
-}
-
-.st-stat-card .card-desc {
-  border-radius: 15px;
-  padding: 15px 20px;
-  position: relative;
-  top: -10px;
-  display: grid;
-  background: var(--primary-clr);
-  z-index: 2;
-}
-
-.st-stat-card .card-header {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 4px;
-}
-
-.st-stat-card .card-title {
-  flex: 1;
-  font-size: 0.85em;
-  font-weight: 600;
-  color: var(--dot-clr);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.st-stat-card .card-time {
-  font-size: 2.2em;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.st-stat-card .recent-text {
-  font-size: 0.75em;
-  color: var(--dot-clr);
-  opacity: 0.7;
-  margin-top: 5px;
-}
-
-/* ============================================================
-   3. Group Tabs - 切換器 (Dashboard)
-   ============================================================ */
-.wrapper {
-  --font-color-dark: #323232;
-  --font-color-light: #FFF;
-  --bg-color: #fff;
-  --main-color: #323232;
-  position: relative;
-  width: 380px;
-  height: 40px;
-  background-color: var(--bg-color);
-  border: 2px solid var(--main-color);
-  border-radius: 34px;
-  display: flex;
-  flex-direction: row;
-  box-shadow: 4px 4px var(--main-color);
-}
-
-.option {
-  flex: 1;
-  height: 30px;
-  position: relative;
-  top: 3px;
-  margin: 0 2px;
-}
-
-.input {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  left: 0;
-  top: 0;
-  appearance: none;
-  cursor: pointer;
-  z-index: 3;
-}
-
-.btn {
-  width: 100%;
-  height: 100%;
-  background-color: var(--bg-color);
-  border-radius: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: background-color 0.2s ease;
-}
-
-.span {
-  color: var(--font-color-dark);
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.input:checked + .btn {
-  background-color: var(--main-color);
-}
-
-.input:checked + .btn .span {
-  color: var(--font-color-light);
-}
-
-/* ============================================================
-   4. New Shop 按鈕 (Master List)
-   ============================================================ */
-.new-shop-btn {
-  padding: 1.1em 2.5em;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 2.5px;
-  font-weight: 700;
-  color: #000;
-  background-color: #fff;
-  border: none;
-  border-radius: 45px;
-  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease 0s;
-  cursor: pointer;
-  outline: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.new-shop-btn:hover {
-  background-color: #23c483;
-  box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);
-  color: #fff;
-  transform: translateY(-7px);
-}
-
-.new-shop-btn:active {
-  transform: translateY(-1px);
-}
-
-/* ============================================================
-   5. Edit 編輯按鈕 (Master List Row Action)
-   ============================================================ */
-.edit-button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: rgb(20, 20, 20);
-  border: none;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.164);
-  cursor: pointer;
-  transition-duration: 0.3s;
-  overflow: hidden;
-  position: relative;
-  animation: fadeInRight 0.3s ease;
-}
-
-@keyframes fadeInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.edit-svgIcon {
-  width: 17px;
-  transition-duration: 0.3s;
-}
-
-.edit-svgIcon path {
-  fill: white;
-}
-
-.edit-button:hover {
-  width: 120px;
-  border-radius: 50px;
-  transition-duration: 0.3s;
-  background-color: #23c483; /* 這裡改為綠色或你喜歡的顏色 */
-  align-items: center;
-}
-
-.edit-button:hover .edit-svgIcon {
-  width: 20px;
-  transform: translateY(0) rotate(360deg);
-}
-
-.edit-button::before {
-  content: "EDIT";
-  display: none;
-  color: white;
-  transition-duration: 0.3s;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.edit-button:hover::before {
-  display: block;
-  padding-right: 10px;
-}
-
-/* ============================================================
-   6. 全域表格樣式 (Master List Table)
-   ============================================================ */
-.st-master-table .ant-table-thead > tr > th {
-  background-color: #0d9488 !important; /* Teal 600 */
-  color: white !important;
-  font-weight: 800 !important;
-  text-transform: uppercase;
-  font-size: 11px;
-  padding: 16px !important;
-}
-
-.st-master-table .ant-table-row {
-  transition: all 0.2s;
-}
-
-/* ============================================================
-   7. Uiverse 風格表單 (自定義輸入框動畫)
-   ============================================================ */
-.st-form-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  gap: 30px;
-  background: #f8fafc; /* 淺灰背景配合 App */
-  padding: 40px 20px;
-  border-radius: 12px;
-}
-
-.st-form-title {
-  color: #0d9488; /* Teal 600 */
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  display: block;
-  font-weight: bold;
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-}
-
-.st-inputBox {
-  position: relative;
-  width: 100%;
-  max-width: 400px;
-}
-
-.st-inputBox input {
-  width: 100%;
-  padding: 12px;
-  outline: none;
-  border: none;
-  color: #1e293b;
-  font-size: 1em;
-  background: transparent;
-  border-left: 2px solid #0d9488;
-  border-bottom: 2px solid #0d9488;
-  transition: 0.1s;
-  border-bottom-left-radius: 8px;
-}
-
-.st-inputBox span {
-  position: absolute;
-  left: 0;
-  transform: translateY(12px);
-  margin-left: 10px;
-  padding: 0 10px;
-  pointer-events: none;
-  font-size: 12px;
-  color: #64748b;
-  text-transform: uppercase;
-  transition: 0.5s;
-  letter-spacing: 2px;
-}
-
-/* 當輸入框有文字或被選中時的動畫 */
-.st-inputBox input:valid ~ span,
-.st-inputBox input:focus ~ span {
-  transform: translateX(10px) translateY(-10px);
-  font-size: 0.75em;
-  padding: 4px 10px;
-  background: #0d9488;
-  color: #fff;
-  border-radius: 4px;
-  letter-spacing: 1px;
-}
-
-.st-inputBox input:valid,
-.st-inputBox input:focus {
-  border: 2px solid #0d9488;
-  border-radius: 8px;
-  background: white;
-}
-
-.st-form-enter {
-  height: 48px;
-  width: 160px;
-  border-radius: 8px;
-  border: 2px solid #0d9488;
-  cursor: pointer;
-  background-color: transparent;
-  transition: 0.5s;
-  text-transform: uppercase;
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 2px;
-  color: #0d9488;
-  margin-top: 20px;
-}
-
-.st-form-enter:hover {
-  background-color: #0d9488;
-  color: white;
-  box-shadow: 0 10px 20px -10px rgba(13, 148, 136, 0.5);
-}
-
-/* --- Uiverse Form Styles --- */
-.st-modal-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
-.st-card {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-  width: 100%;
-  flex-direction: column;
-  gap: 35px;
-  background: #f3f4f6; /* 稍微調整為配合 App 的淺灰 */
-  box-shadow: 12px 12px 24px #d1d5db, -12px -12px 24px #ffffff;
-  border-radius: 16px;
-  padding: 30px;
-}
-
-.st-login-title {
-  color: #0d9488; /* 使用你的 Teal 主色 */
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  display: block;
-  font-weight: bold;
-  font-size: x-large;
-}
-
-.st-inputBox {
-  position: relative;
-  width: 280px;
-}
-
-.st-inputBox input {
-  width: 100%;
-  padding: 10px;
-  outline: none;
-  border: none;
-  color: #000;
-  font-size: 1em;
-  background: transparent;
-  border-left: 2px solid #0d9488;
-  border-bottom: 2px solid #0d9488;
-  transition: 0.1s;
-  border-bottom-left-radius: 8px;
-}
-
-.st-inputBox span {
-  margin-top: 5px;
-  position: absolute;
-  left: 0;
-  transform: translateY(-4px);
-  margin-left: 10px;
-  padding: 10px;
-  pointer-events: none;
-  font-size: 12px;
-  color: #64748b;
-  text-transform: uppercase;
-  transition: 0.5s;
-  letter-spacing: 3px;
-  border-radius: 8px;
-}
-
-/* 當輸入框有文字(valid)或被選中(focus)時 */
-.st-inputBox input:valid ~ span,
-.st-inputBox input:focus ~ span {
-  transform: translateX(113px) translateY(-25px);
-  font-size: 0.8em;
-  padding: 5px 10px;
-  background: #0d9488;
-  letter-spacing: 0.2em;
-  color: #fff;
-}
-
-.st-inputBox input:valid,
-.st-inputBox input:focus {
-  border: 2px solid #0d9488;
-  border-radius: 8px;
-  background: white;
-}
-
-.st-enter-btn {
-  height: 45px;
-  width: 140px;
-  border-radius: 8px;
-  border: 2px solid #0d9488;
-  cursor: pointer;
-  background-color: transparent;
-  transition: 0.5s;
-  text-transform: uppercase;
-  font-size: 11px;
-  font-weight: bold;
-  letter-spacing: 2px;
-  color: #0d9488;
-}
-
-.st-enter-btn:hover {
-  background-color: #0d9488;
-  color: white;
-}
-
-
-/* --- 強化版 Uiverse 表單佈局 --- */
-.st-card-full {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-  background: #f8fafc;
-  padding: 40px;
-  border-radius: 16px;
-  width: 100%;
-}
-
-.st-inputBox-full {
-  position: relative;
-  width: 100%; /* 改為 100% 以適應 Grid */
-  margin-bottom: 5px;
-}
-
-.st-inputBox-full input {
-  width: 100%;
-  padding: 12px;
-  outline: none;
-  border: none;
-  color: #000;
-  font-size: 14px;
-  background: white; /* 增加背景色更像表單 */
-  border-left: 2px solid #0d9488;
-  border-bottom: 2px solid #0d9488;
-  transition: 0.2s;
-  border-bottom-left-radius: 8px;
-}
-
-.st-inputBox-full span {
-  position: absolute;
-  left: 0;
-  transform: translateY(12px);
-  margin-left: 10px;
-  padding: 0 5px;
-  pointer-events: none;
-  font-size: 12px;
-  color: #94a3b8;
-  text-transform: uppercase;
-  transition: 0.5s;
-  letter-spacing: 2px;
-}
-
-.st-inputBox-full input:valid ~ span,
-.st-inputBox-full input:focus ~ span {
-  transform: translateX(10px) translateY(-10px);
-  font-size: 0.75em;
-  padding: 2px 8px;
-  background: #0d9488;
-  color: #fff;
-  border-radius: 4px;
-}
-
-.st-inputBox-full input:valid,
-.st-inputBox-full input:focus {
-  border: 2px solid #0d9488;
-  border-radius: 8px;
-}
-
-
-/* --- 高級感表單佈局 --- */
-.st-form-section {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.st-inputBox-pro {
-  position: relative;
-  width: 100%;
-  margin-bottom: 15px;
-}
-
-.st-inputBox-pro input {
-  width: 100%;
-  padding: 14px 12px 10px 12px;
-  outline: none;
-  border: 1px solid #cbd5e1; /* 變細灰色線 */
-  color: #1e293b; /* 深色文字 */
-  font-size: 15px;
-  font-weight: 600; /* 資料加粗 */
-  background: #fcfcfc;
-  transition: all 0.3s;
-  border-radius: 8px;
-}
-
-.st-inputBox-pro span {
-  position: absolute;
-  left: 10px;
-  top: 14px;
-  pointer-events: none;
-  font-size: 11px;
-  color: #94a3b8;
-  text-transform: uppercase;
-  transition: 0.3s;
-  letter-spacing: 1px;
-  font-weight: 700;
-}
-
-/* 讓標籤浮動在左上角，但不遮擋資料 */
-.st-inputBox-pro input:focus ~ span,
-.st-inputBox-pro input:valid ~ span {
-  transform: translateY(-24px) translateX(-2px);
-  font-size: 10px;
-  color: #0d9488;
-  background: transparent;
-  padding: 0 4px;
-}
-
-.st-inputBox-pro input:focus {
-  border: 2px solid #0d9488;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
-}
-
-/* --- 確保這是你想要在 Dashboard 看到的樣式 --- */
-.st-close-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background-color: #f1f5f9; /* 初始灰色背景 */
-  color: #64748b;            /* 灰色文字 */
-  border: none;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.st-close-btn:hover {
-  background-color: #fee2e2; /* 懸停時變粉紅 */
-  color: #ef4444;            /* 懸停時變深紅 */
-}
-
-/* 確保 Edit 按鈕寬度正常 */
-.edit-button {
-  width: 40px;
-  height: 40px;
-}
-
-/* --- Dashboard 風格的 Bin Button (用於 Close 動作) --- */
-.bin-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 35px;
-  height: 35px;
-  border-radius: 10px;
-  background-color: rgb(255, 95, 95);
-  cursor: pointer;
-  border: none;
-  transition-duration: 0.3s;
-  position: relative;
-  overflow: hidden;
-}
-
-.bin-button:disabled {
-  background-color: #cbd5e1;
-  cursor: not-allowed;
-}
-
-.bin-svgIcon {
-  width: 14px;
-  fill: white;
-  transition-duration: 0.3s;
-}
-
-.bin-button:not(:disabled):hover .bin-svgIcon {
-  width: 15px;
-  transition-duration: 0.3s;
-  transform: translateY(15%);
-}
-
-.bin-button:not(:disabled):hover {
-  background-color: rgb(255, 0, 0);
-  transition-duration: 0.3s;
-}
-
-.bin-button:not(:disabled):active {
-  transform: scale(0.9);
-  transition-duration: 0.3s;
-}
-
-/* src/index.css */
-:root {
-  --sidebar-color: #2b3467; /* 側邊欄主色 */
-  --bg-color: #f8fafc;      /* 主內容背景色 (必須與 Content 顏色一致) */
+.custom-sider {
+  background: var(--sidebar-bg) !important;
 }
 
 .navigation {
   position: relative;
   height: 100vh;
-  width: 260px;
-  background: var(--sidebar-color);
+  width: 100%;
   transition: 0.5s;
-  overflow: hidden;
 }
 
-.navigation.active { width: 80px; }
-
 .navigation ul {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  padding: 20px 0 20px 10px; /* 左側留白給圓角 */
+  padding-left: 10px;
+  margin-top: 20px;
 }
 
 .navigation ul li {
@@ -739,16 +100,12 @@ body {
   border-bottom-left-radius: 30px;
 }
 
+/* 核心：選中時的背景必須與主內容區背景 (--bg-main) 同色 */
 .navigation ul li.active {
-  background: var(--bg-color); /* 選中時背景變為內容區的顏色 */
+  background: var(--bg-main) !important;
 }
 
-.navigation ul li b:nth-child(1), 
-.navigation ul li b:nth-child(2) {
-  display: none; /* 隱藏原本的組件 */
-}
-
-/* 核心：上方圓弧缺口 */
+/* 上方圓弧缺口 */
 .navigation ul li.active::before {
   content: '';
   position: absolute;
@@ -758,10 +115,10 @@ body {
   height: 20px;
   background: transparent;
   border-bottom-right-radius: 20px;
-  box-shadow: 7.5px 7.5px 0 7.5px var(--bg-color);
+  box-shadow: 10px 10px 0 10px var(--bg-main);
 }
 
-/* 核心：下方圓弧缺口 */
+/* 下方圓弧缺口 */
 .navigation ul li.active::after {
   content: '';
   position: absolute;
@@ -771,19 +128,20 @@ body {
   height: 20px;
   background: transparent;
   border-top-right-radius: 20px;
-  box-shadow: 7.5px -7.5px 0 7.5px var(--bg-color);
+  box-shadow: 10px -10px 0 10px var(--bg-main);
 }
 
 .navigation ul li a {
-  position: relative;
   display: flex;
   width: 100%;
-  text-decoration: none;
   color: #fff;
-  transition: 0.3s;
+  text-decoration: none;
+  align-items: center;
 }
 
-.navigation ul li.active a { color: var(--sidebar-color); }
+.navigation ul li.active a {
+  color: var(--sidebar-bg); /* 選中時文字/圖標變回深藍色 */
+}
 
 .navigation ul li a .icon {
   min-width: 60px;
@@ -794,22 +152,411 @@ body {
   font-size: 1.5em;
 }
 
-/* --- ✨ 加入動畫：選中時圖標輕微彈跳 --- */
+/* 選中時的圖標彈跳動畫 */
 .navigation ul li.active a .icon {
-  animation: bounce 0.4s ease-out;
+  animation: navBounce 0.4s ease-out;
 }
 
-@keyframes bounce {
+@keyframes navBounce {
   0% { transform: scale(1); }
   50% { transform: scale(1.3); }
   100% { transform: scale(1); }
 }
 
 .navigation ul li a .title {
-  height: 60px;
-  display: flex;
-  align-items: center;
   padding: 0 10px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* ============================================================
+   4. DASHBOARD COMPONENTS (統計卡片與分組切換)
+   ============================================================ */
+/* 統計卡片 - Uiverse 樣式 */
+.st-stat-card {
+  width: 100%;
+  height: 160px;
+  border-radius: 15px;
+  color: #fff;
+  display: grid;
+  cursor: pointer;
+  grid-template-rows: 45px 1fr;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.st-stat-card .card-desc {
+  border-radius: 15px;
+  padding: 15px 20px;
+  position: relative;
+  top: -10px;
+  display: grid;
+  background: var(--stat-card-dark);
+  z-index: 2;
+}
+
+.st-stat-card .card-title {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--stat-dot-light);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.st-stat-card .card-time {
+  font-size: 2.2em;
+  font-weight: 800;
+}
+
+/* Group Tabs 分組切換器 */
+.wrapper {
+  --main-color: #323232;
+  position: relative;
+  width: 380px;
+  height: 40px;
+  background-color: #fff;
+  border: 2px solid var(--main-color);
+  border-radius: 34px;
+  display: flex;
+  box-shadow: 4px 4px var(--main-color);
+}
+
+.dark .wrapper {
+  --main-color: #f8fafc;
+  background-color: #1e293b;
+}
+
+/* ============================================================
+   5. ACTION BUTTONS (各類按鈕樣式)
+   ============================================================ */
+/* 新增門市按鈕 */
+.new-shop-btn {
+  padding: 1.1em 2.5em;
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 700;
+  border-radius: 45px;
+  transition: all 0.3s;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.new-shop-btn:hover {
+  background-color: #23c483;
+  color: #fff;
+  transform: translateY(-7px);
+}
+
+/* 垃圾桶按鈕 (Bin Button) */
+.bin-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #fee2e2;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+}
+
+.bin-button:hover {
+  background-color: #ef4444;
+  transform: scale(1.1);
+}
+
+.bin-button:hover svg path {
+  fill: white;
+}
+
+/* 編輯按鈕 (Edit Button) */
+.edit-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #141414;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+}
+
+.edit-button:hover {
+  width: 100px;
+  border-radius: 20px;
+  background-color: var(--primary-teal);
+}
+
+/* ============================================================
+   6. TABLE STYLING (表格樣式優化)
+   ============================================================ */
+.st-master-table .ant-table-thead > tr > th {
+  background-color: var(--primary-teal) !important;
+  color: white !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.dark .ant-table {
+  background: var(--card-bg) !important;
+  color: var(--text-main) !important;
+}
+
+.dark .ant-table-cell {
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* ============================================================
+   7. FORM COMPONENTS (Uiverse 風格表單輸入框)
+   ============================================================ */
+.st-inputBox-pro {
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.st-inputBox-pro input {
+  width: 100%;
+  padding: 14px 12px 10px 12px;
+  outline: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--bg-header);
+  border-radius: 8px;
+  transition: 0.3s;
+}
+
+.st-inputBox-pro span {
+  position: absolute;
+  left: 10px;
+  top: 14px;
+  pointer-events: none;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  transition: 0.3s;
+  letter-spacing: 1px;
+}
+
+/* 標籤浮動效果 */
+.st-inputBox-pro input:focus ~ span,
+.st-inputBox-pro input:valid ~ span {
+  transform: translateY(-24px) translateX(-2px);
+  font-size: 10px;
+  color: var(--primary-teal);
+}
+
+/* ============================================================
+   8. THEME TOGGLE (Uiverse 日夜切換開關)
+   ============================================================ */
+/* From Uiverse.io by Galahhad */ 
+.theme-switch {
+  --toggle-size: 30px;
+  /* the size is adjusted using font-size,
+     this is not transform scale,
+     so you can choose any size */
+  --container-width: 5.625em;
+  --container-height: 2.5em;
+  --container-radius: 6.25em;
+  /* radius 0 - minecraft mode :) */
+  --container-light-bg: #3D7EAE;
+  --container-night-bg: #1D1F2C;
+  --circle-container-diameter: 3.375em;
+  --sun-moon-diameter: 2.125em;
+  --sun-bg: #ECCA2F;
+  --moon-bg: #C4C9D1;
+  --spot-color: #959DB1;
+  --circle-container-offset: calc((var(--circle-container-diameter) - var(--container-height)) / 2 * -1);
+  --stars-color: #fff;
+  --clouds-color: #F3FDFF;
+  --back-clouds-color: #AACADF;
+  --transition: .5s cubic-bezier(0, -0.02, 0.4, 1.25);
+  --circle-transition: .3s cubic-bezier(0, -0.02, 0.35, 1.17);
+}
+
+.theme-switch, .theme-switch *, .theme-switch *::before, .theme-switch *::after {
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-size: var(--toggle-size);
+}
+
+.theme-switch__container {
+  width: var(--container-width);
+  height: var(--container-height);
+  background-color: var(--container-light-bg);
+  border-radius: var(--container-radius);
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-box-shadow: 0em -0.062em 0.062em rgba(0, 0, 0, 0.25), 0em 0.062em 0.125em rgba(255, 255, 255, 0.94);
+  box-shadow: 0em -0.062em 0.062em rgba(0, 0, 0, 0.25), 0em 0.062em 0.125em rgba(255, 255, 255, 0.94);
+  -webkit-transition: var(--transition);
+  -o-transition: var(--transition);
+  transition: var(--transition);
+  position: relative;
+}
+
+.theme-switch__container::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  -webkit-box-shadow: 0em 0.05em 0.187em rgba(0, 0, 0, 0.25) inset, 0em 0.05em 0.187em rgba(0, 0, 0, 0.25) inset;
+  box-shadow: 0em 0.05em 0.187em rgba(0, 0, 0, 0.25) inset, 0em 0.05em 0.187em rgba(0, 0, 0, 0.25) inset;
+  border-radius: var(--container-radius)
+}
+
+.theme-switch__checkbox {
+  display: none;
+}
+
+.theme-switch__circle-container {
+  width: var(--circle-container-diameter);
+  height: var(--circle-container-diameter);
+  background-color: rgba(255, 255, 255, 0.1);
+  position: absolute;
+  left: var(--circle-container-offset);
+  top: var(--circle-container-offset);
+  border-radius: var(--container-radius);
+  -webkit-box-shadow: inset 0 0 0 3.375em rgba(255, 255, 255, 0.1), inset 0 0 0 3.375em rgba(255, 255, 255, 0.1), 0 0 0 0.625em rgba(255, 255, 255, 0.1), 0 0 0 1.25em rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 3.375em rgba(255, 255, 255, 0.1), inset 0 0 0 3.375em rgba(255, 255, 255, 0.1), 0 0 0 0.625em rgba(255, 255, 255, 0.1), 0 0 0 1.25em rgba(255, 255, 255, 0.1);
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-transition: var(--circle-transition);
+  -o-transition: var(--circle-transition);
+  transition: var(--circle-transition);
+  pointer-events: none;
+}
+
+.theme-switch__sun-moon-container {
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+  width: var(--sun-moon-diameter);
+  height: var(--sun-moon-diameter);
+  margin: auto;
+  border-radius: var(--container-radius);
+  background-color: var(--sun-bg);
+  -webkit-box-shadow: 0.062em 0.062em 0.062em 0em rgba(254, 255, 239, 0.61) inset, 0em -0.062em 0.062em 0em #a1872a inset;
+  box-shadow: 0.062em 0.062em 0.062em 0em rgba(254, 255, 239, 0.61) inset, 0em -0.062em 0.062em 0em #a1872a inset;
+  -webkit-filter: drop-shadow(0.062em 0.125em 0.125em rgba(0, 0, 0, 0.25)) drop-shadow(0em 0.062em 0.125em rgba(0, 0, 0, 0.25));
+  filter: drop-shadow(0.062em 0.125em 0.125em rgba(0, 0, 0, 0.25)) drop-shadow(0em 0.062em 0.125em rgba(0, 0, 0, 0.25));
+  overflow: hidden;
+  -webkit-transition: var(--transition);
+  -o-transition: var(--transition);
+  transition: var(--transition);
+}
+
+.theme-switch__moon {
+  -webkit-transform: translateX(100%);
+  -ms-transform: translateX(100%);
+  transform: translateX(100%);
+  width: 100%;
+  height: 100%;
+  background-color: var(--moon-bg);
+  border-radius: inherit;
+  -webkit-box-shadow: 0.062em 0.062em 0.062em 0em rgba(254, 255, 239, 0.61) inset, 0em -0.062em 0.062em 0em #969696 inset;
+  box-shadow: 0.062em 0.062em 0.062em 0em rgba(254, 255, 239, 0.61) inset, 0em -0.062em 0.062em 0em #969696 inset;
+  -webkit-transition: var(--transition);
+  -o-transition: var(--transition);
+  transition: var(--transition);
+  position: relative;
+}
+
+.theme-switch__spot {
+  position: absolute;
+  top: 0.75em;
+  left: 0.312em;
+  width: 0.75em;
+  height: 0.75em;
+  border-radius: var(--container-radius);
+  background-color: var(--spot-color);
+  -webkit-box-shadow: 0em 0.0312em 0.062em rgba(0, 0, 0, 0.25) inset;
+  box-shadow: 0em 0.0312em 0.062em rgba(0, 0, 0, 0.25) inset;
+}
+
+.theme-switch__spot:nth-of-type(2) {
+  width: 0.375em;
+  height: 0.375em;
+  top: 0.937em;
+  left: 1.375em;
+}
+
+.theme-switch__spot:nth-last-of-type(3) {
+  width: 0.25em;
+  height: 0.25em;
+  top: 0.312em;
+  left: 0.812em;
+}
+
+.theme-switch__clouds {
+  width: 1.25em;
+  height: 1.25em;
+  background-color: var(--clouds-color);
+  border-radius: var(--container-radius);
+  position: absolute;
+  bottom: -0.625em;
+  left: 0.312em;
+  -webkit-box-shadow: 0.937em 0.312em var(--clouds-color), -0.312em -0.312em var(--back-clouds-color), 1.437em 0.375em var(--clouds-color), 0.5em -0.125em var(--back-clouds-color), 2.187em 0 var(--clouds-color), 1.25em -0.062em var(--back-clouds-color), 2.937em 0.312em var(--clouds-color), 2em -0.312em var(--back-clouds-color), 3.625em -0.062em var(--clouds-color), 2.625em 0em var(--back-clouds-color), 4.5em -0.312em var(--clouds-color), 3.375em -0.437em var(--back-clouds-color), 4.625em -1.75em 0 0.437em var(--clouds-color), 4em -0.625em var(--back-clouds-color), 4.125em -2.125em 0 0.437em var(--back-clouds-color);
+  box-shadow: 0.937em 0.312em var(--clouds-color), -0.312em -0.312em var(--back-clouds-color), 1.437em 0.375em var(--clouds-color), 0.5em -0.125em var(--back-clouds-color), 2.187em 0 var(--clouds-color), 1.25em -0.062em var(--back-clouds-color), 2.937em 0.312em var(--clouds-color), 2em -0.312em var(--back-clouds-color), 3.625em -0.062em var(--clouds-color), 2.625em 0em var(--back-clouds-color), 4.5em -0.312em var(--clouds-color), 3.375em -0.437em var(--back-clouds-color), 4.625em -1.75em 0 0.437em var(--clouds-color), 4em -0.625em var(--back-clouds-color), 4.125em -2.125em 0 0.437em var(--back-clouds-color);
+  -webkit-transition: 0.5s cubic-bezier(0, -0.02, 0.4, 1.25);
+  -o-transition: 0.5s cubic-bezier(0, -0.02, 0.4, 1.25);
+  transition: 0.5s cubic-bezier(0, -0.02, 0.4, 1.25);
+}
+
+.theme-switch__stars-container {
+  position: absolute;
+  color: var(--stars-color);
+  top: -100%;
+  left: 0.312em;
+  width: 2.75em;
+  height: auto;
+  -webkit-transition: var(--transition);
+  -o-transition: var(--transition);
+  transition: var(--transition);
+}
+
+/* actions */
+
+.theme-switch__checkbox:checked + .theme-switch__container {
+  background-color: var(--container-night-bg);
+}
+
+.theme-switch__checkbox:checked + .theme-switch__container .theme-switch__circle-container {
+  left: calc(100% - var(--circle-container-offset) - var(--circle-container-diameter));
+}
+
+.theme-switch__checkbox:checked + .theme-switch__container .theme-switch__circle-container:hover {
+  left: calc(100% - var(--circle-container-offset) - var(--circle-container-diameter) - 0.187em)
+}
+
+.theme-switch__circle-container:hover {
+  left: calc(var(--circle-container-offset) + 0.187em);
+}
+
+.theme-switch__checkbox:checked + .theme-switch__container .theme-switch__moon {
+  -webkit-transform: translate(0);
+  -ms-transform: translate(0);
+  transform: translate(0);
+}
+
+.theme-switch__checkbox:checked + .theme-switch__container .theme-switch__clouds {
+  bottom: -4.062em;
+}
+
+.theme-switch__checkbox:checked + .theme-switch__container .theme-switch__stars-container {
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
 }

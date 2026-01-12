@@ -142,43 +142,48 @@ function App() {
   };
 
   return (
-    <Layout className="min-h-screen flex flex-row theme-transition">
-      <Sider trigger={null} collapsible collapsed={collapsed} width={260} className="custom-sider">
-        {renderSidebar()}
-      </Sider>
+  <Layout className="h-screen flex flex-row theme-transition overflow-hidden">
+    <Sider 
+      trigger={null} 
+      collapsible 
+      collapsed={collapsed} 
+      width={260} 
+      className="custom-sider h-screen sticky top-0 left-0"
+    >
+      {renderSidebar()}
+    </Sider>
 
-      <Layout className="flex flex-col overflow-hidden main-content-area">
-        <Header className="app-header px-8 flex justify-between items-center h-16 border-b">
-          <div className="flex items-center gap-6">
-            <Button 
-              type="text" 
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} 
-              onClick={() => setCollapsed(!collapsed)} 
-              className="toggle-sidebar-btn"
-            />
-            {/* 🔴 Header 內的 Toggle 已移除 */}
-          </div>
+    <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
+      <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0">
+        <div className="flex items-center gap-6">
+          <Button 
+            type="text" 
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} 
+            onClick={() => setCollapsed(!collapsed)} 
+            className="toggle-sidebar-btn"
+          />
+        </div>
 
-          <Space size="large">
-             <Button 
-               icon={<SyncOutlined spin={loading} />} 
-               onClick={() => fetchAllData(graphToken)} 
-               className="refresh-btn"
-               loading={loading}
-             >
-               Refresh
-             </Button>
-             <Tag color="cyan" className="font-bold rounded-md">POOL: {allShops.length}</Tag>
-             <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" className="user-avatar" />
-          </Space>
-        </Header>
+        <Space size="large">
+           <Button 
+             icon={<SyncOutlined spin={loading} />} 
+             onClick={() => fetchAllData(graphToken)} 
+             className="refresh-btn"
+             loading={loading}
+           >
+             Refresh
+           </Button>
+           <Tag color="cyan" className="font-bold rounded-md">POOL: {allShops.length}</Tag>
+           <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" className="user-avatar" />
+        </Space>
+      </Header>
 
-        <Content className="main-scroll-content p-8 overflow-y-auto">
-          {renderContent()}
-        </Content>
-      </Layout>
+      <Content className="main-scroll-content p-8 overflow-y-auto h-full">
+        {renderContent()}
+      </Content>
     </Layout>
-  );
+  </Layout>
+);
 }
 
 export default App;

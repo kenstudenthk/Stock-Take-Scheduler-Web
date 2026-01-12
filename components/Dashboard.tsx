@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shop } from '../types';
+import { ShopFormModal } from './ShopFormModal'; // ✅ 新增引入
 
 const { Text, Title } = Typography;
 const { confirm } = Modal;
@@ -31,9 +32,17 @@ const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
   </div>
 );
 
-export const Dashboard: React.FC<{shops: Shop[], onUpdateShop: any}> = ({ shops, onUpdateShop }) => {
+export const Dashboard: React.FC<{
+  shops: Shop[], 
+  onUpdateShop: any, 
+  graphToken: string, 
+  onRefresh: () => void 
+}> = ({ shops, onUpdateShop, graphToken, onRefresh }) => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [groupFilter, setGroupFilter] = useState<number | 'all'>('all');
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [targetShop, setTargetShop] = useState<Shop | null>(null);
 
   // --- 統計邏輯 ---
   const stats = useMemo(() => {
@@ -189,7 +198,13 @@ export const Dashboard: React.FC<{shops: Shop[], onUpdateShop: any}> = ({ shops,
                   </Tag>
                 </div>
                 <div style={{ width: 150 }} className="flex justify-end gap-3 pr-2">
-                   <Button size="small" disabled={isClosed} className="rounded-lg font-bold text-[10px]">Re-Schedule</Button>
+                   <Button size="small" disabled={isClosed} className="rounded-lg font-bold text-[10px]"onClick={() => {
+                      setTargetShop(shop);
+                      setIsModalOpen(true);
+                    }}
+                   >
+                     Re-Schedule
+                   </Button>
                    <button className="bin-button" disabled={isClosed} onClick={() => handleCloseAction(shop)}>
                      <svg viewBox="0 0 448 512" className="bin-svgIcon"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path></svg>
                    </button>
@@ -199,6 +214,23 @@ export const Dashboard: React.FC<{shops: Shop[], onUpdateShop: any}> = ({ shops,
           })}
         </div>
       </Card>
+      {/* ✅ 新增：編輯視窗組件 */}
+      <ShopFormModal 
+        visible={isModalOpen}
+        shop={targetShop}
+        onCancel={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          onRefresh(); // 更新成功後刷新數據
+        }}
+        graphToken={graphToken}
+      />
+
+      {/* 全局 CSS 保持不變 ... */}
+      <style>{` ... `}</style>
+    </div>
+  );
+};
 
       {/* 全局 CSS (包含新統計卡片與按鈕動畫) */}
       <style>{`

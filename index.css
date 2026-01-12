@@ -620,3 +620,47 @@ body {
   width: 40px;
   height: 40px;
 }
+
+/* --- Dashboard 風格的 Bin Button (用於 Close 動作) --- */
+.bin-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  border-radius: 10px;
+  background-color: rgb(255, 95, 95);
+  cursor: pointer;
+  border: none;
+  transition-duration: 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.bin-button:disabled {
+  background-color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.bin-svgIcon {
+  width: 14px;
+  fill: white;
+  transition-duration: 0.3s;
+}
+
+.bin-button:not(:disabled):hover .bin-svgIcon {
+  width: 15px;
+  transition-duration: 0.3s;
+  transform: translateY(15%);
+}
+
+.bin-button:not(:disabled):hover {
+  background-color: rgb(255, 0, 0);
+  transition-duration: 0.3s;
+}
+
+.bin-button:not(:disabled):active {
+  transform: scale(0.9);
+  transition-duration: 0.3s;
+}

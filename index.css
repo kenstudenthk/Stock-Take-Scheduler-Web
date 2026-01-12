@@ -251,16 +251,25 @@ body {
 
 /* 垃圾桶按鈕 (Bin Button) */
 .bin-button {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background-color: #fee2e2;
-  border: none;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 35px !important;  /* 鎖定寬度 */
+  height: 35px !important; /* 鎖定高度 */
+  min-width: 35px !important;
+  border-radius: 10px !important;
+  background-color: rgb(255, 95, 95);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.3s;
+  border: none;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.bin-button .bin-svgIcon {
+  width: 16px !important; /* 鎖定圖標大小 */
+  fill: white;
 }
 
 .bin-button:hover {
@@ -274,22 +283,33 @@ body {
 
 /* 編輯按鈕 (Edit Button) */
 .edit-button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 35px !important;  /* 與垃圾桶保持一致 */
+  height: 35px !important;
+  min-width: 35px !important;
+  border-radius: 10px !important;
   background-color: #141414;
   border: none;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.3s;
+  transition: all 0.3s ease;
+  padding: 0 !important;
+}
+
+.edit-button .edit-svgIcon {
+  width: 16px !important;
+  fill: white;
 }
 
 .edit-button:hover {
-  width: 100px;
-  border-radius: 20px;
   background-color: var(--primary-teal);
+   transform: scale(1.1);  
+}
+
+/* 防止表格內的按鈕文字意外跑出來 */
+.edit-button::before {
+  content: none !important; /* 暫時移除文字提示以穩定佈局 */
 }
 
 /* ============================================================

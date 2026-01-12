@@ -26,6 +26,8 @@ export interface Shop {
   scheduleStatus: string;
   groupId: number;  
   scheduledDate?: string; 
+  phone?: string;       // 對應 field_37
+  contactName?: string; // 對應 field_38
 }
 
 export interface NavItemProps {

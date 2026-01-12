@@ -592,3 +592,31 @@ body {
   background: #fff;
   box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
 }
+
+/* --- 確保這是你想要在 Dashboard 看到的樣式 --- */
+.st-close-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background-color: #f1f5f9; /* 初始灰色背景 */
+  color: #64748b;            /* 灰色文字 */
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.st-close-btn:hover {
+  background-color: #fee2e2; /* 懸停時變粉紅 */
+  color: #ef4444;            /* 懸停時變深紅 */
+}
+
+/* 確保 Edit 按鈕寬度正常 */
+.edit-button {
+  width: 40px;
+  height: 40px;
+}

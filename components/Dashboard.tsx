@@ -21,15 +21,21 @@ const HK_HOLIDAYS_2026 = [
 ];
 
 const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
-  <div className="card-item">
-    <div className="img-section" style={{ backgroundColor: bgColor }}>{icon}</div>
-    <div className="card-desc">
-      <div className="card-header">
-        <div className="card-title">{label}</div>
-        <div className="card-menu"><div className="dot"></div><div className="dot"></div><div className="dot"></div></div>
+  <div className="summary-card-item">
+    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>
+      {icon}
+    </div>
+    <div className="summary-card-body">
+      <div className="summary-card-header">
+        <div className="summary-card-title">{label}</div>
+        <div className="summary-card-menu">
+          <div className="dot"></div>
+          <div className="dot"></div>
+          <div className="dot"></div>
+        </div>
       </div>
-      <div className="card-time">{value}</div>
-      <p className="recent-text">{subtext}</p>
+      <div className="summary-card-value">{value}</div>
+      <p className="summary-card-subtext">{subtext}</p>
     </div>
   </div>
 );
@@ -147,11 +153,31 @@ export const Dashboard: React.FC<{
       </div>
 
       <Row gutter={[24, 24]}>
-        <Col span={6}><SummaryCard label="Total Shop" value={stats.total} subtext="Active Master" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{ fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5 }} />} /></Col>
-        <Col span={6}><SummaryCard label="Completed" value={stats.completed} subtext="Done this year" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{ fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5 }} />} /></Col>
-        <Col span={6}><SummaryCard label="Closed" value={stats.closed} subtext="Closed this year" bgColor="#ff4545" icon={<CloseCircleOutlined style={{ fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5 }} />} /></Col>
-        <Col span={6}><SummaryCard label="Remain" value={stats.remain} subtext="Pending action" bgColor="#f1c40f" icon={<HourglassOutlined style={{ fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5 }} />} /></Col>
-      </Row>
+  <Col span={6}>
+    <SummaryCard 
+      label="Total Shop" value={stats.total} subtext="Active Master List" bgColor="hsl(195, 74%, 62%)" 
+      icon={<ShopOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+    />
+  </Col>
+  <Col span={6}>
+    <SummaryCard 
+      label="Completed" value={stats.completed} subtext="Done this year" bgColor="hsl(145, 58%, 55%)" 
+      icon={<CheckCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+    />
+  </Col>
+  <Col span={6}>
+    <SummaryCard 
+      label="Closed" value={stats.closed} subtext="Closed this year" bgColor="#ff4545" 
+      icon={<CloseCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+    />
+  </Col>
+  <Col span={6}>
+    <SummaryCard 
+      label="Remain" value={stats.remain} subtext="Pending action" bgColor="#f1c40f" 
+      icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+    />
+  </Col>
+</Row>
 
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>
         {/* ✅ 加入日期與 Group Filter Tabs */}

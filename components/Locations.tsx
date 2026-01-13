@@ -194,18 +194,26 @@ const updateMapMarkers = (targetShops: Shop[]) => {
               
               {/* ✅ 插入 Uiverse Checkbox HTML */}
               <div className="flex items-center gap-3 px-2">
-  <label className="custom-checkbox-container">
+                <div className="checkbox-wrapper-10">
                   <input 
                     type="checkbox" 
-                    checked={includeClosed} 
-                    onChange={e => setIncludeClosed(e.target.checked)} 
+                    id="include-closed-toggle" 
+                    className="tgl tgl-flip"
+                    checked={includeClosed}
+                    onChange={e => setIncludeClosed(e.target.checked)}
                   />
-                  <div className="checkmark"></div>
-                </label>
-  <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-    Include Last Year Closed
-  </Text>
-</div>
+                  <label 
+                    htmlFor="include-closed-toggle" 
+                    data-tg-on="Include" 
+                    data-tg-off="Not Include" 
+                    className="tgl-btn"
+                  ></label>
+                </div>
+  
+              <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                Last Year Closed
+              </Text>
+            </div>
 
               <Button icon={<ReloadOutlined />} onClick={handleReset} className="rounded-xl h-11">Reset</Button>
               <Button type="primary" onClick={handleApplyFilters} className="bg-teal-600 h-11 rounded-xl">Apply Filters</Button>

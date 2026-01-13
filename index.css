@@ -1050,3 +1050,90 @@ body {
   cursor: not-allowed;
   pointer-events: none;
 }
+
+/* ============================================================
+   14.Dashboard Action Buttons (Re-Schedule & Close) 
+   ============================================================ */
+/* ============================================================
+   Unified Dashboard & Generator Summary Cards
+   ============================================================ */
+.summary-card-item {
+  --primary-clr: #1C204B;
+  --dot-clr: #BBC0FF;
+  width: 100%;
+  height: 160px;
+  border-radius: 15px;
+  color: #fff;
+  display: grid;
+  cursor: pointer;
+  grid-template-rows: 40px 1fr; /* Fixed height for the icon section */
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: none !important;
+}
+
+.summary-card-item:hover {
+  transform: translateY(-5px);
+}
+
+.summary-card-icon-area {
+  transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 20px;
+}
+
+.summary-card-body {
+  border-radius: 15px;
+  padding: 15px 20px;
+  position: relative;
+  top: -10px; /* Overlap effect */
+  display: flex;
+  flex-direction: column;
+  background: var(--primary-clr);
+  z-index: 2;
+}
+
+.summary-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.summary-card-title {
+  font-size: 0.85em;
+  font-weight: 500;
+  color: var(--dot-clr);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.summary-card-menu {
+  display: flex;
+  gap: 3px;
+}
+
+.summary-card-menu .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--dot-clr);
+}
+
+.summary-card-value {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.summary-card-subtext {
+  font-size: 0.75em;
+  color: var(--dot-clr);
+  opacity: 0.7;
+  margin: 0;
+}

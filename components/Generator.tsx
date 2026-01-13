@@ -11,7 +11,7 @@ import { SP_FIELDS } from '../constants';
 
 const { Text, Title } = Typography;
 
-// 地區名稱對照表
+// ✅ Full Region Mapping as requested
 const REGION_MAP: Record<string, string> = {
   'HK': 'Hong Kong Island',
   'KN': 'Kowloon',
@@ -26,9 +26,9 @@ interface ScheduledShop extends Shop {
   dayOfWeek: string;
 }
 
-// 統計卡片組件 (復刻 Dashboard 風格)
+// ✅ SummaryCard Component matching Dashboard HTML structure exactly
 const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
-  <div className="card-item shadow-sm border border-slate-50">
+  <div className="card-item">
     <div className="img-section" style={{ backgroundColor: bgColor }}>
       {icon}
     </div>
@@ -60,7 +60,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
   const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // --- 全局統計邏輯 ---
+  // --- Statistics Logic ---
   const globalStats = useMemo(() => {
     const total = shops.length;
     const closed = shops.filter(s => s.status === 'Closed').length;
@@ -69,18 +69,20 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
     return { total, completed, closed, remain };
   }, [shops]);
 
-  // --- 區域待處理統計 ---
+  // ✅ Regional Pending Stats Logic
   const regionRemainStats = useMemo(() => {
     const unassignedShops = shops.filter(s => 
       !['Planned', 'Done', 'Closed', 'Re-Open', 'In-Progress', 'Reschedule'].includes(s.status)
     );
+    
     const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
     unassignedShops.forEach(s => {
       if (counts.hasOwnProperty(s.region)) counts[s.region]++;
     });
+
     return Object.keys(counts).map(key => ({
       key,
-      fullName: REGION_MAP[key] || key,
+      fullName: REGION_MAP[key],
       count: counts[key]
     }));
   }, [shops]);
@@ -156,6 +158,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
         <Text type="secondary">Auto-assign shops using spatial clustering.</Text>
       </div>
 
+      {/* ✅ Top Row: Global Stats exactly like Dashboard */}
       <Row gutter={[24, 24]}>
         <Col span={6}><SummaryCard label="Total Shop" value={globalStats.total} subtext="Overall list" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
         <Col span={6}><SummaryCard label="Completed" value={globalStats.completed} subtext="Finished" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
@@ -163,6 +166,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
         <Col span={6}><SummaryCard label="Remain" value={globalStats.remain} subtext="Not Completed" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
       </Row>
 
+      {/* ✅ Second Row: Regional Breakdown */}
       <div className="mt-2">
         <Text strong className="text-[10px] text-slate-400 uppercase tracking-widest block mb-4">Remain Unassigned Shops by Region</Text>
         <Row gutter={[16, 16]}>
@@ -170,7 +174,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
             <Col key={reg.key} style={{ width: '20%' }}>
               <Card size="small" className="rounded-2xl border-none shadow-sm bg-indigo-50/50">
                 <div className="flex flex-col items-center py-2 text-center">
-                  <Text strong className="text-indigo-600 text-[10px] truncate w-full"><EnvironmentOutlined /> {reg.fullName}</Text>
+                  <Text strong className="text-indigo-600 text-[10px] truncate w-full px-1"><EnvironmentOutlined /> {reg.fullName}</Text>
                   <Title level={4} className="m-0 text-indigo-900 mt-1">{reg.count}</Title>
                   <Text className="text-[9px] text-indigo-400 uppercase font-bold">Pending</Text>
                 </div>
@@ -213,14 +217,6 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
 
       {generatedResult.length > 0 && (
         <div className="flex flex-col gap-6">
-          <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-3xl flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="bg-white p-3 rounded-full text-emerald-500 shadow-sm"><CheckCircleOutlined className="text-2xl" /></div>
-              <div><h4 className="font-bold text-emerald-900 m-0">Schedule Ready</h4><p className="text-emerald-600 text-sm">Cluster completed. {generatedResult.length} shops assigned.</p></div>
-            </div>
-            <Button type="primary" icon={<SaveOutlined />} loading={isSaving} onClick={saveToSharePoint} className="bg-emerald-600 border-none h-12 px-8 rounded-xl font-bold">Sync to SharePoint</Button>
-          </div>
-          {isSaving && <Card className="rounded-2xl border-none shadow-sm p-2"><Progress percent={uploadProgress} strokeColor="#10b981" status="active" /></Card>}
           <Card title="Preview" className="rounded-3xl border-none shadow-sm overflow-hidden">
             <Table dataSource={generatedResult} size="small" rowKey="id" pagination={{ pageSize: 10 }} columns={[
               { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: (d, r) => <b>{d} ({r.dayOfWeek})</b> },
@@ -230,8 +226,23 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
               { title: 'Brand', dataIndex: 'brand', key: 'brand' },
             ]} />
           </Card>
+          <div className="flex justify-end"><Button type="primary" icon={<SaveOutlined />} loading={isSaving} onClick={saveToSharePoint} className="bg-emerald-600 border-none h-12 px-8 rounded-xl font-bold">Sync to SharePoint</Button></div>
         </div>
       )}
+
+      {/* ✅ Added the specific Dashboard styles to the Generator component */}
+      <style>{`
+        .card-item { --primary-clr: #1C204B; --dot-clr: #BBC0FF; width: 100%; height: 160px; border-radius: 15px; color: #fff; display: grid; cursor: pointer; grid-template-rows: 40px 1fr; overflow: hidden; transition: all 0.3s ease; }
+        .card-item:hover { transform: translateY(-5px); }
+        .img-section { transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); border-top-left-radius: 15px; border-top-right-radius: 15px; display: flex; justify-content: flex-end; padding-right: 20px; }
+        .card-desc { border-radius: 15px; padding: 15px 20px; position: relative; top: -10px; display: grid; background: var(--primary-clr); z-index: 2; }
+        .card-time { font-size: 2em; font-weight: 700; line-height: 1; }
+        .card-title { flex: 1; font-size: 0.85em; font-weight: 500; color: var(--dot-clr); text-transform: uppercase; letter-spacing: 1px; }
+        .card-header { display: flex; align-items: center; width: 100%; margin-bottom: 5px; }
+        .card-menu { display: flex; gap: 3px; }
+        .card-menu .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--dot-clr); }
+        .recent-text { font-size: 0.75em; color: var(--dot-clr); opacity: 0.7; }
+      `}</style>
     </div>
   );
 };

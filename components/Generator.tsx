@@ -48,7 +48,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
     // 如果 includeMTR 是 false，則只保留 is_mtr 為 false 的店（排除地鐵店）
     // 如果 includeMTR 是 true，則全部保留
     const matchMTR = includeMTR ? true : s.is_mtr === false;
-    return matchRegion && matchDistrict && matchMTR && s.status === 'pending';
+    return matchRegion && matchDistrict && matchMTR && !['Done', 'Closed'].includes(s.status);
   });
 
     if (pool.length === 0) {
@@ -114,9 +114,9 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            field_2: shop.scheduledDate, // 預計盤點日期
-            Schedule_x0020_Group: shop.groupId.toString(), // 小組號
-            ScheduleStatus: 'Planned'
+            [SP_FIELDS.SCHEDULE_DATE]: shop.scheduledDate,
+        [SP_FIELDS.SCHEDULE_GROUP]: shop.groupId.toString(),
+        [SP_FIELDS.STATUS]: 'Planned' // ✅ Set to Planned
           })
         });
         successCount++;

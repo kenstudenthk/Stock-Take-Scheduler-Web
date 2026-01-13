@@ -32,7 +32,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
             body: JSON.stringify({ [SP_FIELDS.STATUS]: 'CLOSED' })
           });
           if (res.ok) { message.success("Shop status updated successfully."); onRefresh(); }
-        } catch (err) { message.error("Sync Error"); }
+        } catch (err) { message.error("Update failed"); }
       },
     });
   };
@@ -80,7 +80,20 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
         </Space>
       )
     },
-    { title: 'Status', dataIndex: 'status', key: 'status', render: (s: string) => <Tag color={s?.toLowerCase() === 'closed' ? 'red' : 'green'} className="font-bold">{s}</Tag> },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        let color = 'blue';
+        if (status === 'Done') color = 'green';
+        if (status === 'Closed') color = 'red';
+        if (status === 'In-Progress') color = 'orange';
+        if (status === 'Reschedule') color = 'purple';
+        if (status === 'Re-Open') color = 'cyan';
+        return <Tag color={color} className="font-bold">{status.toUpperCase()}</Tag>
+      }
+    },
     {
       title: '',
       key: 'actions',

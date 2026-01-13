@@ -794,63 +794,83 @@ body {
    11. custom-checkbox-container 
    ============================================================ */
 
-/* --- Uiverse Checkbox Style --- */
-.custom-checkbox-container input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
+/* --- Uiverse Flip Toggle Style --- */
+.checkbox-wrapper-10 .tgl {
+  display: none;
 }
 
-.custom-checkbox-container {
+.checkbox-wrapper-10 .tgl,
+.checkbox-wrapper-10 .tgl:after,
+.checkbox-wrapper-10 .tgl:before,
+.checkbox-wrapper-10 .tgl *,
+.checkbox-wrapper-10 .tgl *:after,
+.checkbox-wrapper-10 .tgl *:before,
+.checkbox-wrapper-10 .tgl + .tgl-btn {
+  box-sizing: border-box;
+}
+
+/* 調整寬度以適應 "Not Include" */
+.checkbox-wrapper-10 .tgl + .tgl-btn {
+  outline: 0;
   display: block;
+  width: 100px; /* 增加寬度 */
+  height: 32px; /* 稍微縮小高度以搭配頁面 */
   position: relative;
   cursor: pointer;
   user-select: none;
 }
 
-.custom-checkbox-container .checkmark {
-  --clr: #0B6E4F;
+.checkbox-wrapper-10 .tgl + .tgl-btn:after,
+.checkbox-wrapper-10 .tgl + .tgl-btn:before {
   position: relative;
+  display: block;
+  content: "";
+  width: 100%;
+  height: 100%;
+}
+
+.checkbox-wrapper-10 .tgl-flip + .tgl-btn {
+  padding: 2px;
+  transition: all 0.2s ease;
+  font-family: sans-serif;
+  perspective: 200px; /* 增加透視感 */
+}
+
+.checkbox-wrapper-10 .tgl-flip + .tgl-btn:after,
+.checkbox-wrapper-10 .tgl-flip + .tgl-btn:before {
+  display: inline-block;
+  transition: all 0.4s ease;
+  width: 100%;
+  text-align: center;
+  position: absolute;
+  line-height: 28px; /* 垂直居中 */
+  font-weight: bold;
+  color: #fff;
   top: 0;
   left: 0;
-  height: 1.3em;
-  width: 1.3em;
-  background-color: #ccc;
-  border-radius: 50%;
-  transition: 300ms;
+  backface-visibility: hidden;
+  border-radius: 8px;
+  font-size: 10px; /* 字體縮小一點點 */
+  text-transform: uppercase;
 }
 
-.custom-checkbox-container input:checked ~ .checkmark {
-  background-color: var(--clr);
-  border-radius: .5rem;
-  animation: pulse-animation 500ms ease-in-out;
+.checkbox-wrapper-10 .tgl-flip + .tgl-btn:after {
+  content: attr(data-tg-on);
+  background: #02C66F; /* Include 的綠色 */
+  transform: rotateY(-180deg);
 }
 
-.custom-checkbox-container .checkmark:after {
-  content: "";
-  position: absolute;
-  display: none;
+.checkbox-wrapper-10 .tgl-flip + .tgl-btn:before {
+  background: #FF3A19; /* Not Include 的紅色 */
+  content: attr(data-tg-off);
 }
 
-.custom-checkbox-container input:checked ~ .checkmark:after {
-  display: block;
+.checkbox-wrapper-10 .tgl-flip:checked + .tgl-btn:before {
+  transform: rotateY(180deg);
 }
 
-.custom-checkbox-container .checkmark:after {
-  left: 0.45em;
-  top: 0.25em;
-  width: 0.25em;
-  height: 0.5em;
-  border: solid #E0E0E2;
-  border-width: 0 0.15em 0.15em 0;
-  transform: rotate(45deg);
-}
-
-@keyframes pulse-animation {
-  0% { box-shadow: 0 0 0 #0B6E4F90; rotate: 20deg; }
-  50% { rotate: -20deg; }
-  75% { box-shadow: 0 0 0 10px #0B6E4F60; }
-  100% { box-shadow: 0 0 0 13px #0B6E4F30; rotate: 0; }
+.checkbox-wrapper-10 .tgl-flip:checked + .tgl-btn:after {
+  transform: rotateY(0);
+  left: 0;
+  background: #7FC6A6;
 }

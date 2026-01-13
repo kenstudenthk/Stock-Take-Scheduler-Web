@@ -217,7 +217,19 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
         <Card title="Preview" className="rounded-3xl border-none shadow-sm overflow-hidden mt-8">
           <Table dataSource={generatedResult} size="small" pagination={{ pageSize: 10 }} columns={[
             { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: (d, r) => <b>{d} ({r.dayOfWeek})</b> },
-            { title: 'Team', dataIndex: 'groupId', key: 'group', render: (g) => <Tag color="blue">Team {String.fromCharCode(64 + g)}</Tag> },
+            { 
+  title: 'Team', 
+  dataIndex: 'groupId', 
+  key: 'group', 
+  render: (g) => {
+    const color = g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange';
+    return (
+      <Tag color={color} className="font-bold">
+        Team {String.fromCharCode(64 + g)}
+      </Tag>
+    );
+  }
+},
             { title: 'Shop Name', dataIndex: 'name' },
             { title: 'District', dataIndex: 'district' },
           ]} />

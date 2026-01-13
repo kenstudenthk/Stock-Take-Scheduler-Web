@@ -11,6 +11,13 @@ import { SP_FIELDS } from '../constants';
 
 const { Text, Title } = Typography;
 const { confirm } = Modal;
+const HK_HOLIDAYS_2026 = [
+  "2026-01-01", "2026-02-17", "2026-02-18", "2026-02-19", 
+  "2026-04-03", "2026-04-04", "2026-04-05", "2026-04-06", "2026-04-07",
+  "2026-05-01", "2026-05-24", "2026-05-25", "2026-06-19", 
+  "2026-07-01", "2026-09-26", "2026-10-01", "2026-10-19", 
+  "2026-12-25", "2026-12-26"
+];
 
 // --- Uiverse 統計卡片組件 ---
 const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
@@ -71,23 +78,50 @@ export const Dashboard: React.FC<{
 
   // --- 智能排程校驗 (基於活躍門市) ---
   const checkDateAvailability = (date: dayjs.Dayjs, shop: Shop) => {
-    const dateStr = date.format('YYYY-MM-DD');
-    const shopsOnDay = activeShops.filter(s => s.scheduledDate === dateStr);
-    if (shopsOnDay.length >= 9) return { valid: false, reason: "Full" };
-    if (shop.is_mtr && shopsOnDay.length > 0 && !shopsOnDay.some(s => s.is_mtr)) return { valid: false, reason: "MTR only" };
-    if (shopsOnDay.length > 0 && !shopsOnDay.some(s => s.region === shop.region)) return { valid: false, reason: "Far" };
-    return { valid: true };
-  };
+  const dateStr = date.format('YYYY-MM-DD');
+  const dayOfWeek = date.day();
+
+  // 1. 基礎限制：跳過週日與公眾假期
+  if (dayOfWeek === 0) return { valid: false, reason: "Sunday" };
+  if (HK_HOLIDAYS_2026.includes(dateStr)) return { valid: false, reason: "Holiday" };
+
+  // 2. 獲取該日已排程的活跃門市
+  const shopsOnDay = activeShops.filter(s => s.scheduledDate === dateStr);
+
+  // 3. 每日上限：不能超過 9 間店
+  if (shopsOnDay.length >= 9) return { valid: false, reason: "Full" };
+
+  // 4. MTR 邏輯：
+  // 如果目標是 MTR 店，但該日已有的店都不是 MTR -> 不可選 (為了行程集中)
+  if (shop.is_mtr && shopsOnDay.length > 0 && !shopsOnDay.some(s => s.is_mtr)) {
+    return { valid: false, reason: "Non-MTR Day" };
+  }
+  // 反之，如果該日已有 MTR 店，但目標不是 MTR 店 -> 不可選
+  if (!shop.is_mtr && shopsOnDay.length > 0 && shopsOnDay.some(s => s.is_mtr)) {
+    return { valid: false, reason: "MTR Day Only" };
+  }
+
+  // 5. 區域限制：該日已有的店必須與目標店同區域
+  if (shopsOnDay.length > 0 && !shopsOnDay.some(s => s.region === shop.region)) {
+    return { valid: false, reason: "Different Region" };
+  }
+
+  return { valid: true };
+};
 
   const fastestDate = useMemo(() => {
-    if (!targetShop) return null;
-    let current = dayjs().add(1, 'day');
-    for (let i = 0; i < 30; i++) {
-      if (checkDateAvailability(current, targetShop).valid) return current;
-      current = current.add(1, 'day');
+  if (!targetShop) return null;
+  let current = dayjs().add(1, 'day');
+  
+  // 往後尋找 60 天內的第一個可用日期
+  for (let i = 0; i < 60; i++) {
+    if (checkDateAvailability(current, targetShop).valid) {
+      return current;
     }
-    return null;
-  }, [targetShop, activeShops]);
+    current = current.add(1, 'day');
+  }
+  return null;
+}, [targetShop, activeShops]);
 
   const handleConfirmReschedule = async () => {
     if (!targetShop || !reschedDate) return;
@@ -268,7 +302,19 @@ export const Dashboard: React.FC<{
             <Text type="secondary" className="text-xs uppercase font-bold block mb-1">Target Shop</Text>
             <Text strong className="text-lg text-indigo-900">{targetShop?.name}</Text>
           </div>
-          <DatePicker className="w-full h-12 rounded-xl" disabledDate={d => (d && d < dayjs().startOf('day')) || !checkDateAvailability(d, targetShop!).valid} value={reschedDate} onChange={val => setReschedDate(val)} />
+          <DatePicker 
+  className="w-full h-12 rounded-xl" 
+  // 🔴 關鍵修正
+  disabledDate={current => {
+    // 禁止過去的日期
+    if (current && current < dayjs().startOf('day')) return true;
+    
+    // 調用我們的聰明邏輯，如果無效則 disable (回傳 true)
+    return !checkDateAvailability(current, targetShop!).valid;
+  }} 
+  value={reschedDate} 
+  onChange={val => setReschedDate(val)} 
+/>
           {fastestDate && (
             <div className="mt-4 p-3 bg-green-50 rounded-xl border border-green-100 flex items-center justify-between">
               <div>

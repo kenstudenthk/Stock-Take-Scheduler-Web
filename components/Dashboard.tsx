@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Card, Tag, Space, Button, Row, Col, Empty, DatePicker, Typography, Modal, message, Radio } from 'antd'; // ✅ 加入 Radio
+import { Card, Tag, Space, Button, Row, Col, Empty, DatePicker, Typography, Modal, message } from 'antd';
 import { 
   ShopOutlined, HourglassOutlined, CheckCircleOutlined, 
   PrinterOutlined, EnvironmentOutlined, CalendarOutlined,
@@ -22,15 +22,11 @@ const HK_HOLIDAYS_2026 = [
 
 const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
   <div className="card-item">
-    <div className="img-section" style={{ backgroundColor: bgColor }}>
-      {icon}
-    </div>
+    <div className="img-section" style={{ backgroundColor: bgColor }}>{icon}</div>
     <div className="card-desc">
       <div className="card-header">
         <div className="card-title">{label}</div>
-        <div className="card-menu">
-          <div className="dot"></div><div className="dot"></div><div className="dot"></div>
-        </div>
+        <div className="card-menu"><div className="dot"></div><div className="dot"></div><div className="dot"></div></div>
       </div>
       <div className="card-time">{value}</div>
       <p className="recent-text">{subtext}</p>
@@ -46,15 +42,13 @@ export const Dashboard: React.FC<{
 }> = ({ shops, onUpdateShop, graphToken, onRefresh }) => {
   
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
-  const [groupFilter, setGroupFilter] = useState<number | 'all'>('all'); // 狀態已定義
+  const [groupFilter, setGroupFilter] = useState<number | 'all'>('all');
   
   const [isReschedOpen, setIsReschedOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
   const [reschedDate, setReschedDate] = useState<dayjs.Dayjs | null>(null);
 
-  const activeShops = useMemo(() => {
-    return shops.filter(s => s.masterStatus !== 'Closed');
-  }, [shops]);
+  const activeShops = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed'), [shops]);
 
   const stats = useMemo(() => {
     const total = activeShops.length;
@@ -63,7 +57,7 @@ export const Dashboard: React.FC<{
     return { total, completed, closed: closedThisYear, remain: total - completed - closedThisYear };
   }, [activeShops]);
 
-  // ✅ 核心修復：定義 isDayMtrOnly 並優化邏輯
+  // ✅ 修正 checkDateAvailability: 加入 isDayMtrOnly 定義
   const checkDateAvailability = (date: dayjs.Dayjs, shop: Shop) => {
     const dateStr = date.format('YYYY-MM-DD');
     if (date.day() === 0) return { valid: false, reason: "Sunday" };
@@ -73,9 +67,9 @@ export const Dashboard: React.FC<{
     if (shopsOnDay.length >= 9) return { valid: false, reason: "Full" };
 
     if (shopsOnDay.length > 0) {
-      const isDayMtrOnly = shopsOnDay.some(s => s.is_mtr); // ✅ 定義變量
+      const isDayMtrOnly = shopsOnDay.some(s => s.is_mtr); // ✅ 關鍵修復
       if (shop.is_mtr !== isDayMtrOnly) {
-        return { valid: false, reason: isDayMtrOnly ? "MTR Only" : "Street Only" };
+        return { valid: false, reason: isDayMtrOnly ? "MTR Day Only" : "Street Shops Only" };
       }
       if (!shopsOnDay.some(s => s.region === shop.region)) {
         return { valid: false, reason: "Different Region" };
@@ -104,10 +98,16 @@ export const Dashboard: React.FC<{
       const res = await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${targetShop.sharePointItemId}/fields`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [SP_FIELDS.STATUS]: 'Reschedule', [SP_FIELDS.SCHEDULE_DATE]: formattedDate, [SP_FIELDS.SCHEDULE_GROUP]: newGroupId.toString() })
+        body: JSON.stringify({
+          [SP_FIELDS.STATUS]: 'Rescheduled',
+          [SP_FIELDS.SCHEDULE_DATE]: formattedDate,
+          [SP_FIELDS.SCHEDULE_GROUP]: newGroupId.toString()
+        })
       });
       if (res.ok) {
-        Modal.success({ title: 'Reschedule Successful', content: `${targetShop.name} moved to ${formattedDate}.`, onOk: () => { setIsReschedOpen(false); onRefresh(); } });
+        message.success(`${targetShop.name} moved to ${formattedDate}`);
+        setIsReschedOpen(false);
+        onRefresh();
       }
     } catch (err) { message.error("Sync Error"); }
   };
@@ -120,12 +120,13 @@ export const Dashboard: React.FC<{
       okText: 'Yes, Close', okType: 'danger',
       onOk: async () => {
         try {
-          const res = await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
+          await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ [SP_FIELDS.STATUS]: 'Closed' })
           });
-          if (res.ok) { message.success("Shop marked as CLOSED."); onRefresh(); }
+          message.success("Shop marked as CLOSED.");
+          onRefresh();
         } catch (err) { message.error("Update failed"); }
       },
     });
@@ -141,10 +142,7 @@ export const Dashboard: React.FC<{
   return (
     <div className="flex flex-col gap-8 pb-10">
       <div className="flex justify-between items-center">
-        <Space direction="vertical" size={0}>
-          <Title level={2} className="m-0 text-slate-800">Hello Admin,</Title>
-          <Text className="text-slate-400 font-medium">Daily stock take schedule (Active Only).</Text>
-        </Space>
+        <div><Title level={2} className="m-0 text-slate-800">Hello Admin,</Title><Text className="text-slate-400 font-medium">Manage daily schedule (Active Shops Only).</Text></div>
         <Button icon={<PrinterOutlined />} className="rounded-xl font-bold h-11 bg-slate-900 text-white border-none px-6" onClick={() => window.print()}>Generate Report</Button>
       </div>
 
@@ -156,34 +154,24 @@ export const Dashboard: React.FC<{
       </Row>
 
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>
-        {/* ✅ 新增：Group Filter Tab UI */}
+        {/* ✅ 加入日期與 Group Filter Tabs */}
         <div className="p-8 flex items-center justify-between border-b border-slate-50">
-           <DatePicker value={dayjs(selectedDate)} onChange={d => setSelectedDate(d?.format('YYYY-MM-DD') || '')} className="h-12 w-64 rounded-xl font-bold" />
-           <div className="customCheckBoxHolder">
-    {[
-      { id: 'all', label: 'ALL', value: 'all' },
-      { id: 'groupA', label: 'A', value: 1 },
-      { id: 'groupB', label: 'B', value: 2 },
-      { id: 'groupC', label: 'C', value: 3 },
-    ].map((item) => (
-      <React.Fragment key={item.id}>
-        <input
-          className="customCheckBoxInput"
-          id={item.id}
-          type="radio"
-          name="groupFilter"
-          checked={groupFilter === item.value}
-          onChange={() => setGroupFilter(item.value as any)}
-        />
-        <label className="customCheckBoxWrapper" htmlFor={item.id}>
-          <div className="customCheckBox">
-            <div className="inner">{item.label}</div>
+          <DatePicker value={dayjs(selectedDate)} onChange={d => setSelectedDate(d?.format('YYYY-MM-DD') || '')} className="h-12 w-64 rounded-xl font-bold" />
+          
+          <div className="customCheckBoxHolder">
+            {[
+              { id: 'all', label: 'ALL', value: 'all' },
+              { id: 'groupA', label: 'A', value: 1 },
+              { id: 'groupB', label: 'B', value: 2 },
+              { id: 'groupC', label: 'C', value: 3 },
+            ].map((item) => (
+              <React.Fragment key={item.id}>
+                <input className="customCheckBoxInput" id={item.id} type="radio" name="groupFilter" checked={groupFilter === item.value} onChange={() => setGroupFilter(item.value as any)} />
+                <label className="customCheckBoxWrapper" htmlFor={item.id}><div className="customCheckBox"><div className="inner">{item.label}</div></div></label>
+              </React.Fragment>
+            ))}
           </div>
-        </label>
-      </React.Fragment>
-    ))}
-  </div>
-</div>
+        </div>
 
         <div className="p-4 flex flex-col gap-2">
           {filteredShops.length === 0 ? <Empty className="py-20" /> : filteredShops.map(shop => {
@@ -192,32 +180,19 @@ export const Dashboard: React.FC<{
               <div key={shop.id} className={`p-4 rounded-2xl flex items-center transition-all ${isClosed ? 'opacity-40 grayscale bg-slate-50' : 'bg-white hover:bg-slate-50/80 shadow-sm'}`}>
                 <div className="flex items-center gap-4" style={{ flex: 1 }}>
                   <img src={shop.brandIcon} alt={shop.brand} className="h-10 w-10 object-contain rounded-lg border border-slate-100 p-1 bg-white" />
-                  <div className="flex flex-col">
-                    <h4 className={`m-0 font-bold text-slate-800 ${isClosed ? 'line-through decoration-red-500' : ''}`}>{shop.name}</h4>
-                    <Text className="text-[10px] font-bold text-slate-400 uppercase">{shop.brand} {shop.is_mtr ? '(MTR)' : ''}</Text>
-                  </div>
+                  <div className="flex flex-col"><h4 className={`m-0 font-bold text-slate-800 ${isClosed ? 'line-through decoration-red-500' : ''}`}>{shop.name}</h4><Text className="text-[10px] font-bold text-slate-400 uppercase">{shop.brand} {shop.is_mtr ? '(MTR)' : ''}</Text></div>
                 </div>
-                <div style={{ width: 300 }}><Text className="text-xs text-slate-500 italic">{shop.address}</Text></div>
-                <div style={{ width: 120 }} className="text-center">
-                  <Tag className="m-0 border-none font-black text-[10px] px-3 rounded-md bg-indigo-50 text-indigo-600">
-                    GROUP {String.fromCharCode(64+shop.groupId)}
-                  </Tag>
-                </div>
+                <div style={{ width: 300 }}><Text className="text-xs text-slate-500 italic truncate block">{shop.address}</Text></div>
+                <div style={{ width: 120 }} className="text-center"><Tag className="m-0 border-none font-black text-[10px] px-3 rounded-md bg-indigo-50 text-indigo-600">GROUP {String.fromCharCode(64+shop.groupId)}</Tag></div>
                 <div style={{ width: 180 }} className="flex justify-end gap-3 pr-2">
-  <button 
-    className="bin-button" 
-    disabled={isClosed} 
-    onClick={() => handleCloseShop(shop)}
-  >
-    <svg viewBox="0 0 448 512" className="bin-svgIcon">
-      <path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path>
-    </svg>
-  </button>
-</div>
-    <svg className="resched-svgIcon" viewBox="-2.4 -2.4 28.80 28.80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M10 21H6.2C5.0799 21 4.51984 21 4.09202 20.782C3.71569 20.5903 3.40973 20.2843 3.21799 19.908C3 19.4802 3 18.9201 3 17.8V8.2C3 7.0799 3 6.51984 3.21799 6.09202C3.40973 5.71569 3.71569 5.40973 4.09202 5.21799C4.51984 5 5.0799 5 6.2 5H17.8C18.9201 5 19.4802 5 19.908 5.21799C20.2843 5.40973 20.5903 5.71569 20.782 6.09202C21 6.51984 21 7.0799 21 8.2V10M7 3V5M17 3V5M3 9H21M13.5 13.0001L7 13M10 17.0001L7 17M14 21L16.025 20.595C16.2015 20.5597 16.2898 20.542 16.3721 20.5097C16.4452 20.4811 16.5147 20.4439 16.579 20.399C16.6516 20.3484 16.7152 20.2848 16.8426 20.1574L21 16C21.5523 15.4477 21.5523 14.5523 21 14C20.4477 13.4477 19.5523 13.4477 19 14L14.8426 18.1574C14.7152 18.2848 14.6516 18.3484 14.601 18.421C14.5561 18.4853 14.5189 18.5548 14.4903 18.6279C14.458 18.7102 14.4403 18.7985 14.4403 18.7985 14.405 18.975L14 21Z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
-    </svg>
-  </button>
+                  {/* ✅ 更新後的 Re-Schedule 按鈕 (帶 SVG) */}
+                  <button className="resched-button" disabled={isClosed} onClick={() => { setTargetShop(shop); setReschedDate(null); setIsReschedOpen(true); }}>
+                    <svg className="resched-svgIcon" viewBox="-2.4 -2.4 28.80 28.80" fill="none"><path d="M10 21H6.2C5.0799 21 4.51984 21 4.09202 20.782C3.71569 20.5903 3.40973 20.2843 3.21799 19.908C3 19.4802 3 18.9201 3 17.8V8.2C3 7.0799 3 6.51984 3.21799 6.09202C3.40973 5.71569 3.71569 5.40973 4.09202 5.21799C4.51984 5 5.0799 5 6.2 5H17.8C18.9201 5 19.4802 5 19.908 5.21799C20.2843 5.40973 20.5903 5.71569 20.782 6.09202C21 6.51984 21 7.0799 21 8.2V10M7 3V5M17 3V5M3 9H21M13.5 13.0001L7 13M10 17.0001L7 17M14 21L16.025 20.595C16.2015 20.5597 16.2898 20.542 16.3721 20.5097C16.4452 20.4811 16.5147 20.4439 16.579 20.399C16.6516 20.3484 16.7152 20.2848 16.8426 20.1574L21 16C21.5523 15.4477 21.5523 14.5523 21 14C20.4477 13.4477 19.5523 13.4477 19 14L14.8426 18.1574C14.7152 18.2848 14.6516 18.3484 14.601 18.421C14.5561 18.4853 14.5189 18.5548 14.4903 18.6279C14.458 18.7102 14.4403 18.7985 14.4403 18.7985 14.405 18.975L14 21Z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+                  </button>
+                  {/* Close 按鈕 */}
+                  <button className="bin-button" disabled={isClosed} onClick={() => handleCloseShop(shop)}>
+                    <svg viewBox="0 0 448 512" className="bin-svgIcon"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path></svg>
+                  </button>
                 </div>
               </div>
             );
@@ -237,40 +212,6 @@ export const Dashboard: React.FC<{
           )}
         </div>
       </Modal>
-
-      <style>{`
-        .card-item { --primary-clr: #1C204B; --dot-clr: #BBC0FF; width: 100%; height: 160px; border-radius: 15px; color: #fff; display: grid; cursor: pointer; grid-template-rows: 40px 1fr; overflow: hidden; transition: all 0.3s ease; }
-        .card-item:hover { transform: translateY(-5px); }
-        .img-section { transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); border-top-left-radius: 15px; border-top-right-radius: 15px; display: flex; justify-content: flex-end; padding-right: 20px; }
-        .card-desc { border-radius: 15px; padding: 15px 20px; position: relative; top: -10px; display: grid; background: var(--primary-clr); z-index: 2; }
-        .card-time { font-size: 2em; font-weight: 700; line-height: 1; }
-        .card-title { flex: 1; font-size: 0.85em; font-weight: 500; color: var(--dot-clr); text-transform: uppercase; letter-spacing: 1px; }
-        .card-header { display: flex; align-items: center; width: 100%; margin-bottom: 5px; }
-        .card-menu { display: flex; gap: 3px; }
-        .card-menu .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--dot-clr); }
-        .recent-text { font-size: 0.75em; color: var(--dot-clr); opacity: 0.7; }
-        .bin-button { width: 36px; height: 36px; border-radius: 50%; background-color: #fee2e2; border: none; cursor: pointer; transition-duration: .3s; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
-        .bin-svgIcon { width: 14px; transition-duration: .3s; }
-        .bin-svgIcon path { fill: #ef4444; }
-        .bin-button:hover { width: 100px; border-radius: 50px; background-color: #ef4444; }
-        .bin-button:hover .bin-svgIcon { width: 40px; transform: translateY(60%); }
-        .bin-button:hover .bin-svgIcon path { fill: white; }
-        .bin-button::before { position: absolute; top: -20px; content: "CLOSE"; color: white; transition-duration: .3s; font-size: 2px; }
-        .bin-button:hover::before { font-size: 11px; opacity: 1; transform: translateY(32px); }
-        /* 自定義 Radio 樣式 */
-        .custom-filter-group .ant-radio-button-wrapper {
-          border-radius: 12px !important;
-          margin: 0 4px;
-          border: 1px solid #f1f5f9 !important;
-          font-weight: 900;
-          font-size: 11px;
-        }
-        .custom-filter-group .ant-radio-button-wrapper-checked {
-          background-color: #1e293b !important;
-          color: white !important;
-          border-color: #1e293b !important;
-        }
-      `}</style>
     </div>
   );
 };

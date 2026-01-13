@@ -1,6 +1,7 @@
 // 定義 SharePoint 欄位對照表
 export const SP_FIELDS = {
-  STATUS: 'field_1',
+  OLD_STATUS: 'field_1',        // Keep last year's status for reference
+  STATUS: 'ScheduleStatus',
   SCHEDULE_DATE: 'field_2',
   CLOSE_STATUS: 'field_4',
   CLOSE_DATE: 'field_5',

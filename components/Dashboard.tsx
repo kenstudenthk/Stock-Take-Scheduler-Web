@@ -50,10 +50,20 @@ export const Dashboard: React.FC<{
   const [reschedDate, setReschedDate] = useState<dayjs.Dayjs | null>(null);
 
   // --- 統計邏輯 ---
-  const stats = useMemo(() => {
-    const closed = shops.filter(s => s.status?.toLowerCase() === 'closed').length;
-    const completed = shops.filter(s => s.status?.toLowerCase() === 'completed' || s.status === 'Done').length;
-    return { total: shops.length, completed, closed, pending: shops.length - completed - closed };
+const stats = useMemo(() => {
+    const closed = shops.filter(s => s.status === 'Closed').length;
+    // Completed includes "Done" and "Re-Open" (usually Re-open is a special case of Done)
+    const completed = shops.filter(s => s.status === 'Done' || s.status === 'Re-Open').length;
+    // Scheduled includes "Planned", "Reschedule", and "In-Progress"
+    const scheduled = shops.filter(s => ['Planned', 'Reschedule', 'In-Progress'].includes(s.status)).length;
+    
+    return { 
+      total: shops.length, 
+      completed, 
+      closed, 
+      scheduled,
+      pending: shops.length - completed - closed - scheduled 
+    };
   }, [shops]);
 
   // --- 智能排程校驗 ---

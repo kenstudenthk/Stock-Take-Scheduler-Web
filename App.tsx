@@ -56,7 +56,7 @@ function App() {
             region: f[SP_FIELDS.REGION] || '',
             district: f[SP_FIELDS.DISTRICT] || '',
             brand: f[SP_FIELDS.BRAND] || '',
-            // ✅ 對接 6 種新狀態: Planned, Done, Closed, Reschedule, Re-Open, In-Progress
+            area: f[SP_FIELDS.AREA] || '',
             status: f[SP_FIELDS.STATUS] || 'Planned', 
             scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
             groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),

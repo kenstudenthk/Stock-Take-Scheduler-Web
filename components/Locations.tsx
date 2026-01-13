@@ -24,18 +24,21 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-  const AMapRef = useRef<any>(null); // 保存 AMap 建構對象
+  const AMapRef = useRef<any>(null); 
 
   const [searchText, setSearchText] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
+  // ✅ 新增狀態：是否包含去年已關閉門市 (預設不包含)
+  const [includeClosed, setIncludeClosed] = useState(false);
   const [filteredShops, setFilteredShops] = useState<Shop[]>(shops);
 
-  // 當 shops 屬性更新時（例如 SharePoint 載入完成）
   useEffect(() => {
-    setFilteredShops(shops);
+    // 初始載入時也執行一次過濾邏輯，以套用預設不含已關閉門市的規則
+    const initial = shops.filter(s => s.masterStatus !== 'Closed');
+    setFilteredShops(initial);
     if (mapInstance.current) {
-      updateMapMarkers(shops);
+      updateMapMarkers(initial);
     }
   }, [shops]);
 
@@ -47,7 +50,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     return Array.from(new Set(filteredByRegion.map(s => s.district))).filter(Boolean).sort();
   }, [shops, selectedRegion]);
 
-  // ✅ 核心更新：更強大的地圖標註邏輯
 const updateMapMarkers = (targetShops: Shop[]) => {
   if (!mapInstance.current || !AMapRef.current) return;
 
@@ -60,24 +62,20 @@ const updateMapMarkers = (targetShops: Shop[]) => {
     closeWhenClickMap: true
   });
 
-  // ✅ 改進過濾邏輯：確保數值有效且在香港範圍附近 (22~23, 113~115)
   const validShops = targetShops.filter(s => {
     const lat = Number(s.latitude);
     const lng = Number(s.longitude);
     return !isNaN(lat) && !isNaN(lng) && lat > 10 && lng > 10;
   });
 
-  // 💡 偵錯日誌：如果還是 0，請檢查 SharePoint 的 field_20/21 是否填寫正確
-  console.log(`Map: Received ${targetShops.length} shops.`);
-  console.log(`Map: Found ${validShops.length} shops with valid coordinates.`);
-  if (validShops.length > 0) {
-    console.log("Sample coordinate:", validShops[0].longitude, validShops[0].latitude);
-  }
-
   const newMarkers = validShops.map(s => {
-    const color = s.status?.toLowerCase() === 'completed' ? '#10b981' : s.groupId === 1 ? '#0ea5e9' : '#f59e0b';
+    // 標註顏色邏輯：已關閉顯示灰色，已完成顯示綠色，其餘按組別顯示
+    let color = s.groupId === 1 ? '#0ea5e9' : '#f59e0b';
+    if (s.status?.toLowerCase() === 'completed') color = '#10b981';
+    if (s.masterStatus === 'Closed') color = '#94a3b8'; // 灰色代表已關閉
+
     const marker = new AMap.Marker({
-      position: [Number(s.longitude), Number(s.latitude)], // 確保是數字
+      position: [Number(s.longitude), Number(s.latitude)],
       content: `<div style="background:${color}; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3); cursor:pointer;"></div>`,
       extData: s,
       anchor: 'center'
@@ -89,7 +87,9 @@ const updateMapMarkers = (targetShops: Shop[]) => {
             <div style="padding: 12px; min-width: 220px; font-family: sans-serif;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                 <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">${shop.brand}</span>
-                <span style="background: ${shop.status === 'completed' ? '#ecfdf5' : '#eff6ff'}; color: ${shop.status === 'completed' ? '#10b981' : '#3b82f6'}; padding: 2px 8px; border-radius: 99px; font-size: 9px; font-weight: bold;">${(shop.status || 'pending').toUpperCase()}</span>
+                <span style="background: ${shop.masterStatus === 'Closed' ? '#f1f5f9' : '#eff6ff'}; color: ${shop.masterStatus === 'Closed' ? '#64748b' : '#3b82f6'}; padding: 2px 8px; border-radius: 99px; font-size: 9px; font-weight: bold;">
+                  ${(shop.masterStatus === 'Closed' ? 'Master Closed' : shop.status || 'pending').toUpperCase()}
+                </span>
               </div>
               <div style="font-weight: bold; color: #1e293b; font-size: 14px; margin-bottom: 4px;">${shop.name}</div>
               <div style="border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 8px; font-size: 11px; color: #475569;">
@@ -107,7 +107,6 @@ const updateMapMarkers = (targetShops: Shop[]) => {
     markersRef.current = newMarkers;
     mapInstance.current.add(newMarkers);
     
-    // 5. 自動縮放視野以包圍所有點
     if (newMarkers.length > 0) {
       mapInstance.current.setFitView(newMarkers, false, [60, 60, 60, 60]);
     }
@@ -119,7 +118,10 @@ const updateMapMarkers = (targetShops: Shop[]) => {
                           (shop.id || '').toLowerCase().includes(searchText.toLowerCase());
       const matchRegion = selectedRegion === 'all' || shop.region === selectedRegion;
       const matchDistrict = selectedDistrict === 'all' || shop.district === selectedDistrict;
-      return matchSearch && matchRegion && matchDistrict;
+      // ✅ 關鍵邏輯：如果勾選 includeClosed 則顯示全部；若沒勾，則只顯示 masterStatus 不是 Closed 的店
+      const matchClosed = includeClosed ? true : shop.masterStatus !== 'Closed';
+
+      return matchSearch && matchRegion && matchDistrict && matchClosed;
     });
     setFilteredShops(results);
     updateMapMarkers(results);
@@ -130,8 +132,10 @@ const updateMapMarkers = (targetShops: Shop[]) => {
     setSearchText('');
     setSelectedRegion('all');
     setSelectedDistrict('all');
-    setFilteredShops(shops);
-    updateMapMarkers(shops);
+    setIncludeClosed(false);
+    const resetShops = shops.filter(s => s.masterStatus !== 'Closed');
+    setFilteredShops(resetShops);
+    updateMapMarkers(resetShops);
   };
 
   useEffect(() => {
@@ -141,13 +145,13 @@ const updateMapMarkers = (targetShops: Shop[]) => {
       plugins: ['AMap.Marker', 'AMap.InfoWindow'],
     }).then((AMap) => {
       if (!mapRef.current) return;
-      AMapRef.current = AMap; // 儲存對象供後續使用
+      AMapRef.current = AMap; 
       mapInstance.current = new AMap.Map(mapRef.current, { 
         zoom: 11, 
         center: [114.177, 22.3],
         viewMode: '2D'
       });
-      updateMapMarkers(shops);
+      updateMapMarkers(filteredShops);
     }).catch(e => {
       console.error("AMap Load Error:", e);
     });
@@ -155,8 +159,8 @@ const updateMapMarkers = (targetShops: Shop[]) => {
   }, []);
 
   const handleExport = () => {
-    const headers = "Name,Region,District,Status\n";
-    const csvContent = filteredShops.map(s => `${s.name},${s.region},${s.district},${s.status}`).join("\n");
+    const headers = "Name,Region,District,Status,MasterStatus\n";
+    const csvContent = filteredShops.map(s => `${s.name},${s.region},${s.district},${s.status},${s.masterStatus}`).join("\n");
     const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -168,7 +172,7 @@ const updateMapMarkers = (targetShops: Shop[]) => {
     <div className="flex flex-col gap-6">
       <Card bodyStyle={{ padding: '16px 24px' }} className="border-none shadow-sm rounded-2xl">
         <Row gutter={16} align="middle">
-          <Col span={6}>
+          <Col span={5}>
             <Input 
               prefix={<SearchOutlined className="text-slate-400" />} 
               placeholder="Search Shop Name..." 
@@ -177,8 +181,8 @@ const updateMapMarkers = (targetShops: Shop[]) => {
               className="rounded-xl bg-slate-50 border-none h-11"
             />
           </Col>
-          <Col span={12}>
-            <Space size="middle">
+          <Col span={15}>
+            <Space size="middle" align="center">
               <Select value={selectedRegion} onChange={v => { setSelectedRegion(v); setSelectedDistrict('all'); }} className="w-40">
                 <Select.Option value="all">All Regions</Select.Option>
                 {regionOptions.map(r => <Select.Option key={r} value={r}>{r}</Select.Option>)}
@@ -187,6 +191,22 @@ const updateMapMarkers = (targetShops: Shop[]) => {
                 <Select.Option value="all">All Districts</Select.Option>
                 {districtOptions.map(d => <Select.Option key={d} value={d}>{d}</Select.Option>)}
               </Select>
+              
+              {/* ✅ 插入 Uiverse Checkbox HTML */}
+              <div className="flex items-center gap-3 px-2">
+                <label className="container">
+                  <input 
+                    type="checkbox" 
+                    checked={includeClosed} 
+                    onChange={e => setIncludeClosed(e.target.checked)} 
+                  />
+                  <div className="checkmark"></div>
+                </label>
+  <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+    Include Last Year Closed
+  </Text>
+</div>
+
               <Button icon={<ReloadOutlined />} onClick={handleReset} className="rounded-xl h-11">Reset</Button>
               <Button type="primary" onClick={handleApplyFilters} className="bg-teal-600 h-11 rounded-xl">Apply Filters</Button>
             </Space>
@@ -227,9 +247,9 @@ const updateMapMarkers = (targetShops: Shop[]) => {
                 { title: '', dataIndex: 'brandIcon', width: 50, render: (src) => <Avatar src={src} shape="square" size="small" /> },
                 { title: 'Shop Name', dataIndex: 'name', render: (t) => <Text strong className="text-xs">{t}</Text> },
                 { title: 'Area', dataIndex: 'area', render: (t) => <Text type="secondary" className="text-xs">{t || 'N/A'}</Text> },
-                { title: 'Status', dataIndex: 'status', width: 110, render: (s) => (
-                  <Tag className="rounded-full border-none px-3 font-bold text-[10px]" color={s?.toLowerCase() === 'completed' ? 'success' : 'processing'}>
-                    {(s || 'pending').toUpperCase()}
+                { title: 'Status', dataIndex: 'status', width: 110, render: (s, r) => (
+                  <Tag className="rounded-full border-none px-3 font-bold text-[10px]" color={r.masterStatus === 'Closed' ? 'default' : s?.toLowerCase() === 'completed' ? 'success' : 'processing'}>
+                    {(r.masterStatus === 'Closed' ? 'Closed' : s || 'pending').toUpperCase()}
                   </Tag>
                 )},
               ]}

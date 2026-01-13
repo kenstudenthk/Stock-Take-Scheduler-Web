@@ -51,19 +51,15 @@ export const Dashboard: React.FC<{
 
   // --- 統計邏輯 ---
 const stats = useMemo(() => {
+    const total = shops.length;
     const closed = shops.filter(s => s.status === 'Closed').length;
     // Completed includes "Done" and "Re-Open" (usually Re-open is a special case of Done)
     const completed = shops.filter(s => s.status === 'Done' || s.status === 'Re-Open').length;
     // Scheduled includes "Planned", "Reschedule", and "In-Progress"
     const scheduled = shops.filter(s => ['Planned', 'Reschedule', 'In-Progress'].includes(s.status)).length;
-    
-    return { 
-      total: shops.length, 
-      completed, 
-      closed, 
-      scheduled,
-      remain: shops.length - completed - closed  
-    };
+    // ✅ 計算 Remain: 總數 - 已完成 - 已關閉
+    const remain = total - completed - closed;
+    return { total, completed, closed, remain };
   }, [shops]);
 
   // --- 智能排程校驗 ---
@@ -144,7 +140,7 @@ const stats = useMemo(() => {
           <SummaryCard label="Closed" value={stats.closed} subtext="Exceptions handled" bgColor="#ff4545" icon={<CloseCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
         </Col>
         <Col span={6}>
-          <SummaryCard label="Remaining" value={stats.remain} subtext="Remain action" bgColor="#f1c40f" icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
+          <SummaryCard label="Remain" value={stats.remain} subtext="Shops to be processed" bgColor="#f1c40f" icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
         </Col>
       </Row>
 

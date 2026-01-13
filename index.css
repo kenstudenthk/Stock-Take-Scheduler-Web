@@ -952,4 +952,101 @@ body {
   transform: translateY(-1px);
 }
 
+/* ============================================================
+   13.Dashboard Action Buttons (Re-Schedule & Close) 
+   ============================================================ */
 
+.resched-button, .bin-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition-duration: .3s;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Re-Schedule (藍色系) */
+.resched-button {
+  background-color: #e0e7ff;
+}
+.resched-svgIcon {
+  width: 18px;
+  transition-duration: .3s;
+}
+.resched-svgIcon path {
+  stroke: #4f46e5;
+}
+.resched-button:hover {
+  width: 130px;
+  border-radius: 50px;
+  background-color: #4f46e5;
+}
+.resched-button:hover .resched-svgIcon {
+  width: 40px;
+  transform: translateY(60%);
+}
+.resched-button:hover .resched-svgIcon path {
+  stroke: white;
+}
+.resched-button::before {
+  position: absolute;
+  top: -20px;
+  content: "RE-SCHEDULE";
+  color: white;
+  transition-duration: .3s;
+  font-size: 10px;
+  font-weight: 900;
+}
+.resched-button:hover::before {
+  opacity: 1;
+  transform: translateY(32px);
+}
+
+/* Close/Bin (紅色系) */
+.bin-button {
+  background-color: #fee2e2;
+}
+.bin-svgIcon {
+  width: 14px;
+  transition-duration: .3s;
+}
+.bin-svgIcon path {
+  fill: #ef4444;
+}
+.bin-button:hover {
+  width: 100px;
+  border-radius: 50px;
+  background-color: #ef4444;
+}
+.bin-button:hover .bin-svgIcon {
+  width: 40px;
+  transform: translateY(60%);
+}
+.bin-button:hover .bin-svgIcon path {
+  fill: white;
+}
+.bin-button::before {
+  position: absolute;
+  top: -20px;
+  content: "CLOSE";
+  color: white;
+  transition-duration: .3s;
+  font-size: 10px;
+  font-weight: 900;
+}
+.bin-button:hover::before {
+  opacity: 1;
+  transform: translateY(32px);
+}
+
+/* 通用的按鈕禁用狀態 */
+.resched-button:disabled, .bin-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}

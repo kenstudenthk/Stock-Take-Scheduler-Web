@@ -62,7 +62,7 @@ const stats = useMemo(() => {
       completed, 
       closed, 
       scheduled,
-      pending: shops.length - completed - closed - scheduled 
+      remain: shops.length - completed - closed  
     };
   }, [shops]);
 
@@ -144,7 +144,7 @@ const stats = useMemo(() => {
           <SummaryCard label="Closed" value={stats.closed} subtext="Exceptions handled" bgColor="#ff4545" icon={<CloseCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
         </Col>
         <Col span={6}>
-          <SummaryCard label="Remaining" value={stats.pending} subtext="Pending action" bgColor="#f1c40f" icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
+          <SummaryCard label="Remaining" value={stats.remain} subtext="Remain action" bgColor="#f1c40f" icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
         </Col>
       </Row>
 

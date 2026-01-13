@@ -102,7 +102,7 @@ export const Dashboard: React.FC<{
     if (!shopsOnDay.some(s => s.region === shop.region)) {
       return { valid: false, reason: "Different Region" };
     }
-  }
+  
 
   return { valid: true };
 };

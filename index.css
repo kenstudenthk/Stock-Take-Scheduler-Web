@@ -1137,3 +1137,16 @@ body {
   opacity: 0.7;
   margin: 0;
 }
+
+/* ============================================================
+   15. Group Based Tag Styles
+   ============================================================ */
+.tag-group-1 { background-color: #e0f2fe !important; color: #0369a1 !important; } /* Group A - Blue */
+.tag-group-2 { background-color: #f3e8ff !important; color: #7e22ce !important; } /* Group B - Purple */
+.tag-group-3 { background-color: #ffedd5 !important; color: #c2410c !important; } /* Group C - Orange */
+
+/* --- 讓 Generator 的 Preview 表格也支援這些顏色 --- */
+.ant-tag-blue { background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; }
+.ant-tag-purple { background: #f3e8ff; border-color: #d8b4fe; color: #7e22ce; }
+.ant-tag-orange { background: #ffedd5; border-color: #fdba74; color: #c2410c; }
+

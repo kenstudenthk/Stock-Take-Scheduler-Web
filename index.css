@@ -1177,4 +1177,134 @@ body {
   display: none !important;
 }
 
+/* ============================================================
+   17.Schedules Trophy Card Styles
+   ============================================================ */
+.group-card-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  padding: 20px;
+  flex-wrap: wrap;
+}
+
+.trophy-card {
+  position: relative;
+  height: 150px;
+  width: 260px; /* 稍微縮小寬度 */
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: none;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* 點擊後的高度增加 */
+.trophy-card.is-expanded {
+  height: 310px;
+}
+
+.trophy-card .outlinePage {
+  position: relative;
+  width: 100%;
+  height: 150px;
+  border-radius: 25px;
+  transition-duration: 0.5s;
+  z-index: 2;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.trophy-card.is-expanded .outlinePage {
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+.trophy-card .detailPage {
+  position: relative;
+  display: none;
+  width: 100%;
+  height: 160px;
+  background: white;
+  top: -20px;
+  z-index: 1;
+  transition: all 0.5s ease;
+  border-radius: 0 0 25px 25px;
+  overflow-y: auto; /* 內容過多時可捲動 */
+  padding: 30px 20px 20px 20px;
+  border: 1px solid #f1f5f9;
+}
+
+.trophy-card.is-expanded .detailPage {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 各組別配色方案 */
+/* Group A - Blue */
+.card-group-1 .outlinePage { background: linear-gradient(45deg, #eff6ff, #bae6fd); }
+.card-group-1 .ranking_number { color: #0ea5e9; }
+.card-group-1 .splitLine { background-image: linear-gradient(to right, transparent, #7dd3fc, #0ea5e9, #7dd3fc, transparent); }
+
+/* Group B - Purple */
+.card-group-2 .outlinePage { background: linear-gradient(45deg, #f5f3ff, #ddd6fe); }
+.card-group-2 .ranking_number { color: #8b5cf6; }
+.card-group-2 .splitLine { background-image: linear-gradient(to right, transparent, #c4b5fd, #8b5cf6, #c4b5fd, transparent); }
+
+/* Group C - Orange */
+.card-group-3 .outlinePage { background: linear-gradient(45deg, #fff7ed, #fed7aa); }
+.card-group-3 .ranking_number { color: #f97316; }
+.card-group-3 .splitLine { background-image: linear-gradient(to right, transparent, #fdba74, #f97316, #fdba74, transparent); }
+
+.ranking_number {
+  position: relative;
+  font-family: "Segoe UI", sans-serif;
+  font-weight: 800;
+  font-size: 60px;
+  left: 25px;
+  margin: 0;
+  line-height: 1;
+}
+
+.ranking_word {
+  font-size: 24px;
+  color: #475569;
+  margin-left: 5px;
+}
+
+.group-name-label {
+  position: absolute;
+  bottom: 20px;
+  left: 30px;
+  font-weight: 700;
+  color: #475569;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.splitLine {
+  position: absolute;
+  width: 80%;
+  height: 4px;
+  bottom: 50px;
+  left: 10%;
+}
+
+.trophy-icon-mini {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  opacity: 0.6;
+}
+
+.shop-item-mini {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
 

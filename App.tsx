@@ -57,7 +57,8 @@ function App() {
             district: f[SP_FIELDS.DISTRICT] || '',
             brand: f[SP_FIELDS.BRAND] || '',
             area: f[SP_FIELDS.AREA] || '',
-            status: f[SP_FIELDS.STATUS] || 'Planned', 
+            masterStatus: f[SP_FIELDS.OLD_STATUS] || '', // field_1: 總表狀態
+            status: f[SP_FIELDS.STATUS] || 'Planned',   // ScheduleStatus: 今年盤點狀態
             scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
             groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
             is_mtr: f[SP_FIELDS.MTR] === 'Yes',

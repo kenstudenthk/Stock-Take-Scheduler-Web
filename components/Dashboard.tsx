@@ -8,12 +8,11 @@ import {
 import dayjs from 'dayjs';
 import { Shop } from '../types';
 import { SP_FIELDS } from '../constants';
-import { ShopFormModal } from './ShopFormModal';
 
 const { Text, Title } = Typography;
 const { confirm } = Modal;
 
-// --- 恢復原始 Uiverse 統計卡片組件 ---
+// --- Uiverse 統計卡片組件 ---
 const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
   <div className="card-item">
     <div className="img-section" style={{ backgroundColor: bgColor }}>
@@ -44,28 +43,36 @@ export const Dashboard: React.FC<{
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [groupFilter, setGroupFilter] = useState<number | 'all'>('all');
   
-  // --- Reschedule 狀態 ---
   const [isReschedOpen, setIsReschedOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
   const [reschedDate, setReschedDate] = useState<dayjs.Dayjs | null>(null);
 
-  // --- 統計邏輯 ---
-const stats = useMemo(() => {
-    const total = shops.length;
-    const closed = shops.filter(s => s.status === 'Closed').length;
-    // Completed includes "Done" and "Re-Open" (usually Re-open is a special case of Done)
-    const completed = shops.filter(s => s.status === 'Done' || s.status === 'Re-Open').length;
-    // Scheduled includes "Planned", "Reschedule", and "In-Progress"
-    const scheduled = shops.filter(s => ['Planned', 'Reschedule', 'In-Progress'].includes(s.status)).length;
-    // ✅ 計算 Remain: 總數 - 已完成 - 已關閉
-    const remain = total - completed - closed;
-    return { total, completed, closed, remain };
+  // ✅ 核心篩選邏輯：排除去年已關閉 (Master Closed) 的門市
+  const activeShops = useMemo(() => {
+    return shops.filter(s => s.masterStatus !== 'Closed');
   }, [shops]);
 
-  // --- 智能排程校驗 ---
+  // --- 統計邏輯 (與 Generator 一致) ---
+  const stats = useMemo(() => {
+    const total = activeShops.length;
+    // 今年完成的數量 (Done 或 Re-Open)
+    const completed = activeShops.filter(s => s.status === 'Done' || s.status === 'Re-Open').length;
+    // 今年新關閉的數量 (Schedule Status 為 Closed)
+    const closedThisYear = activeShops.filter(s => s.status === 'Closed').length;
+    
+    return { 
+      total, 
+      completed, 
+      closed: closedThisYear, 
+      // ✅ Remain = 總活耀門市 - 完成 - 今年關閉
+      remain: total - completed - closedThisYear  
+    };
+  }, [activeShops]);
+
+  // --- 智能排程校驗 (基於活躍門市) ---
   const checkDateAvailability = (date: dayjs.Dayjs, shop: Shop) => {
     const dateStr = date.format('YYYY-MM-DD');
-    const shopsOnDay = shops.filter(s => s.scheduledDate === dateStr);
+    const shopsOnDay = activeShops.filter(s => s.scheduledDate === dateStr);
     if (shopsOnDay.length >= 9) return { valid: false, reason: "Full" };
     if (shop.is_mtr && shopsOnDay.length > 0 && !shopsOnDay.some(s => s.is_mtr)) return { valid: false, reason: "MTR only" };
     if (shopsOnDay.length > 0 && !shopsOnDay.some(s => s.region === shop.region)) return { valid: false, reason: "Far" };
@@ -80,12 +87,12 @@ const stats = useMemo(() => {
       current = current.add(1, 'day');
     }
     return null;
-  }, [targetShop, shops]);
+  }, [targetShop, activeShops]);
 
   const handleConfirmReschedule = async () => {
     if (!targetShop || !reschedDate) return;
     const formattedDate = reschedDate.format('YYYY-MM-DD');
-    const shopsOnNewDay = shops.filter(s => s.scheduledDate === formattedDate);
+    const shopsOnNewDay = activeShops.filter(s => s.scheduledDate === formattedDate);
     const newGroupId = shopsOnNewDay.length > 0 ? shopsOnNewDay[0].groupId : targetShop.groupId;
 
     try {
@@ -112,41 +119,64 @@ const stats = useMemo(() => {
   };
 
   const filteredShops = useMemo(() => {
-    return shops.filter(s => 
+    return activeShops.filter(s => 
       dayjs(s.scheduledDate).format('YYYY-MM-DD') === selectedDate && 
       (groupFilter === 'all' || s.groupId === groupFilter)
     );
-  }, [shops, selectedDate, groupFilter]);
+  }, [activeShops, selectedDate, groupFilter]);
 
   return (
     <div className="flex flex-col gap-8 pb-10">
       <div className="flex justify-between items-center">
         <div>
           <Title level={2} className="m-0 text-slate-800">Hello Admin,</Title>
-          <Text className="text-slate-400 font-medium">Manage your daily stock take schedule below.</Text>
+          <Text className="text-slate-400 font-medium">Manage your daily stock take schedule (Active Shops Only).</Text>
         </div>
         <Button icon={<PrinterOutlined />} className="rounded-xl font-bold h-11 bg-slate-900 text-white border-none px-6" onClick={() => window.print()}>Generate Report</Button>
       </div>
 
-      {/* --- 恢復原始色彩的 Summary Boxes --- */}
+      {/* --- 更新後的 Summary Boxes --- */}
       <Row gutter={[24, 24]}>
         <Col span={6}>
-          <SummaryCard label="Total Shop" value={stats.total} subtext="Overall target list" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
+          <SummaryCard 
+            label="Total Shop" 
+            value={stats.total} 
+            subtext="Active Master List" 
+            bgColor="hsl(195, 74%, 62%)" 
+            icon={<ShopOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+          />
         </Col>
         <Col span={6}>
-          <SummaryCard label="Completed" value={stats.completed} subtext="Sync success" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
+          <SummaryCard 
+            label="Completed" 
+            value={stats.completed} 
+            subtext="Done this year" 
+            bgColor="hsl(145, 58%, 55%)" 
+            icon={<CheckCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+          />
         </Col>
         <Col span={6}>
-          <SummaryCard label="Closed" value={stats.closed} subtext="Exceptions handled" bgColor="#ff4545" icon={<CloseCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
+          <SummaryCard 
+            label="Closed" 
+            value={stats.closed} 
+            subtext="Closed this year" 
+            bgColor="#ff4545" 
+            icon={<CloseCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+          />
         </Col>
         <Col span={6}>
-          <SummaryCard label="Remain" value={stats.remain} subtext="Shops to be processed" bgColor="#f1c40f" icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
+          {/* ✅ 改為 Remain */}
+          <SummaryCard 
+            label="Remain" 
+            value={stats.remain} 
+            subtext="Pending action" 
+            bgColor="#f1c40f" 
+            icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+          />
         </Col>
       </Row>
 
-      {/* 資料列表卡片部分 (保持不變) ... */}
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>
-        {/* ... Group Tabs & DatePicker ... */}
         <div className="p-8 flex flex-col gap-4">
            <DatePicker value={dayjs(selectedDate)} onChange={d => setSelectedDate(d?.format('YYYY-MM-DD') || '')} className="h-12 w-64 rounded-xl font-bold" />
         </div>
@@ -156,23 +186,21 @@ const stats = useMemo(() => {
             const isClosed = shop.status?.toLowerCase() === 'closed';
             return (
               <div key={shop.id} className={`p-4 rounded-2xl flex items-center transition-all ${isClosed ? 'opacity-40 grayscale bg-slate-50' : 'bg-white hover:bg-slate-50/80 shadow-sm'}`}>
-<div className="flex items-center gap-4" style={{ flex: 1 }}>
-  {/* 恢復 img 標籤 */}
-  <img 
-    src={shop.brandIcon} 
-    alt={shop.brand}
-    className={`h-10 w-10 object-contain rounded-lg border border-slate-100 p-1 bg-white transition-all ${isClosed ? 'grayscale opacity-50' : ''}`} 
-  />
-  
-  <div className="flex flex-col">
-    <h4 className={`m-0 font-bold text-slate-800 ${isClosed ? 'line-through decoration-red-500' : ''}`}>
-      {shop.name}
-    </h4>
-    <Text className="text-[10px] font-bold text-slate-400 uppercase">
-      {shop.brand} {shop.is_mtr ? '(MTR)' : ''}
-    </Text>
-  </div>
-</div>
+                <div className="flex items-center gap-4" style={{ flex: 1 }}>
+                  <img 
+                    src={shop.brandIcon} 
+                    alt={shop.brand}
+                    className={`h-10 w-10 object-contain rounded-lg border border-slate-100 p-1 bg-white transition-all ${isClosed ? 'grayscale opacity-50' : ''}`} 
+                  />
+                  <div className="flex flex-col">
+                    <h4 className={`m-0 font-bold text-slate-800 ${isClosed ? 'line-through decoration-red-500' : ''}`}>
+                      {shop.name}
+                    </h4>
+                    <Text className="text-[10px] font-bold text-slate-400 uppercase">
+                      {shop.brand} {shop.is_mtr ? '(MTR)' : ''}
+                    </Text>
+                  </div>
+                </div>
                 <div style={{ width: 300 }}><Text className="text-xs text-slate-500 italic">{shop.address}</Text></div>
                 <div style={{ width: 120 }} className="text-center">
                   <Tag className={`m-0 border-none font-black text-[10px] px-3 rounded-md ${isClosed ? 'bg-slate-200' : 'bg-indigo-50 text-indigo-600'}`}>
@@ -191,7 +219,6 @@ const stats = useMemo(() => {
         </div>
       </Card>
 
-      {/* Smart Reschedule Modal */}
       <Modal
         title={<Space><CalendarOutlined className="text-indigo-600" /><span>Smart Reschedule</span></Space>}
         open={isReschedOpen} onOk={handleConfirmReschedule} onCancel={() => setIsReschedOpen(false)} okText="Confirm New Date" width={450} centered
@@ -201,7 +228,7 @@ const stats = useMemo(() => {
             <Text type="secondary" className="text-xs uppercase font-bold block mb-1">Target Shop</Text>
             <Text strong className="text-lg text-indigo-900">{targetShop?.name}</Text>
           </div>
-          <DatePicker className="w-full h-12 rounded-xl" disabledDate={d => d && d < dayjs().startOf('day') || !checkDateAvailability(d, targetShop!).valid} value={reschedDate} onChange={val => setReschedDate(val)} />
+          <DatePicker className="w-full h-12 rounded-xl" disabledDate={d => (d && d < dayjs().startOf('day')) || !checkDateAvailability(d, targetShop!).valid} value={reschedDate} onChange={val => setReschedDate(val)} />
           {fastestDate && (
             <div className="mt-4 p-3 bg-green-50 rounded-xl border border-green-100 flex items-center justify-between">
               <div>
@@ -214,7 +241,6 @@ const stats = useMemo(() => {
         </div>
       </Modal>
 
-      {/* --- 恢復完整的 Uiverse CSS --- */}
       <style>{`
         .card-item { --primary-clr: #1C204B; --dot-clr: #BBC0FF; width: 100%; height: 160px; border-radius: 15px; color: #fff; display: grid; cursor: pointer; grid-template-rows: 40px 1fr; overflow: hidden; transition: all 0.3s ease; }
         .card-item:hover { transform: translateY(-5px); }

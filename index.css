@@ -906,7 +906,7 @@ body {
 }
 
 .customCheckBox:hover {
-  background-color: #2c2c2c;
+  background-color: #34723f;
   color: white;
   box-shadow: rgba(0, 0, 0, 0.23) 0px -4px 1px 0px inset, rgba(255, 255, 255, 0.17) 0px -1px 1px 0px, rgba(0, 0, 0, 0.17) 0px 2px 4px 1px;
 }
@@ -943,7 +943,7 @@ body {
 
 /* 選中狀態的顏色 - 這裡設為深灰色以契合你的主題 */
 .customCheckBoxInput:checked + .customCheckBoxWrapper .customCheckBox {
-  background-color: #1e293b; 
+  background-color: #2d6737; 
   color: white;
   box-shadow: rgba(0, 0, 0, 0.23) 0px -4px 1px 0px inset, rgba(255, 255, 255, 0.17) 0px -1px 1px 0px, rgba(0, 0, 0, 0.17) 0px 2px 4px 1px;
 }

@@ -118,7 +118,7 @@ function App() {
       case View.DASHBOARD: return <Dashboard shops={allShops} onUpdateShop={() => {}} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
-      case View.GENERATOR: return <Generator shops={allShops} onUpdateShop={() => {}} />;
+      case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory invToken={invToken} />;
       case View.SETTINGS: return <Settings token={graphToken} onUpdateToken={handleUpdateGraphToken} invToken={invToken} onUpdateInvToken={handleUpdateInvToken} />;

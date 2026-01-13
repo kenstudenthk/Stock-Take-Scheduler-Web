@@ -159,18 +159,31 @@ export const Dashboard: React.FC<{
         {/* ✅ 新增：Group Filter Tab UI */}
         <div className="p-8 flex items-center justify-between border-b border-slate-50">
            <DatePicker value={dayjs(selectedDate)} onChange={d => setSelectedDate(d?.format('YYYY-MM-DD') || '')} className="h-12 w-64 rounded-xl font-bold" />
-           <Radio.Group 
-             value={groupFilter} 
-             onChange={e => setGroupFilter(e.target.value)}
-             buttonStyle="solid"
-             className="custom-filter-group"
-           >
-             <Radio.Button value="all">ALL</Radio.Button>
-             <Radio.Button value={1}>GROUP A</Radio.Button>
-             <Radio.Button value={2}>GROUP B</Radio.Button>
-             <Radio.Button value={3}>GROUP C</Radio.Button>
-           </Radio.Group>
-        </div>
+           <div className="customCheckBoxHolder">
+    {[
+      { id: 'all', label: 'ALL', value: 'all' },
+      { id: 'groupA', label: 'A', value: 1 },
+      { id: 'groupB', label: 'B', value: 2 },
+      { id: 'groupC', label: 'C', value: 3 },
+    ].map((item) => (
+      <React.Fragment key={item.id}>
+        <input
+          className="customCheckBoxInput"
+          id={item.id}
+          type="radio"
+          name="groupFilter"
+          checked={groupFilter === item.value}
+          onChange={() => setGroupFilter(item.value as any)}
+        />
+        <label className="customCheckBoxWrapper" htmlFor={item.id}>
+          <div className="customCheckBox">
+            <div className="inner">{item.label}</div>
+          </div>
+        </label>
+      </React.Fragment>
+    ))}
+  </div>
+</div>
 
         <div className="p-4 flex flex-col gap-2">
           {filteredShops.length === 0 ? <Empty className="py-20" /> : filteredShops.map(shop => {

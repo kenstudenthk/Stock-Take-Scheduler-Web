@@ -66,21 +66,34 @@ export const Dashboard: React.FC<{
   // ✅ 修正 checkDateAvailability: 加入 isDayMtrOnly 定義
   const checkDateAvailability = (date: dayjs.Dayjs, shop: Shop) => {
     const dateStr = date.format('YYYY-MM-DD');
-    if (date.day() === 0) return { valid: false, reason: "Sunday" };
+    const dayOfWeek = date.day();
+
+    // 1. 基礎限制：跳過週日與公眾假期
+    if (dayOfWeek === 0) return { valid: false, reason: "Sunday" };
     if (HK_HOLIDAYS_2026.includes(dateStr)) return { valid: false, reason: "Holiday" };
 
+    // A. 獲取該日已排程的活跃門市
     const shopsOnDay = activeShops.filter(s => s.scheduledDate === dateStr);
+
+    // B. 每日上限：不能超過 9 間店
     if (shopsOnDay.length >= 9) return { valid: false, reason: "Full" };
 
+    // ✅ 加入判斷邏輯，僅在日期內已有門市時執行校驗
     if (shopsOnDay.length > 0) {
-      const isDayMtrOnly = shopsOnDay.some(s => s.is_mtr); // ✅ 關鍵修復
+      // 定義該日期是否為地鐵店專場
+      const isDayMtrOnly = shopsOnDay.some(s => s.is_mtr); 
+
+      // C. MTR 邏輯：類型必須一致
       if (shop.is_mtr !== isDayMtrOnly) {
         return { valid: false, reason: isDayMtrOnly ? "MTR Day Only" : "Street Shops Only" };
       }
+
+      // D. 區域限制：必須同區域
       if (!shopsOnDay.some(s => s.region === shop.region)) {
         return { valid: false, reason: "Different Region" };
       }
     }
+
     return { valid: true };
   };
 
@@ -139,10 +152,12 @@ export const Dashboard: React.FC<{
   };
 
   const filteredShops = useMemo(() => {
-    return activeShops.filter(s => 
-      dayjs(s.scheduledDate).format('YYYY-MM-DD') === selectedDate && 
-      (groupFilter === 'all' || s.groupId === groupFilter)
-    );
+    return activeShops
+      .filter(s => 
+        dayjs(s.scheduledDate).format('YYYY-MM-DD') === selectedDate && 
+        (groupFilter === 'all' || s.groupId === groupFilter)
+      )
+      .sort((a, b) => (a.groupId || 0) - (b.groupId || 0)); // 👈 這裡實施按組別排序
   }, [activeShops, selectedDate, groupFilter]);
 
   return (

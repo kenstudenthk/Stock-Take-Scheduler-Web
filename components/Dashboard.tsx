@@ -196,8 +196,21 @@ export const Dashboard: React.FC<{
 
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>
         {/* ✅ 加入日期與 Group Filter Tabs */}
-        <div className="p-8 flex items-center justify-between border-b border-slate-50">
-          <DatePicker value={dayjs(selectedDate)} onChange={d => setSelectedDate(d?.format('YYYY-MM-DD') || '')} className="h-12 w-64 rounded-xl font-bold" />
+       <div className="p-8 flex items-center justify-between border-b border-slate-50">
+  
+  {/* ✅ 加入標題與新樣式的 DatePicker */}
+  <div className="flex flex-col gap-2">
+    <Text strong className="text-[10px] text-slate-400 uppercase tracking-widest ml-1">
+      Schedule Date
+    </Text>
+    <DatePicker 
+      value={dayjs(selectedDate)} 
+      onChange={d => setSelectedDate(d?.format('YYYY-MM-DD') || '')} 
+      className="custom-date-input font-bold"
+      allowClear={false}
+      suffixIcon={<CalendarOutlined style={{ color: '#4a9dec' }} />}
+    />
+  </div>
           
           <div className="customCheckBoxHolder">
             {[

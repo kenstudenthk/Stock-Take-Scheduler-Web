@@ -34,16 +34,23 @@ const isWorkDay = (date: dayjs.Dayjs) => {
   return dayOfWeek !== 0 && dayOfWeek !== 6 && !HK_HOLIDAYS_2026.includes(dateStr);
 };
 
+// Inside Generator.tsx
 const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
-  <div className="card-item">
-    <div className="img-section" style={{ backgroundColor: bgColor }}>{icon}</div>
-    <div className="card-desc">
-      <div className="card-header">
-        <div className="card-title">{label}</div>
-        <div className="card-menu"><div className="dot"></div><div className="dot"></div><div className="dot"></div></div>
+  <div className="summary-card-item">
+    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>
+      {icon}
+    </div>
+    <div className="summary-card-body">
+      <div className="summary-card-header">
+        <div className="summary-card-title">{label}</div>
+        <div className="summary-card-menu">
+          <div className="dot"></div>
+          <div className="dot"></div>
+          <div className="dot"></div>
+        </div>
       </div>
-      <div className="card-time">{value}</div>
-      <p className="recent-text">{subtext}</p>
+      <div className="summary-card-value">{value}</div>
+      <p className="summary-card-subtext">{subtext}</p>
     </div>
   </div>
 );

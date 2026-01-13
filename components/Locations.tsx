@@ -194,7 +194,7 @@ const updateMapMarkers = (targetShops: Shop[]) => {
               
               {/* ✅ 插入 Uiverse Checkbox HTML */}
               <div className="flex items-center gap-3 px-2">
-                <label className="container">
+  <label className="custom-checkbox-container">
                   <input 
                     type="checkbox" 
                     checked={includeClosed} 

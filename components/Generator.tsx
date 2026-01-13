@@ -11,6 +11,40 @@ import { SP_FIELDS } from '../constants';
 
 const { Text, Title } = Typography;
 
+const HK_HOLIDAYS_2026 = [
+  "2026-01-01", // 1月1日
+  "2026-02-17", "2026-02-18", "2026-02-19", // 農曆新年 (初一至初三)
+  "2026-04-03", "2026-04-04", "2026-04-06", // 耶穌受難節/復活節
+  "2026-04-05", "2026-04-07", // 清明節及翌日
+  "2026-05-01", // 勞動節
+  "2026-05-24", "2026-05-25", // 佛誕及翌日
+  "2026-06-19", // 端午節
+  "2026-07-01", // 特區成立紀念日
+  "2026-09-26", // 中秋節翌日
+  "2026-10-01", // 國慶日
+  "2026-10-19", // 重陽節
+  "2026-12-25", // 聖誕節
+  "2026-12-26"  // 聖誕節後第一個周日
+];
+
+const isWorkDay = (date: dayjs.Dayjs, skipSat: boolean) => {
+  const dateStr = date.format('YYYY-MM-DD');
+  const dayOfWeek = date.day(); // 0 是週日, 6 是週六
+
+  // 如果是週日，必跳過
+  if (dayOfWeek === 0) return false;
+  // 如果勾選了跳過週六
+  if (skipSat && dayOfWeek === 6) return false;
+  // 如果是公眾假期，必跳過
+  if (HK_HOLIDAYS_2026.includes(dateStr)) return false;
+
+  return true;
+};
+
+// 3. 在 handleGenerate 函數內，修改日期增加的邏輯：
+const handleGenerate = () => {
+  setIsCalculating(true);
+
 // ✅ Full Region Mapping as requested
 const REGION_MAP: Record<string, string> = {
   'HK': 'Hong Kong Island',
@@ -112,11 +146,17 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
     const results: ScheduledShop[] = [];
     let currentDay = dayjs(startDate);
 
+    while (!isWorkDay(currentDay, true)) { // 預設跳過週六日及假期
+    currentDay = currentDay.add(1, 'day');
+  }
+
     pool.forEach((shop, index) => {
       if (index > 0 && index % shopsPerDay === 0) {
         currentDay = currentDay.add(1, 'day');
-        if (currentDay.day() === 0) currentDay = currentDay.add(1, 'day');
+       while (!isWorkDay(currentDay, true)) { 
+        currentDay = currentDay.add(1, 'day');
       }
+    }
       const groupInDay = (index % shopsPerDay) % groupsPerDay + 1;
       results.push({ ...shop, scheduledDate: currentDay.format('YYYY-MM-DD'), groupId: groupInDay, dayOfWeek: currentDay.format('ddd') });
     });

@@ -11,7 +11,7 @@ import { SP_FIELDS } from '../constants';
 
 const { Text, Title } = Typography;
 
-// ✅ Define the Full Region Mapping
+// 地區名稱對照表
 const REGION_MAP: Record<string, string> = {
   'HK': 'Hong Kong Island',
   'KN': 'Kowloon',
@@ -26,7 +26,7 @@ interface ScheduledShop extends Shop {
   dayOfWeek: string;
 }
 
-// ✅ Corrected SummaryCard to match Dashboard Style exactly
+// 統計卡片組件 (復刻 Dashboard 風格)
 const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
   <div className="card-item shadow-sm border border-slate-50">
     <div className="img-section" style={{ backgroundColor: bgColor }}>
@@ -35,7 +35,6 @@ const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
     <div className="card-desc">
       <div className="card-header">
         <div className="card-title">{label}</div>
-        {/* Added the dot menu to match Dashboard exactly */}
         <div className="card-menu">
           <div className="dot"></div>
           <div className="dot"></div>
@@ -55,12 +54,13 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [includeMTR, setIncludeMTR] = useState(true);
+
   const [generatedResult, setGeneratedResult] = useState<ScheduledShop[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // --- Statistics Logic ---
+  // --- 全局統計邏輯 ---
   const globalStats = useMemo(() => {
     const total = shops.length;
     const closed = shops.filter(s => s.status === 'Closed').length;
@@ -69,30 +69,28 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
     return { total, completed, closed, remain };
   }, [shops]);
 
-  // ✅ Updated Region Stats: Maps short names to full names and ensures all 5 appear
+  // --- 區域待處理統計 ---
   const regionRemainStats = useMemo(() => {
     const unassignedShops = shops.filter(s => 
       !['Planned', 'Done', 'Closed', 'Re-Open', 'In-Progress', 'Reschedule'].includes(s.status)
     );
-    
-    // Initialize counts for all required regions
     const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
-    
     unassignedShops.forEach(s => {
-      if (counts.hasOwnProperty(s.region)) {
-        counts[s.region]++;
-      }
+      if (counts.hasOwnProperty(s.region)) counts[s.region]++;
     });
-
-    // Return mapped array based on the 5 specific keys
     return Object.keys(counts).map(key => ({
-      key: key,
+      key,
       fullName: REGION_MAP[key] || key,
       count: counts[key]
     }));
   }, [shops]);
 
-  // --- Core Algorithm ---
+  const regionOptions = useMemo(() => Array.from(new Set(shops.map(s => s.region))).filter(Boolean).sort(), [shops]);
+  const availableDistricts = useMemo(() => {
+    const filtered = selectedRegions.length > 0 ? shops.filter(s => selectedRegions.includes(s.region)) : shops;
+    return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
+  }, [shops, selectedRegions]);
+
   const handleGenerate = () => {
     setIsCalculating(true);
     let pool = shops.filter(s => {
@@ -103,7 +101,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
     });
 
     if (pool.length === 0) {
-      message.warning("No unassigned shops found matching the criteria.");
+      message.warning("No unassigned shops found.");
       setIsCalculating(false);
       return;
     }
@@ -129,45 +127,50 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
   };
 
   const saveToSharePoint = async () => {
+    if (!graphToken) return message.error("Missing Access Token!");
     setIsSaving(true);
-    // Loop through results and fetch... (logic remains the same)
+    setUploadProgress(0);
+    for (let i = 0; i < generatedResult.length; i++) {
+      const shop = generatedResult[i];
+      try {
+        await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            [SP_FIELDS.SCHEDULE_DATE]: shop.scheduledDate,
+            [SP_FIELDS.SCHEDULE_GROUP]: shop.groupId.toString(),
+            [SP_FIELDS.STATUS]: 'Planned'
+          })
+        });
+        setUploadProgress(Math.round(((i + 1) / generatedResult.length) * 100));
+      } catch (e) { console.error("Sync Error", shop.name); }
+    }
     setIsSaving(false);
+    message.success("All schedules synced to SharePoint!");
   };
 
   return (
     <div className="max-w-5xl mx-auto flex flex-col gap-8 pb-20">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Schedule Generator</h1>
-        <p className="text-slate-500 font-medium">Auto-assign shops using spatial clustering.</p>
+        <Title level={2} className="m-0">Schedule Generator</Title>
+        <Text type="secondary">Auto-assign shops using spatial clustering.</Text>
       </div>
 
-      {/* Global Summary Boxes - Fixed Style */}
       <Row gutter={[24, 24]}>
-        <Col span={6}>
-          <SummaryCard label="Total Shop" value={globalStats.total} subtext="Overall list" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
-        </Col>
-        <Col span={6}>
-          <SummaryCard label="Completed" value={globalStats.completed} subtext="Finished" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
-        </Col>
-        <Col span={6}>
-          <SummaryCard label="Closed" value={globalStats.closed} subtext="Exceptions" bgColor="#ff4545" icon={<CloseCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
-        </Col>
-        <Col span={6}>
-          <SummaryCard label="Remain" value={globalStats.remain} subtext="Not Completed" bgColor="#f1c40f" icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} />
-        </Col>
+        <Col span={6}><SummaryCard label="Total Shop" value={globalStats.total} subtext="Overall list" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Completed" value={globalStats.completed} subtext="Finished" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Closed" value={globalStats.closed} subtext="Exceptions" bgColor="#ff4545" icon={<CloseCircleOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Remain" value={globalStats.remain} subtext="Not Completed" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
       </Row>
 
-      {/* Region Summary - Fixed to show all 5 regions with full names */}
       <div className="mt-2">
         <Text strong className="text-[10px] text-slate-400 uppercase tracking-widest block mb-4">Remain Unassigned Shops by Region</Text>
         <Row gutter={[16, 16]}>
           {regionRemainStats.map((reg) => (
             <Col key={reg.key} style={{ width: '20%' }}>
               <Card size="small" className="rounded-2xl border-none shadow-sm bg-indigo-50/50">
-                <div className="flex flex-col items-center py-2">
-                  <Text strong className="text-indigo-600 text-[10px] truncate w-full text-center px-1">
-                    <EnvironmentOutlined /> {reg.fullName}
-                  </Text>
+                <div className="flex flex-col items-center py-2 text-center">
+                  <Text strong className="text-indigo-600 text-[10px] truncate w-full"><EnvironmentOutlined /> {reg.fullName}</Text>
                   <Title level={4} className="m-0 text-indigo-900 mt-1">{reg.count}</Title>
                   <Text className="text-[9px] text-indigo-400 uppercase font-bold">Pending</Text>
                 </div>
@@ -177,18 +180,58 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
         </Row>
       </div>
       
-      {/* Configuration Section (Step 1 & 2) Logic remains same... */}
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 mt-4">
-        {/* ... Configuration content ... */}
+        <Space className="mb-10 text-[11px] font-bold uppercase tracking-widest text-slate-800">
+          <ControlOutlined className="text-teal-600" /> Algorithm Configuration
+        </Space>
+        
+        <Collapse ghost defaultActiveKey={['1', '2']} expandIconPosition="end">
+          <Collapse.Panel key="1" header={<Space className="py-2"><div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold">1</div><span className="font-bold">Core Parameters</span></Space>}>
+            <Row gutter={24} className="py-2">
+              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Start Date</Text><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-slate-50 border-none h-12 rounded-xl w-full px-4" /></Col>
+              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Shops / Day</Text><InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 20)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
+              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Groups / Day</Text><InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
+            </Row>
+          </Collapse.Panel>
+
+          <Collapse.Panel key="2" header={<Space className="py-2"><div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold">2</div><span className="font-bold">Location Filters</span></Space>}>
+            <Row gutter={24} className="py-2">
+              <Col span={10}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Regions</Text><Select mode="multiple" className="w-full min-h-[48px]" placeholder="All Regions" value={selectedRegions} onChange={setSelectedRegions}>{regionOptions.map(r => <Select.Option key={r} value={r}>{r}</Select.Option>)}</Select></Col>
+              <Col span={10}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Districts</Text><Select mode="multiple" className="w-full min-h-[48px]" placeholder="All Districts" value={selectedDistricts} onChange={setSelectedDistricts}>{availableDistricts.map(d => <Select.Option key={d} value={d}>{d}</Select.Option>)}</Select></Col>
+              <Col span={4}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">MTR Incl.</Text><div className="h-12 flex items-center gap-2"><Switch checked={includeMTR} onChange={setIncludeMTR} /><span className="text-xs font-bold text-slate-600">{includeMTR ? 'Yes' : 'No'}</span></div></Col>
+            </Row>
+          </Collapse.Panel>
+        </Collapse>
+
         <div className="flex justify-end mt-12">
-            <button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}>
-                <div className="dots_border"></div>
-                <span className="text_button">{isCalculating ? 'Generating...' : 'Generate Schedule'}</span>
-            </button>
+          <button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}>
+            <div className="dots_border"></div>
+            <span className="text_button">{isCalculating ? 'Generating...' : 'Generate Schedule'}</span>
+          </button>
         </div>
       </div>
 
-      {/* Result Section (Table) Logic remains same... */}
+      {generatedResult.length > 0 && (
+        <div className="flex flex-col gap-6">
+          <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-3xl flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="bg-white p-3 rounded-full text-emerald-500 shadow-sm"><CheckCircleOutlined className="text-2xl" /></div>
+              <div><h4 className="font-bold text-emerald-900 m-0">Schedule Ready</h4><p className="text-emerald-600 text-sm">Cluster completed. {generatedResult.length} shops assigned.</p></div>
+            </div>
+            <Button type="primary" icon={<SaveOutlined />} loading={isSaving} onClick={saveToSharePoint} className="bg-emerald-600 border-none h-12 px-8 rounded-xl font-bold">Sync to SharePoint</Button>
+          </div>
+          {isSaving && <Card className="rounded-2xl border-none shadow-sm p-2"><Progress percent={uploadProgress} strokeColor="#10b981" status="active" /></Card>}
+          <Card title="Preview" className="rounded-3xl border-none shadow-sm overflow-hidden">
+            <Table dataSource={generatedResult} size="small" rowKey="id" pagination={{ pageSize: 10 }} columns={[
+              { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: (d, r) => <b>{d} ({r.dayOfWeek})</b> },
+              { title: 'Team', dataIndex: 'groupId', key: 'group', render: (g) => <Tag color="blue">Team {String.fromCharCode(64 + g)}</Tag> },
+              { title: 'Shop Name', dataIndex: 'name', key: 'name' },
+              { title: 'District', dataIndex: 'district', key: 'district' },
+              { title: 'Brand', dataIndex: 'brand', key: 'brand' },
+            ]} />
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

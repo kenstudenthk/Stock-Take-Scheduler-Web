@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Card, Tag, Space, Button, Row, Col, Empty, DatePicker, Typography, Modal, message } from 'antd';
+import { Card, Tag, Space, Button, Row, Col, Empty, DatePicker, Typography, Modal, message, Radio } from 'antd'; // ✅ 加入 Radio
 import { 
   ShopOutlined, HourglassOutlined, CheckCircleOutlined, 
   PrinterOutlined, EnvironmentOutlined, CalendarOutlined,
@@ -12,7 +12,6 @@ import { SP_FIELDS } from '../constants';
 const { Text, Title } = Typography;
 const { confirm } = Modal;
 
-// 2026 香港公眾假期清單
 const HK_HOLIDAYS_2026 = [
   "2026-01-01", "2026-02-17", "2026-02-18", "2026-02-19", 
   "2026-04-03", "2026-04-04", "2026-04-05", "2026-04-06", "2026-04-07",
@@ -21,7 +20,6 @@ const HK_HOLIDAYS_2026 = [
   "2026-12-25", "2026-12-26"
 ];
 
-// --- 統計卡片組件 ---
 const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
   <div className="card-item">
     <div className="img-section" style={{ backgroundColor: bgColor }}>
@@ -48,61 +46,41 @@ export const Dashboard: React.FC<{
 }> = ({ shops, onUpdateShop, graphToken, onRefresh }) => {
   
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
-  const [groupFilter, setGroupFilter] = useState<number | 'all'>('all');
+  const [groupFilter, setGroupFilter] = useState<number | 'all'>('all'); // 狀態已定義
   
   const [isReschedOpen, setIsReschedOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
   const [reschedDate, setReschedDate] = useState<dayjs.Dayjs | null>(null);
 
-  // ✅ 篩選活躍門市：排除去年已關閉的店 (Master Closed)
   const activeShops = useMemo(() => {
     return shops.filter(s => s.masterStatus !== 'Closed');
   }, [shops]);
 
-  // --- 統計邏輯 ---
   const stats = useMemo(() => {
     const total = activeShops.length;
     const completed = activeShops.filter(s => s.status === 'Done' || s.status === 'Re-Open').length;
     const closedThisYear = activeShops.filter(s => s.status === 'Closed').length;
-    
-    return { 
-      total, 
-      completed, 
-      closed: closedThisYear, 
-      remain: total - completed - closedThisYear  
-    };
+    return { total, completed, closed: closedThisYear, remain: total - completed - closedThisYear };
   }, [activeShops]);
 
-  // --- 🔴 關鍵修復：智能校驗函數 ---
+  // ✅ 核心修復：定義 isDayMtrOnly 並優化邏輯
   const checkDateAvailability = (date: dayjs.Dayjs, shop: Shop) => {
     const dateStr = date.format('YYYY-MM-DD');
-    const dayOfWeek = date.day();
-
-    // 1. 基礎限制：跳過週日與公眾假期
-    if (dayOfWeek === 0) return { valid: false, reason: "Sunday" };
+    if (date.day() === 0) return { valid: false, reason: "Sunday" };
     if (HK_HOLIDAYS_2026.includes(dateStr)) return { valid: false, reason: "Holiday" };
 
-    // 2. 獲取該日已有的活躍門市
     const shopsOnDay = activeShops.filter(s => s.scheduledDate === dateStr);
-
-    // 3. 每日上限：不能超過 9 間店
     if (shopsOnDay.length >= 9) return { valid: false, reason: "Full" };
 
-    // 4. 僅在日期非空時執行 MTR 和 區域檢查
     if (shopsOnDay.length > 0) {
-      const isDayMtrOnly = shopsOnDay.some(s => s.is_mtr);
-      
-      // ✅ C. MTR 邏輯修復：類型必須一致
+      const isDayMtrOnly = shopsOnDay.some(s => s.is_mtr); // ✅ 定義變量
       if (shop.is_mtr !== isDayMtrOnly) {
-        return { valid: false, reason: isDayMtrOnly ? "MTR Day Only" : "Street Shops Only" };
+        return { valid: false, reason: isDayMtrOnly ? "MTR Only" : "Street Only" };
       }
-
-      // ✅ D. 區域限制修復：必須同區域
       if (!shopsOnDay.some(s => s.region === shop.region)) {
         return { valid: false, reason: "Different Region" };
       }
     }
-
     return { valid: true };
   };
 
@@ -123,22 +101,13 @@ export const Dashboard: React.FC<{
     const newGroupId = shopsOnNewDay.length > 0 ? shopsOnNewDay[0].groupId : targetShop.groupId;
 
     try {
-      const res = await fetch(
-        `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${targetShop.sharePointItemId}/fields`,
-        {
-          method: 'PATCH',
-          headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            [SP_FIELDS.STATUS]: 'Reschedule',
-            [SP_FIELDS.SCHEDULE_DATE]: formattedDate,
-            [SP_FIELDS.SCHEDULE_GROUP]: newGroupId.toString()
-          })
-        }
-      );
+      const res = await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${targetShop.sharePointItemId}/fields`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [SP_FIELDS.STATUS]: 'Reschedule', [SP_FIELDS.SCHEDULE_DATE]: formattedDate, [SP_FIELDS.SCHEDULE_GROUP]: newGroupId.toString() })
+      });
       if (res.ok) {
-        message.success(`${targetShop.name} moved to ${formattedDate}`);
-        setIsReschedOpen(false);
-        onRefresh();
+        Modal.success({ title: 'Reschedule Successful', content: `${targetShop.name} moved to ${formattedDate}.`, onOk: () => { setIsReschedOpen(false); onRefresh(); } });
       }
     } catch (err) { message.error("Sync Error"); }
   };
@@ -148,17 +117,15 @@ export const Dashboard: React.FC<{
       title: 'Confirm Closing Shop',
       icon: <ExclamationCircleOutlined />,
       content: `Mark "${shop.name}" as CLOSED?`,
-      okText: 'Yes, Close',
-      okType: 'danger',
+      okText: 'Yes, Close', okType: 'danger',
       onOk: async () => {
         try {
-          await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
+          const res = await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ [SP_FIELDS.STATUS]: 'Closed' })
           });
-          message.success("Shop marked as Closed.");
-          onRefresh();
+          if (res.ok) { message.success("Shop marked as CLOSED."); onRefresh(); }
         } catch (err) { message.error("Update failed"); }
       },
     });
@@ -174,10 +141,10 @@ export const Dashboard: React.FC<{
   return (
     <div className="flex flex-col gap-8 pb-10">
       <div className="flex justify-between items-center">
-        <div>
+        <Space direction="vertical" size={0}>
           <Title level={2} className="m-0 text-slate-800">Hello Admin,</Title>
-          <Text className="text-slate-400 font-medium">Daily schedule for Active Shops only.</Text>
-        </div>
+          <Text className="text-slate-400 font-medium">Daily stock take schedule (Active Only).</Text>
+        </Space>
         <Button icon={<PrinterOutlined />} className="rounded-xl font-bold h-11 bg-slate-900 text-white border-none px-6" onClick={() => window.print()}>Generate Report</Button>
       </div>
 
@@ -189,21 +156,40 @@ export const Dashboard: React.FC<{
       </Row>
 
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>
-        <div className="p-8"><DatePicker value={dayjs(selectedDate)} onChange={d => setSelectedDate(d?.format('YYYY-MM-DD') || '')} className="h-12 w-64 rounded-xl font-bold" /></div>
+        {/* ✅ 新增：Group Filter Tab UI */}
+        <div className="p-8 flex items-center justify-between border-b border-slate-50">
+           <DatePicker value={dayjs(selectedDate)} onChange={d => setSelectedDate(d?.format('YYYY-MM-DD') || '')} className="h-12 w-64 rounded-xl font-bold" />
+           <Radio.Group 
+             value={groupFilter} 
+             onChange={e => setGroupFilter(e.target.value)}
+             buttonStyle="solid"
+             className="custom-filter-group"
+           >
+             <Radio.Button value="all">ALL</Radio.Button>
+             <Radio.Button value={1}>GROUP A</Radio.Button>
+             <Radio.Button value={2}>GROUP B</Radio.Button>
+             <Radio.Button value={3}>GROUP C</Radio.Button>
+           </Radio.Group>
+        </div>
+
         <div className="p-4 flex flex-col gap-2">
           {filteredShops.length === 0 ? <Empty className="py-20" /> : filteredShops.map(shop => {
             const isClosed = shop.status?.toLowerCase() === 'closed';
             return (
-              <div key={shop.id} className={`p-4 rounded-2xl flex items-center transition-all ${isClosed ? 'opacity-40 bg-slate-50' : 'bg-white hover:bg-slate-50/80 shadow-sm'}`}>
+              <div key={shop.id} className={`p-4 rounded-2xl flex items-center transition-all ${isClosed ? 'opacity-40 grayscale bg-slate-50' : 'bg-white hover:bg-slate-50/80 shadow-sm'}`}>
                 <div className="flex items-center gap-4" style={{ flex: 1 }}>
                   <img src={shop.brandIcon} alt={shop.brand} className="h-10 w-10 object-contain rounded-lg border border-slate-100 p-1 bg-white" />
                   <div className="flex flex-col">
-                    <h4 className={`m-0 font-bold ${isClosed ? 'line-through decoration-red-500' : ''}`}>{shop.name}</h4>
+                    <h4 className={`m-0 font-bold text-slate-800 ${isClosed ? 'line-through decoration-red-500' : ''}`}>{shop.name}</h4>
                     <Text className="text-[10px] font-bold text-slate-400 uppercase">{shop.brand} {shop.is_mtr ? '(MTR)' : ''}</Text>
                   </div>
                 </div>
-                <div style={{ width: 300 }}><Text className="text-xs text-slate-500 italic truncate block">{shop.address}</Text></div>
-                <div style={{ width: 120 }} className="text-center"><Tag className="m-0 border-none font-black text-[10px] px-3 rounded-md bg-indigo-50 text-indigo-600">GROUP {String.fromCharCode(64+shop.groupId)}</Tag></div>
+                <div style={{ width: 300 }}><Text className="text-xs text-slate-500 italic">{shop.address}</Text></div>
+                <div style={{ width: 120 }} className="text-center">
+                  <Tag className="m-0 border-none font-black text-[10px] px-3 rounded-md bg-indigo-50 text-indigo-600">
+                    GROUP {String.fromCharCode(64+shop.groupId)}
+                  </Tag>
+                </div>
                 <div style={{ width: 180 }} className="flex justify-end gap-3">
                    <Button size="small" disabled={isClosed} className="rounded-lg font-bold text-[10px]" onClick={() => { setTargetShop(shop); setReschedDate(null); setIsReschedOpen(true); }}>Re-Schedule</Button>
                    <button className="bin-button" disabled={isClosed} onClick={() => handleCloseShop(shop)}>
@@ -248,6 +234,19 @@ export const Dashboard: React.FC<{
         .bin-button:hover .bin-svgIcon path { fill: white; }
         .bin-button::before { position: absolute; top: -20px; content: "CLOSE"; color: white; transition-duration: .3s; font-size: 2px; }
         .bin-button:hover::before { font-size: 11px; opacity: 1; transform: translateY(32px); }
+        /* 自定義 Radio 樣式 */
+        .custom-filter-group .ant-radio-button-wrapper {
+          border-radius: 12px !important;
+          margin: 0 4px;
+          border: 1px solid #f1f5f9 !important;
+          font-weight: 900;
+          font-size: 11px;
+        }
+        .custom-filter-group .ant-radio-button-wrapper-checked {
+          background-color: #1e293b !important;
+          color: white !important;
+          border-color: #1e293b !important;
+        }
       `}</style>
     </div>
   );

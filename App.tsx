@@ -26,6 +26,17 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(
     localStorage.getItem('theme') === 'dark'
   );
+  // ✅ Add Auto-Refresh logic (30 mins)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (graphToken) {
+        console.log("Auto-refreshing data from SharePoint...");
+        fetchAllData(graphToken);
+      }
+    }, 30 * 60 * 1000); // 30 minutes in milliseconds
+    
+    return () => clearInterval(interval);
+  }, [graphToken]);
 
   useEffect(() => {
     if (isDarkMode) {

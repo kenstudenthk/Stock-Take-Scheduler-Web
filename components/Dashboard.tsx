@@ -224,7 +224,11 @@ export const Dashboard: React.FC<{
                   <div className="flex flex-col"><h4 className={`m-0 font-bold text-slate-800 ${isClosed ? 'line-through decoration-red-500' : ''}`}>{shop.name}</h4><Text className="text-[10px] font-bold text-slate-400 uppercase">{shop.brand} {shop.is_mtr ? '(MTR)' : ''}</Text></div>
                 </div>
                 <div style={{ width: 300 }}><Text className="text-xs text-slate-500 italic truncate block">{shop.address}</Text></div>
-                <div style={{ width: 120 }} className="text-center"><Tag className="m-0 border-none font-black text-[10px] px-3 rounded-md bg-indigo-50 text-indigo-600">GROUP {String.fromCharCode(64+shop.groupId)}</Tag></div>
+                <div style={{ width: 120 }} className="text-center">
+  <Tag className={`m-0 border-none font-black text-[10px] px-3 rounded-md tag-group-${shop.groupId}`}>
+    GROUP {String.fromCharCode(64 + shop.groupId)}
+  </Tag>
+</div>
                 <div style={{ width: 180 }} className="flex justify-end gap-3 pr-2">
                   {/* ✅ 更新後的 Re-Schedule 按鈕 (帶 SVG) */}
                   <button className="resched-button" disabled={isClosed} onClick={() => { setTargetShop(shop); setReschedDate(null); setIsReschedOpen(true); }}>

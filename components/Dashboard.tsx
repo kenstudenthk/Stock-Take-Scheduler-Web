@@ -85,25 +85,23 @@ export const Dashboard: React.FC<{
   if (dayOfWeek === 0) return { valid: false, reason: "Sunday" };
   if (HK_HOLIDAYS_2026.includes(dateStr)) return { valid: false, reason: "Holiday" };
 
-  // 2. 獲取該日已排程的活跃門市
+  // A. 獲取該日已排程的活跃門市
   const shopsOnDay = activeShops.filter(s => s.scheduledDate === dateStr);
 
-  // 3. 每日上限：不能超過 9 間店
+  // B. 每日上限：不能超過 9 間店
   if (shopsOnDay.length >= 9) return { valid: false, reason: "Full" };
 
-  // 4. MTR 邏輯：
+  // C. MTR 邏輯：
   // 如果目標是 MTR 店，但該日已有的店都不是 MTR -> 不可選 (為了行程集中)
-  if (shop.is_mtr && shopsOnDay.length > 0 && !shopsOnDay.some(s => s.is_mtr)) {
-    return { valid: false, reason: "Non-MTR Day" };
-  }
-  // 反之，如果該日已有 MTR 店，但目標不是 MTR 店 -> 不可選
-  if (!shop.is_mtr && shopsOnDay.length > 0 && shopsOnDay.some(s => s.is_mtr)) {
-    return { valid: false, reason: "MTR Day Only" };
-  }
+ if (shop.is_mtr !== isDayMtrOnly) {
+      return { valid: false, reason: isDayMtrOnly ? "MTR Day Only" : "Street Shops Only" };
+    }
 
-  // 5. 區域限制：該日已有的店必須與目標店同區域
-  if (shopsOnDay.length > 0 && !shopsOnDay.some(s => s.region === shop.region)) {
-    return { valid: false, reason: "Different Region" };
+// D. 區域限制：該日已有的店必須與目標店同區域
+    // Region constraint: Must match the same region
+    if (!shopsOnDay.some(s => s.region === shop.region)) {
+      return { valid: false, reason: "Different Region" };
+    }
   }
 
   return { valid: true };

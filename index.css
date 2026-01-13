@@ -1150,3 +1150,31 @@ body {
 .ant-tag-purple { background: #f3e8ff; border-color: #d8b4fe; color: #7e22ce; }
 .ant-tag-orange { background: #ffedd5; border-color: #fdba74; color: #c2410c; }
 
+/* ============================================================
+   16. Dashboard Custom Date Picker Style
+   ============================================================ */
+.custom-date-input {
+  border: 2px solid transparent !important;
+  width: 18em !important; /* 稍微加寬一點以適應版面 */
+  height: 40px !important;
+  padding-left: 0.8em !important;
+  outline: none !important;
+  background-color: #f3f3f3 !important;
+  border-radius: 10px !important;
+  transition: all 0.5s !important;
+  box-shadow: none !important;
+}
+
+.custom-date-input:hover,
+.custom-date-input.ant-picker-focused {
+  border: 2px solid #4a9dec !important;
+  box-shadow: 0px 0px 0px 7px rgba(74, 157, 236, 0.2) !important;
+  background-color: white !important;
+}
+
+/* 移除 Ant Design 預設的藍色外框 */
+.custom-date-input .ant-picker-active-bar {
+  display: none !important;
+}
+
+

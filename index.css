@@ -1381,94 +1381,102 @@ body {
 }
 
 /* ============================================================
-   19.Generator: Pac-man Chase Loading Overlay
+   19.Generator: Ghost Chase Pac-man Loading Overlay
    ============================================================ */
 .chase-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.9); /* 深色半透明背景 */
+  background: rgba(0, 0, 0, 0.85);
   z-index: 9999;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-}
-
-.chase-container {
-  position: relative;
-  width: 100%;
-  max-width: 600px;
-  height: 200px;
-  display: flex;
-  align-items: center;
   overflow: hidden;
 }
 
-/* 1 HTML: Ghost (追趕者) */
-#ghost-chaser {
-  position: absolute;
-  left: 0;
-  scale: 0.5;
-  animation: chase-move 5s linear infinite;
-  z-index: 10;
+.chase-scene {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  height: 150px;
+  display: flex;
+  align-items: center;
 }
 
-/* 2 HTML: Pac-man (被追者) */
+/* --- 1 HTML: Ghost (Chaser) --- */
+.ghost-chaser {
+  position: absolute;
+  left: 0;
+  animation: chase-move 6s linear infinite;
+  z-index: 10;
+  transform: scale(0.4); /* 縮小 Ghost 以匹配比例 */
+}
+
+/* 簡化 Ghost 結構以利渲染 */
+.ghost-body {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  background: #F44336;
+  border-radius: 70px 70px 0 0;
+  animation: upNDown 0.5s infinite;
+}
+
+.ghost-eyes {
+  display: flex;
+  gap: 20px;
+  padding-top: 40px;
+  justify-content: center;
+}
+.ghost-eye {
+  width: 30px; height: 40px; background: white; border-radius: 50%; position: relative;
+}
+.ghost-eye:after {
+  content: ''; width: 15px; height: 15px; background: blue; border-radius: 50%;
+  position: absolute; bottom: 5px; right: 2px;
+}
+
+/* --- 2 HTML: Pac-man (Runner) --- */
 .pacman-runner {
   position: absolute;
-  left: 120px; /* 領先 Ghost */
-  width: 0;
-  height: 0;
-  border: 40px solid #FDD835;
+  left: 150px; /* 領先 Ghost */
+  width: 0; height: 0;
+  border: 50px solid #FDD835;
   border-radius: 50%;
   border-right-color: transparent;
-  animation: chase-move 5s linear infinite;
+  animation: chase-move 6s linear infinite;
   z-index: 5;
 }
 
 .pacman-runner:before, .pacman-runner:after {
-  content: "";
-  position: absolute;
-  top: -40px;
-  left: -40px;
-  width: 0;
-  height: 0;
-  border: 40px solid #FDD835;
-  border-radius: 50%;
+  content: ""; position: absolute; top: -50px; left: -50px;
+  width: 0; height: 0; border: 50px solid #FDD835; border-radius: 50%;
   border-right-color: transparent;
 }
-
 .pacman-runner:before { animation: chomp1 .25s ease-in-out infinite; }
 .pacman-runner:after { animation: chomp2 .25s ease-in-out infinite; }
 
 /* 2 HTML: Dots (食物) */
-.dots-trail {
+.dots-container {
   display: flex;
   position: absolute;
-  left: 220px;
-  animation: chase-move 5s linear infinite;
+  left: 260px;
+  animation: chase-move 6s linear infinite;
 }
-
 .dot-item {
-  width: 10px;
-  height: 10px;
-  margin: 0 15px;
-  border-radius: 50%;
-  background: #1E88E5;
+  width: 12px; height: 12px; background: #fff; border-radius: 50%; margin: 0 25px;
 }
 
 @keyframes chase-move {
-  0% { transform: translateX(-200px); }
-  100% { transform: translateX(800px); }
+  0% { transform: translateX(-300px); }
+  100% { transform: translateX(1000px); }
 }
 
-/* Reset All Schedule 按鈕樣式 (配合之前的修正) */
-.reset-all-btn {
-  font-family: inherit; font-size: 14px; background: white; color: #ef4444; fill: #ef4444;
-  padding: 0.6em 1.2em; display: flex; align-items: center; cursor: pointer;
-  border: 1px solid #fee2e2; border-radius: 12px; font-weight: 800;
-  transition: all 0.3s ease; position: relative; min-width: 190px; overflow: hidden;
+@keyframes upNDown {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
-.reset-all-btn:hover { background: #000; color: white; border-color: #000; }
-.reset-all-btn:hover svg { transform: translateX(72px) scale(1.2); fill: #fff; }
-.reset-all-btn:hover span { opacity: 0; transform: translateX(20px); }
+
+@keyframes chomp1 { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(45deg); } }
+@keyframes chomp2 { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-45deg); } }

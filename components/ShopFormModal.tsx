@@ -31,12 +31,11 @@ interface Props {
 export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSuccess, graphToken }) => {
   const [formData, setFormData] = useState<any>({});
   
-  // --- ✅ 新增：地點搜尋相關狀態 ---
+  // --- ✅ 地點搜尋相關狀態 ---
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [searchOptions, setSearchOptions] = useState<{ value: string; location: any }[]>([]);
   const [searchText, setSearchText] = useState('');
 
-  // 當彈窗開啟或 shop 改變時，初始化資料
   useEffect(() => {
     if (visible) {
       if (shop) {
@@ -61,56 +60,80 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           group: shop.groupId?.toString() || '1'
         });
       } else {
-        // 新增模式：預設值
         setFormData({ mtr: 'No', group: '1' });
       }
     }
   }, [shop, visible]);
 
-  // --- ✅ 新增：地點搜尋邏輯 ---
+  // --- ✅ 地點搜尋邏輯 ---
 
-  // 1. 從「English Address」複製地址到搜尋框
   const handleCopyFromAddress = () => {
     const currentAddr = formData.addr_en;
     if (currentAddr) {
       setSearchText(currentAddr);
-      handleSearch(currentAddr); // 複製後自動觸發搜尋建議
+      handleSearch(currentAddr);
     } else {
       message.warning("English Address is empty!");
     }
   };
 
-  // 2. 執行 AMap Autocomplete 搜尋
   const handleSearch = (value: string) => {
     setSearchText(value);
-    if (!value || !window.AMap) return;
+    if (!value) {
+      setSearchOptions([]);
+      return;
+    }
 
+    if (!window.AMap) {
+      console.error("AMap SDK not loaded. Check index.html");
+      return;
+    }
+
+    // ✅ 使用 AMap.Autocomplete 插件
     window.AMap.plugin('AMap.Autocomplete', () => {
-      const auto = new window.AMap.Autocomplete({ city: 'hongkong' });
-      auto.search(value, (status: string, result: any) => {
+      // 設定城市為 '香港' 或 '全國' 以確保搜尋範圍
+      const autoOptions = {
+        city: '香港', 
+        citylimit: false // 設為 false 可以搜尋到更多鄰近結果
+      };
+      const autoComplete = new window.AMap.Autocomplete(autoOptions);
+      
+      autoComplete.search(value, (status: string, result: any) => {
+        console.log("AMap Search Status:", status, result); // 🔍 可以在開發者工具查看結果
+
         if (status === 'complete' && result.tips) {
           const suggestions = result.tips
-            .filter((tip: any) => tip.location) // 只保留有坐標的結果
+            .filter((tip: any) => tip.location && tip.id) // 只保留有坐標且有效的結果
             .map((tip: any) => ({
-              value: `${tip.name} (${tip.address || ''})`,
-              location: tip.location
+              // 顯示名稱 + 地址，方便辨識
+              value: `${tip.name} - ${tip.address || ''}`, 
+              location: tip.location,
+              label: (
+                <div style={{ padding: '4px 0' }}>
+                  <div style={{ fontWeight: 'bold' }}>{tip.name}</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{tip.address || 'No address details'}</div>
+                </div>
+              )
             }));
           setSearchOptions(suggestions);
+        } else if (status === 'no_data') {
+          setSearchOptions([]);
         }
       });
     });
   };
 
-  // 3. 當選中建議地點時，更新座標到主表單
   const onSelectLocation = (value: string, option: any) => {
-    const { lng, lat } = option.location;
-    setFormData({
-      ...formData,
-      lat: lat.toString(),
-      lng: lng.toString()
-    });
-    message.success("Latitude & Longitude updated!");
-    setSearchModalVisible(false);
+    if (option && option.location) {
+      const { lng, lat } = option.location;
+      setFormData({
+        ...formData,
+        lat: lat.toString(),
+        lng: lng.toString()
+      });
+      message.success("Coordinates updated based on selection.");
+      setSearchModalVisible(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -161,7 +184,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     }
   };
 
-  // 封裝優化後的輸入框元件
   const renderInput = (label: string, key: string, span: number = 12) => (
     <Col span={span}>
       <div className="st-inputBox-pro">
@@ -194,7 +216,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             <Text type="secondary">Update SharePoint database records for stock take planning.</Text>
           </div>
           
-          {/* 分組 1: 基本識別 (保留) */}
           <div className="st-form-section">
             <div className="flex items-center gap-2 mb-6 text-teal-600 font-bold border-b border-teal-100 pb-2">
               <InfoCircleOutlined /> BASIC IDENTIFICATION
@@ -209,7 +230,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             </Row>
           </div>
 
-          {/* 分組 2: 地點與地址 (保留) */}
           <div className="st-form-section">
             <div className="flex items-center gap-2 mb-6 text-teal-600 font-bold border-b border-teal-100 pb-2">
               <EnvironmentOutlined /> ADDRESS & LOGISTICS
@@ -224,7 +244,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             </Row>
           </div>
 
-          {/* 分組 3: 聯絡與坐標 (✅ 修改此部分) */}
           <div className="st-form-section">
             <div className="flex items-center gap-2 mb-6 text-teal-600 font-bold border-b border-teal-100 pb-2">
               <PhoneOutlined /> CONTACTS & GEOLOCATION
@@ -233,7 +252,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
               {renderInput("Store Phone", "phone", 12)}
               {renderInput("Primary Contact", "contact", 12)}
               
-              {/* ✅ 修改 Latitude 欄位以加入搜尋按鈕 */}
               <Col span={8}>
                 <div className="st-inputBox-pro">
                   <input 
@@ -244,7 +262,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
                   />
                   <span>Latitude</span>
                 </div>
-                {/* 增加 Location Search 按鈕 */}
                 <Button 
                   type="dashed" 
                   block 
@@ -270,7 +287,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             </Row>
           </div>
 
-          {/* 分組 4: 備註 (保留) */}
           <div className="st-form-section">
             <div className="flex items-center gap-2 mb-6 text-teal-600 font-bold border-b border-teal-100 pb-2">
               <PushpinOutlined /> INTERNAL REMARKS
@@ -280,7 +296,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             </Row>
           </div>
 
-          {/* 按鈕區域 (保留) */}
           <div className="flex justify-end gap-4 mt-6">
             <button className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all" onClick={onCancel}>
               CANCEL
@@ -292,7 +307,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         </div>
       </Modal>
 
-      {/* --- ✅ 新增：地點搜尋彈窗 --- */}
+      {/* ✅ 地點搜尋彈窗 */}
       <Modal
         title={<Space><SearchOutlined /> Search Store Location</Space>}
         open={searchModalVisible}
@@ -304,7 +319,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       >
         <div style={{ padding: '10px 0' }}>
           <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 15 }}>
-            Type address or use the button to copy from English Address. Select a suggestion to update coordinates.
+            Select an address from the suggestions to automatically update coordinates.
           </Text>
           
           <Space.Compact style={{ width: '100%' }}>
@@ -315,20 +330,23 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
               onSelect={onSelectLocation}
               value={searchText}
               onChange={setSearchText}
-              placeholder="Search address or shop name..."
+              placeholder="Start typing shop name or address..."
+              // 增加下拉選單樣式，確保文字清晰
+              dropdownMatchSelectWidth={false}
+              listHeight={250}
             />
             <Button 
               icon={<CopyOutlined />} 
               onClick={handleCopyFromAddress}
               title="Copy from Form English Address"
             >
-              Copy from Address
+              Copy
             </Button>
           </Space.Compact>
           
-          <div style={{ marginTop: 20 }}>
-            <Text type="secondary" style={{ fontSize: '11px', fontStyle: 'italic' }}>
-              * Suggestions are provided by AMap API. Select an item to automatically update the form.
+          <div style={{ marginTop: 20, padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
+            <Text type="secondary" style={{ fontSize: '11px', display: 'block' }}>
+              <InfoCircleOutlined /> <b>Pro Tip:</b> If no results appear, try removing the shop name and searching only for the street name or building name.
             </Text>
           </div>
         </div>

@@ -179,19 +179,19 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       </div>
 
       <Row gutter={[24, 24]}>
-        <Col span={6}><SummaryCard label="Total Shop" value={stats.total} subtext="Excl. Master Closed" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{fontSize: 40, color: 'white', opacity: 0.5}} />} /></Col>
-        <Col span={6}><SummaryCard label="Completed" value={stats.completed} subtext="Status: Done" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{fontSize: 40, color: 'white', opacity: 0.5}} />} /></Col>
-        <Col span={6}><SummaryCard label="Closed Shop" value={stats.closed} subtext="Status: Closed" bgColor="#ff4545" icon={<CloseCircleOutlined style={{fontSize: 40, color: 'white', opacity: 0.5}} />} /></Col>
-        <Col span={6}><SummaryCard label="Non Schedule" value={stats.unplanned} subtext="Status: Unplanned" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 40, color: 'white', opacity: 0.5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Total Shop" value={stats.total} subtext="Excl. Master Closed" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Completed" value={stats.completed} subtext="Status: Done" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Closed Shop" value={stats.closed} subtext="Status: Closed" bgColor="#ff4545" icon={<CloseCircleOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Non Schedule" value={stats.unplanned} subtext="Status: Unplanned" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
       </Row>
 
       <div className="mt-2">
-        <Text strong className="text-[10px] text-slate-400 uppercase tracking-widest block mb-4">Unplanned Shops by Region</Text>
+        <Text strong className="text-[20px] text-slate-400 uppercase tracking-widest block mb-4">Unplanned Shops by Region</Text>
         <Row gutter={[16, 16]}>
           {regionRemainStats.map(reg => (
             <Col key={reg.key} style={{ width: '20%' }}>
               <Card size="small" className="rounded-2xl border-none shadow-sm bg-indigo-50/50 text-center">
-                <Text strong className="text-indigo-600 text-[10px] uppercase block"><EnvironmentOutlined /> {reg.key}</Text>
+                <Text strong className="text-indigo-600 text-[18px] uppercase block"><EnvironmentOutlined /> {reg.key}</Text>
                 <Title level={4} className="m-0 mt-1">{reg.count}</Title>
               </Card>
             </Col>
@@ -201,7 +201,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
       {/* 🛠️ 下方就是篩選器區塊 --- */}
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 mt-4">
-        <Space className="mb-10 text-[16px] font-bold uppercase tracking-widest text-slate-800">
+        <Space className="mb-10 text-[18px] font-bold uppercase tracking-widest text-slate-800">
           <ControlOutlined className="text-teal-600" /> Algorithm Configuration
         </Space>
         
@@ -209,9 +209,9 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
           {/* 1. 核心參數：日期、數量 */}
           <Collapse.Panel key="1" header={<span className="font-bold">1. Core Parameters</span>}>
             <Row gutter={24} className="py-2">
-              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Start Date</Text><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-slate-50 border-none h-12 rounded-xl w-full px-4" /></Col>
-              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Shops / Day</Text><InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 20)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
-              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Groups / Day</Text><InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
+              <Col span={8}><Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Start Date</Text><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-slate-50 border-none h-12 rounded-xl w-full px-4" /></Col>
+              <Col span={8}><Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Shops / Day</Text><InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 20)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
+              <Col span={8}><Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Groups / Day</Text><InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
             </Row>
           </Collapse.Panel>
 
@@ -219,19 +219,19 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
           <Collapse.Panel key="2" header={<span className="font-bold">2. Location Filters</span>}>
             <Row gutter={24} className="py-2">
               <Col span={10}>
-                <Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Regions</Text>
+                <Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Regions</Text>
                 <Select mode="multiple" className="w-full min-h-[48px]" placeholder="All Regions" value={selectedRegions} onChange={setSelectedRegions}>
                   {regionOptions.map(r => <Select.Option key={r} value={r}>{r}</Select.Option>)}
                 </Select>
               </Col>
               <Col span={10}>
-                <Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Districts</Text>
+                <Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Districts</Text>
                 <Select mode="multiple" className="w-full min-h-[48px]" placeholder="All Districts" value={selectedDistricts} onChange={setSelectedDistricts}>
                   {availableDistricts.map(d => <Select.Option key={d} value={d}>{d}</Select.Option>)}
                 </Select>
               </Col>
               <Col span={4}>
-                <Text strong className="text-[10px] text-slate-400 uppercase block mb-2">MTR Incl.</Text>
+                <Text strong className="text-[14px] text-slate-400 uppercase block mb-2">MTR Incl.</Text>
                 <div className="h-12 flex items-center gap-2"><Switch checked={includeMTR} onChange={setIncludeMTR} /><span className="text-xs font-bold text-slate-600">{includeMTR ? 'Yes' : 'No'}</span></div>
               </Col>
             </Row>

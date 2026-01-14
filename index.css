@@ -1307,7 +1307,7 @@ body {
   gap: 5px;
 }
 /* ============================================================
-  18. Generator: Reset All Schedule Button (Optimized Centering)
+   18. Generator: Reset All Schedule Button (Centered Fix)
    ============================================================ */
 .reset-all-btn {
   font-family: inherit;
@@ -1348,9 +1348,9 @@ body {
   border-color: #000;
 }
 
-/* ✅ 修正位移：68px 能讓圖標在 190px 寬度下完美居中 */
+/* ✅ 核心修正：66px 偏移量讓圖標在 190px 寬度下絕對居中 */
 .reset-all-btn:hover svg {
-  transform: translateX(68px) scale(1.2); 
+  transform: translateX(66px) scale(1.2); 
   fill: #fff;
 }
 
@@ -1360,7 +1360,7 @@ body {
 }
 
 /* ============================================================
-   19. Loading Overlay: Ghost Chasing Pac-man
+   19.Loading Overlay: Ghost Chasing Pac-man (Integrated)
    ============================================================ */
 .chase-overlay {
   position: fixed;
@@ -1374,7 +1374,7 @@ body {
   overflow: hidden;
 }
 
-.chase-track {
+.chase-scene {
   position: relative;
   width: 100%;
   max-width: 800px;
@@ -1387,19 +1387,19 @@ body {
 .ghost-chaser {
   position: absolute;
   left: 0;
-  animation: chase-move 5s linear infinite;
+  animation: chase-move 6s linear infinite;
   z-index: 10;
 }
 
 /* Pac-man (Runner - 2 HTML) */
 .pacman-runner {
   position: absolute;
-  left: 140px; /* 領先 Ghost 的距離 */
+  left: 140px; /* 領先 Ghost */
   width: 0; height: 0;
   border: 50px solid #FDD835;
   border-radius: 50%;
   border-right-color: transparent;
-  animation: chase-move 5s linear infinite;
+  animation: chase-move 6s linear infinite;
   z-index: 5;
 }
 
@@ -1412,14 +1412,14 @@ body {
 .pacman-runner:after { animation: chomp2 .25s ease-in-out infinite; }
 
 /* Food Dots */
-.food-dots {
+.dots-trail {
   display: flex;
   position: absolute;
-  left: 250px;
-  animation: chase-move 5s linear infinite;
+  left: 260px;
+  animation: chase-move 6s linear infinite;
 }
-.food-dot {
-  width: 10px; height: 10px; background: #fff; border-radius: 50%; margin: 0 20px;
+.dot-node {
+  width: 12px; height: 12px; background: #fff; border-radius: 50%; margin: 0 25px;
 }
 
 @keyframes chase-move {
@@ -1429,9 +1429,3 @@ body {
 
 @keyframes chomp1 { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(45deg); } }
 @keyframes chomp2 { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-45deg); } }
-
-/* Ghost Animation (Up and Down) */
-.ghost-bounce {
-  animation: upNDown 0.5s infinite;
-}
-@keyframes upNDown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }

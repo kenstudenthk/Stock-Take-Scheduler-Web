@@ -12,13 +12,13 @@ import { SP_FIELDS } from '../constants';
 const { Text, Title } = Typography;
 const { confirm } = Modal;
 
-// --- REGION 配置：包含正式名稱與專屬 SVG ---
+// --- REGION 配置：正式名稱與 SVG ---
 const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg: React.ReactNode }> = {
   'HK': { 
     label: 'Hong Kong Island', 
     social: 'hk',
     svg: (
-      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="28px" height="28px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M3 21H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
         <path d="M5 21V7L10 3V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M14 21V11L19 15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -32,7 +32,7 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
     label: 'Kowloon', 
     social: 'kn',
     svg: (
-      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="28px" height="28px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 21C15.5 17.4 19 14.1764 19 10.2C19 6.22355 15.866 3 12 3C8.13401 3 5 6.22355 5 10.2C5 14.1764 8.5 17.4 12 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/>
       </svg>
@@ -42,7 +42,7 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
     label: 'New Territories', 
     social: 'nt',
     svg: (
-      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="28px" height="28px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M2 20L9 4L14 14L18 8L22 20H2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     )
@@ -51,7 +51,7 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
     label: 'Lantau Island', 
     social: 'islands',
     svg: (
-      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="28px" height="28px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 10C13.5 10 17 11 17 14C17 17 14 18 12 18C10 18 7 17 7 14C7 11 10.5 10 12 10Z" stroke="currentColor" strokeWidth="2"/>
         <path d="M12 10V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
         <path d="M12 3L16 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -63,7 +63,7 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
     label: 'Macau', 
     social: 'mo',
     svg: (
-      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="28px" height="28px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 3L4 9V21H20V9L12 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M12 7V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -72,18 +72,11 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
   }
 };
 
-// --- RESET 用：Ghost 追逐 Pac-man ---
+// --- 加載動畫與組件 ---
 const ResetChaseLoader = () => (
   <div className="chase-overlay">
     <div className="chase-scene">
-      <div className="ghost-chaser">
-        <div style={{ background: '#ef4444', width: '140px', height: '140px', borderRadius: '70px 70px 0 0', position: 'relative' }}>
-          <div style={{ display: 'flex', gap: '20px', paddingTop: '40px', justifyContent: 'center' }}>
-            <div style={{ width: '30px', height: '35px', background: 'white', borderRadius: '50%' }} />
-            <div style={{ width: '30px', height: '35px', background: 'white', borderRadius: '50%' }} />
-          </div>
-        </div>
-      </div>
+      <div className="ghost-chaser"><div style={{ background: '#ef4444', width: '140px', height: '140px', borderRadius: '70px 70px 0 0', position: 'relative' }}><div style={{ display: 'flex', gap: '20px', paddingTop: '40px', justifyContent: 'center' }}><div style={{ width: '30px', height: '35px', background: 'white', borderRadius: '50%' }} /><div style={{ width: '30px', height: '35px', background: 'white', borderRadius: '50%' }} /></div></div></div>
       <div className="pacman-runner"></div>
       <div className="dots-trail">{[1, 2, 3, 4].map(i => <div key={i} className="dot-node" />)}</div>
     </div>
@@ -91,7 +84,6 @@ const ResetChaseLoader = () => (
   </div>
 );
 
-// --- SYNC 用：幾何圖形動畫 ---
 const SyncGeometricLoader = () => (
   <div className="sync-overlay">
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
@@ -130,10 +122,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [loadingType, setLoadingType] = useState<'reset' | 'sync'>('sync');
 
   const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed'), [shops]);
-
-  const regionOptions = useMemo(() => 
-    Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort()
-  , [activePool]);
+  const regionOptions = useMemo(() => Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort(), [activePool]);
 
   const stats = useMemo(() => ({
     total: activePool.length,
@@ -144,22 +133,11 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
   const regionRemainStats = useMemo(() => {
     const unplannedPool = activePool.filter(s => s.status === 'Unplanned');
-    // 初始化計數器，包含所有目標代碼
     const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
-    unplannedPool.forEach(s => { 
-      if (counts.hasOwnProperty(s.region)) counts[s.region]++; 
-    });
-    
-    // 將資料與顯示配置結合
+    unplannedPool.forEach(s => { if (counts.hasOwnProperty(s.region)) counts[s.region]++; });
     return Object.keys(counts).map(key => {
       const config = REGION_DISPLAY_CONFIG[key] || { label: key, social: key.toLowerCase(), svg: null };
-      return { 
-        key, 
-        count: counts[key],
-        displayName: config.label,
-        socialKey: config.social,
-        icon: config.svg
-      };
+      return { key, count: counts[key], displayName: config.label, socialKey: config.social, icon: config.svg };
     });
   }, [activePool]);
 
@@ -197,19 +175,15 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       const matchMTR = includeMTR ? true : !s.is_mtr;
       return s.status === 'Unplanned' && matchRegion && matchDistrict && matchMTR;
     });
-
     if (pool.length === 0) { message.warning("No unplanned shops match filters."); setIsCalculating(false); return; }
-
     pool.sort((a, b) => (a.latitude + a.longitude) - (b.latitude + b.longitude));
     const results: any[] = [];
     let currentDay = dayjs(startDate);
-
     pool.forEach((shop, index) => {
       const groupInDay = (index % shopsPerDay) % groupsPerDay + 1;
       results.push({ ...shop, scheduledDate: currentDay.format('YYYY-MM-DD'), groupId: groupInDay });
       if ((index + 1) % shopsPerDay === 0) currentDay = currentDay.add(1, 'day');
     });
-
     results.sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate) || a.groupId - b.groupId);
     setGeneratedResult(results);
     setIsCalculating(false);
@@ -229,15 +203,12 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
   return (
     <div className="w-full flex flex-col gap-8 pb-20">
-      
       {isSaving && (loadingType === 'reset' ? <ResetChaseLoader /> : <SyncGeometricLoader />)}
 
       <div className="flex justify-between items-start">
-        <div><Title level={2} className="m-0">Schedule Generator</Title><Text type="secondary">Algorithm targets Unplanned shops.</Text></div>
+        <div><Title level={2} className="m-0 text-slate-800">Schedule Generator</Title><Text type="secondary">Algorithm targets Unplanned shops.</Text></div>
         <button className="reset-all-btn" onClick={handleResetAll} disabled={isSaving}>
-          <div className="svg-wrapper">
-             <svg width="24px" height="24px" viewBox="0 -0.5 21 21" fill="currentColor"><path d="M130.35,216 L132.45,216 L132.45,208 L130.35,208 L130.35,216 Z M134.55,216 L136.65,216 L136.65,208 L134.55,208 L134.55,216 Z M128.25,218 L138.75,218 L138.75,206 L128.25,206 L128.25,218 Z M130.35,204 L136.65,204 L136.65,202 L130.35,202 L130.35,204 Z M138.75,204 L138.75,200 L128.25,200 L128.25,204 L123,204 L123,206 L126.15,206 L126.15,220 L140.85,220 L140.85,206 L144,206 L144,204 L138.75,204 Z" transform="translate(-123.000000, -200.000000)"></path></svg>
-          </div>
+          <div className="svg-wrapper"><svg width="24px" height="24px" viewBox="0 -0.5 21 21" fill="currentColor"><path d="M130.35,216 L132.45,216 L132.45,208 L130.35,208 L130.35,216 Z M134.55,216 L136.65,216 L136.65,208 L134.55,208 L134.55,216 Z M128.25,218 L138.75,218 L138.75,206 L128.25,206 L128.25,218 Z M130.35,204 L136.65,204 L136.65,202 L130.35,202 L130.35,204 Z M138.75,204 L138.75,200 L128.25,200 L128.25,204 L123,204 L123,206 L126.15,206 L126.15,220 L140.85,220 L140.85,206 L144,206 L144,204 L138.75,204 Z" transform="translate(-123.000000, -200.000000)"></path></svg></div>
           <span>Reset All Schedule</span>
         </button>
       </div>
@@ -249,28 +220,41 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         <Col span={6}><SummaryCard label="Non Schedule" value={stats.unplanned} subtext="Status: Unplanned" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
       </Row>
 
-      {/* ✅ 核心更新：Unplanned Shops By Region 已更換為完整名稱與專屬圖標 */}
-      <div className="mt-4 mb-10 bg-white p-8 rounded-[40px] shadow-sm border border-slate-100">
-        <Text strong className="text-[16px] text-slate-400 uppercase tracking-widest block mb-8">Unplanned Shops by Region</Text>
-        <ul className="example-2">
+      {/* ✅ 核心更新：Unplanned Shops By Region - 文字移入 Box 並使用 1/5 寬度 */}
+      <div className="mt-4 mb-10 bg-white p-10 rounded-[40px] shadow-sm border border-slate-100">
+        <Text strong className="text-[16px] text-slate-400 uppercase tracking-widest block mb-10">Unplanned Shops by Region</Text>
+        
+        {/* 使用 grid-cols-5 確保五個項目平分寬度 */}
+        <ul className="grid grid-cols-5 w-full gap-0 list-none p-0 m-0">
           {regionRemainStats.map(reg => (
-            <li key={reg.key} className="icon-content">
-              {/* Region Name Label - 現在顯示完整名稱 */}
-              <div className="region-name-label" style={{ fontSize: '10px', minHeight: '30px', display: 'flex', alignItems: 'center' }}>
-                {reg.displayName}
-              </div>
+            <li key={reg.key} className="icon-content relative flex justify-center">
               <a
                 href="#"
                 aria-label={reg.displayName}
                 data-social={reg.socialKey}
                 onClick={(e) => e.preventDefault()}
+                style={{ 
+                  width: '90%', 
+                  height: '110px', 
+                  borderRadius: '24px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '10px'
+                }}
               >
                 <div className="filled"></div>
-                {/* 地點專屬 SVG 圖標 */}
-                {reg.icon}
+                {/* 地點專屬 SVG */}
+                <div className="z-10">{reg.icon}</div>
+                {/* 地區正式名稱：移入 Box 內部 */}
+                <span className="z-10 text-[11px] font-bold text-center leading-tight uppercase tracking-tight">
+                  {reg.displayName}
+                </span>
               </a>
               {/* Tooltip 顯示未計畫店鋪數量 */}
-              <div className="tooltip">{reg.count}</div>
+              <div className="tooltip font-bold">{reg.count}</div>
             </li>
           ))}
         </ul>
@@ -315,35 +299,19 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         <div className="flex justify-end mt-12">
           <button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}>
             <div className="dots_border"></div>
-            <Space className="text_button">
-              <ControlOutlined /> 
-              <span>{isCalculating ? 'GENERATING...' : 'GENERATE SCHEDULE'}</span>
-            </Space>
+            <Space className="text_button"><ControlOutlined /><span>{isCalculating ? 'GENERATING...' : 'GENERATE SCHEDULE'}</span></Space>
           </button>
         </div>
       </div>
 
       {generatedResult.length > 0 && (
-        <Card title="Preview" className="rounded-3xl border-none shadow-sm overflow-hidden mt-8">
-          <Table 
-            dataSource={generatedResult} 
-            pagination={{ pageSize: 20 }} 
-            columns={[
-              { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: (d) => <b>{d}</b> },
-              { 
-                title: 'Group', 
-                dataIndex: 'groupId', 
-                key: 'group', 
-                render: (g) => {
-                  const letter = String.fromCharCode(64 + g);
-                  const color = g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange';
-                  return <Tag color={color} className="font-bold px-3">{`Group ${letter}`}</Tag>;
-                }
-              },
-              { title: 'Shop Name', dataIndex: 'name', key: 'name' },
-              { title: 'District', dataIndex: 'district', key: 'district' },
-            ]} 
-          />
+        <Card title="Schedule Preview" className="rounded-3xl border-none shadow-sm overflow-hidden mt-8">
+          <Table dataSource={generatedResult} pagination={{ pageSize: 20 }} columns={[
+            { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: (d) => <b>{d}</b> },
+            { title: 'Group', dataIndex: 'groupId', key: 'group', render: (g) => <Tag color={g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange'} className="font-bold px-3">{`Group ${String.fromCharCode(64 + g)}`}</Tag> },
+            { title: 'Shop Name', dataIndex: 'name', key: 'name' },
+            { title: 'District', dataIndex: 'district', key: 'district' },
+          ]} />
           <div className="flex justify-end mt-4 p-4 border-t"><Button type="primary" icon={<SaveOutlined />} onClick={saveToSharePoint} className="bg-emerald-600 h-12 rounded-xl px-8 font-bold">Sync to SharePoint</Button></div>
         </Card>
       )}

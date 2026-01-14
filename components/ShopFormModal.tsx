@@ -85,38 +85,34 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     }
 
     if (!window.AMap) {
-      console.error("AMap SDK not loaded. Check index.html");
+      console.error("AMap SDK not loaded.");
       return;
     }
 
-    // ✅ 使用 AMap.Autocomplete 插件
-    window.AMap.plugin('AMap.Autocomplete', () => {
-      // 設定城市為 '香港' 或 '全國' 以確保搜尋範圍
+    // ✅ JS API 2.0 正確插件名稱為 AMap.AutoComplete (C 大寫)
+    window.AMap.plugin(['AMap.AutoComplete'], () => {
       const autoOptions = {
         city: '香港', 
-        citylimit: false // 設為 false 可以搜尋到更多鄰近結果
+        citylimit: false 
       };
-      const autoComplete = new window.AMap.Autocomplete(autoOptions);
+      const autoComplete = new window.AMap.AutoComplete(autoOptions);
       
       autoComplete.search(value, (status: string, result: any) => {
-        console.log("AMap Search Status:", status, result); // 🔍 可以在開發者工具查看結果
-
         if (status === 'complete' && result.tips) {
           const suggestions = result.tips
-            .filter((tip: any) => tip.location && tip.id) // 只保留有坐標且有效的結果
+            .filter((tip: any) => tip.location && tip.id) 
             .map((tip: any) => ({
-              // 顯示名稱 + 地址，方便辨識
               value: `${tip.name} - ${tip.address || ''}`, 
               location: tip.location,
               label: (
                 <div style={{ padding: '4px 0' }}>
-                  <div style={{ fontWeight: 'bold' }}>{tip.name}</div>
+                  <div style={{ fontWeight: 'bold', color: '#1e293b' }}>{tip.name}</div>
                   <div style={{ fontSize: '11px', color: '#94a3b8' }}>{tip.address || 'No address details'}</div>
                 </div>
               )
             }));
           setSearchOptions(suggestions);
-        } else if (status === 'no_data') {
+        } else {
           setSearchOptions([]);
         }
       });
@@ -131,7 +127,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         lat: lat.toString(),
         lng: lng.toString()
       });
-      message.success("Coordinates updated based on selection.");
+      message.success("Latitude & Longitude synced!");
       setSearchModalVisible(false);
     }
   };
@@ -177,10 +173,10 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         message.success(isEdit ? "Shop Updated!" : "New Shop Created!");
         onSuccess();
       } else {
-        message.error("SharePoint refused the update.");
+        message.error("SharePoint update failed.");
       }
     } catch (err) {
-      message.error("Network Error: Sync failed");
+      message.error("Sync Error: Please check connection");
     }
   };
 
@@ -213,7 +209,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             <Title level={3} style={{ color: '#0f172a', margin: 0 }}>
               {shop ? 'Store Profile Manager' : 'New Store Registration'}
             </Title>
-            <Text type="secondary">Update SharePoint database records for stock take planning.</Text>
+            <Text type="secondary">Update SharePoint database records for planning.</Text>
           </div>
           
           <div className="st-form-section">
@@ -262,6 +258,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
                   />
                   <span>Latitude</span>
                 </div>
+                {/* Location Search 按鈕樣式保持與主題一致 */}
                 <Button 
                   type="dashed" 
                   block 
@@ -309,17 +306,17 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
 
       {/* ✅ 地點搜尋彈窗 */}
       <Modal
-        title={<Space><SearchOutlined /> Search Store Location</Space>}
+        title={<Space><EnvironmentOutlined /> Geocoding Service</Space>}
         open={searchModalVisible}
         onCancel={() => setSearchModalVisible(false)}
         footer={null}
-        width={500}
+        width={520}
         centered
         destroyOnClose
       >
         <div style={{ padding: '10px 0' }}>
           <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 15 }}>
-            Select an address from the suggestions to automatically update coordinates.
+            Find exact coordinates. Use 'Copy' to pull address from the main form.
           </Text>
           
           <Space.Compact style={{ width: '100%' }}>
@@ -330,23 +327,22 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
               onSelect={onSelectLocation}
               value={searchText}
               onChange={setSearchText}
-              placeholder="Start typing shop name or address..."
-              // 增加下拉選單樣式，確保文字清晰
+              placeholder="Enter building or street name..."
               dropdownMatchSelectWidth={false}
-              listHeight={250}
+              listHeight={300}
             />
             <Button 
               icon={<CopyOutlined />} 
               onClick={handleCopyFromAddress}
-              title="Copy from Form English Address"
+              title="Copy from main form"
             >
               Copy
             </Button>
           </Space.Compact>
           
-          <div style={{ marginTop: 20, padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
-            <Text type="secondary" style={{ fontSize: '11px', display: 'block' }}>
-              <InfoCircleOutlined /> <b>Pro Tip:</b> If no results appear, try removing the shop name and searching only for the street name or building name.
+          <div style={{ marginTop: 20, padding: '15px', background: '#f0fdfa', borderRadius: '12px', border: '1px solid #ccfbf1' }}>
+            <Text type="secondary" style={{ fontSize: '11px', color: '#0f766e' }}>
+              <InfoCircleOutlined /> <b>Search Tip:</b> AMap works best with specific building names or street numbers. If no results, try removing floor or unit details.
             </Text>
           </div>
         </div>

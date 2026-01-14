@@ -57,11 +57,19 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
   // 地圖初始化與 Marker 更新邏輯保留 (節錄)
   useEffect(() => {
-    if (!window.AMap || !document.getElementById('map-container')) return;
-    if (!mapRef.current) {
-      mapRef.current = new window.AMap.Map('map-container', { center: [114.17, 22.3], zoom: 11, viewMode: '3D' });
+    console.log("Checking AMap...", window.AMap);
+    if (!window.AMap || !document.getElementById('map-container')) {
+      console.error("AMap SDK not found! Please check index.html");
+      return;
     }
-    // ... Marker 渲染邏輯 ...
+    if (!mapRef.current) {
+      mapRef.current = new window.AMap.Map('map-container', {
+        center: [114.17, 22.32], // 香港中心座標
+        zoom: 11,
+        viewMode: '3D'
+      });
+      console.log("Map initialized!");
+    }
   }, [filteredShops]);
 
   return (

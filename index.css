@@ -1514,3 +1514,119 @@ body {
   transform-origin: left center;
 }
 
+/* ============================================================
+   23. Generator: Region Status Icons (Uiverse Style)
+   ============================================================ */
+.example-2 {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  gap: 20px;
+}
+
+.example-2 .icon-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 區域標籤樣式 */
+.region-name-label {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.example-2 .icon-content .tooltip {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 12px;
+  opacity: 0;
+  visibility: hidden;
+  font-size: 16px;
+  font-weight: 900;
+  transition: all 0.3s ease;
+  z-index: 20;
+}
+
+.example-2 .icon-content:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  top: -45px;
+}
+
+.example-2 .icon-content a {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 55px;
+  height: 55px;
+  border-radius: 16px;
+  color: #4d4d4d;
+  background-color: var(--card-bg);
+  transition: all 0.3s ease-in-out;
+  border: 1px solid var(--border-color);
+}
+
+.example-2 .icon-content a:hover {
+  box-shadow: 3px 2px 25px 0px rgba(0, 0, 0, 0.15);
+  color: white;
+}
+
+.example-2 .icon-content a svg {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+}
+
+.example-2 .icon-content a .filled {
+  position: absolute;
+  top: auto;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background-color: #000;
+  transition: all 0.3s ease-in-out;
+}
+
+.example-2 .icon-content a:hover .filled {
+  height: 100%;
+}
+
+/* 區域顏色設定 */
+.example-2 .icon-content a[data-social="hk"] .filled,
+.example-2 .icon-content a[data-social="hk"] ~ .tooltip {
+  background-color: #1db954; /* HK - Green */
+}
+.example-2 .icon-content a[data-social="kn"] .filled,
+.example-2 .icon-content a[data-social="kn"] ~ .tooltip {
+  background-color: #bd081c; /* KN - Red */
+}
+.example-2 .icon-content a[data-social="nt"] .filled,
+.example-2 .icon-content a[data-social="nt"] ~ .tooltip {
+  background-color: #ea4c89; /* NT - Pink */
+}
+.example-2 .icon-content a[data-social="islands"] .filled,
+.example-2 .icon-content a[data-social="islands"] ~ .tooltip {
+  background-color: #0088cc; /* Islands - Blue */
+}
+.example-2 .icon-content a[data-social="mo"] .filled,
+.example-2 .icon-content a[data-social="mo"] ~ .tooltip {
+  background-color: #f59e0b; /* MO - Orange */
+}

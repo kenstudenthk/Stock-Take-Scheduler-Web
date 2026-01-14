@@ -58,7 +58,7 @@ function App() {
             brand: f[SP_FIELDS.BRAND] || '',
             area: f[SP_FIELDS.AREA] || '',
             masterStatus: f[SP_FIELDS.OLD_STATUS] || '', // field_1: 總表狀態
-            status: f[SP_FIELDS.STATUS] || 'Planned',   // ScheduleStatus: 今年盤點狀態
+            status: f[SP_FIELDS.STATUS] || 'Unplanned',   // ScheduleStatus: 今年盤點狀態
             scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
             groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
             is_mtr: f[SP_FIELDS.MTR] === 'Yes',
@@ -119,7 +119,13 @@ function App() {
       case View.DASHBOARD: return <Dashboard shops={allShops} onUpdateShop={() => {}} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
-case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
+case View.GENERATOR: return (
+  <Generator 
+    shops={allShops} 
+    graphToken={graphToken} 
+    onRefresh={() => fetchAllData(graphToken)} 
+  />
+);
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory invToken={invToken} />;
       case View.SETTINGS: return <Settings token={graphToken} onUpdateToken={handleUpdateGraphToken} invToken={invToken} onUpdateInvToken={handleUpdateInvToken} />;

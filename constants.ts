@@ -25,6 +25,9 @@ export const SP_FIELDS = {
   CONTACT: 'field_38',
   REMARK: 'Remark', // 根據你的資料，Remark 是唯一一個直接用名稱的
   SCHEDULE_GROUP: 'Schedule_x0020_Group' // ✅ Add this for Group mapping
+  CALL_STATUS: 'field_39',  // Choice Column
+  CALL_DATE: 'field_40',    // Date Column
+  CALL_REMARK: 'CallRemark' // Text Column
 };
 
 // --- Inventory List 欄位對照表 ---

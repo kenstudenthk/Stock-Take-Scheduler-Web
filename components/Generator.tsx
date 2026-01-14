@@ -69,15 +69,12 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [isSaving, setIsSaving] = useState(false);
   const [loadingType, setLoadingType] = useState<'reset' | 'sync'>('sync');
 
-  // 1. 核心數據：排除去年已關閉
   const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed'), [shops]);
 
-  // ✅ 核心修正：定義用於下拉選單的 regionOptions
   const regionOptions = useMemo(() => 
     Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort()
   , [activePool]);
 
-  // 2. 4 Summary Cards 統計邏輯
   const stats = useMemo(() => ({
     total: activePool.length,
     completed: activePool.filter(s => s.status === 'Done').length,
@@ -85,7 +82,6 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     unplanned: activePool.filter(s => s.status === 'Unplanned').length
   }), [activePool]);
 
-  // 3. 區域 Unplanned 統計
   const regionRemainStats = useMemo(() => {
     const unplannedPool = activePool.filter(s => s.status === 'Unplanned');
     const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
@@ -97,8 +93,6 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     const filtered = selectedRegions.length > 0 ? activePool.filter(s => selectedRegions.includes(s.region)) : activePool;
     return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
   }, [activePool, selectedRegions]);
-
-  // --- 函數定義 ---
 
   const handleResetAll = () => {
     confirm({
@@ -123,7 +117,6 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
   const handleGenerate = () => {
     setIsCalculating(true);
-    // 🔍 這裡就是演算法的篩選邏輯
     let pool = activePool.filter(s => {
       const matchRegion = selectedRegions.length === 0 || selectedRegions.includes(s.region);
       const matchDistrict = selectedDistricts.length === 0 || selectedDistricts.includes(s.district);
@@ -143,9 +136,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       if ((index + 1) % shopsPerDay === 0) currentDay = currentDay.add(1, 'day');
     });
 
-    // ✅ 排序：日期升序 -> 組別 (AAA -> BBB -> CCC)
     results.sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate) || a.groupId - b.groupId);
-
     setGeneratedResult(results);
     setIsCalculating(false);
   };
@@ -163,7 +154,6 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   };
 
   return (
-    // ✅ 寬度設為 w-full 以填滿空間
     <div className="w-full flex flex-col gap-8 pb-20">
       
       {isSaving && (loadingType === 'reset' ? <ResetChaseLoader /> : <SyncGeometricLoader />)}
@@ -185,28 +175,52 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         <Col span={6}><SummaryCard label="Non Schedule" value={stats.unplanned} subtext="Status: Unplanned" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
       </Row>
 
-      <div className="mt-2">
-        <Text strong className="text-[16px] text-slate-400 uppercase tracking-widest block mb-4">Unplanned Shops by Region</Text>
-        <Row gutter={[16, 16]}>
+      {/* ✅ 核心更新：Unplanned Shops By Region 套用 Uiverse 圖標風格 */}
+      <div className="mt-4 mb-10 bg-white p-8 rounded-[40px] shadow-sm border border-slate-100">
+        <Text strong className="text-[16px] text-slate-400 uppercase tracking-widest block mb-8">Unplanned Shops by Region</Text>
+        <ul className="example-2">
           {regionRemainStats.map(reg => (
-            <Col key={reg.key} style={{ width: '20%' }}>
-              <Card size="small" className="rounded-2xl border-none shadow-sm bg-indigo-50/50 text-center">
-                <Text strong className="text-indigo-600 text-[18px] uppercase block"><EnvironmentOutlined /> {reg.key}</Text>
-                <Title level={4} className="m-0 mt-1">{reg.count}</Title>
-              </Card>
-            </Col>
+            <li key={reg.key} className="icon-content">
+              {/* Region Name Label */}
+              <div className="region-name-label">{reg.key}</div>
+              <a
+                href="#"
+                aria-label={reg.key}
+                data-social={reg.key.toLowerCase()}
+                onClick={(e) => e.preventDefault()}
+              >
+                <div className="filled"></div>
+                {/* 地點 Pin 圖標 */}
+                <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path 
+                    d="M12 21C15.5 17.4 19 14.1764 19 10.2C19 6.22355 15.866 3 12 3C8.13401 3 5 6.22355 5 10.2C5 14.1764 8.5 17.4 12 21Z" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  ></path>
+                  <path 
+                    d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  ></path>
+                </svg>
+              </a>
+              {/* Tooltip 顯示數字 */}
+              <div className="tooltip">{reg.count}</div>
+            </li>
           ))}
-        </Row>
+        </ul>
       </div>
 
-      {/* 🛠️ 下方就是篩選器區塊 --- */}
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 mt-4">
         <Space className="mb-10 text-[18px] font-bold uppercase tracking-widest text-slate-800">
           <ControlOutlined className="text-teal-600" /> Algorithm Configuration
         </Space>
         
         <Collapse ghost defaultActiveKey={['1', '2']} expandIconPosition="end">
-          {/* 1. 核心參數：日期、數量 */}
           <Collapse.Panel key="1" header={<span className="font-bold">1. Core Parameters</span>}>
             <Row gutter={24} className="py-2">
               <Col span={8}><Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Start Date</Text><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-slate-50 border-none h-12 rounded-xl w-full px-4" /></Col>
@@ -215,7 +229,6 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
             </Row>
           </Collapse.Panel>
 
-          {/* 2. 地點篩選器：區域、地區、地鐵店 --- 這就是您找的部分！ */}
           <Collapse.Panel key="2" header={<span className="font-bold">2. Location Filters</span>}>
             <Row gutter={24} className="py-2">
               <Col span={10}>
@@ -238,24 +251,16 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
           </Collapse.Panel>
         </Collapse>
 
-      <div className="flex justify-end mt-12">
-  <button 
-    className="sparkle-button" 
-    onClick={handleGenerate} 
-    disabled={isCalculating}
-  >
-    {/* 1. 旋轉邊框層 */}
-    <div className="dots_border"></div>
-
-    {/* 2. 圖標層 (可選) */}
-    <Space className="text_button">
-      <ControlOutlined /> 
-      {/* 3. 文字層 */}
-      <span>{isCalculating ? 'GENERATING...' : 'GENERATE SCHEDULE'}</span>
-    </Space>
-  </button>
-</div>
+        <div className="flex justify-end mt-12">
+          <button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}>
+            <div className="dots_border"></div>
+            <Space className="text_button">
+              <ControlOutlined /> 
+              <span>{isCalculating ? 'GENERATING...' : 'GENERATE SCHEDULE'}</span>
+            </Space>
+          </button>
         </div>
+      </div>
 
       {generatedResult.length > 0 && (
         <Card title="Preview" className="rounded-3xl border-none shadow-sm overflow-hidden mt-8">
@@ -268,7 +273,6 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
                 title: 'Group', 
                 dataIndex: 'groupId', 
                 key: 'group', 
-                // ✅ 顯示為 AAA, BBB, CCC
                 render: (g) => {
                   const letter = String.fromCharCode(64 + g);
                   const color = g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange';

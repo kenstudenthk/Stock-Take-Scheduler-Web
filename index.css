@@ -1380,4 +1380,95 @@ body {
   cursor: not-allowed;
 }
 
+/* ============================================================
+   19.Generator: Pac-man Chase Loading Overlay
+   ============================================================ */
+.chase-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.9); /* 深色半透明背景 */
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
 
+.chase-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* 1 HTML: Ghost (追趕者) */
+#ghost-chaser {
+  position: absolute;
+  left: 0;
+  scale: 0.5;
+  animation: chase-move 5s linear infinite;
+  z-index: 10;
+}
+
+/* 2 HTML: Pac-man (被追者) */
+.pacman-runner {
+  position: absolute;
+  left: 120px; /* 領先 Ghost */
+  width: 0;
+  height: 0;
+  border: 40px solid #FDD835;
+  border-radius: 50%;
+  border-right-color: transparent;
+  animation: chase-move 5s linear infinite;
+  z-index: 5;
+}
+
+.pacman-runner:before, .pacman-runner:after {
+  content: "";
+  position: absolute;
+  top: -40px;
+  left: -40px;
+  width: 0;
+  height: 0;
+  border: 40px solid #FDD835;
+  border-radius: 50%;
+  border-right-color: transparent;
+}
+
+.pacman-runner:before { animation: chomp1 .25s ease-in-out infinite; }
+.pacman-runner:after { animation: chomp2 .25s ease-in-out infinite; }
+
+/* 2 HTML: Dots (食物) */
+.dots-trail {
+  display: flex;
+  position: absolute;
+  left: 220px;
+  animation: chase-move 5s linear infinite;
+}
+
+.dot-item {
+  width: 10px;
+  height: 10px;
+  margin: 0 15px;
+  border-radius: 50%;
+  background: #1E88E5;
+}
+
+@keyframes chase-move {
+  0% { transform: translateX(-200px); }
+  100% { transform: translateX(800px); }
+}
+
+/* Reset All Schedule 按鈕樣式 (配合之前的修正) */
+.reset-all-btn {
+  font-family: inherit; font-size: 14px; background: white; color: #ef4444; fill: #ef4444;
+  padding: 0.6em 1.2em; display: flex; align-items: center; cursor: pointer;
+  border: 1px solid #fee2e2; border-radius: 12px; font-weight: 800;
+  transition: all 0.3s ease; position: relative; min-width: 190px; overflow: hidden;
+}
+.reset-all-btn:hover { background: #000; color: white; border-color: #000; }
+.reset-all-btn:hover svg { transform: translateX(72px) scale(1.2); fill: #fff; }
+.reset-all-btn:hover span { opacity: 0; transform: translateX(20px); }

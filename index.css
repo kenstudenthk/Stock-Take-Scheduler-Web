@@ -97,7 +97,7 @@ body {
 .navigation ul {
   flex: 1; /* This pushes the theme toggle to the absolute bottom */
   padding-left: 10px;
-  margin-top: 20px;
+  margin-top: 10px;
   overflow-y: auto; /* If you have many menu items, only the menu list scrolls, not the whole sidebar */
 }
 
@@ -120,6 +120,7 @@ body {
   list-style: none;
   border-top-left-radius: 30px;
   border-bottom-left-radius: 30px;
+  margin-bottom: 2px;
 }
 
 /* 核心：選中時的背景必須與主內容區背景 (--bg-main) 同色 */
@@ -190,6 +191,11 @@ body {
   font-weight: 600;
   white-space: nowrap;
 }
+
+.navigation ul::-webkit-scrollbar {
+  display: none;
+}
+
 
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

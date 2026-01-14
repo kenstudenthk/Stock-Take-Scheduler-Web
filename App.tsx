@@ -87,7 +87,7 @@ function App() {
   return (
     <Layout className="h-screen flex flex-row theme-transition overflow-hidden">
       <Sider trigger={null} collapsible collapsed={collapsed} width={260} className="custom-sider h-screen sticky top-0 left-0">
-        <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-10`}>
+        <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-4`}>
           <div className="flex flex-col">
             {/* ✅ 左側選單標頭與 Uiverse 切換按鈕 */}
             <div className={`flex items-center px-6 py-8 ${collapsed ? 'justify-center flex-col' : 'justify-between'}`}>

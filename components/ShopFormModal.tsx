@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, message, Row, Col, Typography, Divider, Button, Space, AutoComplete, Input } from 'antd';
+import { Modal, message, Row, Col, Typography, Button, Space, AutoComplete, Badge } from 'antd';
 import { 
   InfoCircleOutlined, 
-  EnvironmentOutlined, 
+  SearchOutlined, 
   PhoneOutlined, 
-  PushpinOutlined,
-  SearchOutlined,
-  CopyOutlined
+  EnvironmentOutlined,
+  CopyOutlined,
+  GlobalOutlined
 } from '@ant-design/icons';
 import { Shop } from '../types';
 import { SP_FIELDS } from '../constants';
@@ -33,7 +33,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
   
   // --- ✅ 地點搜尋相關狀態 ---
   const [searchModalVisible, setSearchModalVisible] = useState(false);
-  const [searchOptions, setSearchOptions] = useState<{ value: string; location: any }[]>([]);
+  const [searchOptions, setSearchOptions] = useState<{ value: string; location: any; label: any }[]>([]);
   const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
@@ -70,6 +70,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
   const handleCopyFromAddress = () => {
     const currentAddr = formData.addr_en;
     if (currentAddr) {
+      console.log("Copying address:", currentAddr);
       setSearchText(currentAddr);
       handleSearch(currentAddr);
     } else {
@@ -79,35 +80,42 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
 
   const handleSearch = (value: string) => {
     setSearchText(value);
+    console.log("Searching for:", value); // 診斷日誌 1
+
     if (!value) {
       setSearchOptions([]);
       return;
     }
 
     if (!window.AMap) {
-      console.error("AMap SDK not loaded.");
+      console.error("AMap SDK is not loaded. Please check your index.html script tag.");
       return;
     }
 
-    // ✅ JS API 2.0 正確插件名稱為 AMap.AutoComplete (C 大寫)
-    window.AMap.plugin(['AMap.AutoComplete'], () => {
-      const autoOptions = {
-        city: '香港', 
-        citylimit: false 
-      };
-      const autoComplete = new window.AMap.AutoComplete(autoOptions);
+    // ✅ JS API 2.0 強制要求使用 AMap.plugin 異步加載
+    window.AMap.plugin('AMap.AutoComplete', () => {
+      console.log("AMap.AutoComplete plugin loaded successfully"); // 診斷日誌 2
       
+      const autoOptions = {
+        city: '香港',
+        citylimit: false
+      };
+      
+      const autoComplete = new window.AMap.AutoComplete(autoOptions);
       autoComplete.search(value, (status: string, result: any) => {
+        console.log("AMap search status:", status); // 診斷日誌 3
+        console.log("AMap search result:", result); // 診斷日誌 4
+
         if (status === 'complete' && result.tips) {
           const suggestions = result.tips
-            .filter((tip: any) => tip.location && tip.id) 
+            .filter((tip: any) => tip.location && tip.id)
             .map((tip: any) => ({
-              value: `${tip.name} - ${tip.address || ''}`, 
+              value: `${tip.name} - ${tip.address || ''}`,
               location: tip.location,
               label: (
-                <div style={{ padding: '4px 0' }}>
-                  <div style={{ fontWeight: 'bold', color: '#1e293b' }}>{tip.name}</div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{tip.address || 'No address details'}</div>
+                <div style={{ padding: '4px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '13px' }}>{tip.name}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{tip.address || 'Address detail unavailable'}</div>
                 </div>
               )
             }));
@@ -127,7 +135,8 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         lat: lat.toString(),
         lng: lng.toString()
       });
-      message.success("Latitude & Longitude synced!");
+      console.log("Updated Lat/Lng:", lat, lng);
+      message.success("Coordinates Updated!");
       setSearchModalVisible(false);
     }
   };
@@ -173,10 +182,10 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         message.success(isEdit ? "Shop Updated!" : "New Shop Created!");
         onSuccess();
       } else {
-        message.error("SharePoint update failed.");
+        message.error("Sync failed: SharePoint error.");
       }
     } catch (err) {
-      message.error("Sync Error: Please check connection");
+      message.error("Sync Error: Network connection failed.");
     }
   };
 
@@ -209,7 +218,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             <Title level={3} style={{ color: '#0f172a', margin: 0 }}>
               {shop ? 'Store Profile Manager' : 'New Store Registration'}
             </Title>
-            <Text type="secondary">Update SharePoint database records for planning.</Text>
+            <Text type="secondary">Directly managing SharePoint records for planning.</Text>
           </div>
           
           <div className="st-form-section">
@@ -228,7 +237,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
 
           <div className="st-form-section">
             <div className="flex items-center gap-2 mb-6 text-teal-600 font-bold border-b border-teal-100 pb-2">
-              <EnvironmentOutlined /> ADDRESS & LOGISTICS
+              <GlobalOutlined /> ADDRESS & LOGISTICS
             </div>
             <Row gutter={20}>
               {renderInput("English Address (Full)", "addr_en", 24)}
@@ -258,7 +267,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
                   />
                   <span>Latitude</span>
                 </div>
-                {/* Location Search 按鈕樣式保持與主題一致 */}
+                {/* Location Search 按鈕樣式優化 */}
                 <Button 
                   type="dashed" 
                   block 
@@ -272,7 +281,8 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
                     fontSize: '11px', 
                     fontWeight: 'bold',
                     color: '#0d9488',
-                    borderColor: '#0d9488'
+                    borderColor: '#0d9488',
+                    height: '28px'
                   }}
                 >
                   Location Search
@@ -286,7 +296,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
 
           <div className="st-form-section">
             <div className="flex items-center gap-2 mb-6 text-teal-600 font-bold border-b border-teal-100 pb-2">
-              <PushpinOutlined /> INTERNAL REMARKS
+              <EnvironmentOutlined /> INTERNAL REMARKS
             </div>
             <Row gutter={20}>
               {renderInput("Internal Notes / Planning Remark", "remark", 24)}
@@ -304,9 +314,9 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         </div>
       </Modal>
 
-      {/* ✅ 地點搜尋彈窗 */}
+      {/* ✅ 地點搜尋彈窗 - 修正 SVG 錯誤與搜尋無響應 */}
       <Modal
-        title={<Space><EnvironmentOutlined /> Geocoding Service</Space>}
+        title={<Space><SearchOutlined style={{ color: '#0d9488' }} /> Geocoding Service</Space>}
         open={searchModalVisible}
         onCancel={() => setSearchModalVisible(false)}
         footer={null}
@@ -316,7 +326,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       >
         <div style={{ padding: '10px 0' }}>
           <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 15 }}>
-            Find exact coordinates. Use 'Copy' to pull address from the main form.
+            Select a location from suggestions to sync coordinates.
           </Text>
           
           <Space.Compact style={{ width: '100%' }}>
@@ -326,23 +336,27 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
               onSearch={handleSearch}
               onSelect={onSelectLocation}
               value={searchText}
-              onChange={setSearchText}
-              placeholder="Enter building or street name..."
+              onChange={(val) => {
+                setSearchText(val);
+                // 確保在輸入時清空舊建議，防止誤觸
+                if(!val) setSearchOptions([]);
+              }}
+              placeholder="Search building or street..."
               dropdownMatchSelectWidth={false}
-              listHeight={300}
+              listHeight={320}
             />
             <Button 
               icon={<CopyOutlined />} 
               onClick={handleCopyFromAddress}
-              title="Copy from main form"
+              title="Pull Address from Form"
             >
               Copy
             </Button>
           </Space.Compact>
           
           <div style={{ marginTop: 20, padding: '15px', background: '#f0fdfa', borderRadius: '12px', border: '1px solid #ccfbf1' }}>
-            <Text type="secondary" style={{ fontSize: '11px', color: '#0f766e' }}>
-              <InfoCircleOutlined /> <b>Search Tip:</b> AMap works best with specific building names or street numbers. If no results, try removing floor or unit details.
+            <Text type="secondary" style={{ fontSize: '11px', color: '#0f766e', display: 'block' }}>
+              <InfoCircleOutlined /> <b>Pro Tip:</b> If no results appear, ensure your <b>index.html</b> has the AMap script with the correct API Key and Security Code.
             </Text>
           </div>
         </div>

@@ -239,14 +239,21 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         </Collapse>
 
       <div className="flex justify-end mt-12">
-    <button 
-      className="sparkle-button" 
-      onClick={handleGenerate} 
-      disabled={isCalculating}
-    >
+  <button 
+    className="sparkle-button" 
+    onClick={handleGenerate} 
+    disabled={isCalculating}
+  >
+    {/* 1. 旋轉邊框層 */}
+    <div className="dots_border"></div>
+
+    {/* 2. 圖標層 (可選) */}
+    <Space className="text_button">
+      <ControlOutlined /> 
+      {/* 3. 文字層 */}
       <span>{isCalculating ? 'GENERATING...' : 'GENERATE SCHEDULE'}</span>
-    </button>
-  </div>
+    </Space>
+  </button>
 </div>
 
       {generatedResult.length > 0 && (

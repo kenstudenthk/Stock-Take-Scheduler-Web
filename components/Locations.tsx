@@ -56,21 +56,45 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   }), [filteredShops]);
 
   // 地圖初始化與 Marker 更新邏輯保留 (節錄)
-  useEffect(() => {
-    console.log("Checking AMap...", window.AMap);
-    if (!window.AMap || !document.getElementById('map-container')) {
-      console.error("AMap SDK not found! Please check index.html");
-      return;
-    }
-    if (!mapRef.current) {
-      mapRef.current = new window.AMap.Map('map-container', {
-        center: [114.17, 22.32], // 香港中心座標
-        zoom: 11,
-        viewMode: '3D'
+useEffect(() => {
+  if (!window.AMap || !mapRef.current) return;
+
+  // 清除舊標記
+  mapRef.current.clearMap();
+
+  filteredShops.forEach(shop => {
+    // ✅ 進行座標轉換：由 WGS-84 轉為 GCJ-02
+    const [gcjLng, gcjLat] = wgs84ToGcj02(shop.longitude, shop.latitude);
+
+    const marker = new window.AMap.Marker({
+      position: [gcjLng, gcjLat], // 使用轉換後的座標
+      title: shop.name,
+      map: mapRef.current
+    });
+
+    // 點擊 Marker 顯示 InfoWindow (自定義資訊視窗)
+    marker.on('click', () => {
+      const infoWindow = new window.AMap.InfoWindow({
+        content: `
+          <div style="padding: 10px;">
+            <h4 style="margin:0 0 5px 0;">${shop.name}</h4>
+            <p style="font-size:12px; color: #666; margin:0;">${shop.address}</p>
+            <span style="font-size:10px; background: #teal; color: white; padding: 2px 5px; border-radius: 4px;">
+              ${shop.status}
+            </span>
+          </div>
+        `,
+        offset: new window.AMap.Pixel(0, -30)
       });
-      console.log("Map initialized!");
-    }
-  }, [filteredShops]);
+      infoWindow.open(mapRef.current, [gcjLng, gcjLat]);
+    });
+  });
+
+  // 如果有結果，自動縮放地圖以適應所有標記
+  if (filteredShops.length > 0) {
+    mapRef.current.setFitView();
+  }
+}, [filteredShops]);
 
   return (
     <div className="flex flex-col gap-6">

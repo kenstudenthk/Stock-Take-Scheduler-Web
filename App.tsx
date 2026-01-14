@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Layout, Button, Space, Tag, Avatar, message } from 'antd';
 import { 
   HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
-  SettingOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
-  UnorderedListOutlined, SyncOutlined 
+  SettingOutlined, SyncOutlined, UnorderedListOutlined
 } from '@ant-design/icons';
 import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
@@ -19,7 +18,6 @@ import { ThemeToggle } from './components/ThemeToggle';
 const { Content, Header, Sider } = Layout;
 
 function App() {
-  // --- 1. States ---
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [collapsed, setCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(localStorage.getItem('theme') === 'dark');
@@ -28,21 +26,13 @@ function App() {
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // --- 2. Data Fetching Function (移至 Hook 上方以防初始化錯誤) ---
   const fetchAllData = useCallback(async (token: string) => {
     if (!token) return;
     setLoading(true);
     try {
-      // ✅ 使用您要求的 ScheduleStatus 欄位
       const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      
-      if (res.status === 401) {
-        message.error("Token expired. Please update in Settings.");
-        setLoading(false);
-        return;
-      }
-
+      if (res.status === 401) { message.error("Token expired."); setLoading(false); return; }
       const data = await res.json();
       if (data.value) {
         const mapped = data.value.map((item: any) => {
@@ -57,8 +47,8 @@ function App() {
             district: f[SP_FIELDS.DISTRICT] || '',
             brand: f[SP_FIELDS.BRAND] || '',
             area: f[SP_FIELDS.AREA] || '',
-            masterStatus: f[SP_FIELDS.OLD_STATUS] || '', // field_1: 總表狀態
-            status: f[SP_FIELDS.STATUS] || 'Unplanned',   // ScheduleStatus: 今年盤點狀態
+            masterStatus: f[SP_FIELDS.OLD_STATUS] || '',
+            status: f[SP_FIELDS.STATUS] || 'Unplanned',
             scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
             groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
             is_mtr: f[SP_FIELDS.MTR] === 'Yes',
@@ -70,65 +60,26 @@ function App() {
         });
         setAllShops(mapped);
       }
-    } catch (err) {
-      message.error("Sync Error");
-    }
+    } catch (err) { message.error("Sync Error"); }
     setLoading(false);
   }, []);
 
-  // --- 3. Hooks (放在函數定義下方) ---
-  
-  // 🌓 主題切換
   useEffect(() => {
     document.body.classList.toggle('dark', isDarkMode);
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  // 🔄 初始載入
-  useEffect(() => {
-    if (graphToken) fetchAllData(graphToken);
-  }, [graphToken, fetchAllData]);
-
-  // ⏱️ 自動刷新 (每 30 分鐘)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (graphToken) {
-        console.log("30-min Auto Refresh triggering...");
-        fetchAllData(graphToken);
-      }
-    }, 30 * 60 * 1000); // 30 minutes
-    return () => clearInterval(interval);
-  }, [graphToken, fetchAllData]);
-
-  // --- 4. Handlers ---
-  const handleUpdateGraphToken = (newToken: string) => {
-    const cleaned = newToken.trim();
-    setGraphToken(cleaned);
-    localStorage.setItem('stockTakeToken', cleaned);
-    if (cleaned) fetchAllData(cleaned);
-  };
-
-  const handleUpdateInvToken = (newToken: string) => {
-    const cleaned = newToken.trim();
-    setInvToken(cleaned);
-    localStorage.setItem('stockTakeInvToken', cleaned);
-  };
+  useEffect(() => { if (graphToken) fetchAllData(graphToken); }, [graphToken, fetchAllData]);
 
   const renderContent = () => {
     switch (selectedMenuKey) {
-      case View.DASHBOARD: return <Dashboard shops={allShops} onUpdateShop={() => {}} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
+      case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.CALENDAR: return <Calendar shops={allShops} />;
-case View.GENERATOR: return (
-  <Generator 
-    shops={allShops} 
-    graphToken={graphToken} 
-    onRefresh={() => fetchAllData(graphToken)} 
-  />
-);
+      case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory invToken={invToken} />;
-      case View.SETTINGS: return <Settings token={graphToken} onUpdateToken={handleUpdateGraphToken} invToken={invToken} onUpdateInvToken={handleUpdateInvToken} />;
+      case View.SETTINGS: return <Settings token={graphToken} onUpdateToken={setGraphToken} invToken={invToken} onUpdateInvToken={setInvToken} />;
       default: return null;
     }
   };
@@ -137,24 +88,52 @@ case View.GENERATOR: return (
     <Layout className="h-screen flex flex-row theme-transition overflow-hidden">
       <Sider trigger={null} collapsible collapsed={collapsed} width={260} className="custom-sider h-screen sticky top-0 left-0">
         <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-10`}>
-          <ul>
-            <li className="logo-item">
-              <a href="#"><span className="icon">ST</span>{!collapsed && <span className="title font-extrabold text-lg">STOCK PRO</span>}</a>
-            </li>
-            {[
-              { k: View.DASHBOARD, i: <HomeOutlined />, l: 'Dashboard' },
-              { k: View.SHOP_LIST, i: <UnorderedListOutlined />, l: 'Master List' },
-              { k: View.CALENDAR, i: <CalendarOutlined />, l: 'Schedules' },
-              { k: View.GENERATOR, i: <ToolOutlined />, l: 'Generator' },
-              { k: View.LOCATIONS, i: <ShopOutlined />, l: 'Map View' },
-              { k: View.INVENTORY, i: <UnorderedListOutlined />, l: 'Inventory' },
-              { k: View.SETTINGS, i: <SettingOutlined />, l: 'Settings' },
-            ].map(item => (
-              <li key={item.k} className={`list ${selectedMenuKey === item.k ? 'active' : ''}`} onClick={() => setSelectedMenuKey(item.k)}>
-                <a href="#"><span className="icon">{item.i}</span>{!collapsed && <span className="title">{item.l}</span>}</a>
-              </li>
-            ))}
-          </ul>
+          <div className="flex flex-col">
+            {/* ✅ 左側選單標頭與 Uiverse 切換按鈕 */}
+            <div className={`flex items-center px-6 py-8 ${collapsed ? 'justify-center flex-col' : 'justify-between'}`}>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-lg">
+                  <span style={{ fontWeight: 900, fontSize: '18px' }}>ST</span>
+                </div>
+                {!collapsed && (
+                  <div className="flex flex-col">
+                    <h1 className="text-base font-bold leading-none text-white">Stock Take</h1>
+                    <p className="text-[10px] font-medium text-teal-400 mt-1 uppercase tracking-widest">Pro</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className={`${collapsed ? 'mt-6' : ''}`}>
+                <input 
+                  type="checkbox" 
+                  id="checkbox" 
+                  checked={!collapsed} 
+                  onChange={() => setCollapsed(!collapsed)} 
+                />
+                <label htmlFor="checkbox" className="toggle" style={{ transform: collapsed ? 'scale(0.5)' : 'scale(0.7)' }}>
+                  <div className="bars" id="bar1"></div>
+                  <div className="bars" id="bar2"></div>
+                  <div className="bars" id="bar3"></div>
+                </label>
+              </div>
+            </div>
+
+            <ul>
+              {[
+                { k: View.DASHBOARD, i: <HomeOutlined />, l: 'Dashboard' },
+                { k: View.SHOP_LIST, i: <UnorderedListOutlined />, l: 'Master List' },
+                { k: View.CALENDAR, i: <CalendarOutlined />, l: 'Schedules' },
+                { k: View.GENERATOR, i: <ToolOutlined />, l: 'Generator' },
+                { k: View.LOCATIONS, i: <ShopOutlined />, l: 'Map View' },
+                { k: View.INVENTORY, i: <UnorderedListOutlined />, l: 'Inventory' },
+                { k: View.SETTINGS, i: <SettingOutlined />, l: 'Settings' },
+              ].map(item => (
+                <li key={item.k} className={`list ${selectedMenuKey === item.k ? 'active' : ''}`} onClick={() => setSelectedMenuKey(item.k)}>
+                  <a href="#"><span className="icon">{item.i}</span>{!collapsed && <span className="title">{item.l}</span>}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
           <div className="flex justify-center items-center px-4">
             <div style={{ transform: collapsed ? 'scale(0.25)' : 'scale(0.35)', transition: '0.3s' }}>
               <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
@@ -162,11 +141,11 @@ case View.GENERATOR: return (
           </div>
         </div>
       </Sider>
+      
       <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
-        <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0">
-          <Button type="text" icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} onClick={() => setCollapsed(!collapsed)} className="toggle-sidebar-btn" />
+        <Header className="app-header px-8 flex justify-end items-center h-16 border-b flex-shrink-0">
           <Space size="large">
-            <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)} className="refresh-btn" loading={loading}>Refresh</Button>
+            <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)} className="refresh-btn">Refresh</Button>
             <Tag color="cyan" className="font-bold rounded-md">POOL: {allShops.length}</Tag>
             <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" className="user-avatar" />
           </Space>

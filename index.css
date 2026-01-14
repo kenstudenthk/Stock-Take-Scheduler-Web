@@ -1306,5 +1306,78 @@ body {
   align-items: center;
   gap: 5px;
 }
+/* ============================================================
+   18.Generator: Reset All Schedule Button
+   ============================================================ */
+.reset-all-btn {
+  font-family: inherit;
+  font-size: 14px; /* 調整大小以適應標題列 */
+  background: white;
+  color: #ef4444;
+  fill: #ef4444;
+  padding: 0.6em 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  border: 1px solid #fee2e2;
+  border-radius: 12px;
+  font-weight: 800;
+  transition: all 0.3s ease;
+  position: relative;
+  min-width: 190px; /* 固定寬度以利於居中計算 */
+  overflow: hidden;
+}
+
+.reset-all-btn span {
+  display: block;
+  margin-left: 10px;
+  transition: all 0.3s ease-in-out;
+  white-space: nowrap;
+}
+
+.reset-all-btn .svg-wrapper-1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reset-all-btn svg {
+  display: block;
+  transform-origin: center center;
+  transition: transform 0.4s ease-in-out, fill 0.3s ease;
+}
+
+.reset-all-btn:hover {
+  background: #ef4444; /* 懸停變紅 */
+  color: white;
+  border-color: #ef4444;
+}
+
+.reset-all-btn:hover .svg-wrapper {
+  transform: scale(1.1);
+  transition: 0.5s linear;
+}
+
+/* ✅ 核心調整：讓圖標移動到按鈕中心 */
+.reset-all-btn:hover svg {
+  transform: translateX(72px) scale(1.2); 
+  fill: #fff;
+}
+
+.reset-all-btn:hover span {
+  opacity: 0;
+  transform: translateX(20px);
+  transition: 0.3s linear;
+}
+
+.reset-all-btn:active {
+  transform: scale(0.95);
+}
+
+.reset-all-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 

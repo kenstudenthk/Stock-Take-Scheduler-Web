@@ -1,15 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Collapse, Row, Col, Space, Button, Typography, Switch, Select, InputNumber, Table, Tag, Progress, message } from 'antd';
+import { Card, Collapse, Row, Col, Space, Button, Typography, Switch, Select, InputNumber, Table, Tag, Progress, message, Modal } from 'antd';
 import { 
   ControlOutlined, CheckCircleOutlined, SaveOutlined, 
   ShopOutlined, CloseCircleOutlined, HourglassOutlined,
-  EnvironmentOutlined
+  EnvironmentOutlined, ExclamationCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shop } from '../types';
 import { SP_FIELDS } from '../constants';
 
 const { Text, Title } = Typography;
+const { confirm } = Modal;
 
 // 2026 Hong Kong Public Holidays
 const HK_HOLIDAYS_2026 = [
@@ -55,7 +56,9 @@ const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
   </div>
 );
 
-export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ shops, graphToken }) => {
+export const Generator: React.FC<{ shops: Shop[], graphToken: string, 
+  onRefresh?: () => void 
+}> = ({ shops, graphToken, onRefresh }) => {
   const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [shopsPerDay, setShopsPerDay] = useState<number>(20);
   const [groupsPerDay, setGroupsPerDay] = useState<number>(3);
@@ -66,9 +69,10 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  
 
   // Filter out Master-Closed shops
-  const activePool = useMemo(() => shops.filter(s => s.status !== 'Closed'), [shops]);
+  const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed'), [shops]);
 
   const globalStats = useMemo(() => {
     const total = activePool.length;
@@ -123,7 +127,68 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ sho
     setIsCalculating(false);
     message.success(`Generated schedule for ${results.length} shops.`);
   };
+  // ✅ 新增：重置所有排程功能
+  const handleResetAll = () => {
+    confirm({
+      title: 'Reset All Scheduled Shops?',
+      icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+      content: 'This will set all currently "Planned" or "Rescheduled" shops back to "Unplanned" status and clear their dates. Proceed?',
+      okText: 'Yes, Reset Everything',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        setIsSaving(true);
+        try {
+          const shopsToReset = activePool.filter(s => s.scheduleStatus !== 'Unplanned');
+          
+          for (const shop of shopsToReset) {
+            await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
+              method: 'PATCH',
+              headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                [SP_FIELDS.SCHEDULE_DATE]: null, 
+                [SP_FIELDS.SCHEDULE_GROUP]: "0", 
+                [SP_FIELDS.STATUS]: 'Unplanned' 
+              })
+            });
+          }
+          message.success("All schedules have been cleared.");
+          if (onRefresh) onRefresh(); // 刷新統計數據
+        } catch (err) {
+          message.error("Reset failed. Please check connection.");
+        } finally {
+          setIsSaving(false);
+        }
+      },
+    });
+  };
 
+  return (
+    <div className="max-w-5xl mx-auto flex flex-col gap-8 pb-20">
+      {/* ✅ 調整標題列佈局，將按鈕放在右側 */}
+      <div className="flex justify-between items-start">
+        <div>
+          <Title level={2} className="m-0">Schedule Generator</Title>
+          <Text type="secondary">Algorithm targets Unplanned shops. Excludes Master Closed.</Text>
+        </div>
+
+        {/* --- Reset Button 使用你提供的 HTML 結構 --- */}
+        <button className="reset-all-btn" onClick={handleResetAll} disabled={isSaving}>
+          <div className="svg-wrapper-1">
+            <div className="svg-wrapper">
+              <svg width="24px" height="24px" viewBox="0 -0.5 21 21" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                <g stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
+                  <path d="M130.35,216 L132.45,216 L132.45,208 L130.35,208 L130.35,216 Z M134.55,216 L136.65,216 L136.65,208 L134.55,208 L134.55,216 Z M128.25,218 L138.75,218 L138.75,206 L128.25,206 L128.25,218 Z M130.35,204 L136.65,204 L136.65,202 L130.35,202 L130.35,204 Z M138.75,204 L138.75,200 L128.25,200 L128.25,204 L123,204 L123,206 L126.15,206 L126.15,220 L140.85,220 L140.85,206 L144,206 L144,204 L138.75,204 Z" 
+                    transform="translate(-123.000000, -200.000000)" 
+                    fill="currentColor">
+                  </path>
+                </g>
+              </svg>
+            </div>
+          </div>
+          <span>Reset All Schedule</span>
+        </button>
+      </div>
   const saveToSharePoint = async () => {
     setIsSaving(true);
     for (let i = 0; i < generatedResult.length; i++) {

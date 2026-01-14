@@ -1,247 +1,239 @@
 import React, { useState, useMemo } from 'react';
-import dayjs from 'dayjs';
-import { Button, Space, Typography, Avatar, Tag, Empty, Badge, Card } from 'antd';
+import { Card, Collapse, Row, Col, Space, Button, Typography, Switch, Select, InputNumber, Table, Tag, message } from 'antd';
 import { 
-  LeftOutlined, 
-  RightOutlined, 
-  EnvironmentOutlined, 
-  CalendarOutlined,
-  GlobalOutlined,
-  ShopOutlined,
-  DownOutlined
+  ControlOutlined, CheckCircleOutlined, SaveOutlined, 
+  ShopOutlined, CloseCircleOutlined, HourglassOutlined,
+  EnvironmentOutlined
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { Shop } from '../types';
+import { SP_FIELDS } from '../constants';
 
 const { Text, Title } = Typography;
 
-export const Calendar: React.FC<{ shops: Shop[] }> = ({ shops }) => {
-  const [selectedDate, setSelectedDate] = useState(dayjs());
-  const [viewMonth, setViewMonth] = useState(dayjs());
-  // ✅ 控制展開狀態 (預設展開第一組)
-  const [expandedGroupId, setExpandedGroupId] = useState<number | null>(1);
+// 2026 Hong Kong Public Holidays
+const HK_HOLIDAYS_2026 = [
+  "2026-01-01", "2026-02-17", "2026-02-18", "2026-02-19", 
+  "2026-04-03", "2026-04-04", "2026-04-05", "2026-04-06", "2026-04-07",
+  "2026-05-01", "2026-05-24", "2026-05-25", "2026-06-19", 
+  "2026-07-01", "2026-09-26", "2026-10-01", "2026-10-19", 
+  "2026-12-25", "2026-12-26"
+];
 
-  // --- 1. 小型月曆邏輯 ---
-  const daysInMonth = viewMonth.daysInMonth();
-  const firstDayOfMonth = viewMonth.startOf('month').day();
-  const calendarDays = useMemo(() => {
-    const arr = [];
-    for (let i = 0; i < firstDayOfMonth; i++) arr.push(null);
-    for (let i = 1; i <= daysInMonth; i++) arr.push(viewMonth.date(i));
-    return arr;
-  }, [viewMonth, daysInMonth, firstDayOfMonth]);
+const REGION_MAP: Record<string, string> = {
+  'HK': 'Hong Kong Island',
+  'KN': 'Kowloon',
+  'NT': 'New Territories',
+  'Islands': 'Islands',
+  'MO': 'Macau'
+};
 
-  // --- 2. 獲取所選日期的數據並按 Group 分類 ---
-  const dailyData = useMemo(() => {
-    const dateStr = selectedDate.format('YYYY-MM-DD');
-    const dayShops = shops.filter(s => s.scheduledDate && dayjs(s.scheduledDate).format('YYYY-MM-DD') === dateStr);
+const isWorkDay = (date: dayjs.Dayjs) => {
+  const dateStr = date.format('YYYY-MM-DD');
+  const dayOfWeek = date.day(); 
+  return dayOfWeek !== 0 && dayOfWeek !== 6 && !HK_HOLIDAYS_2026.includes(dateStr);
+};
+
+const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
+  <div className="summary-card-item">
+    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>{icon}</div>
+    <div className="summary-card-body">
+      <div className="summary-card-header">
+        <div className="summary-card-title">{label}</div>
+        <div className="summary-card-menu"><div className="dot"></div><div className="dot"></div><div className="dot"></div></div>
+      </div>
+      <div className="summary-card-value">{value}</div>
+      <p className="summary-card-subtext">{subtext}</p>
+    </div>
+  </div>
+);
+
+export const Generator: React.FC<{ shops: Shop[], graphToken: string }> = ({ shops, graphToken }) => {
+  const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
+  const [shopsPerDay, setShopsPerDay] = useState<number>(20);
+  const [groupsPerDay, setGroupsPerDay] = useState<number>(3);
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
+  const [includeMTR, setIncludeMTR] = useState(true);
+  const [generatedResult, setGeneratedResult] = useState<any[]>([]);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // ✅ 核心篩選：排除去年已關閉 (Master Closed) 的門市
+  const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed'), [shops]);
+
+  // ✅ 4 Summary Box 邏輯
+  const stats = useMemo(() => {
+    const total = activePool.length;
+    const completed = activePool.filter(s => s.scheduleStatus === 'Done').length;
+    const closed = activePool.filter(s => s.scheduleStatus === 'Closed').length;
+    const unplanned = activePool.filter(s => s.scheduleStatus === 'Unplanned').length;
+    return { total, completed, closed, unplanned };
+  }, [activePool]);
+
+  // ✅ 5 Region Stats 邏輯：僅統計 Unplanned 門市
+  const regionRemainStats = useMemo(() => {
+    const unplannedShops = activePool.filter(s => s.scheduleStatus === 'Unplanned');
+    const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
+    unplannedShops.forEach(s => { 
+      if (counts.hasOwnProperty(s.region)) counts[s.region]++; 
+    });
+    return Object.keys(counts).map(key => ({ key, fullName: REGION_MAP[key], count: counts[key] }));
+  }, [activePool]);
+
+  const regionOptions = useMemo(() => Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort(), [activePool]);
+  const availableDistricts = useMemo(() => {
+    const filtered = selectedRegions.length > 0 ? activePool.filter(s => selectedRegions.includes(s.region)) : activePool;
+    return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
+  }, [activePool, selectedRegions]);
+
+  const handleGenerate = () => {
+    setIsCalculating(true);
+    // ✅ 僅針對 Unplanned 進行排程
+    let pool = activePool.filter(s => {
+      const isUnplanned = s.scheduleStatus === 'Unplanned';
+      const matchRegion = selectedRegions.length === 0 || selectedRegions.includes(s.region);
+      const matchDistrict = selectedDistricts.length === 0 || selectedDistricts.includes(s.district);
+      const matchMTR = includeMTR ? true : !s.is_mtr;
+      return isUnplanned && matchRegion && matchDistrict && matchMTR;
+    });
+
+    if (pool.length === 0) {
+      message.warning("No unplanned shops match your filters.");
+      setIsCalculating(false);
+      return;
+    }
+
+    // 簡單排序 (地理坐標排序優化)
+    pool.sort((a, b) => (a.latitude + a.longitude) - (b.latitude + b.longitude));
     
-    return {
-      groups: [
-        { id: 1, name: 'Group A', color: '#0369a1', items: dayShops.filter(s => s.groupId === 1) },
-        { id: 2, name: 'Group B', color: '#7e22ce', items: dayShops.filter(s => s.groupId === 2) },
-        { id: 3, name: 'Group C', color: '#c2410c', items: dayShops.filter(s => s.groupId === 3) }
-      ],
-      total: dayShops.length
-    };
-  }, [shops, selectedDate]);
+    const results: any[] = [];
+    let currentDay = dayjs(startDate);
+
+    pool.forEach((shop, index) => {
+      while (!isWorkDay(currentDay)) { currentDay = currentDay.add(1, 'day'); }
+      if (index > 0 && index % shopsPerDay === 0) {
+        currentDay = currentDay.add(1, 'day');
+        while (!isWorkDay(currentDay)) { currentDay = currentDay.add(1, 'day'); }
+      }
+      const groupInDay = (index % shopsPerDay) % groupsPerDay + 1;
+      results.push({ ...shop, scheduledDate: currentDay.format('YYYY-MM-DD'), groupId: groupInDay, dayOfWeek: currentDay.format('ddd') });
+    });
+
+    setGeneratedResult(results);
+    setIsCalculating(false);
+    message.success(`Generated schedule for ${results.length} shops.`);
+  };
+
+  const saveToSharePoint = async () => {
+    setIsSaving(true);
+    try {
+      for (let i = 0; i < generatedResult.length; i++) {
+        const shop = generatedResult[i];
+        await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            [SP_FIELDS.SCHEDULE_DATE]: shop.scheduledDate, 
+            [SP_FIELDS.SCHEDULE_GROUP]: shop.groupId.toString(), 
+            [SP_FIELDS.STATUS]: 'Planned' 
+          })
+        });
+      }
+      message.success("All shops synced to SharePoint!");
+    } catch (err) {
+      message.error("Error during sync.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 min-h-[700px]">
-      
-      {/* --- 左側：Custom Click-to-Expand Cards --- */}
-      <div className="flex-1">
-        <div className="mb-8">
-          <Title level={3} className="m-0 text-slate-900">Schedule Overview</Title>
-          <Text className="text-slate-400 font-medium text-lg">
-            {selectedDate.format('dddd, MMMM D, YYYY')}
-          </Text>
-        </div>
-
-        {dailyData.total > 0 ? (
-          <div className="flex flex-col gap-4">
-            {dailyData.groups.map(group => {
-              const isExpanded = expandedGroupId === group.id;
-              
-              return (
-                <div 
-                  key={group.id} 
-                  className={`group-expand-card ${isExpanded ? 'active' : ''}`}
-                >
-                  {/* Card Header - 點擊觸發展開 */}
-                  <div 
-                    className="group-card-header"
-                    onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
-                  >
-                    <Space size="middle">
-                      <Badge color={group.color} />
-                      <Text strong className="text-lg text-slate-700">{group.name}</Text>
-                    </Space>
-                    <div className="flex items-center gap-4">
-                      <Tag className="rounded-full border-none bg-slate-100 text-slate-500 font-black px-3">
-                        {group.items.length} SHOPS
-                      </Tag>
-                      <DownOutlined className={`transform transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                    </div>
-                  </div>
-
-                  {/* Card Detail - 展開內容 */}
-                  <div className="group-card-detail">
-                    <div className="flex flex-col gap-3 p-6 pt-2">
-                      {group.items.length > 0 ? (
-                        group.items.map(shop => (
-                          <div key={shop.id} className="flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:border-teal-400 transition-all group">
-                            <Avatar 
-                              src={shop.brandIcon} 
-                              size={52} 
-                              shape="square" 
-                              className="bg-slate-50 p-1 border border-slate-100 flex-shrink-0"
-                              icon={<ShopOutlined />}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex justify-between">
-                                <h4 className="font-bold text-slate-800 m-0 truncate text-base">{shop.name}</h4>
-                                <Text type="secondary" className="text-[10px] font-bold opacity-50">ID: {shop.id}</Text>
-                              </div>
-                              <div className="flex items-center gap-3 mt-1">
-                                <Text type="secondary" className="text-[11px] font-medium uppercase">
-                                  <EnvironmentOutlined className="text-teal-500 mr-1" /> {shop.district}
-                                </Text>
-                                <Text type="secondary" className="text-[11px] font-medium uppercase">
-                                  <GlobalOutlined className="mr-1" /> {shop.brand}
-                                </Text>
-                              </div>
-                              <Text className="text-slate-400 text-[11px] block mt-1 truncate italic">
-                                {shop.address}
-                              </Text>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="py-6 text-center">
-                          <Text type="secondary" className="italic text-xs">No shops scheduled for {group.name}</Text>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="py-32 text-center bg-slate-50 rounded-[32px] border border-dashed border-slate-200">
-            <Empty description={<Text type="secondary">No shops scheduled for this date</Text>} />
-          </div>
-        )}
+    <div className="max-w-5xl mx-auto flex flex-col gap-8 pb-20">
+      <div>
+        <Title level={2}>Schedule Generator</Title>
+        <Text type="secondary">Algorithm targets Unplanned shops. Excludes Master Closed.</Text>
       </div>
 
-      {/* --- 右側：小型月曆 (保留原始邏輯與樣式) --- */}
-      <div className="w-full lg:w-[320px] lg:border-l lg:border-slate-100 lg:pl-8">
-        <div className="sticky top-0">
-          <div className="flex justify-between items-center mb-6">
-            <Title level={4} className="m-0 text-slate-800">{viewMonth.format('MMMM YYYY')}</Title>
-            <Space>
-              <Button size="small" type="text" icon={<LeftOutlined />} onClick={() => setViewMonth(viewMonth.subtract(1, 'month'))} />
-              <Button size="small" type="text" icon={<RightOutlined />} onClick={() => setViewMonth(viewMonth.add(1, 'month'))} />
-            </Space>
-          </div>
+      <Row gutter={[24, 24]}>
+        <Col span={6}><SummaryCard label="Total Shop" value={stats.total} subtext="Excl. Master Closed" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Completed" value={stats.completed} subtext="Status: Done" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Closed Shop" value={stats.closed} subtext="Status: Closed" bgColor="#ff4545" icon={<CloseCircleOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Non Schedule" value={stats.unplanned} subtext="Status: Unplanned" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
+      </Row>
 
-          <div className="grid grid-cols-7 gap-y-1 mb-6">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-              <div key={day} className="text-center text-[10px] font-black text-slate-300 py-2 uppercase">{day}</div>
-            ))}
-            {calendarDays.map((date, idx) => {
-              if (!date) return <div key={`empty-${idx}`} />;
-              
-              const isSelected = date.isSame(selectedDate, 'day');
-              const isToday = date.isSame(dayjs(), 'day');
-              const hasData = shops.some(s => s.scheduledDate && dayjs(s.scheduledDate).isSame(date, 'day'));
-
-              return (
-                <div key={idx} className="flex justify-center items-center py-1">
-                  <button
-                    onClick={() => setSelectedDate(date)}
-                    className={`
-                      w-9 h-9 rounded-full text-xs font-bold transition-all relative flex items-center justify-center
-                      ${isSelected ? 'bg-teal-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}
-                      ${isToday && !isSelected ? 'text-teal-600 border border-teal-200' : ''}
-                    `}
-                  >
-                    {date.date()}
-                    {hasData && !isSelected && (
-                      <span className="absolute bottom-1 w-1 h-1 bg-teal-400 rounded-full" />
-                    )}
-                  </button>
+      <div className="mt-2">
+        <Text strong className="text-[10px] text-slate-400 uppercase tracking-widest block mb-4">Unplanned Shops by Region</Text>
+        <Row gutter={[16, 16]}>
+          {regionRemainStats.map(reg => (
+            <Col key={reg.key} style={{ width: '20%' }}>
+              <Card size="small" className="rounded-2xl border-none shadow-sm bg-indigo-50/50">
+                <div className="flex flex-col items-center py-2 text-center">
+                  <Text strong className="text-indigo-600 text-[10px] truncate w-full"><EnvironmentOutlined /> {reg.fullName}</Text>
+                  <Title level={4} className="m-0 text-indigo-900 mt-1">{reg.count}</Title>
+                  <Text className="text-[9px] text-indigo-400 uppercase font-bold">Unplanned</Text>
                 </div>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <Button 
-              block 
-              className="h-10 rounded-xl font-bold border-slate-200 text-slate-500 hover:text-teal-600"
-              onClick={() => {
-                setSelectedDate(dayjs());
-                setViewMonth(dayjs());
-              }}
-            >
-              Back to Today
-            </Button>
-            
-            <Card className="rounded-2xl border-none bg-teal-50/50" bodyStyle={{ padding: '16px' }}>
-              <div className="flex justify-between items-center">
-                <Text strong className="text-[10px] uppercase text-teal-700 tracking-wider">Month Summary</Text>
-                <Badge count={shops.filter(s => s.scheduledDate && dayjs(s.scheduledDate).isSame(viewMonth, 'month')).length} color="#0d9488" />
-              </div>
-            </Card>
-          </div>
-        </div>
+              </Card>
+            </Col>
+          ))}
+        </Row>
       </div>
       
-      {/* ✅ 整合後的 Click-to-Expand 樣式 */}
-      <style>{`
-        .group-expand-card {
-          background: #f8fafc;
-          border: 1px solid #f1f5f9;
-          border-radius: 20px;
-          overflow: hidden;
-          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-          height: 72px; /* 初始高度：僅顯示標題 */
-        }
+      <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 mt-4">
+        <Space className="mb-10 text-[11px] font-bold uppercase tracking-widest text-slate-800">
+          <ControlOutlined className="text-teal-600" /> Algorithm Configuration
+        </Space>
+        
+        <Collapse ghost defaultActiveKey={['1', '2']} expandIconPosition="end">
+          <Collapse.Panel key="1" header={<Space className="py-2"><div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold">1</div><span className="font-bold">Core Parameters</span></Space>}>
+            <Row gutter={24} className="py-2">
+              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Start Date</Text><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-slate-50 border-none h-12 rounded-xl w-full px-4" /></Col>
+              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Shops / Day</Text><InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 20)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
+              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Groups / Day</Text><InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
+            </Row>
+          </Collapse.Panel>
 
-        .group-expand-card.active {
-          height: auto;
-          max-height: 2000px; /* 展開後高度隨內容增加 */
-          background: #ffffff;
-          box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
-          border-color: #e2e8f0;
-        }
+          <Collapse.Panel key="2" header={<Space className="py-2"><div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold">2</div><span className="font-bold">Location Filters</span></Space>}>
+            <Row gutter={24} className="py-2">
+              <Col span={10}>
+                <Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Regions</Text>
+                <Select mode="multiple" className="w-full min-h-[48px]" placeholder="All Regions" value={selectedRegions} onChange={setSelectedRegions}>
+                  {regionOptions.map(r => <Select.Option key={r} value={r}>{r}</Select.Option>)}
+                </Select>
+              </Col>
+              <Col span={10}>
+                <Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Districts</Text>
+                <Select mode="multiple" className="w-full min-h-[48px]" placeholder="All Districts" value={selectedDistricts} onChange={setSelectedDistricts}>
+                  {availableDistricts.map(d => <Select.Option key={d} value={d}>{d}</Select.Option>)}
+                </Select>
+              </Col>
+              <Col span={4}>
+                <Text strong className="text-[10px] text-slate-400 uppercase block mb-2">MTR Incl.</Text>
+                <div className="h-12 flex items-center gap-2"><Switch checked={includeMTR} onChange={setIncludeMTR} /><span className="text-xs font-bold text-slate-600">{includeMTR ? 'Yes' : 'No'}</span></div>
+              </Col>
+            </Row>
+          </Collapse.Panel>
+        </Collapse>
 
-        .group-card-header {
-          padding: 20px 24px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          cursor: pointer;
-          user-select: none;
-        }
+        <div className="flex justify-end mt-12">
+          <button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}>
+            <div className="dots_border"></div>
+            <span className="text_button">{isCalculating ? 'Generating...' : 'Generate Schedule'}</span>
+          </button>
+        </div>
+      </div>
 
-        .group-card-detail {
-          opacity: 0;
-          visibility: hidden;
-          transition: opacity 0.4s ease, visibility 0.4s ease;
-        }
-
-        .group-expand-card.active .group-card-detail {
-          opacity: 1;
-          visibility: visible;
-        }
-
-        /* 隱藏 Ant Design 預設 Collapse 的影響 */
-        .site-calendar-collapse .ant-collapse-header {
-          padding: 16px 24px !important;
-        }
-      `}</style>
+      {generatedResult.length > 0 && (
+        <Card title="Preview" className="rounded-3xl border-none shadow-sm overflow-hidden mt-8">
+          <Table dataSource={generatedResult} size="small" pagination={{ pageSize: 10 }} columns={[
+            { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: (d, r) => <b>{d} ({r.dayOfWeek})</b> },
+            { title: 'Team', dataIndex: 'groupId', key: 'group', render: (g) => <Tag color={g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange'}>Team {String.fromCharCode(64 + g)}</Tag> },
+            { title: 'Shop Name', dataIndex: 'name' },
+            { title: 'District', dataIndex: 'district' },
+          ]} />
+          <div className="flex justify-end mt-4 p-4 border-t"><Button type="primary" icon={<SaveOutlined />} loading={isSaving} onClick={saveToSharePoint} className="bg-emerald-600 border-none h-12 px-8 rounded-xl font-bold">Sync to SharePoint</Button></div>
+        </Card>
+      )}
     </div>
   );
 };

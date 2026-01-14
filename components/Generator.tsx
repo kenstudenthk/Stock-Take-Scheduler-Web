@@ -238,8 +238,16 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
           </Collapse.Panel>
         </Collapse>
 
-        <div className="flex justify-end mt-12"><button className="sparkle-button" onClick={handleGenerate}>Generate Schedule</button></div>
-      </div>
+      <div className="flex justify-end mt-12">
+    <button 
+      className="sparkle-button" 
+      onClick={handleGenerate} 
+      disabled={isCalculating}
+    >
+      <span>{isCalculating ? 'GENERATING...' : 'GENERATE SCHEDULE'}</span>
+    </button>
+  </div>
+</div>
 
       {generatedResult.length > 0 && (
         <Card title="Preview" className="rounded-3xl border-none shadow-sm overflow-hidden mt-8">

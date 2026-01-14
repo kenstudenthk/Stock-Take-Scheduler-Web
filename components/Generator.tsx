@@ -157,7 +157,39 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         </Row>
       </div>
       
-      {/* Algorithm Config 區塊保持不變... */}
+      <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 mt-4">
+        <Space className="mb-10 text-[11px] font-bold uppercase tracking-widest text-slate-800"><ControlOutlined className="text-teal-600" /> Algorithm Configuration</Space>
+        <Collapse ghost defaultActiveKey={['1', '2']} expandIconPosition="end">
+          <Collapse.Panel key="1" header={<Space className="py-2"><div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold">1</div><span className="font-bold">Core Parameters</span></Space>}>
+            <Row gutter={24} className="py-2">
+              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Start Date</Text><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-slate-50 border-none h-12 rounded-xl w-full px-4" /></Col>
+              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Shops / Day</Text><InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 20)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
+              <Col span={8}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Groups / Day</Text><InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
+            </Row>
+          </Collapse.Panel>
+          <Collapse.Panel key="2" header={<Space className="py-2"><div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold">2</div><span className="font-bold">Location Filters</span></Space>}>
+            <Row gutter={24} className="py-2">
+              <Col span={10}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Regions</Text><Select mode="multiple" className="w-full min-h-[48px]" placeholder="All Regions" value={selectedRegions} onChange={setSelectedRegions}>{regionOptions.map(r => <Select.Option key={r} value={r}>{r}</Select.Option>)}</Select></Col>
+              <Col span={10}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">Districts</Text><Select mode="multiple" className="w-full min-h-[48px]" placeholder="All Districts" value={selectedDistricts} onChange={setSelectedDistricts}>{availableDistricts.map(d => <Select.Option key={d} value={d}>{d}</Select.Option>)}</Select></Col>
+              <Col span={4}><Text strong className="text-[10px] text-slate-400 uppercase block mb-2">MTR Incl.</Text><div className="h-12 flex items-center gap-2"><Switch checked={includeMTR} onChange={setIncludeMTR} /><span className="text-xs font-bold text-slate-600">{includeMTR ? 'Yes' : 'No'}</span></div></Col>
+            </Row>
+          </Collapse.Panel>
+        </Collapse>
+        <div className="flex justify-end mt-12"><button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}><div className="dots_border"></div><span className="text_button">{isCalculating ? 'Generating...' : 'Generate Schedule'}</span></button></div>
+      </div>
+
+      {generatedResult.length > 0 && (
+        <Card title="Preview" className="rounded-3xl border-none shadow-sm overflow-hidden mt-8">
+          {isSaving && <Progress percent={uploadProgress} status="active" className="mb-4" />}
+          <Table dataSource={generatedResult} size="small" pagination={{ pageSize: 10 }} columns={[
+            { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: (d, r) => <b>{d} ({r.dayOfWeek})</b> },
+            { title: 'Team', dataIndex: 'groupId', key: 'group', render: (g) => <Tag color={g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange'}>Team {String.fromCharCode(64 + g)}</Tag> },
+            { title: 'Shop Name', dataIndex: 'name' },
+            { title: 'District', dataIndex: 'district' },
+          ]} />
+          <div className="flex justify-end mt-4 p-4 border-t"><Button type="primary" icon={<SaveOutlined />} loading={isSaving} onClick={saveToSharePoint} className="bg-emerald-600 border-none h-12 px-8 rounded-xl font-bold">Sync to SharePoint</Button></div>
+        </Card>
+      )}
     </div>
   );
 };

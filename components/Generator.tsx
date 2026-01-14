@@ -12,7 +12,6 @@ import { SP_FIELDS } from '../constants';
 const { Text, Title } = Typography;
 const { confirm } = Modal;
 
-// 2026 Hong Kong Public Holidays
 const HK_HOLIDAYS_2026 = [
   "2026-01-01", "2026-02-17", "2026-02-18", "2026-02-19", 
   "2026-04-03", "2026-04-04", "2026-04-05", "2026-04-06", "2026-04-07",
@@ -57,21 +56,22 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // ✅ 篩選邏輯：排除 Master Closed
+  // ✅ 核心篩選：排除去年已關閉 (Master Closed)
   const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed'), [shops]);
 
-  // ✅ 4 Summary Box 統計邏輯
+  // ✅ 4 Summary Cards 統計邏輯
   const stats = useMemo(() => {
-    const total = activePool.length;
-    const completed = activePool.filter(s => s.scheduleStatus === 'Done').length;
-    const closed = activePool.filter(s => s.scheduleStatus === 'Closed').length;
-    const unplanned = activePool.filter(s => s.scheduleStatus === 'Unplanned').length;
-    return { total, completed, closed, unplanned };
+    return {
+      total: activePool.length,
+      completed: activePool.filter(s => s.status === 'Done').length,
+      closed: activePool.filter(s => s.status === 'Closed').length,
+      unplanned: activePool.filter(s => s.status === 'Unplanned').length
+    };
   }, [activePool]);
 
-  // ✅ 5 Region 統計邏輯：僅統計 Non Schedule (Unplanned)
-  const regionRemainStats = useMemo(() => {
-    const unplannedPool = activePool.filter(s => s.scheduleStatus === 'Unplanned');
+  // ✅ 5 Region 統計邏輯：僅統計 Non-Schedule (Unplanned) 門市
+  const regionStats = useMemo(() => {
+    const unplannedPool = activePool.filter(s => s.status === 'Unplanned');
     const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
     unplannedPool.forEach(s => { if (counts.hasOwnProperty(s.region)) counts[s.region]++; });
     return Object.keys(counts).map(key => ({ key, fullName: REGION_MAP[key], count: counts[key] }));
@@ -83,17 +83,17 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
   }, [activePool, selectedRegions]);
 
-  // --- 函數必須定義在 return 之前 ---
+  // --- Handlers ---
 
   const handleResetAll = () => {
     confirm({
       title: 'Reset All Scheduled Shops?',
       icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
-      content: 'Clear all Planned/Rescheduled dates and set status back to Unplanned?',
+      content: 'Clear all Planned dates and set status back to Unplanned?',
       okText: 'Yes, Reset', okType: 'danger',
       onOk: async () => {
         setIsSaving(true);
-        const toReset = activePool.filter(s => s.scheduleStatus === 'Planned' || s.scheduleStatus === 'Rescheduled');
+        const toReset = activePool.filter(s => s.status !== 'Unplanned' && s.status !== 'Done');
         for (const shop of toReset) {
           await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
             method: 'PATCH',
@@ -101,7 +101,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
             body: JSON.stringify({ [SP_FIELDS.SCHEDULE_DATE]: null, [SP_FIELDS.SCHEDULE_GROUP]: "0", [SP_FIELDS.STATUS]: 'Unplanned' })
           });
         }
-        message.success("All schedules reset.");
+        message.success("Schedules reset.");
         onRefresh();
         setIsSaving(false);
       }
@@ -110,12 +110,11 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
   const handleGenerate = () => {
     setIsCalculating(true);
-    // 僅針對 Unplanned 進行自動生成
     let pool = activePool.filter(s => {
       const matchRegion = selectedRegions.length === 0 || selectedRegions.includes(s.region);
       const matchDistrict = selectedDistricts.length === 0 || selectedDistricts.includes(s.district);
       const matchMTR = includeMTR ? true : !s.is_mtr;
-      return s.scheduleStatus === 'Unplanned' && matchRegion && matchDistrict && matchMTR;
+      return s.status === 'Unplanned' && matchRegion && matchDistrict && matchMTR;
     });
 
     if (pool.length === 0) { message.warning("No unplanned shops match filters."); setIsCalculating(false); return; }
@@ -157,9 +156,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   return (
     <div className="max-w-5xl mx-auto flex flex-col gap-8 pb-20">
       <div className="flex justify-between items-start">
-        <div><Title level={2} className="m-0">Schedule Generator</Title><Text type="secondary">Excluding Master Closed. Targets Unplanned Shops.</Text></div>
-        
-        {/* ✅ Reset All Schedule 按鈕 */}
+        <div><Title level={2} className="m-0">Schedule Generator</Title><Text type="secondary">Algorithm targets Unplanned shops.</Text></div>
         <button className="reset-all-btn" onClick={handleResetAll} disabled={isSaving}>
           <div className="svg-wrapper-1">
             <div className="svg-wrapper">
@@ -171,7 +168,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       </div>
 
       <Row gutter={[24, 24]}>
-        <Col span={6}><SummaryCard label="Total Shop" value={stats.total} subtext="Excl. Last Year Closed" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
+        <Col span={6}><SummaryCard label="Total Shop" value={stats.total} subtext="Excl. Master Closed" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
         <Col span={6}><SummaryCard label="Completed" value={stats.completed} subtext="Status: Done" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
         <Col span={6}><SummaryCard label="Closed Shop" value={stats.closed} subtext="Status: Closed" bgColor="#ff4545" icon={<CloseCircleOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
         <Col span={6}><SummaryCard label="Non Schedule" value={stats.unplanned} subtext="Status: Unplanned" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 40, color: 'rgba(255,255,255,0.7)', marginTop: 5}} />} /></Col>
@@ -180,7 +177,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       <div className="mt-2">
         <Text strong className="text-[10px] text-slate-400 uppercase tracking-widest block mb-4">Non Schedule Shops by Region</Text>
         <Row gutter={[16, 16]}>
-          {regionRemainStats.map(reg => (
+          {regionStats.map(reg => (
             <Col key={reg.key} style={{ width: '20%' }}>
               <Card size="small" className="rounded-2xl border-none shadow-sm bg-indigo-50/50">
                 <div className="flex flex-col items-center py-2 text-center">
@@ -193,7 +190,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
           ))}
         </Row>
       </div>
-      
+
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 mt-4">
         <Space className="mb-10 text-[11px] font-bold uppercase tracking-widest text-slate-800"><ControlOutlined className="text-teal-600" /> Algorithm Configuration</Space>
         <Collapse ghost defaultActiveKey={['1', '2']} expandIconPosition="end">
@@ -212,9 +209,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
             </Row>
           </Collapse.Panel>
         </Collapse>
-        <div className="flex justify-end mt-12">
-          <button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}><div className="dots_border"></div><span className="text_button">{isCalculating ? 'Generating...' : 'Generate Schedule'}</span></button>
-        </div>
+        <div className="flex justify-end mt-12"><button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}><div className="dots_border"></div><span className="text_button">{isCalculating ? 'Generating...' : 'Generate Schedule'}</span></button></div>
       </div>
 
       {generatedResult.length > 0 && (

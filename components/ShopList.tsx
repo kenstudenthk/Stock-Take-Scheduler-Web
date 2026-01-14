@@ -1,7 +1,7 @@
 // ShopList.tsx
 
 import React, { useState, useMemo } from 'react';
-import { Table, Input, Card, Typography, Space, Tag, DatePicker, message, Modal, Select } from 'antd'; // ✅ Added Select
+import { Table, Input, Card, Typography, Space, Tag, DatePicker, message, Modal, Select } from 'antd'; // ✅ 已加入 Select
 import { 
   SearchOutlined, EnvironmentOutlined, ExclamationCircleOutlined,
   PhoneOutlined, UserOutlined, PlusOutlined, MessageOutlined, ClockCircleOutlined 
@@ -21,16 +21,15 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null); // ✅ Tracking which row is updating
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // ✅ New Function to handle Call Status and Remark updates
+  // ✅ 呼叫更新邏輯：處理狀態、備註並自動設定日期為今天
   const handleCallUpdate = async (shop: Shop, field: 'status' | 'remark', value: string) => {
     setUpdatingId(shop.id);
     const today = dayjs().format('YYYY-MM-DD');
     
-    // Prepare the update payload
     const updatePayload: any = {
-      [SP_FIELDS.CALL_DATE]: today // Always update date to today when info changes
+      [SP_FIELDS.CALL_DATE]: today 
     };
 
     if (field === 'status') updatePayload[SP_FIELDS.CALL_STATUS] = value;
@@ -87,7 +86,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
     {
       title: 'Shop & Brand',
       key: 'shopInfo',
-      width: '20%',
+      width: '18%',
       render: (record: Shop) => (
         <Space direction="vertical" size={0}>
           <Text strong className={record.status?.toLowerCase() === 'closed' ? 'line-through opacity-50' : ''} style={{ fontSize: '14px' }}>{record.name}</Text>
@@ -100,51 +99,47 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
       key: 'location',
       width: '15%',
       render: (record: Shop) => (
-        <Space direction="vertical" size={0}>
+        <Space direction="vertical" size={0} className={record.status?.toLowerCase() === 'closed' ? 'opacity-40' : ''}>
           <Text size="small" strong style={{ fontSize: '12px' }}><EnvironmentOutlined className="text-teal-600" /> {record.region}</Text>
           <Text type="secondary" style={{ fontSize: '11px' }}>{record.district}</Text>
         </Space>
       ),
     },
-    // ✅ NEW COLUMN: Call Status Tracking
+    // ✅ 新增欄位：Call Status Tracking
     {
       title: 'Call Status Tracking',
       key: 'callStatus',
-      width: '25%',
+      width: '24%',
       render: (record: any) => (
         <Space direction="vertical" size={4} style={{ width: '100%' }} onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2">
-            <Select 
-              placeholder="Select Status"
-              size="small"
-              className="w-full"
-              defaultValue={record.callStatus}
-              loading={updatingId === record.id}
-              onChange={(val) => handleCallUpdate(record, 'status', val)}
-              disabled={record.status?.toLowerCase() === 'closed'}
-            >
-              <Option value="Called">Called</Option>
-              <Option value="No One Pick Up">No One Pick Up</Option>
-              <Option value="No Contact / Wrong No.">No Contact / Wrong No.</Option>
-            </Select>
-          </div>
+          <Select 
+            placeholder="Select Status"
+            size="small"
+            className="w-full"
+            defaultValue={record.callStatus}
+            loading={updatingId === record.id}
+            onChange={(val) => handleCallUpdate(record, 'status', val)}
+            disabled={record.status?.toLowerCase() === 'closed'}
+          >
+            <Option value="Called">Called</Option>
+            <Option value="No One Pick Up">No One Pick Up</Option>
+            <Option value="No Contact / Wrong No.">No Contact / Wrong No.</Option>
+          </Select>
           <Input 
             size="small"
-            placeholder="Add quick remark..."
+            placeholder="Call remark..."
             prefix={<MessageOutlined style={{ fontSize: '10px', color: '#bfbfbf' }} />}
             defaultValue={record.callRemark}
             onPressEnter={(e: any) => handleCallUpdate(record, 'remark', e.target.value)}
             onBlur={(e: any) => {
-              if (e.target.value !== record.callRemark) {
-                handleCallUpdate(record, 'remark', e.target.value);
-              }
+              if (e.target.value !== record.callRemark) handleCallUpdate(record, 'remark', e.target.value);
             }}
             disabled={record.status?.toLowerCase() === 'closed'}
-            className="text-[11px]"
+            style={{ fontSize: '11px' }}
           />
           {record.callDate && (
-            <Text type="secondary" style={{ fontSize: '10px' }}>
-              <ClockCircleOutlined /> Last Update: {dayjs(record.callDate).format('DD MMM')}
+            <Text type="secondary" style={{ fontSize: '9px' }}>
+              <ClockCircleOutlined /> Last Call: {dayjs(record.callDate).format('DD MMM')}
             </Text>
           )}
         </Space>
@@ -180,7 +175,6 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
       title: '',
       key: 'actions',
       align: 'right' as const,
-      width: '15%',
       render: (_: any, record: Shop) => (
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', alignItems: 'center' }}>
           {selectedRowId === record.id && (
@@ -200,10 +194,8 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
     },
   ];
 
-  // ... rest of the component (return statement) is identical ...
   return (
     <div className="flex flex-col gap-6 pb-10">
-      {/* No changes to header or filters */}
       <div className="mb-2"><Title level={2} className="m-0 text-slate-800">Shop Master List</Title><Text className="text-slate-400 font-medium">Manage and filter all store locations across regions.</Text></div>
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white">
         <div className="p-8">

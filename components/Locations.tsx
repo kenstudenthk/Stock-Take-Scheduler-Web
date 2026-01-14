@@ -1,3 +1,4 @@
+import { wgs84ToGcj02 } from '../utils/coordTransform';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Card, Select, Input, Typography, Tag, Space, Row, Col, Empty, DatePicker } from 'antd';
 import { 
@@ -69,29 +70,29 @@ useEffect(() => {
     const marker = new window.AMap.Marker({
       position: [gcjLng, gcjLat], // 使用轉換後的座標
       title: shop.name,
-      map: mapRef.current
+      map: mapRef.current,
+      // 根據狀態設定不同的圖標顏色 (選用)
+      content: `<div style="background: ${shop.status === 'Done' ? '#10b981' : '#3b82f6'}; 
+                 width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`
     });
+    
 
     // 點擊 Marker 顯示 InfoWindow (自定義資訊視窗)
     marker.on('click', () => {
       const infoWindow = new window.AMap.InfoWindow({
-        content: `
-          <div style="padding: 10px;">
-            <h4 style="margin:0 0 5px 0;">${shop.name}</h4>
-            <p style="font-size:12px; color: #666; margin:0;">${shop.address}</p>
-            <span style="font-size:10px; background: #teal; color: white; padding: 2px 5px; border-radius: 4px;">
-              ${shop.status}
-            </span>
-          </div>
-        `,
-        offset: new window.AMap.Pixel(0, -30)
+        content: `<div style="padding:12px; min-width:150px;">
+                    <b style="font-size:14px; color:#333;">${shop.name}</b><br/>
+                    <span style="font-size:12px; color:#666;">${shop.address}</span><br/>
+                    <div style="margin-top:8px; font-weight:bold; color:teal;">Status: ${shop.status}</div>
+                  </div>`,
+        offset: new window.AMap.Pixel(0, -15)
       });
       infoWindow.open(mapRef.current, [gcjLng, gcjLat]);
     });
   });
 
   // 如果有結果，自動縮放地圖以適應所有標記
-  if (filteredShops.length > 0) {
+if (filteredShops.length > 0) {
     mapRef.current.setFitView();
   }
 }, [filteredShops]);

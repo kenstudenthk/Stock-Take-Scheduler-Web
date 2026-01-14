@@ -1,8 +1,10 @@
+// ShopList.tsx
+
 import React, { useState, useMemo } from 'react';
-import { Table, Input, Card, Typography, Space, Tag, DatePicker, message, Modal } from 'antd';
+import { Table, Input, Card, Typography, Space, Tag, DatePicker, message, Modal, Select } from 'antd'; // ✅ Added Select
 import { 
   SearchOutlined, EnvironmentOutlined, ExclamationCircleOutlined,
-  PhoneOutlined, UserOutlined, PlusOutlined 
+  PhoneOutlined, UserOutlined, PlusOutlined, MessageOutlined, ClockCircleOutlined 
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shop } from '../types';
@@ -11,6 +13,7 @@ import { SP_FIELDS } from '../constants';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
+const { Option } = Select;
 
 export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
   const [searchText, setSearchText] = useState('');
@@ -18,6 +21,40 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null); // ✅ Tracking which row is updating
+
+  // ✅ New Function to handle Call Status and Remark updates
+  const handleCallUpdate = async (shop: Shop, field: 'status' | 'remark', value: string) => {
+    setUpdatingId(shop.id);
+    const today = dayjs().format('YYYY-MM-DD');
+    
+    // Prepare the update payload
+    const updatePayload: any = {
+      [SP_FIELDS.CALL_DATE]: today // Always update date to today when info changes
+    };
+
+    if (field === 'status') updatePayload[SP_FIELDS.CALL_STATUS] = value;
+    if (field === 'remark') updatePayload[SP_FIELDS.CALL_REMARK] = value;
+
+    try {
+      const res = await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload)
+      });
+      
+      if (res.ok) {
+        message.success(`Call info for ${shop.name} updated.`);
+        onRefresh();
+      } else {
+        message.error("Failed to update SharePoint.");
+      }
+    } catch (err) {
+      message.error("Network error during update.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const handleCloseAction = (shop: Shop) => {
     confirm({
@@ -50,32 +87,76 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
     {
       title: 'Shop & Brand',
       key: 'shopInfo',
-      width: '25%',
+      width: '20%',
       render: (record: Shop) => (
         <Space direction="vertical" size={0}>
-          <Text strong className={record.status?.toLowerCase() === 'closed' ? 'line-through opacity-50' : ''} style={{ fontSize: '15px' }}>{record.name}</Text>
+          <Text strong className={record.status?.toLowerCase() === 'closed' ? 'line-through opacity-50' : ''} style={{ fontSize: '14px' }}>{record.name}</Text>
           <Space><Tag color={record.status?.toLowerCase() === 'closed' ? 'default' : 'blue'}>{record.brand}</Tag><Text type="secondary" code style={{ fontSize: '10px' }}>{record.id}</Text></Space>
         </Space>
       ),
     },
     {
-      title: 'Location & Address',
+      title: 'Location',
       key: 'location',
-      width: '30%',
+      width: '15%',
       render: (record: Shop) => (
-        <Space direction="vertical" size={0} className={record.status?.toLowerCase() === 'closed' ? 'opacity-40' : ''}>
-          <Text size="small" strong><EnvironmentOutlined className="text-teal-600" /> {record.region} - {record.district}</Text>
-          <Text type="secondary" style={{ fontSize: '12px' }}>{record.address}</Text>
+        <Space direction="vertical" size={0}>
+          <Text size="small" strong style={{ fontSize: '12px' }}><EnvironmentOutlined className="text-teal-600" /> {record.region}</Text>
+          <Text type="secondary" style={{ fontSize: '11px' }}>{record.district}</Text>
         </Space>
       ),
     },
+    // ✅ NEW COLUMN: Call Status Tracking
     {
-      title: 'Contact Info',
+      title: 'Call Status Tracking',
+      key: 'callStatus',
+      width: '25%',
+      render: (record: any) => (
+        <Space direction="vertical" size={4} style={{ width: '100%' }} onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2">
+            <Select 
+              placeholder="Select Status"
+              size="small"
+              className="w-full"
+              defaultValue={record.callStatus}
+              loading={updatingId === record.id}
+              onChange={(val) => handleCallUpdate(record, 'status', val)}
+              disabled={record.status?.toLowerCase() === 'closed'}
+            >
+              <Option value="Called">Called</Option>
+              <Option value="No One Pick Up">No One Pick Up</Option>
+              <Option value="No Contact / Wrong No.">No Contact / Wrong No.</Option>
+            </Select>
+          </div>
+          <Input 
+            size="small"
+            placeholder="Add quick remark..."
+            prefix={<MessageOutlined style={{ fontSize: '10px', color: '#bfbfbf' }} />}
+            defaultValue={record.callRemark}
+            onPressEnter={(e: any) => handleCallUpdate(record, 'remark', e.target.value)}
+            onBlur={(e: any) => {
+              if (e.target.value !== record.callRemark) {
+                handleCallUpdate(record, 'remark', e.target.value);
+              }
+            }}
+            disabled={record.status?.toLowerCase() === 'closed'}
+            className="text-[11px]"
+          />
+          {record.callDate && (
+            <Text type="secondary" style={{ fontSize: '10px' }}>
+              <ClockCircleOutlined /> Last Update: {dayjs(record.callDate).format('DD MMM')}
+            </Text>
+          )}
+        </Space>
+      )
+    },
+    {
+      title: 'Contact',
       key: 'contact',
-      width: '20%',
+      width: '15%',
       render: (record: Shop) => (
         <Space direction="vertical" size={0}>
-          <Text style={{ fontSize: '13px' }}><PhoneOutlined className="text-slate-400" /> {record.phone || '--'}</Text>
+          <Text style={{ fontSize: '12px' }}><PhoneOutlined className="text-slate-400" /> {record.phone || '--'}</Text>
           <Text type="secondary" style={{ fontSize: '11px' }}><UserOutlined /> {record.contactName || 'N/A'}</Text>
         </Space>
       )
@@ -84,6 +165,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      width: '10%',
       render: (status: string) => {
         let color = 'blue';
         if (status === 'Done') color = 'green';
@@ -91,13 +173,14 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
         if (status === 'In-Progress') color = 'orange';
         if (status === 'Reschedule') color = 'purple';
         if (status === 'Re-Open') color = 'cyan';
-        return <Tag color={color} className="font-bold">{status.toUpperCase()}</Tag>
+        return <Tag color={color} className="font-bold text-[10px]">{status.toUpperCase()}</Tag>
       }
     },
     {
       title: '',
       key: 'actions',
       align: 'right' as const,
+      width: '15%',
       render: (_: any, record: Shop) => (
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', alignItems: 'center' }}>
           {selectedRowId === record.id && (
@@ -117,8 +200,10 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
     },
   ];
 
+  // ... rest of the component (return statement) is identical ...
   return (
     <div className="flex flex-col gap-6 pb-10">
+      {/* No changes to header or filters */}
       <div className="mb-2"><Title level={2} className="m-0 text-slate-800">Shop Master List</Title><Text className="text-slate-400 font-medium">Manage and filter all store locations across regions.</Text></div>
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white">
         <div className="p-8">
@@ -128,7 +213,6 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
               <div className="btn-text">New Shop</div>
             </button>
             <Space size="large" align="center">
-              {/* ✅ 關鍵修復：受控搜尋框，確保 onChange 邏輯正確 */}
               <div className="input-group">
                 <input required type="text" autoComplete="off" className="custom-search-input" value={searchText} onChange={e => setSearchText(e.target.value)} />
                 <label className="user-label">Search shop or code...</label>

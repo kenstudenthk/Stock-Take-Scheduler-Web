@@ -201,7 +201,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
       {/* 🛠️ 下方就是篩選器區塊 --- */}
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 mt-4">
-        <Space className="mb-10 text-[11px] font-bold uppercase tracking-widest text-slate-800">
+        <Space className="mb-10 text-[16px] font-bold uppercase tracking-widest text-slate-800">
           <ControlOutlined className="text-teal-600" /> Algorithm Configuration
         </Space>
         

@@ -255,6 +255,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     </Space>
   </button>
 </div>
+        </div>
 
       {generatedResult.length > 0 && (
         <Card title="Preview" className="rounded-3xl border-none shadow-sm overflow-hidden mt-8">

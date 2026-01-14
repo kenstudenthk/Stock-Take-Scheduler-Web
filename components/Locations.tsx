@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Card, Select, Input, Typography, Tag, Space, Row, Col, Empty, DatePicker } from 'antd';
+import { Card, Select, Input, Typography, Tag, Space, Row, Col, Empty, DatePicker, Badge } from 'antd';
 import { 
   EnvironmentOutlined, 
   SearchOutlined, 

@@ -186,7 +186,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       </Row>
 
       <div className="mt-2">
-        <Text strong className="text-[20px] text-slate-400 uppercase tracking-widest block mb-4">Unplanned Shops by Region</Text>
+        <Text strong className="text-[16px] text-slate-400 uppercase tracking-widest block mb-4">Unplanned Shops by Region</Text>
         <Row gutter={[16, 16]}>
           {regionRemainStats.map(reg => (
             <Col key={reg.key} style={{ width: '20%' }}>

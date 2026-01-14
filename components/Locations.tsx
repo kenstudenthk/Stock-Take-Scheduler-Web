@@ -40,7 +40,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const [dateFilter, setDateFilter] = useState<dayjs.Dayjs | null>(null);
   const [includeMasterClosed, setIncludeMasterClosed] = useState(false);
 
-  // 1. 核心過濾邏輯
+  // 1. 核心過濾邏輯 (保留所有原功能)
   const filteredShops = useMemo(() => {
     return shops.filter(s => {
       const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -75,7 +75,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     });
   }, []);
 
-  // 3. 更新 Marker 與 InfoWindow
+  // ✅ 3. 更新 Marker：根據 Group ID 顯示顏色
   useEffect(() => {
     if (!mapRef.current) return;
     if (markersRef.current.length > 0) {
@@ -85,18 +85,36 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
     const newMarkers = filteredShops.map(shop => {
       const [lng, lat] = wgs84ToGcj02(shop.longitude, shop.latitude);
+      
+      // ✅ 定義顏色邏輯
+      let markerColor = '#94a3b8'; // 預設灰色
+      if (shop.status === 'Done') markerColor = '#10b981'; // 綠色
+      else if (shop.status === 'Closed') markerColor = '#ef4444'; // 紅色
+      else {
+        // 根據 Group ID 著色
+        if (shop.groupId === 1) markerColor = '#3b82f6'; // Group A: 藍色
+        else if (shop.groupId === 2) markerColor = '#a855f7'; // Group B: 紫色
+        else if (shop.groupId === 3) markerColor = '#f97316'; // Group C: 橘色
+      }
+
       const marker = new window.AMap.Marker({
         position: [lng, lat],
-        content: `<div style="background: ${shop.status === 'Done' ? '#10b981' : shop.status === 'Closed' ? '#ef4444' : '#3b82f6'}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); cursor: pointer;"></div>`
+        content: `<div style="background: ${markerColor}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer;"></div>`
       });
 
       marker.on('click', () => {
+        const groupLetter = shop.groupId ? String.fromCharCode(64 + shop.groupId) : 'N/A';
         const content = `
-          <div style="padding: 10px; min-width: 180px;">
-            <div style="font-weight: 800; font-size: 14px; margin-bottom: 4px;">${shop.name}</div>
-            <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">${shop.address}</div>
-            <div style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; color: teal;">
-              STATUS: ${shop.status}
+          <div style="padding: 10px; min-width: 200px;">
+            <div style="font-weight: 800; font-size: 14px; margin-bottom: 4px; color: #1e293b;">${shop.name}</div>
+            <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;">${shop.address}</div>
+            <div style="display: flex; gap: 8px;">
+               <span style="background: ${markerColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">
+                 Group ${groupLetter}
+               </span>
+               <span style="background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">
+                 ${shop.status}
+               </span>
             </div>
           </div>
         `;
@@ -113,7 +131,12 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <Title level={2} className="m-0">Map View</Title>
+      <div className="flex justify-between items-center">
+        <div>
+          <Title level={2} className="m-0 text-slate-800">Map View</Title>
+          <Text className="text-slate-400 font-medium">Markers are colored by Group (A:Blue, B:Purple, C:Orange).</Text>
+        </div>
+      </div>
 
       <Row gutter={[20, 20]}>
         <Col span={6}><SummaryCard label="Total on Map" value={stats.total} bgColor="#1e293b" icon={<ShopOutlined style={{color:'white'}} />} /></Col>
@@ -146,27 +169,31 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
              </Space>
           </Card>
 
-          {/* ✅ 核心修正：加入 height: '100%', display: 'flex' 確保內部可滾動 */}
-          <Card 
-            className="flex-1 rounded-[32px] border-none shadow-sm overflow-hidden" 
-            bodyStyle={{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}
-          >
+          <Card className="flex-1 rounded-[32px] border-none shadow-sm overflow-hidden" bodyStyle={{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div className="px-6 py-4 bg-teal-600 flex justify-between items-center text-white">
               <Text strong className="text-white"><ShopOutlined className="mr-2" /> Filtered Shop List</Text>
               <Badge count={filteredShops.length} color="rgba(255,255,255,0.2)" />
             </div>
 
-            {/* ✅ 列表容器：flex-1 和 overflow-y-auto */}
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-white" style={{ minHeight: 0 }}>
-              {filteredShops.length === 0 ? <Empty className="mt-12" /> : filteredShops.map(shop => (
-                <div key={shop.id} className="p-4 mb-3 rounded-2xl hover:bg-slate-50 border border-slate-50 transition-all cursor-pointer">
-                  <div className="flex justify-between items-start mb-1">
-                    <Text strong className="text-slate-700 truncate flex-1 pr-2">{shop.name}</Text>
-                    <Tag className="m-0 border-none text-[9px] font-black" color={shop.status === 'Done' ? 'green' : 'blue'}>{shop.status}</Tag>
+              {filteredShops.length === 0 ? <Empty className="mt-12" /> : filteredShops.map(shop => {
+                // ✅ 列表標籤同步顯示 Group 顏色
+                const groupColor = shop.groupId === 1 ? 'blue' : shop.groupId === 2 ? 'purple' : shop.groupId === 3 ? 'orange' : 'default';
+                const groupLetter = shop.groupId ? String.fromCharCode(64 + shop.groupId) : '-';
+
+                return (
+                  <div key={shop.id} className="p-4 mb-3 rounded-2xl hover:bg-slate-50 border border-slate-50 transition-all cursor-pointer">
+                    <div className="flex justify-between items-start mb-1">
+                      <Text strong className="text-slate-700 truncate flex-1 pr-2">{shop.name}</Text>
+                      <Space size={4}>
+                        <Tag className="m-0 border-none text-[9px] font-black" color={groupColor}>G-{groupLetter}</Tag>
+                        <Tag className="m-0 border-none text-[9px] font-black uppercase" color={shop.status === 'Done' ? 'green' : 'blue'}>{shop.status}</Tag>
+                      </Space>
+                    </div>
+                    <Text type="secondary" className="text-[11px] block italic truncate">{shop.address}</Text>
                   </div>
-                  <Text type="secondary" className="text-[11px] block italic truncate">{shop.address}</Text>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card>
         </div>

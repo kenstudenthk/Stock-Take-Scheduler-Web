@@ -12,7 +12,7 @@ import { SP_FIELDS } from '../constants';
 const { Text, Title } = Typography;
 const { confirm } = Modal;
 
-// --- REGION 配置：正式名稱與 SVG ---
+// --- 1. REGION 顯示配置：對應正式名稱、專屬顏色代碼與向量圖標 ---
 const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg: React.ReactNode }> = {
   'HK': { 
     label: 'Hong Kong Island', 
@@ -72,7 +72,7 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
   }
 };
 
-// --- 重置與同步動畫組件 ---
+// --- 加載動畫組件 ---
 const ResetChaseLoader = () => (
   <div className="chase-overlay">
     <div className="chase-scene">
@@ -129,6 +129,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     closed: activePool.filter(s => s.status === 'Closed').length, unplanned: activePool.filter(s => s.status === 'Unplanned').length
   }), [activePool]);
 
+  // --- 地區數據邏輯：將代碼轉換為正式名稱與圖標物件 ---
   const regionRemainStats = useMemo(() => {
     const unplannedPool = activePool.filter(s => s.status === 'Unplanned');
     const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
@@ -218,31 +219,31 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         <Col span={6}><SummaryCard label="Non Schedule" value={stats.unplanned} subtext="Status: Unplanned" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
       </Row>
 
-      {/* ✅ 核心修正：加入 example-2 類名，確保 CSS 動畫生效 */}
+      {/* ✅ 核心修正：五列平分佈局 (Full Width / 5) */}
       <div className="mt-4 mb-10 bg-white p-10 rounded-[40px] shadow-sm border border-slate-100">
         <Text strong className="text-[16px] text-slate-400 uppercase tracking-widest block mb-10">Unplanned Shops by Region</Text>
         
-        {/* 重要：恢復 className="example-2" 以觸發 CSS 中的 Hover 效果 */}
-        <ul className="example-2 grid grid-cols-5 w-full gap-0">
+        {/* 重要：強制設定為 display: grid 並設定 5 列，移除 CSS 預設的 gap */}
+        <ul className="example-2 grid grid-cols-5 w-full gap-0 list-none p-0 m-0" style={{ display: 'grid' }}>
           {regionRemainStats.map(reg => (
-            <li key={reg.key} className="icon-content flex justify-center">
+            <li key={reg.key} className="icon-content flex justify-center w-full">
               <a
                 href="#"
                 aria-label={reg.displayName}
                 data-social={reg.socialKey}
                 onClick={(e) => e.preventDefault()}
                 style={{ 
-                  width: '90%',               /* 1/5 寬度的 90%，留一點間距 */
-                  height: '110px',            /* 容納文字的高度 */
+                  width: '94%',               /* 佔據 1/5 欄位的 94% 寬度，自動產生微小間距 */
+                  height: '110px',            /* 容納圖標與兩行名稱的高度 */
                   borderRadius: '24px', 
                   flexDirection: 'column', 
-                  gap: '8px'
+                  gap: '8px',
+                  margin: '0 auto'            /* 置中 */
                 }}
               >
-                {/* 這是動畫背景層，CSS 會在 Hover 時將 height 從 0% 變為 100% */}
                 <div className="filled"></div>
                 
-                {/* 加上 z-index 確保內容在填滿背景之上 */}
+                {/* 內容層級確保 */}
                 <div style={{ position: 'relative', zIndex: 10 }}>{reg.icon}</div>
                 
                 <span style={{ 
@@ -253,14 +254,15 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
                   textAlign: 'center', 
                   textTransform: 'uppercase',
                   lineHeight: '1.2',
-                  padding: '0 5px'
+                  padding: '0 8px',
+                  display: 'block'
                 }}>
                   {reg.displayName}
                 </span>
               </a>
               
-              {/* Tooltip 顯示數字 */}
-              <div className="tooltip">{reg.count}</div>
+              {/* Tooltip 數字顯示 */}
+              <div className="tooltip font-bold">{reg.count}</div>
             </li>
           ))}
         </ul>

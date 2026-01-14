@@ -162,20 +162,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         <Col span={6}><SummaryCard label="Non Schedule" value={stats.unplanned} subtext="Status: Unplanned" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 40, color: 'white', opacity: 0.5}} />} /></Col>
       </Row>
 
-      <div className="mt-2">
-        <Text strong className="text-[10px] text-slate-400 uppercase tracking-widest block mb-4">Non Schedule Shops by Region</Text>
-        <Row gutter={[16, 16]}>
-          {regionRemainStats.map(reg => (
-            <Col key={reg.key} style={{ width: '20%' }}>
-              <Card size="small" className="rounded-2xl border-none shadow-sm bg-indigo-50/50 text-center">
-                <Text strong className="text-indigo-600 text-[10px] uppercase block"><EnvironmentOutlined /> {reg.fullName}</Text>
-                <Title level={4} className="m-0 mt-1">{reg.count}</Title>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      </div>
-
+      {/* 下方的區域統計與設定面板... */}
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 mt-4">
         <Collapse ghost defaultActiveKey={['1', '2']} expandIconPosition="end">
           <Collapse.Panel key="2" header={<span className="font-bold">Location Filters</span>}>

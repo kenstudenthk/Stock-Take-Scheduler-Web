@@ -277,7 +277,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
           <Collapse.Panel key="1" header={<span className="font-bold">1. Core Parameters</span>}>
             <Row gutter={24} className="py-2">
               <Col span={8}><Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Start Date</Text><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-slate-50 border-none h-12 rounded-xl w-full px-4" /></Col>
-              <Col span={8}><Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Shops / Day</Text><InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 20)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
+              <Col span={8}><Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Shops / Day</Text><InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 9)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
               <Col span={8}><Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Groups / Day</Text><InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} className="w-full h-12 flex items-center bg-slate-50 border-none rounded-xl" /></Col>
             </Row>
           </Collapse.Panel>

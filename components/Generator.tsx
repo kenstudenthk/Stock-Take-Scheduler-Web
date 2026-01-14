@@ -72,7 +72,7 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
   }
 };
 
-// --- 加載動畫與組件 ---
+// --- 重置與同步動畫組件 ---
 const ResetChaseLoader = () => (
   <div className="chase-overlay">
     <div className="chase-scene">
@@ -125,10 +125,8 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const regionOptions = useMemo(() => Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort(), [activePool]);
 
   const stats = useMemo(() => ({
-    total: activePool.length,
-    completed: activePool.filter(s => s.status === 'Done').length,
-    closed: activePool.filter(s => s.status === 'Closed').length,
-    unplanned: activePool.filter(s => s.status === 'Unplanned').length
+    total: activePool.length, completed: activePool.filter(s => s.status === 'Done').length,
+    closed: activePool.filter(s => s.status === 'Closed').length, unplanned: activePool.filter(s => s.status === 'Unplanned').length
   }), [activePool]);
 
   const regionRemainStats = useMemo(() => {
@@ -220,41 +218,49 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         <Col span={6}><SummaryCard label="Non Schedule" value={stats.unplanned} subtext="Status: Unplanned" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
       </Row>
 
-      {/* ✅ 核心更新：Unplanned Shops By Region - 文字移入 Box 並使用 1/5 寬度 */}
+      {/* ✅ 核心修正：加入 example-2 類名，確保 CSS 動畫生效 */}
       <div className="mt-4 mb-10 bg-white p-10 rounded-[40px] shadow-sm border border-slate-100">
         <Text strong className="text-[16px] text-slate-400 uppercase tracking-widest block mb-10">Unplanned Shops by Region</Text>
         
-        {/* 使用 grid-cols-5 確保五個項目平分寬度 */}
-        <ul className="grid grid-cols-5 w-full gap-0 list-none p-0 m-0">
+        {/* 重要：恢復 className="example-2" 以觸發 CSS 中的 Hover 效果 */}
+        <ul className="example-2 grid grid-cols-5 w-full gap-0">
           {regionRemainStats.map(reg => (
-            <li key={reg.key} className="icon-content relative flex justify-center">
+            <li key={reg.key} className="icon-content flex justify-center">
               <a
                 href="#"
                 aria-label={reg.displayName}
                 data-social={reg.socialKey}
                 onClick={(e) => e.preventDefault()}
                 style={{ 
-                  width: '90%', 
-                  height: '110px', 
+                  width: '90%',               /* 1/5 寬度的 90%，留一點間距 */
+                  height: '110px',            /* 容納文字的高度 */
                   borderRadius: '24px', 
-                  display: 'flex', 
                   flexDirection: 'column', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '10px'
+                  gap: '8px'
                 }}
               >
+                {/* 這是動畫背景層，CSS 會在 Hover 時將 height 從 0% 變為 100% */}
                 <div className="filled"></div>
-                {/* 地點專屬 SVG */}
-                <div className="z-10">{reg.icon}</div>
-                {/* 地區正式名稱：移入 Box 內部 */}
-                <span className="z-10 text-[11px] font-bold text-center leading-tight uppercase tracking-tight">
+                
+                {/* 加上 z-index 確保內容在填滿背景之上 */}
+                <div style={{ position: 'relative', zIndex: 10 }}>{reg.icon}</div>
+                
+                <span style={{ 
+                  position: 'relative', 
+                  zIndex: 10, 
+                  fontSize: '11px', 
+                  fontWeight: 900, 
+                  textAlign: 'center', 
+                  textTransform: 'uppercase',
+                  lineHeight: '1.2',
+                  padding: '0 5px'
+                }}>
                   {reg.displayName}
                 </span>
               </a>
-              {/* Tooltip 顯示未計畫店鋪數量 */}
-              <div className="tooltip font-bold">{reg.count}</div>
+              
+              {/* Tooltip 顯示數字 */}
+              <div className="tooltip">{reg.count}</div>
             </li>
           ))}
         </ul>
@@ -305,7 +311,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       </div>
 
       {generatedResult.length > 0 && (
-        <Card title="Schedule Preview" className="rounded-3xl border-none shadow-sm overflow-hidden mt-8">
+        <Card title="Preview" className="rounded-3xl border-none shadow-sm overflow-hidden mt-8">
           <Table dataSource={generatedResult} pagination={{ pageSize: 20 }} columns={[
             { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: (d) => <b>{d}</b> },
             { title: 'Group', dataIndex: 'groupId', key: 'group', render: (g) => <Tag color={g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange'} className="font-bold px-3">{`Group ${String.fromCharCode(64 + g)}`}</Tag> },

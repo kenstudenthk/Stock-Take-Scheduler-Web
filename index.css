@@ -1440,3 +1440,25 @@ body {
 @keyframes pathRect { 25% { stroke-dashoffset: 64; } 50% { stroke-dashoffset: 128; } 75% { stroke-dashoffset: 192; } 100% { stroke-dashoffset: 256; } }
 @keyframes dotRect { 25% { transform: translate(0, 0); } 50% { transform: translate(18px, -18px); } 75% { transform: translate(0, -36px); } 100% { transform: translate(-18px, -18px); } }
 @keyframes pathCircle { 25% { stroke-dashoffset: 125; } 50% { stroke-dashoffset: 175; } 75% { stroke-dashoffset: 225; } 100% { stroke-dashoffset: 275; } }
+
+/* ============================================================
+   21. Custom Scroll Bar
+   ============================================================ */
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

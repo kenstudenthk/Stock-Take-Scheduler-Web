@@ -12,6 +12,66 @@ import { SP_FIELDS } from '../constants';
 const { Text, Title } = Typography;
 const { confirm } = Modal;
 
+// --- REGION 配置：包含正式名稱與專屬 SVG ---
+const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg: React.ReactNode }> = {
+  'HK': { 
+    label: 'Hong Kong Island', 
+    social: 'hk',
+    svg: (
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 21H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M5 21V7L10 3V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M14 21V11L19 15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M7 7H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M7 11H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M7 15H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    )
+  },
+  'KN': { 
+    label: 'Kowloon', 
+    social: 'kn',
+    svg: (
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 21C15.5 17.4 19 14.1764 19 10.2C19 6.22355 15.866 3 12 3C8.13401 3 5 6.22355 5 10.2C5 14.1764 8.5 17.4 12 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/>
+      </svg>
+    )
+  },
+  'NT': { 
+    label: 'New Territories', 
+    social: 'nt',
+    svg: (
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 20L9 4L14 14L18 8L22 20H2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    )
+  },
+  'Islands': { 
+    label: 'Lantau Island', 
+    social: 'islands',
+    svg: (
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 10C13.5 10 17 11 17 14C17 17 14 18 12 18C10 18 7 17 7 14C7 11 10.5 10 12 10Z" stroke="currentColor" strokeWidth="2"/>
+        <path d="M12 10V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M12 3L16 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M2 20C4 18 6 18 8 20C10 22 12 22 14 20C16 18 18 18 20 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    )
+  },
+  'MO': { 
+    label: 'Macau', 
+    social: 'mo',
+    svg: (
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 3L4 9V21H20V9L12 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 7V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    )
+  }
+};
+
 // --- RESET 用：Ghost 追逐 Pac-man ---
 const ResetChaseLoader = () => (
   <div className="chase-overlay">
@@ -84,9 +144,23 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
   const regionRemainStats = useMemo(() => {
     const unplannedPool = activePool.filter(s => s.status === 'Unplanned');
+    // 初始化計數器，包含所有目標代碼
     const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
-    unplannedPool.forEach(s => { if (counts.hasOwnProperty(s.region)) counts[s.region]++; });
-    return Object.keys(counts).map(key => ({ key, count: counts[key] }));
+    unplannedPool.forEach(s => { 
+      if (counts.hasOwnProperty(s.region)) counts[s.region]++; 
+    });
+    
+    // 將資料與顯示配置結合
+    return Object.keys(counts).map(key => {
+      const config = REGION_DISPLAY_CONFIG[key] || { label: key, social: key.toLowerCase(), svg: null };
+      return { 
+        key, 
+        count: counts[key],
+        displayName: config.label,
+        socialKey: config.social,
+        icon: config.svg
+      };
+    });
   }, [activePool]);
 
   const availableDistricts = useMemo(() => {
@@ -175,40 +249,27 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         <Col span={6}><SummaryCard label="Non Schedule" value={stats.unplanned} subtext="Status: Unplanned" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
       </Row>
 
-      {/* ✅ 核心更新：Unplanned Shops By Region 套用 Uiverse 圖標風格 */}
+      {/* ✅ 核心更新：Unplanned Shops By Region 已更換為完整名稱與專屬圖標 */}
       <div className="mt-4 mb-10 bg-white p-8 rounded-[40px] shadow-sm border border-slate-100">
         <Text strong className="text-[16px] text-slate-400 uppercase tracking-widest block mb-8">Unplanned Shops by Region</Text>
         <ul className="example-2">
           {regionRemainStats.map(reg => (
             <li key={reg.key} className="icon-content">
-              {/* Region Name Label */}
-              <div className="region-name-label">{reg.key}</div>
+              {/* Region Name Label - 現在顯示完整名稱 */}
+              <div className="region-name-label" style={{ fontSize: '10px', minHeight: '30px', display: 'flex', alignItems: 'center' }}>
+                {reg.displayName}
+              </div>
               <a
                 href="#"
-                aria-label={reg.key}
-                data-social={reg.key.toLowerCase()}
+                aria-label={reg.displayName}
+                data-social={reg.socialKey}
                 onClick={(e) => e.preventDefault()}
               >
                 <div className="filled"></div>
-                {/* 地點 Pin 圖標 */}
-                <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path 
-                    d="M12 21C15.5 17.4 19 14.1764 19 10.2C19 6.22355 15.866 3 12 3C8.13401 3 5 6.22355 5 10.2C5 14.1764 8.5 17.4 12 21Z" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  ></path>
-                  <path 
-                    d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  ></path>
-                </svg>
+                {/* 地點專屬 SVG 圖標 */}
+                {reg.icon}
               </a>
-              {/* Tooltip 顯示數字 */}
+              {/* Tooltip 顯示未計畫店鋪數量 */}
               <div className="tooltip">{reg.count}</div>
             </li>
           ))}
@@ -234,7 +295,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
               <Col span={10}>
                 <Text strong className="text-[14px] text-slate-400 uppercase block mb-2">Regions</Text>
                 <Select mode="multiple" className="w-full min-h-[48px]" placeholder="All Regions" value={selectedRegions} onChange={setSelectedRegions}>
-                  {regionOptions.map(r => <Select.Option key={r} value={r}>{r}</Select.Option>)}
+                  {regionOptions.map(r => <Select.Option key={r} value={r}>{REGION_DISPLAY_CONFIG[r]?.label || r}</Select.Option>)}
                 </Select>
               </Col>
               <Col span={10}>

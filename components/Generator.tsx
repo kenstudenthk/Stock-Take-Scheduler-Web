@@ -256,7 +256,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
                 render: (g) => {
                   const letter = String.fromCharCode(64 + g);
                   const color = g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange';
-                  return <Tag color={color} className="font-bold px-3">{letter.repeat(3)}</Tag>;
+                  return <Tag color={color} className="font-bold px-3">{`Group ${letter}`}</Tag>;
                 }
               },
               { title: 'Shop Name', dataIndex: 'name', key: 'name' },

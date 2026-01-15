@@ -89,6 +89,7 @@ function App() {
               brand: f[SP_FIELDS.BRAND] || '',
               area: f[SP_FIELDS.AREA] || '',
               status: f[SP_FIELDS.STATUS] || 'Unplanned',
+              masterStatus: f[SP_FIELDS.OLD_STATUS] || '',
               scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
               groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
               is_mtr: f[SP_FIELDS.MTR] === 'Yes',

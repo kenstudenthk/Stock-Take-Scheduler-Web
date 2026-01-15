@@ -1701,7 +1701,7 @@ body {
   content: "";
   position: absolute;
   right: -25px;
-  top: 50%;
+  top: 70%;
   width: 30px;
   height: 3px;
   background: #53381c;
@@ -1725,16 +1725,16 @@ body {
   0% {
     left: -450px;
   }
-  45% {
-    left: calc(100% - 360px); 
+  70% {
+    left: calc(100% - 380px); 
   }
   /* 45% - 55%：在按鈕旁停留 (暫停 1.5 秒觀察) */
-  55% {
-    left: calc(100% - 360px);
+  80% {
+    left: calc(100% - 380px);
   }
   /* 55% - 100%：從按鈕走到右側完全消失 (均速) */
   100% {
-    left: 100%;
+    left: 120%;
   }
 }
 

@@ -65,8 +65,8 @@ ant-layout.ant-layout-has-sider {
 .main-content-area, .main-scroll-content {
   background-color: var(--bg-main) !important;
   transition: all 0.3s ease;
-   border-top-left-radius: 30px; 
-  border-bottom-left-radius: 30px;
+   border-top-left-radius: 60px; 
+  border-bottom-left-radius: 60px;
   overflow: hidden; /* 確保內容不會超出圓角 */
 }
 
@@ -75,7 +75,7 @@ ant-layout.ant-layout-has-sider {
   border-color: var(--border-color) !important;
   color: var(--text-main) !important;
   transition: all 0.3s ease;
-   border-top-left-radius: 30px;
+   border-top-left-radius: 60px;
    
 }
 
@@ -114,7 +114,7 @@ ant-layout.ant-layout-has-sider {
   width: 25px;
   height: 25px;
   background: transparent;
-  border-top-right-radius: 25px;
+  border-top-right-radius: 0px;
   /* Matches the background color of your Header */
   box-shadow: 5px -5px 0 5px var(--bg-header); 
   pointer-events: none;
@@ -129,7 +129,7 @@ ant-layout.ant-layout-has-sider {
   width: 25px;
   height: 25px;
   background: transparent;
-  border-bottom-right-radius: 25px;
+  border-bottom-right-radius: 0px;
   /* Matches the background color of your Main Content Area */
   box-shadow: 5px 5px 0 5px var(--bg-main); 
   pointer-events: none;

@@ -68,6 +68,9 @@ body {
    border-top-left-radius: 60px; 
   border-bottom-left-radius: 60px;
   overflow: hidden; /* 確保內容不會超出圓角 */
+   box-shadow: -15px 0 35px -10px rgba(0, 0, 0, 0.2);
+   position: relative;
+  z-index: 10;
 }
 
 .app-header {

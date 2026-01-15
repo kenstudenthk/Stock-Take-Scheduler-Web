@@ -103,9 +103,10 @@ function App() {
         setHasTokenError(false);
       }
     } catch (err) { 
-      setHasTokenError(true); 
+     console.error("Sync error:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -183,8 +184,8 @@ function App() {
         {/* Header 採用 justify-between，右側固定按鈕 */}
         <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
           
-          {/* LEFT: 水豚拉著旗幟出現 */}
-          {hasTokenError ? <TruckFlagNotice /> : <div className="flex-1" />}
+{/* ✅ 關鍵修復 3：只有在有錯誤且不在加載中時才顯示貨車 */}
+          {hasTokenError && !loading ? <TruckFlagNotice /> : <div className="flex-1" />}
 
           {/* RIGHT: 始終保留 Refresh 按鈕、Pool 標籤與 Profile */}
           <Space size="large">

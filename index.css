@@ -1655,16 +1655,17 @@ body {
   overflow: hidden; 
 }
 
-/* 走路主體：水豚 + 旗幟 */
 .capy-flag-walker {
   display: flex;
   flex-direction: row;
-  align-items: bottom;
+  align-items: flex-end; /* 讓內容底部對齊 */
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  /* 修改為 infinite (無限循環)，總長度設為 12 秒讓動作更悠閒 */
-  animation: capy-patrol-loop 12s linear infinite;
+  /* --- 關鍵修改：將頂部置中改為底部對齊 --- */
+  bottom: 0px; 
+  left: 0;
+  /* 移除原本的 transform: translateY(-50%)，只保留動畫 */
+  animation: capy-patrol-loop 16s linear infinite; 
+  z-index: 5;
 }
 
 /* 縮小水豚 */
@@ -1682,15 +1683,16 @@ body {
   padding: 8px 20px;
   font-size: 13px;
   font-weight: 800;
-  border-radius: 8px 4px 4px 8px; /* 旗幟形狀 */
+  border-radius: 8px 8px 0px 8px; /* 旗幟形狀 */
   white-space: nowrap;
-  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.05);
+  box-shadow: 4px 2px 0px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   gap: 8px;
   z-index: 1;
   position: relative;
   /* 旗幟飄動動畫 */
+   margin-bottom: 12px;
   animation: flag-wave 1.5s ease-in-out infinite;
 }
 
@@ -1706,13 +1708,15 @@ body {
   z-index: -1;
 }
 
-/* 水豚縮小至適合 Header 的比例 */
 .capybaraloader.flag-leader {
   transform: scale(0.3);
-  transform-origin: left center;
-  margin-left: -10px; /* 緊貼連桿 */
-  margin-right: -80px; 
+  /* --- 關鍵修改：支點改為左下角 --- */
+  transform-origin: left bottom; 
+  margin-left: -10px;
+  margin-right: -80px;
   z-index: 2;
+  /* 稍微往下壓一點，讓腳看起來踩在 Header 的 border-b 上 */
+  margin-bottom: -5px; 
 }
 
 /* 走路路徑：從左邊界外走到刷新按鈕前 */

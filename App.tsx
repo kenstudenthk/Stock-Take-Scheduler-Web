@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Layout, Button, Space, Tag, Avatar, message, Typography } from 'antd'; // ✅ 已加入 Typography
+import { Layout, Button, Space, Tag, Avatar, message, Typography } from 'antd';
 import { 
   HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
   SettingOutlined, SyncOutlined, UnorderedListOutlined,
-  WarningOutlined, WarningFilled
+  WarningFilled
 } from '@ant-design/icons';
 import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
@@ -19,23 +19,14 @@ import './index.css';
 
 const { Content, Header, Sider } = Layout;
 const { Title, Text } = Typography;
-// 在 App.tsx 中修改 handleUpdateToken
-const handleUpdateToken = (newToken: string) => {
-  setGraphToken(newToken);
-  localStorage.setItem('stockTakeToken', newToken); // ✅ 必須確保這行存在
-  setHasTokenError(false);
-};
 
-// ✅ 貨車拉旗幟循環通知組件
+// ✅ 貨車通知組件
 const TruckFlagNotice: React.FC = () => (
   <div className="truck-header-container">
     <div className="truck-flag-walker">
-      {/* 旗幟在後 */}
       <div className="truck-notice-flag">
-        <WarningFilled /> TOKEN EXPIRED: UPDATE IN SETTINGS
+        <WarningFilled /> TOKEN EXPIRED: PLEASE UPDATE IN SETTINGS
       </div>
-
-{/* 貨車在前 (SVG 結構) */}
       <div className="truck-wrapper-mini">
         <div className="truckBody-anim">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 198 93" style={{ width: '130px' }}>
@@ -58,13 +49,27 @@ function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [collapsed, setCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(localStorage.getItem('theme') === 'dark');
+  
+  // ✅ 初始載入 Token
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
   const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
+  
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasTokenError, setHasTokenError] = useState(false);
-  const [isFirstCheckDone, setIsFirstCheckDone] = useState(false);// ✅ Token 錯誤追蹤
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // ✅ 新增：統一的 Token 更新與持久化函數
+  const updateGraphToken = (newToken: string) => {
+    setGraphToken(newToken);
+    localStorage.setItem('stockTakeToken', newToken);
+    if (newToken) setHasTokenError(false);
+  };
+
+  const updateInvToken = (newToken: string) => {
+    setInvToken(newToken);
+    localStorage.setItem('stockTakeInvToken', newToken);
+  };
 
   const fetchAllData = useCallback(async (token: string) => {
     if (!token) {
@@ -81,53 +86,56 @@ function App() {
         setHasTokenError(true);
       } else {
         const data = await res.json();
-      if (data.value) {
-        const mapped = data.value.map((item: any) => {
-          const f = item.fields || {};
-          return {
-            sharePointItemId: item.id,
-            id: f[SP_FIELDS.SHOP_CODE] || item.id,
-            name: f[SP_FIELDS.SHOP_NAME] || '',
-            brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
-            address: f[SP_FIELDS.ADDRESS_ENG] || '',
-            region: f[SP_FIELDS.REGION] || '',
-            district: f[SP_FIELDS.DISTRICT] || '',
-            brand: f[SP_FIELDS.BRAND] || '',
-            area: f[SP_FIELDS.AREA] || '',
-            masterStatus: f[SP_FIELDS.OLD_STATUS] || '',
-            status: f[SP_FIELDS.STATUS] || 'Unplanned',
-            scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
-            groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
-            is_mtr: f[SP_FIELDS.MTR] === 'Yes',
-            phone: f[SP_FIELDS.PHONE] || '',
-            contactName: f[SP_FIELDS.CONTACT] || '',
-            latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
-            longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
-          };
-        });
-        setAllShops(mapped);
-        setHasTokenError(false);
-     }
+        if (data.value) {
+          const mapped = data.value.map((item: any) => {
+            const f = item.fields || {};
+            return {
+              sharePointItemId: item.id,
+              id: f[SP_FIELDS.SHOP_CODE] || item.id,
+              name: f[SP_FIELDS.SHOP_NAME] || '',
+              brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
+              address: f[SP_FIELDS.ADDRESS_ENG] || '',
+              region: f[SP_FIELDS.REGION] || '',
+              district: f[SP_FIELDS.DISTRICT] || '',
+              brand: f[SP_FIELDS.BRAND] || '',
+              area: f[SP_FIELDS.AREA] || '',
+              masterStatus: f[SP_FIELDS.OLD_STATUS] || '',
+              status: f[SP_FIELDS.STATUS] || 'Unplanned',
+              scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
+              groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
+              is_mtr: f[SP_FIELDS.MTR] === 'Yes',
+              phone: f[SP_FIELDS.PHONE] || '',
+              contactName: f[SP_FIELDS.CONTACT] || '',
+              latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
+              longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
+            };
+          });
+          setAllShops(mapped);
+          setHasTokenError(false);
+        }
       }
     } catch (err) {
-      console.error(err);
-      // 注意：除非明確是 401，否則不要輕易 setHasTokenError(true)，避免網路波動導致貨車出現
+      console.error("Sync error:", err);
     } finally {
       setLoading(false);
-      setIsInitialLoading(false); // ✅ 第一次請求結束
+      setIsInitialLoading(false);
     }
   }, []);
 
-// 修改後的 useEffect
   useEffect(() => {
-    const savedToken = localStorage.getItem('stockTakeToken');
-    if (savedToken) {
-      fetchAllData(savedToken);
+    document.body.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
+
+  // ✅ 修正 useEffect 觸發邏輯
+  useEffect(() => { 
+    if (graphToken) {
+      fetchAllData(graphToken); 
     } else {
       setHasTokenError(true);
       setIsInitialLoading(false);
     }
-  }, [fetchAllData]);
+  }, [graphToken, fetchAllData]);
 
   const renderContent = () => {
     switch (selectedMenuKey) {
@@ -137,7 +145,14 @@ function App() {
       case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory invToken={invToken} />;
-      case View.SETTINGS: return <Settings token={graphToken} onUpdateToken={(t) => {setGraphToken(t); setHasTokenError(false);}} invToken={invToken} onUpdateInvToken={setInvToken} />;
+      case View.SETTINGS: return (
+        <Settings 
+          token={graphToken} 
+          onUpdateToken={updateGraphToken} 
+          invToken={invToken} 
+          onUpdateInvToken={updateInvToken} 
+        />
+      );
       default: return null;
     }
   };
@@ -191,12 +206,11 @@ function App() {
       </Sider>
       
       <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
-        {/* Header 採用 justify-between，右側固定按鈕 */}
         <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
           
-{/* ✅ 關鍵修復 3：只有在有錯誤且不在加載中時才顯示貨車 */}
-          {!isInitialLoading && hasTokenError ? <TruckFlagNotice /> : <div className="flex-1" />}
-          {/* RIGHT: 始終保留 Refresh 按鈕、Pool 標籤與 Profile */}
+          {/* ✅ 關鍵修正：只有在完成初始載入、確認有錯且沒在加載時，貨車才出動 */}
+          {!isInitialLoading && hasTokenError && !loading ? <TruckFlagNotice /> : <div className="flex-1" />}
+
           <Space size="large">
             <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)} className="refresh-btn">Refresh</Button>
             <Tag color="cyan" className="font-bold rounded-md px-3 py-0.5">POOL: {allShops.length}</Tag>

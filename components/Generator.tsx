@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Card, Collapse, Row, Col, Space, Button, Typography, Select, 
+  Card, Collapse, Row, Col, Space, Button, Typography, Switch, Select, 
   InputNumber, Table, Tag, message, Modal, DatePicker, Divider 
 } from 'antd';
 import { 
   ControlOutlined, CheckCircleOutlined, SaveOutlined, 
   ShopOutlined, CloseCircleOutlined, HourglassOutlined,
-  ExclamationCircleOutlined, DeleteOutlined,
+  EnvironmentOutlined, ExclamationCircleOutlined, DeleteOutlined,
   CalendarOutlined, SyncOutlined, HistoryOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -19,26 +19,15 @@ dayjs.extend(isBetween);
 const { Text, Title } = Typography;
 const { confirm } = Modal;
 const { RangePicker } = DatePicker;
+const { Option } = Select;
 
-// --- ✅ 恢復經典 Pac-Man 幾何載入組件 ---
+// --- ✅ 經典 Pac-Man 幾何載入組件 ---
 const SyncGeometricLoader = ({ text = "Syncing to SharePoint..." }) => (
   <div className="sync-overlay">
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-      <div className="loader">
-        <svg viewBox="0 0 80 80">
-          <circle r="32" cy="40" cx="40"></circle>
-        </svg>
-      </div>
-      <div className="loader triangle">
-        <svg viewBox="0 0 86 80">
-          <polygon points="43 8 79 72 7 72"></polygon>
-        </svg>
-      </div>
-      <div className="loader">
-        <svg viewBox="0 0 80 80">
-          <rect height="64" width="64" y="8" x="8"></rect>
-        </svg>
-      </div>
+      <div className="loader"><svg viewBox="0 0 80 80"><circle r="32" cy="40" cx="40"></circle></svg></div>
+      <div className="loader triangle"><svg viewBox="0 0 86 80"><polygon points="43 8 79 72 7 72"></polygon></svg></div>
+      <div className="loader"><svg viewBox="0 0 80 80"><rect height="64" width="64" y="8" x="8"></rect></svg></div>
     </div>
     <Title level={4} style={{ color: '#0d9488', marginTop: '20px' }}>{text}</Title>
   </div>
@@ -70,12 +59,23 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [generatedResult, setGeneratedResult] = useState<any[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
+  // ✅ 過濾器狀態
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
+  const [includeMTR, setIncludeMTR] = useState(true);
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resetRange, setResetRange] = useState<any>(null);
 
   // 過濾結業商店
   const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed' && s.status !== 'Closed'), [shops]);
+
+  // 地區與分區選項
+  const regionOptions = useMemo(() => Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort(), [activePool]);
+  const availableDistricts = useMemo(() => {
+    const filtered = selectedRegions.length > 0 ? activePool.filter(s => selectedRegions.includes(s.region)) : activePool;
+    return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
+  }, [activePool, selectedRegions]);
 
   const stats = useMemo(() => ({
     total: activePool.length, 
@@ -95,16 +95,26 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
   const handleGenerate = () => {
     setIsCalculating(true);
-    let pool = activePool.filter(s => s.status === 'Unplanned');
-    if (pool.length === 0) { message.warning("No unplanned shops available."); setIsCalculating(false); return; }
+    // ✅ 演算法過濾邏輯：排除 Closed、匹配地區、分區與 MTR
+    let pool = activePool.filter(s => {
+      const matchRegion = selectedRegions.length === 0 || selectedRegions.includes(s.region);
+      const matchDistrict = selectedDistricts.length === 0 || selectedDistricts.includes(s.district);
+      const matchMTR = includeMTR ? true : !s.is_mtr;
+      return s.status === 'Unplanned' && matchRegion && matchDistrict && matchMTR;
+    });
+
+    if (pool.length === 0) { message.warning("No unplanned shops match your filters."); setIsCalculating(false); return; }
+
     pool.sort((a, b) => (a.latitude + a.longitude) - (b.latitude + b.longitude));
     const results: any[] = [];
     let currentDay = dayjs(startDate);
+
     pool.forEach((shop, index) => {
       const groupInDay = (index % shopsPerDay) % groupsPerDay + 1;
       results.push({ ...shop, scheduledDate: currentDay.format('YYYY-MM-DD'), groupId: groupInDay });
       if ((index + 1) % shopsPerDay === 0) currentDay = currentDay.add(1, 'day');
     });
+
     setGeneratedResult(results);
     setIsCalculating(false);
     message.success(`Generated ${results.length} schedules.`);
@@ -129,13 +139,13 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     if (!resetRange) { message.error("Please select a date range!"); return; }
     const [start, end] = resetRange;
     const targets = shops.filter(s => s.scheduledDate && dayjs(s.scheduledDate).isBetween(start, end, 'day', '[]'));
-    if (targets.length === 0) { message.warning("No schedules found in this period."); return; }
+    if (targets.length === 0) { message.warning("No schedules found."); return; }
     
     confirm({
       title: 'Reset Period?',
       content: `Clearing ${targets.length} schedules. Proceed?`,
       onOk: async () => {
-        setIsSaving(true); // ✅ 觸發 Pac-Man 載入
+        setIsSaving(true);
         try {
           for (const shop of targets) {
             await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
@@ -156,9 +166,8 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     if (plannedShops.length === 0) return message.info("No planned schedules.");
     confirm({
       title: 'RESET ALL?',
-      okText: 'Yes, Reset All', okType: 'danger',
       onOk: async () => {
-        setIsSaving(true); // ✅ 觸發 Pac-Man 載入
+        setIsSaving(true);
         try {
           for (const shop of plannedShops) {
             await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
@@ -176,7 +185,6 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
   return (
     <div className="w-full flex flex-col gap-8 pb-20">
-      {/* ✅ 只要 isSaving 為 true，就會顯示幾何 Pac-Man */}
       {isSaving && <SyncGeometricLoader text="Modifying SharePoint Records..." />}
 
       <div className="flex justify-between items-center">
@@ -209,12 +217,37 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       </div>
 
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-        <Space className="mb-10 text-[18px] font-bold uppercase text-slate-800"><ControlOutlined className="text-teal-600" /> Generation Parameters</Space>
+        <Space className="mb-10 text-[18px] font-bold uppercase text-slate-800"><ControlOutlined className="text-teal-600" /> Generation Settings</Space>
+        
+        {/* ✅ ✅ 新增過濾器區塊 ✅ ✅ */}
+        <Row gutter={[24, 24]} className="mb-8 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+           <Col span={8}>
+              <Text strong className="text-slate-400 block mb-2 uppercase text-xs">Regions</Text>
+              <Select mode="multiple" className="w-full h-11" placeholder="All Regions" value={selectedRegions} onChange={setSelectedRegions} allowClear maxTagCount="responsive">
+                {regionOptions.map(r => <Option key={r} value={r}>{r}</Option>)}
+              </Select>
+           </Col>
+           <Col span={8}>
+              <Text strong className="text-slate-400 block mb-2 uppercase text-xs">Districts</Text>
+              <Select mode="multiple" className="w-full h-11" placeholder="All Districts" value={selectedDistricts} onChange={setSelectedDistricts} allowClear maxTagCount="responsive">
+                {availableDistricts.map(d => <Option key={d} value={d}>{d}</Option>)}
+              </Select>
+           </Col>
+           <Col span={8}>
+              <Text strong className="text-slate-400 block mb-2 uppercase text-xs">Station / MTR Shops</Text>
+              <div className="flex items-center gap-3 mt-2 h-11 px-4 bg-white rounded-lg border border-slate-200">
+                 <Switch checked={includeMTR} onChange={setIncludeMTR} size="small" />
+                 <Text className="text-xs font-bold text-slate-600">Include MTR Locations</Text>
+              </div>
+           </Col>
+        </Row>
+
         <Row gutter={24}>
           <Col span={8}><Text strong className="text-slate-400 block mb-2 uppercase text-xs">Start Date</Text><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-slate-50 border-none h-12 rounded-xl w-full px-4" /></Col>
           <Col span={8}><Text strong className="text-slate-400 block mb-2 uppercase text-xs">Shops / Day</Text><InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 20)} className="w-full h-12 bg-slate-50 border-none rounded-xl" /></Col>
           <Col span={8}><Text strong className="text-slate-400 block mb-2 uppercase text-xs">Groups / Day</Text><InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} className="w-full h-12 bg-slate-50 border-none rounded-xl" /></Col>
         </Row>
+        
         <div className="flex justify-end mt-12">
           <button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}>
             <div className="dots_border"></div>
@@ -225,7 +258,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
       {generatedResult.length > 0 && (
         <Card title={<Space><SyncOutlined spin /> Preview</Space>} className="rounded-3xl border-none shadow-sm overflow-hidden">
-          <Table dataSource={generatedResult} pagination={{ pageSize: 15 }} columns={[
+          <Table dataSource={generatedResult} pagination={{ pageSize: 15 }} rowKey="id" columns={[
             { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: d => <b>{d}</b> },
             { title: 'Group', dataIndex: 'groupId', key: 'group', render: g => <Tag color={g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange'}>{`Group ${String.fromCharCode(64 + g)}`}</Tag> },
             { title: 'Shop', dataIndex: 'name', key: 'name' },
@@ -236,9 +269,9 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         </Card>
       )}
 
-      <Modal title={<Space><CalendarOutlined /> Reset Date Range</Space>} open={resetModalVisible} onCancel={() => setResetModalVisible(false)} onOk={handleResetByPeriod} okText="Confirm Reset" okButtonProps={{ danger: true }} centered>
+      <Modal title={<Space><CalendarOutlined /> Reset Range</Space>} open={resetModalVisible} onCancel={() => setResetModalVisible(false)} onOk={handleResetByPeriod} okText="Confirm Reset" okButtonProps={{ danger: true }} centered>
         <div className="py-6 text-center">
-          <Text className="block mb-6 text-slate-500">Select the period to set back to 'Unplanned'.</Text>
+          <Text className="block mb-6 text-slate-500">Reset planned schedules to 'Unplanned'.</Text>
           <RangePicker className="w-full h-12 rounded-xl" onChange={(dates) => setResetRange(dates)} />
         </div>
       </Modal>

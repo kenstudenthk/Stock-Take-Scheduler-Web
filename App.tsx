@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Layout, Button, Space, Tag, Avatar, message, Typography } from 'antd'; // ✅ Added Typography to avoid white screen
+import { Layout, Button, Space, Tag, Avatar, message, Typography } from 'antd'; // ✅ 確保包含 Typography
 import { 
   HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
-  SettingOutlined, SyncOutlined, UnorderedListOutlined
+  SettingOutlined, SyncOutlined, UnorderedListOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
@@ -19,33 +20,28 @@ import './index.css';
 const { Content, Header, Sider } = Layout;
 const { Title, Text } = Typography;
 
-// ✅ NEW: Component for Capy pulling notice from the left
-const CapyHeaderNotice: React.FC = () => (
-  <div className="capy-header-container">
-    <div className="capy-walker-wrapper">
-      <div className="capybaraloader header-mini">
+// ✅ NEW: 水豚拉旗幟通知組件
+const CapyFlagNotice: React.FC = () => (
+  <div className="capy-flag-container">
+    <div className="capy-flag-walker">
+      {/* 水豚主體 */}
+      <div className="capybaraloader flag-mode">
         <div className="capybara">
           <div className="capyhead">
             <div className="capyear"><div className="capyear2"></div></div>
             <div className="capyear"></div>
-            <div className="capymouth">
-              <div className="capylips"></div>
-              <div className="capylips"></div>
-            </div>
-            <div className="capyeye"></div>
-            <div className="capyeye"></div>
+            <div className="capymouth"><div className="capylips"></div><div className="capylips"></div></div>
+            <div className="capyeye"></div><div className="capyeye"></div>
           </div>
-          <div className="capyleg"></div>
-          <div className="capyleg2"></div>
-          <div className="capyleg2"></div>
-          <div className="capy"></div>
+          <div className="capyleg"></div><div className="capyleg2"></div><div className="capyleg2"></div><div className="capy"></div>
         </div>
-        <div className="loader">
-          <div className="loaderline"></div>
-        </div>
+        <div className="loader"><div className="loaderline"></div></div>
       </div>
-      <div className="capy-pull-message">
-        Attention: Token Expired. Please update in Settings.
+      
+      {/* 後方拉著的旗幟 (Notice Flag) */}
+      <div className="capy-notice-flag">
+        <WarningOutlined />
+        TOKEN EXPIRED: UPDATE IN SETTINGS
       </div>
     </div>
   </div>
@@ -59,20 +55,17 @@ function App() {
   const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hasTokenError, setHasTokenError] = useState(false); // ✅ Track token validity
+  const [hasTokenError, setHasTokenError] = useState(false); // ✅ 控制錯誤狀態
 
   const fetchAllData = useCallback(async (token: string) => {
-    if (!token) {
-      setHasTokenError(true);
-      return;
-    }
+    if (!token) { setHasTokenError(true); return; }
     setLoading(true);
     try {
       const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       
       if (res.status === 401) { 
-        setHasTokenError(true); 
+        setHasTokenError(true);
         setLoading(false); 
         return; 
       }
@@ -103,11 +96,9 @@ function App() {
           };
         });
         setAllShops(mapped);
-        setHasTokenError(false); // Clear error on success
+        setHasTokenError(false);
       }
-    } catch (err) { 
-      setHasTokenError(true); 
-    }
+    } catch (err) { setHasTokenError(true); }
     setLoading(false);
   }, []);
 
@@ -137,6 +128,7 @@ function App() {
   return (
     <Layout className="h-screen flex flex-row theme-transition overflow-hidden">
       <Sider trigger={null} collapsible collapsed={collapsed} width={260} className="custom-sider h-screen sticky top-0 left-0">
+        {/* ... Sider 內容保持不變 ... */}
         <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-4`}>
           <div className="flex flex-col">
             <div className={`flex items-center px-6 py-8 ${collapsed ? 'justify-center flex-col' : 'justify-between'}`}>
@@ -183,16 +175,15 @@ function App() {
       </Sider>
       
       <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
-        {/* Header Layout: Space-Between keeps profile on the right */}
-        <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
+        <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white shadow-sm">
           
-          {/* LEFT: Capy notice "pulls" into this space if error exists */}
-          {hasTokenError ? <CapyHeaderNotice /> : <div className="flex-1" />}
+          {/* LEFT AREA: 水豚拉著旗幟出現 */}
+          {hasTokenError ? <CapyFlagNotice /> : <div className="flex-1" />}
 
-          {/* RIGHT: Buttons and Profile stay fixed here */}
+          {/* RIGHT AREA: 始終保留 Refresh 按鈕、Pool 標籤與 Profile */}
           <Space size="large">
             <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)} className="refresh-btn">Refresh</Button>
-            <Tag color="cyan" className="font-bold rounded-md">POOL: {allShops.length}</Tag>
+            <Tag color="cyan" className="font-bold rounded-md px-3 py-0.5">POOL: {allShops.length}</Tag>
             <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" className="user-avatar" />
           </Space>
         </Header>

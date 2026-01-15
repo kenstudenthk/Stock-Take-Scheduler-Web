@@ -44,7 +44,7 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-main);
+  background-color: var(--bg-header);
   color: var(--text-main);
   transition: background-color 0.3s, color 0.3s;
 }

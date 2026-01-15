@@ -204,7 +204,7 @@ function App() {
     {!collapsed && <span className="title text-red-400">Report Error</span>}
   </a>
 </li>
-              ))}
+    
             </ul>
           </div>
           <div className="flex justify-center items-center px-4">

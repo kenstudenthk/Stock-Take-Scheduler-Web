@@ -1640,35 +1640,31 @@ body {
 /* ============================================================
    24. CAPYBARA NOTIFICATION OVERLAY
    ============================================================ */
-.capy-error-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  /* 使用與 Sidebar/Header 類似的背景顏色 */
-  background: #0f172a; 
-  z-index: 9999;
+.capy-header-alert {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
+  gap: 15px;
+  background: rgba(244, 63, 94, 0.1); /* 淡淡的警告紅背景 */
+  padding: 4px 16px;
+  border-radius: 12px;
+  border: 1px border-solid rgba(244, 63, 94, 0.2);
+  height: 48px; /* 確保能塞進 64px 的 Header */
 }
 
-.capy-error-message {
-  margin-top: 2rem;
-  text-align: center;
-  color: white;
-}
-
-.capybaraloader {
+/* 縮小水豚比例以適應 Header */
+.capybaraloader.header-mode {
+  transform: scale(0.25); /* 從 1.0 縮小至 0.25 */
   width: 14em;
   height: 10em;
-  position: relative;
-  z-index: 1;
-  --color: rgb(204, 125, 45);
-  --color2: rgb(83, 56, 28);
-  transform: scale(1.2); /* 稍微放大水豚 */
+  margin-left: -50px; /* 修正縮放後的偏移 */
+  margin-right: -50px;
+}
+
+.capy-alert-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f43f5e; /* 警告紅 */
+  white-space: nowrap;
 }
 
 .capybara { width: 100%; height: 7.5em; position: relative; z-index: 1; }

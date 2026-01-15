@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Card, Collapse, Row, Col, Space, Button, Typography, Select, 
-  InputNumber, Table, Tag, message, Modal, DatePicker, Divider, Tooltip 
+  InputNumber, Table, Tag, message, Modal, DatePicker, Divider 
 } from 'antd';
 import { 
   ControlOutlined, CheckCircleOutlined, SaveOutlined, 
@@ -20,22 +20,27 @@ const { Text, Title } = Typography;
 const { confirm } = Modal;
 const { RangePicker } = DatePicker;
 
-// --- REGION 顯示配置 ---
-const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg: React.ReactNode }> = {
-  'HK': { label: 'Hong Kong Island', social: 'hk', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M3 21H21" stroke="currentColor" strokeWidth="2"/><path d="M5 21V7L10 3V21" stroke="currentColor" strokeWidth="2"/></svg> },
-  'KN': { label: 'Kowloon', social: 'kn', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/><path d="M12 21C15.5 17.4 19 14.1764 19 10.2C19 6.22355 15.866 3 12 3C8.13401 3 5 6.22355 5 10.2C5 14.1764 8.5 17.4 12 21Z" stroke="currentColor" strokeWidth="2"/></svg> },
-  'NT': { label: 'New Territories', social: 'nt', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M2 20L9 4L14 14L18 8L22 20H2Z" stroke="currentColor" strokeWidth="2"/></svg> },
-  'Islands': { label: 'Lantau Island', social: 'islands', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 10C13.5 10 17 11 17 14C17 17 14 18 12 18C10 18 7 17 7 14Z" stroke="currentColor" strokeWidth="2"/><path d="M12 10V3" stroke="currentColor" strokeWidth="2"/></svg> },
-  'MO': { label: 'Macau', social: 'mo', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 9V21H20V9L12 3Z" stroke="currentColor" strokeWidth="2"/><path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2"/></svg> }
-};
-
-const SyncGeometricLoader = ({ text = "Processing..." }) => (
+// --- ✅ 恢復經典 Pac-Man 幾何載入組件 ---
+const SyncGeometricLoader = ({ text = "Syncing to SharePoint..." }) => (
   <div className="sync-overlay">
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-      <div className="loader"><svg viewBox="0 0 80 80"><circle r="32" cy="40" cx="40"></circle></svg></div>
-      <div className="loader triangle"><svg viewBox="0 0 86 80"><polygon points="43 8 79 72 7 72"></polygon></svg></div>
+      <div className="loader">
+        <svg viewBox="0 0 80 80">
+          <circle r="32" cy="40" cx="40"></circle>
+        </svg>
+      </div>
+      <div className="loader triangle">
+        <svg viewBox="0 0 86 80">
+          <polygon points="43 8 79 72 7 72"></polygon>
+        </svg>
+      </div>
+      <div className="loader">
+        <svg viewBox="0 0 80 80">
+          <rect height="64" width="64" y="8" x="8"></rect>
+        </svg>
+      </div>
     </div>
-    <Title level={4} style={{ color: '#0d9488' }}>{text}</Title>
+    <Title level={4} style={{ color: '#0d9488', marginTop: '20px' }}>{text}</Title>
   </div>
 );
 
@@ -50,6 +55,14 @@ const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
   </div>
 );
 
+const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg: React.ReactNode }> = {
+  'HK': { label: 'Hong Kong Island', social: 'hk', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M3 21H21" stroke="currentColor" strokeWidth="2"/><path d="M5 21V7L10 3V21" stroke="currentColor" strokeWidth="2"/></svg> },
+  'KN': { label: 'Kowloon', social: 'kn', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/><path d="M12 21C15.5 17.4 19 14.1764 19 10.2C19 6.22355 15.866 3 12 3C8.13401 3 5 6.22355 5 10.2C5 14.1764 8.5 17.4 12 21Z" stroke="currentColor" strokeWidth="2"/></svg> },
+  'NT': { label: 'New Territories', social: 'nt', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M2 20L9 4L14 14L18 8L22 20H2Z" stroke="currentColor" strokeWidth="2"/></svg> },
+  'Islands': { label: 'Lantau Island', social: 'islands', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 10C13.5 10 17 11 17 14C17 17 14 18 12 18C10 18 7 17 7 14Z" stroke="currentColor" strokeWidth="2"/><path d="M12 10V3" stroke="currentColor" strokeWidth="2"/></svg> },
+  'MO': { label: 'Macau', social: 'mo', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 9V21H20V9L12 3Z" stroke="currentColor" strokeWidth="2"/><path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2"/></svg> }
+};
+
 export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
   const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [shopsPerDay, setShopsPerDay] = useState<number>(20);
@@ -61,6 +74,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resetRange, setResetRange] = useState<any>(null);
 
+  // 過濾結業商店
   const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed' && s.status !== 'Closed'), [shops]);
 
   const stats = useMemo(() => ({
@@ -93,7 +107,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     });
     setGeneratedResult(results);
     setIsCalculating(false);
-    message.success(`Generated schedules for ${results.length} shops.`);
+    message.success(`Generated ${results.length} schedules.`);
   };
 
   const saveToSharePoint = async () => {
@@ -112,15 +126,16 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   };
 
   const handleResetByPeriod = async () => {
-    if (!resetRange) { message.error("Please select a date range first!"); return; }
+    if (!resetRange) { message.error("Please select a date range!"); return; }
     const [start, end] = resetRange;
     const targets = shops.filter(s => s.scheduledDate && dayjs(s.scheduledDate).isBetween(start, end, 'day', '[]'));
-    if (targets.length === 0) { message.warning("No schedules found in the selected period."); return; }
+    if (targets.length === 0) { message.warning("No schedules found in this period."); return; }
+    
     confirm({
-      title: 'Confirm Period Reset',
-      content: `Reset ${targets.length} schedules from ${start.format('YYYY-MM-DD')} to ${end.format('YYYY-MM-DD')}?`,
+      title: 'Reset Period?',
+      content: `Clearing ${targets.length} schedules. Proceed?`,
       onOk: async () => {
-        setIsSaving(true);
+        setIsSaving(true); // ✅ 觸發 Pac-Man 載入
         try {
           for (const shop of targets) {
             await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
@@ -129,7 +144,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
               body: JSON.stringify({ [SP_FIELDS.SCHEDULE_DATE]: null, [SP_FIELDS.SCHEDULE_GROUP]: "0", [SP_FIELDS.STATUS]: 'Unplanned' })
             });
           }
-          setResetModalVisible(false); setResetRange(null); onRefresh(); message.success("Period reset complete!");
+          setResetModalVisible(false); setResetRange(null); onRefresh(); message.success("Period Reset!");
         } catch (err) { message.error("Reset Failed"); }
         setIsSaving(false);
       }
@@ -138,14 +153,12 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
   const handleResetAll = () => {
     const plannedShops = shops.filter(s => s.status === 'Planned');
-    if (plannedShops.length === 0) { message.info("No planned schedules to reset."); return; }
+    if (plannedShops.length === 0) return message.info("No planned schedules.");
     confirm({
-      title: 'RESET ALL SCHEDULES?',
-      icon: <DeleteOutlined className="text-red-500" />,
-      content: `This will clear all ${plannedShops.length} items. Action cannot be undone.`,
-      okText: 'Confirm Reset', okType: 'danger',
+      title: 'RESET ALL?',
+      okText: 'Yes, Reset All', okType: 'danger',
       onOk: async () => {
-        setIsSaving(true);
+        setIsSaving(true); // ✅ 觸發 Pac-Man 載入
         try {
           for (const shop of plannedShops) {
             await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
@@ -154,7 +167,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
               body: JSON.stringify({ [SP_FIELDS.SCHEDULE_DATE]: null, [SP_FIELDS.SCHEDULE_GROUP]: "0", [SP_FIELDS.STATUS]: 'Unplanned' })
             });
           }
-          onRefresh(); message.success("All schedules reset!");
+          onRefresh(); message.success("All Reset!");
         } catch (err) { message.error("Reset Failed"); }
         setIsSaving(false);
       }
@@ -163,35 +176,19 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
   return (
     <div className="w-full flex flex-col gap-8 pb-20">
-      {isSaving && <SyncGeometricLoader text="Updating SharePoint Records..." />}
+      {/* ✅ 只要 isSaving 為 true，就會顯示幾何 Pac-Man */}
+      {isSaving && <SyncGeometricLoader text="Modifying SharePoint Records..." />}
 
-      {/* ✅ 標題與紅框區域按鈕整合 */}
       <div className="flex justify-between items-center">
         <Title level={2} className="m-0 text-slate-800">Schedule Generator</Title>
-        
-        {/* 紅框區域：精簡型管理按鈕 */}
         <Space size="middle">
-          <Button 
-            icon={<HistoryOutlined />} 
-            onClick={() => setResetModalVisible(true)}
-            className="rounded-lg border-red-200 text-red-500 font-bold hover:bg-red-50"
-          >
-            Reset by Period
-          </Button>
-          <Button 
-            danger 
-            type="primary" 
-            icon={<DeleteOutlined />} 
-            onClick={handleResetAll}
-            className="rounded-lg font-bold"
-          >
-            Reset All
-          </Button>
+          <Button icon={<HistoryOutlined />} onClick={() => setResetModalVisible(true)} className="rounded-lg border-red-200 text-red-500 font-bold hover:bg-red-50">Reset by Period</Button>
+          <Button danger type="primary" icon={<DeleteOutlined />} onClick={handleResetAll} className="rounded-lg font-bold">Reset All</Button>
         </Space>
       </div>
 
       <Row gutter={[24, 24]}>
-        <Col span={8}><SummaryCard label="Active Shops" value={stats.total} subtext="Total operating units" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
+        <Col span={8}><SummaryCard label="Active Shops" value={stats.total} subtext="Operational units" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
         <Col span={8}><SummaryCard label="Completed" value={stats.completed} subtext="Done this year" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
         <Col span={8}><SummaryCard label="Remaining" value={stats.unplanned} subtext="Pending schedule" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
       </Row>
@@ -211,7 +208,6 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         </ul>
       </div>
 
-      {/* ✅ 佈局調整：Generation Settings 現在佔據全寬 */}
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
         <Space className="mb-10 text-[18px] font-bold uppercase text-slate-800"><ControlOutlined className="text-teal-600" /> Generation Parameters</Space>
         <Row gutter={24}>
@@ -228,8 +224,8 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       </div>
 
       {generatedResult.length > 0 && (
-        <Card title={<Space><SyncOutlined spin /> Generation Preview</Space>} className="rounded-3xl border-none shadow-sm overflow-hidden animate-in slide-in-from-bottom duration-500">
-          <Table dataSource={generatedResult} pagination={{ pageSize: 15 }} rowKey="id" columns={[
+        <Card title={<Space><SyncOutlined spin /> Preview</Space>} className="rounded-3xl border-none shadow-sm overflow-hidden">
+          <Table dataSource={generatedResult} pagination={{ pageSize: 15 }} columns={[
             { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: d => <b>{d}</b> },
             { title: 'Group', dataIndex: 'groupId', key: 'group', render: g => <Tag color={g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange'}>{`Group ${String.fromCharCode(64 + g)}`}</Tag> },
             { title: 'Shop', dataIndex: 'name', key: 'name' },
@@ -240,18 +236,9 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         </Card>
       )}
 
-      {/* Reset by Period Modal */}
-      <Modal
-        title={<Space><CalendarOutlined /> Choose Date Range to Reset</Space>}
-        visible={resetModalVisible}
-        onCancel={() => setResetModalVisible(false)}
-        onOk={handleResetByPeriod}
-        okText="Confirm Reset"
-        okButtonProps={{ danger: true }}
-        centered
-      >
+      <Modal title={<Space><CalendarOutlined /> Reset Date Range</Space>} open={resetModalVisible} onCancel={() => setResetModalVisible(false)} onOk={handleResetByPeriod} okText="Confirm Reset" okButtonProps={{ danger: true }} centered>
         <div className="py-6 text-center">
-          <Text className="block mb-6 text-slate-500">Selected period will be set back to 'Unplanned'.</Text>
+          <Text className="block mb-6 text-slate-500">Select the period to set back to 'Unplanned'.</Text>
           <RangePicker className="w-full h-12 rounded-xl" onChange={(dates) => setResetRange(dates)} />
         </div>
       </Modal>

@@ -68,9 +68,9 @@ body {
    border-top-left-radius: 60px; 
   border-bottom-left-radius: 60px;
   overflow: hidden; /* 確保內容不會超出圓角 */
-   box-shadow: -15px 0 35px -10px rgba(0, 0, 0, 0.2);
-   position: relative;
-  z-index: 10;
+  box-shadow: -20px 0 50px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 200; /* 👈 必須高於 custom-sider 的 100 */
 }
 
 .app-header {
@@ -143,31 +143,7 @@ body {
   background: var(--bg-main) !important;
 }
 
-/* 上方圓弧缺口 */
-.navigation ul li.active::before {
-  content: '';
-  position: absolute;
-  top: -20px;
-  right: 0;
-  width: 20px;
-  height: 20px;
-  background: transparent;
-  border-bottom-right-radius: 20px;
- 
-}
 
-/* 下方圓弧缺口 */
-.navigation ul li.active::after {
-  content: '';
-  position: absolute;
-  bottom: -20px;
-  right: 0;
-  width: 20px;
-  height: 20px;
-  background: transparent;
-  border-top-right-radius: 20px;
- 
-}
 
 .navigation ul li a {
   display: flex;

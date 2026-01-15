@@ -1655,7 +1655,7 @@ body {
   overflow: hidden; 
 }
 
-.truck-flag-driver {
+.truck-flag-walker {
   display: flex;
   flex-direction: row;
   align-items: flex-end; /* 讓內容底部對齊 */
@@ -1722,6 +1722,14 @@ body {
   50% { transform: translateY(3px); }
 }
 
+/* 貨車震動動畫 */
+.truckBody-anim {
+  animation: truck-bounce 1s linear infinite;
+}
+@keyframes truck-bounce {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(3px); }
+}
 /* 巡邏路徑動畫 */
 @keyframes truck-patrol-loop {
   0% { left: -400px; }
@@ -1735,5 +1743,10 @@ body {
   50% { transform: translateY(-3px); }
 }
 
-/* 道路與燈柱 (可選，若覺得太亂可移除) */
-.road { width: 100%; height: 1.5px; background-color: #282828; border-radius: 3px; }
+/* 貨車下方的裝飾線 (道路) */
+.truck-road {
+  width: 100%;
+  height: 2px;
+  background-color: #282828;
+  border-radius: 3px;
+}

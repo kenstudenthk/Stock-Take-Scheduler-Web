@@ -135,7 +135,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
               {stStatus}
             </Tag>
             <Text style={{ fontSize: '10px', color: '#94a3b8', paddingLeft: '4px' }}>
-              In Use: {record.inUseStatus}
+              {record.inUseStatus}
             </Text>
           </Space>
         );

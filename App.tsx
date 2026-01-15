@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Layout, Button, Space, Tag, Avatar, message } from 'antd';
+import { Layout, Button, Space, Tag, Avatar, message, Typography } from 'antd'; // ✅ Added Typography
 import { 
   HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
   SettingOutlined, SyncOutlined, UnorderedListOutlined
@@ -9,13 +9,51 @@ import { Dashboard } from './components/Dashboard';
 import { Calendar } from './components/Calendar';
 import { Locations } from './components/Locations';
 import { Settings } from './components/Settings'; 
-import { Shop, View } from './types';
+import { Shop, InventoryItem, View } from './types';
 import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
 import { ThemeToggle } from './components/ThemeToggle';
+import './index.css';
 
 const { Content, Header, Sider } = Layout;
+const { Title, Text } = Typography;
+
+// ✅ NEW: Capybara 通知組件
+const TokenErrorOverlay: React.FC = () => (
+  <div className="capy-error-overlay">
+    <div className="capybaraloader">
+      <div className="capybara">
+        <div className="capyhead">
+          <div className="capyear">
+            <div className="capyear2"></div>
+          </div>
+          <div className="capyear"></div>
+          <div className="capymouth">
+            <div className="capylips"></div>
+            <div className="capylips"></div>
+          </div>
+          <div className="capyeye"></div>
+          <div className="capyeye"></div>
+        </div>
+        <div className="capyleg"></div>
+        <div className="capyleg2"></div>
+        <div className="capyleg2"></div>
+        <div className="capy"></div>
+      </div>
+      <div className="loader">
+        <div className="loaderline"></div>
+      </div>
+    </div>
+    <div className="capy-error-message">
+      <Title level={2} style={{ color: 'white', marginBottom: '10px' }}>Access Required</Title>
+      <Text style={{ color: '#94a3b8', fontSize: '16px' }}>
+        Microsoft Graph Token has expired. <br />
+        Please go to <b style={{ color: '#5eead4' }}>Settings</b> to update the Token to continue.
+      </Text>
+    </div>
+  </div>
+);
 
 function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
@@ -25,14 +63,26 @@ function App() {
   const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasTokenError, setHasTokenError] = useState(false); // ✅ 新增 Token 錯誤狀態
 
   const fetchAllData = useCallback(async (token: string) => {
-    if (!token) return;
+    if (!token) {
+      setHasTokenError(true); // 如果沒 Token 也顯示通知
+      return;
+    }
     setLoading(true);
     try {
       const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 401) { message.error("Token expired."); setLoading(false); return; }
+      
+      // ✅ 關鍵：偵測 401 並顯示水豚
+      if (res.status === 401) { 
+        setHasTokenError(true);
+        message.error("Token expired. Access denied."); 
+        setLoading(false); 
+        return; 
+      }
+      
       const data = await res.json();
       if (data.value) {
         const mapped = data.value.map((item: any) => {
@@ -59,8 +109,12 @@ function App() {
           };
         });
         setAllShops(mapped);
+        setHasTokenError(false); // 成功則隱藏水豚
       }
-    } catch (err) { message.error("Sync Error"); }
+    } catch (err) { 
+      message.error("Sync Error");
+      setHasTokenError(true); 
+    }
     setLoading(false);
   }, []);
 
@@ -69,7 +123,10 @@ function App() {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  useEffect(() => { if (graphToken) fetchAllData(graphToken); }, [graphToken, fetchAllData]);
+  useEffect(() => { 
+    if (graphToken) fetchAllData(graphToken); 
+    else setHasTokenError(true);
+  }, [graphToken, fetchAllData]);
 
   const renderContent = () => {
     switch (selectedMenuKey) {
@@ -79,17 +136,20 @@ function App() {
       case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory invToken={invToken} />;
-      case View.SETTINGS: return <Settings token={graphToken} onUpdateToken={setGraphToken} invToken={invToken} onUpdateInvToken={setInvToken} />;
+      case View.SETTINGS: return <Settings token={graphToken} onUpdateToken={(t) => {setGraphToken(t); setHasTokenError(false);}} invToken={invToken} onUpdateInvToken={setInvToken} />;
       default: return null;
     }
   };
 
   return (
     <Layout className="h-screen flex flex-row theme-transition overflow-hidden">
+      
+      {/* ✅ 注入水豚通知：當 Token 失敗時顯示 */}
+      {hasTokenError && selectedMenuKey !== View.SETTINGS && <TokenErrorOverlay />}
+
       <Sider trigger={null} collapsible collapsed={collapsed} width={260} className="custom-sider h-screen sticky top-0 left-0">
         <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-4`}>
           <div className="flex flex-col">
-            {/* ✅ 左側選單標頭與 Uiverse 切換按鈕 */}
             <div className={`flex items-center px-6 py-8 ${collapsed ? 'justify-center flex-col' : 'justify-between'}`}>
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-lg">
@@ -104,58 +164,3 @@ function App() {
               </div>
               
               <div className={`${collapsed ? 'mt-6' : ''}`}>
-                <input 
-                  type="checkbox" 
-                  id="checkbox" 
-                  checked={!collapsed} 
-                  onChange={() => setCollapsed(!collapsed)} 
-                />
-                <label htmlFor="checkbox" className="toggle" style={{ transform: collapsed ? 'scale(0.5)' : 'scale(0.7)' }}>
-                  <div className="bars" id="bar1"></div>
-                  <div className="bars" id="bar2"></div>
-                  <div className="bars" id="bar3"></div>
-                </label>
-              </div>
-            </div>
-
-            <ul>
-              {[
-                { k: View.DASHBOARD, i: <HomeOutlined />, l: 'Dashboard' },
-                { k: View.SHOP_LIST, i: <UnorderedListOutlined />, l: 'Master List' },
-                { k: View.CALENDAR, i: <CalendarOutlined />, l: 'Schedules' },
-                { k: View.GENERATOR, i: <ToolOutlined />, l: 'Generator' },
-                { k: View.LOCATIONS, i: <ShopOutlined />, l: 'Map View' },
-                { k: View.INVENTORY, i: <UnorderedListOutlined />, l: 'Inventory' },
-                { k: View.SETTINGS, i: <SettingOutlined />, l: 'Settings' },
-              ].map(item => (
-                <li key={item.k} className={`list ${selectedMenuKey === item.k ? 'active' : ''}`} onClick={() => setSelectedMenuKey(item.k)}>
-                  <a href="#"><span className="icon">{item.i}</span>{!collapsed && <span className="title">{item.l}</span>}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="flex justify-center items-center px-4">
-            <div style={{ transform: collapsed ? 'scale(0.25)' : 'scale(0.35)', transition: '0.3s' }}>
-              <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
-            </div>
-          </div>
-        </div>
-      </Sider>
-      
-      <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
-        <Header className="app-header px-8 flex justify-end items-center h-16 border-b flex-shrink-0">
-          <Space size="large">
-            <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)} className="refresh-btn">Refresh</Button>
-            <Tag color="cyan" className="font-bold rounded-md">POOL: {allShops.length}</Tag>
-            <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" className="user-avatar" />
-          </Space>
-        </Header>
-        <Content className="main-scroll-content p-8 overflow-y-auto h-full">
-          {renderContent()}
-        </Content>
-      </Layout>
-    </Layout>
-  );
-}
-
-export default App;

@@ -21,7 +21,26 @@ const { confirm } = Modal;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
-// --- ✅ 經典 Pac-Man 幾何載入組件 ---
+// --- ✅ 1. Pac-man 重置動畫組件 ---
+const ResetChaseLoader = () => (
+  <div className="chase-overlay">
+    <div className="chase-scene">
+      <div className="ghost-chaser">
+        <div style={{ background: '#ef4444', width: '140px', height: '140px', borderRadius: '70px 70px 0 0', position: 'relative' }}>
+          <div style={{ display: 'flex', gap: '20px', paddingTop: '40px', justifyContent: 'center' }}>
+            <div style={{ width: '30px', height: '35px', background: 'white', borderRadius: '50%' }} />
+            <div style={{ width: '30px', height: '35px', background: 'white', borderRadius: '50%' }} />
+          </div>
+        </div>
+      </div>
+      <div className="pacman-runner"></div>
+      <div className="dots-trail">{[1, 2, 3, 4].map(i => <div key={i} className="dot-node" />)}</div>
+    </div>
+    <Title level={4} style={{ color: 'white', marginTop: '40px' }}>Resetting Schedules...</Title>
+  </div>
+);
+
+// --- ✅ 2. 幾何同步動畫組件 ---
 const SyncGeometricLoader = ({ text = "Syncing to SharePoint..." }) => (
   <div className="sync-overlay">
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
@@ -56,31 +75,20 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [shopsPerDay, setShopsPerDay] = useState<number>(20);
   const [groupsPerDay, setGroupsPerDay] = useState<number>(3);
-  const [generatedResult, setGeneratedResult] = useState<any[]>([]);
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // ✅ 過濾器狀態
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [includeMTR, setIncludeMTR] = useState(true);
+  const [generatedResult, setGeneratedResult] = useState<any[]>([]);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadingType, setLoadingType] = useState<'reset' | 'sync'>('sync');
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resetRange, setResetRange] = useState<any>(null);
-  const [loadingType, setLoadingType] = useState<'reset' | 'sync'>('sync');
 
-  // 過濾結業商店
   const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed' && s.status !== 'Closed'), [shops]);
 
-  // 地區與分區選項
-  const regionOptions = useMemo(() => Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort(), [activePool]);
-  const availableDistricts = useMemo(() => {
-    const filtered = selectedRegions.length > 0 ? activePool.filter(s => selectedRegions.includes(s.region)) : activePool;
-    return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
-  }, [activePool, selectedRegions]);
-
   const stats = useMemo(() => ({
-    total: activePool.length, 
-    completed: activePool.filter(s => s.status === 'Done').length,
+    total: activePool.length, completed: activePool.filter(s => s.status === 'Done').length,
     unplanned: activePool.filter(s => s.status === 'Unplanned').length
   }), [activePool]);
 
@@ -94,19 +102,70 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     });
   }, [activePool]);
 
+  const regionOptions = useMemo(() => Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort(), [activePool]);
+  const availableDistricts = useMemo(() => {
+    const filtered = selectedRegions.length > 0 ? activePool.filter(s => selectedRegions.includes(s.region)) : activePool;
+    return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
+  }, [activePool, selectedRegions]);
+
+  const handleResetByPeriod = async () => {
+    if (!resetRange) { message.error("Please select a date range!"); return; }
+    const [start, end] = resetRange;
+    const targets = shops.filter(s => s.scheduledDate && dayjs(s.scheduledDate).isBetween(start, end, 'day', '[]'));
+    if (targets.length === 0) { message.warning("No schedules found."); return; }
+    confirm({
+      title: 'Reset Period?',
+      onOk: async () => {
+        setLoadingType('reset'); setIsSaving(true);
+        try {
+          for (const shop of targets) {
+            await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
+              method: 'PATCH',
+              headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ [SP_FIELDS.SCHEDULE_DATE]: null, [SP_FIELDS.SCHEDULE_GROUP]: "0", [SP_FIELDS.STATUS]: 'Unplanned' })
+            });
+          }
+          setResetModalVisible(false); setResetRange(null); onRefresh(); message.success("Period Reset Complete!");
+        } finally { setIsSaving(false); }
+      }
+    });
+  };
+
+  const handleResetAll = () => {
+    const plannedShops = shops.filter(s => s.status === 'Planned');
+    if (plannedShops.length === 0) return message.info("No planned schedules.");
+    confirm({
+      title: 'RESET ALL?',
+      onOk: async () => {
+        setLoadingType('reset'); setIsSaving(true);
+        try {
+          for (const shop of plannedShops) {
+            await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
+              method: 'PATCH',
+              headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ [SP_FIELDS.SCHEDULE_DATE]: null, [SP_FIELDS.SCHEDULE_GROUP]: "0", [SP_FIELDS.STATUS]: 'Unplanned' })
+            });
+          }
+          onRefresh(); message.success("All Schedules Reset!");
+        } finally { setIsSaving(false); }
+      }
+    });
+  };
+
   const handleGenerate = () => {
     setIsCalculating(true);
-    // ✅ 演算法過濾邏輯：排除 Closed、匹配地區、分區與 MTR
     let pool = activePool.filter(s => {
       const matchRegion = selectedRegions.length === 0 || selectedRegions.includes(s.region);
       const matchDistrict = selectedDistricts.length === 0 || selectedDistricts.includes(s.district);
       const matchMTR = includeMTR ? true : !s.is_mtr;
       return s.status === 'Unplanned' && matchRegion && matchDistrict && matchMTR;
     });
-
-    if (pool.length === 0) { message.warning("No unplanned shops match your filters."); setIsCalculating(false); return; }
-
+    
+    if (pool.length === 0) { message.warning("No unplanned shops match filters."); setIsCalculating(false); return; }
+    
+    // 按經緯度排序，使行程在地理上更集中
     pool.sort((a, b) => (a.latitude + a.longitude) - (b.latitude + b.longitude));
+    
     const results: any[] = [];
     let currentDay = dayjs(startDate);
 
@@ -116,14 +175,18 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       if ((index + 1) % shopsPerDay === 0) currentDay = currentDay.add(1, 'day');
     });
 
-    setGeneratedResult(results);
+    // ✅ 新增排序邏輯：1.日期 2.組別 (Group A, B, C)
+    const sortedResults = results.sort((a, b) => {
+      if (a.scheduledDate !== b.scheduledDate) return dayjs(a.scheduledDate).unix() - dayjs(b.scheduledDate).unix();
+      return a.groupId - b.groupId;
+    });
+
+    setGeneratedResult(sortedResults);
     setIsCalculating(false);
-    message.success(`Generated ${results.length} schedules.`);
   };
 
   const saveToSharePoint = async () => {
-    setLoadingType('sync');
-    setIsSaving(true);
+    setLoadingType('sync'); setIsSaving(true);
     try {
       for (const shop of generatedResult) {
         await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
@@ -133,60 +196,8 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         });
       }
       onRefresh(); setGeneratedResult([]); message.success("Sync Complete!");
-    } catch (err) { message.error("Sync Failed"); }
-    setIsSaving(false);
+    } finally { setIsSaving(false); }
   };
-
-  const handleResetByPeriod = async () => {
-    if (!resetRange) { message.error("Please select a date range!"); return; }
-    const [start, end] = resetRange;
-    const targets = shops.filter(s => s.scheduledDate && dayjs(s.scheduledDate).isBetween(start, end, 'day', '[]'));
-    if (targets.length === 0) { message.warning("No schedules found."); return; }
-    
-    confirm({
-      title: 'Reset Period?',
-    onOk: async () => {
-      setLoadingType('reset'); // 👈 ✅ 關鍵：設定為 reset 以顯示 Pac-man
-      setIsSaving(true);
-      try {
-          for (const shop of targets) {
-            await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
-              method: 'PATCH',
-              headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ [SP_FIELDS.SCHEDULE_DATE]: null, [SP_FIELDS.SCHEDULE_GROUP]: "0", [SP_FIELDS.STATUS]: 'Unplanned' })
-            });
-          }
-          setResetModalVisible(false); setResetRange(null); onRefresh(); message.success("Period Reset!");
-        } finally {
-        setIsSaving(false);
-}
-    }
-  });
-};
-
-  const handleResetAll = () => {
-    const plannedShops = shops.filter(s => s.status === 'Planned');
-    if (plannedShops.length === 0) return message.info("No planned schedules.");
-    confirm({
-      title: 'RESET ALL?',
-      onOk: async () => {
-        setLoadingType('reset'); // 👈 ✅ 關鍵：設定為 reset 以顯示 Pac-man
-      setIsSaving(true);
-        try {
-          for (const shop of plannedShops) {
-            await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
-              method: 'PATCH',
-              headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ [SP_FIELDS.SCHEDULE_DATE]: null, [SP_FIELDS.SCHEDULE_GROUP]: "0", [SP_FIELDS.STATUS]: 'Unplanned' })
-            });
-          }
-          onRefresh(); message.success("All Reset!");
-        } finally {
-        setIsSaving(false);
-}
-    }
-  });
-};
 
   return (
     <div className="w-full flex flex-col gap-8 pb-20">
@@ -194,7 +205,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
       <div className="flex justify-between items-center">
         <Title level={2} className="m-0 text-slate-800">Schedule Generator</Title>
-        <Space size="middle">
+        <Space>
           <Button icon={<HistoryOutlined />} onClick={() => setResetModalVisible(true)} className="rounded-lg border-red-200 text-red-500 font-bold hover:bg-red-50">Reset by Period</Button>
           <Button danger type="primary" icon={<DeleteOutlined />} onClick={handleResetAll} className="rounded-lg font-bold">Reset All</Button>
         </Space>
@@ -224,7 +235,6 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
         <Space className="mb-10 text-[18px] font-bold uppercase text-slate-800"><ControlOutlined className="text-teal-600" /> Generation Settings</Space>
         
-        {/* ✅ ✅ 新增過濾器區塊 ✅ ✅ */}
         <Row gutter={[24, 24]} className="mb-8 p-6 bg-slate-50 rounded-2xl border border-slate-100">
            <Col span={8}>
               <Text strong className="text-slate-400 block mb-2 uppercase text-xs">Regions</Text>
@@ -239,7 +249,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
               </Select>
            </Col>
            <Col span={8}>
-              <Text strong className="text-slate-400 block mb-2 uppercase text-xs">Station / MTR Shops</Text>
+              <Text strong className="text-slate-400 block mb-2 uppercase text-xs">MTR Shops</Text>
               <div className="flex items-center gap-3 mt-2 h-11 px-4 bg-white rounded-lg border border-slate-200">
                  <Switch checked={includeMTR} onChange={setIncludeMTR} size="small" />
                  <Text className="text-xs font-bold text-slate-600">Include MTR Locations</Text>
@@ -262,7 +272,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       </div>
 
       {generatedResult.length > 0 && (
-        <Card title={<Space><SyncOutlined spin /> Preview</Space>} className="rounded-3xl border-none shadow-sm overflow-hidden">
+        <Card title={<Space><SyncOutlined spin /> Preview (Sorted by Date & Group)</Space>} className="rounded-3xl border-none shadow-sm overflow-hidden">
           <Table dataSource={generatedResult} pagination={{ pageSize: 15 }} rowKey="id" columns={[
             { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: d => <b>{d}</b> },
             { title: 'Group', dataIndex: 'groupId', key: 'group', render: g => <Tag color={g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange'}>{`Group ${String.fromCharCode(64 + g)}`}</Tag> },
@@ -276,7 +286,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
       <Modal title={<Space><CalendarOutlined /> Reset Range</Space>} open={resetModalVisible} onCancel={() => setResetModalVisible(false)} onOk={handleResetByPeriod} okText="Confirm Reset" okButtonProps={{ danger: true }} centered>
         <div className="py-6 text-center">
-          <Text className="block mb-6 text-slate-500">Reset planned schedules to 'Unplanned'.</Text>
+          <Text className="block mb-6 text-slate-500">Reset schedules within this period to 'Unplanned'.</Text>
           <RangePicker className="w-full h-12 rounded-xl" onChange={(dates) => setResetRange(dates)} />
         </div>
       </Modal>

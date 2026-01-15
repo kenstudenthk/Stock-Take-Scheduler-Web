@@ -65,7 +65,7 @@ body {
 .main-content-area, .main-scroll-content {
   background-color: var(--bg-main) !important;
   transition: all 0.3s ease;
-   border-top-left-radius: 0px; 
+   border-top-left-radius: 60px; 
   border-bottom-left-radius: 60px;
   overflow: hidden; /* 確保內容不會超出圓角 */
    box-shadow: -15px 0 35px -10px rgba(0, 0, 0, 0.2);

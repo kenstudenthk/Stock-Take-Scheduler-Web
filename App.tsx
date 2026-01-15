@@ -98,6 +98,7 @@ function App() {
               region: f[SP_FIELDS.REGION] || '',
               district: f[SP_FIELDS.DISTRICT] || '',
               brand: f[SP_FIELDS.BRAND] || '',
+              businessUnit: f[SP_FIELDS.BUSINESS_UNIT] || '',
               area: f[SP_FIELDS.AREA] || '',
               masterStatus: f[SP_FIELDS.OLD_STATUS] || '',
               status: f[SP_FIELDS.STATUS] || 'Unplanned',
@@ -144,7 +145,7 @@ function App() {
       case View.CALENDAR: return <Calendar shops={allShops} />;
       case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
-      case View.INVENTORY: return <Inventory invToken={invToken} />;
+      case View.INVENTORY: return <Inventory invToken={invToken} shops={allShops} />;
       case View.SETTINGS: return (
         <Settings 
           token={graphToken} 

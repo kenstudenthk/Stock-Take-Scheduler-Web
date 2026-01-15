@@ -6,11 +6,14 @@
 @tailwind utilities;
 
 :root {
-  /* 品牌核心色 */
   --primary-teal: #0d9488;
   --sidebar-bg: #2b3467;
-  --stat-card-dark: #1C204B;
-  --stat-dot-light: #BBC0FF;
+  --bg-main: #f8fafc;
+  --bg-header: #ffffff;
+  --text-main: #1e293b;
+  --text-secondary: #64748b;
+  --border-color: #f1f5f9;
+}
 
   /* 主題色 - Light Mode (淺色) */
   --bg-main: #f8fafc;
@@ -1641,64 +1644,59 @@ body {
    24. CAPYBARA NOTIFICATION OVERLAY
    ============================================================ */
 /* 通知容器：佔據 Header 左側剩餘空間 */
+/* The container that holds the walking Capy on the left of the header */
 .capy-header-container {
   display: flex;
   align-items: center;
-  flex: 1; /* 佔據左側所有剩餘空間 */
+  flex: 1; /* Takes up remaining space on the left */
   height: 100%;
   overflow: hidden;
   position: relative;
 }
 
-/* 水豚走路進場動畫 */
 .capy-walker-wrapper {
   display: flex;
   align-items: center;
-  animation: capy-pull-in 3s ease-out forwards;
+  animation: capy-pull-in 2.5s ease-out forwards;
   position: absolute;
   left: 0;
 }
 
-/* 縮小水豚以適應 Header 高度 */
+/* Small scale for header row */
 .capybaraloader.header-mini {
-  transform: scale(0.3);
+  transform: scale(0.28);
   transform-origin: left center;
-  margin-right: -80px; /* 修正縮放後的空隙 */
+  margin-right: -85px; 
   flex-shrink: 0;
 }
 
-/* 提示訊息文字樣式 */
 .capy-pull-message {
   white-space: nowrap;
-  font-weight: 700;
-  font-size: 14px;
-  color: #f43f5e; /* 警告紅 */
-  background: rgba(244, 63, 94, 0.1);
-  padding: 6px 15px 6px 40px;
-  border-radius: 20px;
-  margin-left: -20px;
-  border: 1px solid rgba(244, 63, 94, 0.2);
+  font-weight: 800;
+  font-size: 13px;
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.08);
+  padding: 8px 20px 8px 45px;
+  border-radius: 30px;
+  margin-left: -25px;
+  border: 1px solid rgba(244, 63, 94, 0.15);
   z-index: -1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* 由左至右拉進來的動畫 */
 @keyframes capy-pull-in {
-  0% {
-    transform: translateX(-120%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(20px);
-    opacity: 1;
-  }
+  0% { transform: translateX(-120%); opacity: 0; }
+  100% { transform: translateX(10px); opacity: 1; }
 }
 
+/* Capybara Core Animation Styles */
+.capybaraloader { width: 14em; height: 10em; position: relative; z-index: 1; --color: rgb(204, 125, 45); --color2: rgb(83, 56, 28); }
 .capybara { width: 100%; height: 7.5em; position: relative; z-index: 1; }
 .loader { width: 100%; height: 2.5em; position: relative; z-index: 1; overflow: hidden; }
 .capy { width: 85%; height: 100%; background: linear-gradient(var(--color), 90%, var(--color2)); border-radius: 45%; position: relative; z-index: 1; animation: movebody 1s linear infinite; }
 .capyhead { width: 7.5em; height: 7em; bottom: 0em; right: 0em; position: absolute; background-color: var(--color); z-index: 3; border-radius: 3.5em; box-shadow: -1em 0em var(--color2); animation: movebody 1s linear infinite; }
 .capyear { width: 2em; height: 2em; background: linear-gradient(-45deg, var(--color), 90%, var(--color2)); top: 0em; left: 0em; border-radius: 100%; position: absolute; overflow: hidden; z-index: 3; }
-.capyear:nth-child(2) { left: 5em; background: linear-gradient(25deg, var(--color), 90%, var(--color2)); }
 .capyear2 { width: 100%; height: 1em; background-color: var(--color2); bottom: 0em; left: 0.5em; border-radius: 100%; position: absolute; transform: rotate(-45deg); }
 .capymouth { width: 3.5em; height: 2em; background-color: var(--color2); position: absolute; bottom: 0em; left: 2.5em; border-radius: 50%; display: flex; justify-content: space-around; align-items: center; padding: 0.5em; }
 .capylips { width: 0.25em; height: 0.75em; border-radius: 100%; transform: rotate(-45deg); background-color: var(--color); }
@@ -1708,9 +1706,10 @@ body {
 .capyleg { width: 6em; height: 5em; bottom: 0em; left: 0em; position: absolute; background: linear-gradient(var(--color), 95%, var(--color2)); z-index: 2; border-radius: 2em; animation: movebody 1s linear infinite; }
 .capyleg2 { width: 1.75em; height: 3em; bottom: 0em; left: 3.25em; position: absolute; background: linear-gradient(var(--color), 80%, var(--color2)); z-index: 2; border-radius: 0.75em; box-shadow: inset 0em -0.5em var(--color2); animation: moveleg 1s linear infinite; }
 .capyleg2:nth-child(3) { width: 1.25em; left: 0.5em; height: 2em; animation: moveleg2 1s linear infinite 0.075s; }
+.loaderline { width: 50em; height: 0.5em; border-top: 0.5em dashed var(--color2); animation: moveline 10s linear infinite; }
 
 @keyframes moveleg { 0% { transform: rotate(-45deg) translateX(-5%); } 50% { transform: rotate(45deg) translateX(5%); } 100% { transform: rotate(-45deg) translateX(-5%); } }
 @keyframes moveleg2 { 0% { transform: rotate(45deg); } 50% { transform: rotate(-45deg); } 100% { transform: rotate(45deg); } }
 @keyframes movebody { 0% { transform: translateX(0%); } 50% { transform: translateX(2%); } 100% { transform: translateX(0%); } }
-.loaderline { width: 50em; height: 0.5em; border-top: 0.5em dashed var(--color2); animation: moveline 10s linear infinite; }
 @keyframes moveline { 0% { transform: translateX(0%); opacity: 0%; } 5% { opacity: 100%; } 95% { opacity: 100%; } 100% { opacity: 0%; transform: translateX(-70%); } }
+

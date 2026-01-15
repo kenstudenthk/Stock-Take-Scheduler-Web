@@ -1645,25 +1645,26 @@ body {
    24. CAPYBARA NOTIFICATION OVERLAY
    ============================================================ */
 /* 容器：佔據 Header 左側區域 */
-.capy-flag-container {
+.capy-header-container {
   display: flex;
   align-items: center;
   flex: 1;
   height: 100%;
-  overflow: visible;
   position: relative;
+  /* 必須為 hidden，這樣水豚走出去時才不會超出 Header */
+  overflow: hidden; 
 }
 
 /* 走路主體：水豚 + 旗幟 */
 .capy-flag-walker {
   display: flex;
-  flex-direction: row; /* 水平排列 */
+  flex-direction: row;
   align-items: center;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  /* 5秒內從左走過來，停在右邊 */
-  animation: capy-walk-to-refresh 5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  /* 修改為 infinite (無限循環)，總長度設為 12 秒讓動作更悠閒 */
+  animation: capy-patrol-loop 12s linear infinite;
 }
 
 /* 縮小水豚 */
@@ -1715,18 +1716,24 @@ body {
 }
 
 /* 走路路徑：從左邊界外走到刷新按鈕前 */
-@keyframes capy-walk-to-refresh {
+@keyframes capy-patrol-loop {
   0% {
-    left: -300px;
-    opacity: 0;
+    left: -400px; /* 從左側外面開始 */
   }
-  15% {
-    opacity: 1;
+  /* 40% 到 60%：走到 Refresh 按鈕附近並停下觀察一下 */
+  40% {
+    left: calc(100% - 360px); 
   }
+  60% {
+    left: calc(100% - 360px);
+  }
+  /* 85%：繼續向右走，直到完全消失在右側 */
+  85% {
+    left: 100%;
+  }
+  /* 86% 到 100%：在背景重置，準備下一次從左邊出來 */
   100% {
-    /* 停在 Header 右側工具欄之前，預留約 20px */
-    left: calc(100% - 340px);
-    opacity: 1;
+    left: 100%;
   }
 }
 

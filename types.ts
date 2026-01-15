@@ -24,6 +24,7 @@ export interface Shop {
   is_mtr: boolean;  
   status: string; // 修正為 string 以相容 'Rescheduled' 等狀態
   scheduleStatus: string;
+  masterStatus: string;
   groupId: number;  
   scheduledDate?: string; 
   phone?: string;       // 對應 field_37

@@ -1805,3 +1805,36 @@ body {
   40% { transform: translateY(-10px); }
   60% { transform: translateY(-5px); }
 }
+
+/* ============================================================
+   26. 詳情彈窗中的圖片佔位符樣式
+   ============================================================ */
+
+.photo-placeholder {
+  width: 100%;
+  height: 200px;
+  background-color: #f1f5f9;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #94a3b8;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.photo-placeholder:hover {
+  background-color: #f8fafc;
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.photo-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 8px;
+}

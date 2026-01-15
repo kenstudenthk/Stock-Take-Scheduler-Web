@@ -63,7 +63,7 @@ body {
    2. LAYOUT COMPONENTS (框架與 Header)
    ============================================================ */
 .main-content-area, .main-scroll-content {
-  background-color: var(--bg-main) !important;
+  background-color: var(--bg-header) !important;
   transition: all 0.3s ease;
    border-top-left-radius: 60px; 
   border-bottom-left-radius: 60px;

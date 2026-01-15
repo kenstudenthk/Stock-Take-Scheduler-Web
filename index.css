@@ -1726,3 +1726,82 @@ body {
 .truckBody-anim { animation: truck-bounce 1s linear infinite; }
 @keyframes truck-bounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(3px); } }
 .truck-road { width: 100%; height: 2px; background-color: #282828; border-radius: 3px; }
+
+
+/* ============================================================
+   25. INVENTORY ACTION BUTTON (TOOLTIP & ROTATE)
+   ============================================================ */
+
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+/* 縮小尺寸以適應表格 */
+.tooltip-container .icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.3s ease;
+  color: #0d9488; /* 配合主題顏色 */
+}
+
+.tooltip-container .icon svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  transition: transform 0.5s ease-in-out;
+}
+
+.tooltip-container:hover .icon svg {
+  transform: rotate(360deg) scale(1.2);
+}
+
+.tooltip-container .tooltip {
+  visibility: hidden;
+  width: 140px;
+  background-color: #1e293b;
+  color: #fff;
+  text-align: center;
+  border-radius: 8px;
+  padding: 8px;
+  position: absolute;
+  bottom: 140%;
+  left: 50%;
+  margin-left: -70px;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  transform: translateY(10px);
+  font-size: 11px;
+  font-weight: 600;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.tooltip-container .tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1e293b transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  animation: bounce 0.6s ease;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}

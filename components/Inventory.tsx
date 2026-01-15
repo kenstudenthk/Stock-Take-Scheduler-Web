@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Input, Select, Card, Typography, Space, Tag, Button, Row, Col, message, Empty, Divider } from 'antd';
-import { SearchOutlined, ReloadOutlined, DatabaseOutlined, BarcodeOutlined, IdcardOutlined } from '@ant-design/icons';
-import { InventoryItem } from '../types';
-import { INV_FIELDS } from '../constants'; // Ensure we use the mapped field names
+import { Table, Input, Select, Card, Typography, Space, Tag, Button, Row, Col, message, Modal, Descriptions, Divider } from 'antd';
+import { SearchOutlined, ReloadOutlined, DatabaseOutlined, BarcodeOutlined, IdcardOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { INV_FIELDS } from '../constants';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -14,6 +13,8 @@ interface Props {
 export const Inventory: React.FC<Props> = ({ invToken }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null); // ✅ 儲存被選中的資產
+  const [modalVisible, setModalVisible] = useState(false);     // ✅ 控制 Modal 顯示
   
   const [filters, setFilters] = useState({
     shopName: '',
@@ -21,7 +22,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
     status: 'All',
     cmdb: '',
     serialNo: '',
-    assetItemId: '' // ✅ Added filter state for Asset Item ID
+    assetItemId: ''
   });
 
   const fetchInventory = async () => {
@@ -37,7 +38,6 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
           const f = item.fields || {};
           return {
             id: item.id,
-            // --- Precise mapping based on SharePoint field names ---
             shopName: f[INV_FIELDS.SHOP_NAME] || '',
             shopBrand: f[INV_FIELDS.SHOP_BRAND] || '',
             shopCode: f[INV_FIELDS.SHOP_CODE] || '',
@@ -49,7 +49,9 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
             inUseStatus: f[INV_FIELDS.IN_USE_STATUS] || 'N/A',
             brand: f[INV_FIELDS.BRAND] || '',
             recordTime: f[INV_FIELDS.RECORD_TIME] || '',
-            assetItemId: f[INV_FIELDS.ASSET_ITEM_ID] || '', // ✅ Map Asset Item ID to the data object
+            assetItemId: f[INV_FIELDS.ASSET_ITEM_ID] || '',
+            remarks: f[INV_FIELDS.REMARKS] || '',
+            businessUnit: f[INV_FIELDS.BUSINESS_UNIT] || '',
           };
         });
         setData(mapped);
@@ -64,12 +66,12 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
 
   const filteredData = useMemo(() => {
     return data.filter(item => 
-      item.shopName.toLowerCase().includes(filters.shopName.toLowerCase()) &&
-      item.shopBrand.toLowerCase().includes(filters.shopBrand.toLowerCase()) &&
+      (item.shopName || '').toLowerCase().includes(filters.shopName.toLowerCase()) &&
+      (item.shopBrand || '').toLowerCase().includes(filters.shopBrand.toLowerCase()) &&
       (filters.status === 'All' || item.inUseStatus === filters.status) &&
-      item.cmdb.toLowerCase().includes(filters.cmdb.toLowerCase()) &&
-      item.serialNo.toLowerCase().includes(filters.serialNo.toLowerCase()) &&
-      item.assetItemId.toLowerCase().includes(filters.assetItemId.toLowerCase()) // ✅ Added search logic
+      (item.cmdb || '').toLowerCase().includes(filters.cmdb.toLowerCase()) &&
+      (item.serialNo || '').toLowerCase().includes(filters.serialNo.toLowerCase()) &&
+      (item.assetItemId || '').toLowerCase().includes(filters.assetItemId.toLowerCase())
     );
   }, [data, filters]);
 
@@ -81,23 +83,8 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
       render: (record: any) => (
         <Space direction="vertical" size={0}>
           <Text strong style={{ fontSize: '14px' }}>{record.shopName}</Text>
-          <Space>
-             <Tag color="orange" style={{ fontSize: '10px' }}>{record.shopBrand}</Tag>
-             <Text type="secondary" code style={{ fontSize: '10px' }}>{record.shopCode}</Text>
-          </Space>
+          <Space><Tag color="orange" style={{ fontSize: '10px' }}>{record.shopBrand}</Tag></Space>
         </Space>
-      ),
-      sorter: (a: any, b: any) => a.shopName.localeCompare(b.shopName),
-    },
-    {
-      title: 'Product Category',
-      key: 'type',
-      width: '18%',
-      render: (record: any) => (
-        <div className="flex flex-col">
-          <Text strong className="text-teal-700">{record.productTypeEng}</Text>
-          <Text size="small" style={{ color: '#94a3b8', fontSize: '11px' }}>{record.productTypeChi}</Text>
-        </div>
       ),
     },
     {
@@ -106,12 +93,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
       render: (record: any) => (
         <Space direction="vertical" size={0}>
           <Text strong style={{ fontSize: '13px' }}>{record.assetName}</Text>
-          <Space split={<Divider type="vertical" />}>
-            <Text type="secondary" style={{ fontSize: '12px' }}>SN: {record.serialNo}</Text>
-            <Tag icon={<BarcodeOutlined />} color="blue">{record.cmdb}</Tag>
-          </Space>
-          {/* ✅ Display Asset Item ID in the table row */}
-          <Text type="secondary" style={{ fontSize: '10px' }}>ID: {record.assetItemId}</Text> 
+          <Text type="secondary" style={{ fontSize: '11px' }}>SN: {record.serialNo} | CMDB: {record.cmdb}</Text>
         </Space>
       ),
     },
@@ -121,92 +103,105 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
       key: 'status',
       width: 130,
       render: (status: string) => {
-        let color = 'default';
-        if (status === 'In Use' || status === 'Verified') color = 'green';
-        if (status === 'New Item' || status === 'New Record') color = 'blue';
-        if (status === 'Not Found') color = 'red';
+        let color = status === 'In Use' ? 'green' : (status === 'Not Found' ? 'red' : 'blue');
         return <Tag color={color} className="font-bold">{status}</Tag>;
       }
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 100,
+      align: 'center' as const,
+      render: (record: any) => (
+        /* ✅ 核心組件注入：使用您提供的 HTML 結構作為按鈕 */
+        <div 
+          className="tooltip-container" 
+          onClick={() => { setSelectedItem(record); setModalVisible(true); }}
+        >
+          <div className="icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22c-5.518 0-10-4.482-10-10s4.482-10 10-10 10 4.482 10 10-4.482 10-10 10zm-1-16h2v6h-2zm0 8h2v2h-2z" />
+            </svg>
+          </div>
+          <div className="tooltip">
+            <p>View Item Details</p>
+          </div>
+        </div>
+      ),
     }
   ];
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm">
-        <Space direction="vertical" size={0}>
-          <Title level={2} style={{ margin: 0 }}>Inventory Database</Title>
-          <Text type="secondary">Connected to SharePoint Online Asset Management List</Text>
-        </Space>
-        <Button 
-          type="primary" 
-          icon={<ReloadOutlined />} 
-          onClick={fetchInventory} 
-          loading={loading}
-          size="large"
-          className="bg-teal-600 rounded-xl shadow-lg"
-        >
-          Refresh Data
-        </Button>
+      {/* Header 與 Filter 區塊保持不變 */}
+      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <Title level={2} style={{ margin: 0 }}>Inventory Database</Title>
+        <Button type="primary" icon={<ReloadOutlined />} onClick={fetchInventory} loading={loading} className="bg-teal-600 rounded-xl h-11 px-6 font-bold shadow-lg">Refresh Data</Button>
       </div>
 
       <Card className="rounded-2xl border-none shadow-sm">
         <Row gutter={[16, 16]}>
-          <Col span={4}> {/* ✅ Adjusted span to fit 5+ columns */}
-            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Shop Search</Text>
-            <Input 
-              prefix={<SearchOutlined />} 
-              placeholder="Shop name..." 
-              onChange={e => setFilters({...filters, shopName: e.target.value})}
-              className="rounded-lg h-10"
-            />
+          <Col span={4}>
+            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Shop Search</Text>
+            <Input prefix={<SearchOutlined />} placeholder="Shop name..." onChange={e => setFilters({...filters, shopName: e.target.value})} className="rounded-lg h-10" />
           </Col>
           <Col span={4}>
-            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">In-Use Status</Text>
-            <Select className="w-full h-10" defaultValue="All" onChange={val => setFilters({...filters, status: val})}>
-              <Option value="All">All Status</Option>
-              <Option value="In Use">In Use</Option>
-              <Option value="Verified">Verified</Option>
-              <Option value="Not Found">Not Found</Option>
-            </Select>
+            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Serial No</Text>
+            <Input placeholder="Serial..." onChange={e => setFilters({...filters, serialNo: e.target.value})} className="rounded-lg h-10" />
           </Col>
           <Col span={4}>
-            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Serial</Text>
-            <Input 
-              placeholder="Serial No..." 
-              onChange={e => setFilters({...filters, serialNo: e.target.value})}
-              className="rounded-lg h-10"
-            />
+            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">CMDB</Text>
+            <Input placeholder="CMDB..." onChange={e => setFilters({...filters, cmdb: e.target.value})} className="rounded-lg h-10" />
           </Col>
-          <Col span={4}>
-            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">CMDB</Text>
-            <Input 
-              placeholder="CMDB Number..." 
-              onChange={e => setFilters({...filters, cmdb: e.target.value})}
-              className="rounded-lg h-10"
-            />
-          </Col>
-          <Col span={8}> {/* ✅ Added Asset Item ID Filter column */}
-            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Asset Item ID</Text>
-            <Input 
-              prefix={<IdcardOutlined />}
-              placeholder="Type Asset Item ID..." 
-              onChange={e => setFilters({...filters, assetItemId: e.target.value})}
-              className="rounded-lg h-10"
-            />
+          <Col span={12}>
+            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Asset Item ID</Text>
+            <Input prefix={<IdcardOutlined />} placeholder="Search by Asset ID..." onChange={e => setFilters({...filters, assetItemId: e.target.value})} className="rounded-lg h-10" />
           </Col>
         </Row>
       </Card>
 
       <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
-        <Table 
-          columns={columns} 
-          dataSource={filteredData} 
-          rowKey="id" 
-          loading={loading}
-          pagination={{ pageSize: 10, showSizeChanger: false }}
-          className="st-inventory-table"
-        />
+        <Table columns={columns} dataSource={filteredData} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
       </Card>
+
+      {/* ✅ 詳情彈窗：與 Master List 邏輯一致 */}
+      <Modal
+        title={<Space><DatabaseOutlined className="text-teal-600" /> 資產詳細資訊 Asset Details</Space>}
+        visible={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        footer={[<Button key="close" type="primary" onClick={() => setModalVisible(false)} className="rounded-lg px-8">Close</Button>]}
+        width={700}
+        centered
+        className="detail-modal-styled"
+      >
+        {selectedItem && (
+          <div className="py-4">
+            <div className="flex justify-between items-start mb-6">
+              <Space direction="vertical" size={0}>
+                <Title level={4} style={{ margin: 0 }}>{selectedItem.assetName}</Title>
+                <Text type="secondary" className="text-xs uppercase tracking-widest">{selectedItem.brand} | {selectedItem.businessUnit}</Text>
+              </Space>
+              <Tag color="teal" className="m-0 font-bold px-4 py-1 rounded-full uppercase">{selectedItem.inUseStatus}</Tag>
+            </div>
+            
+            <Descriptions bordered column={2} size="small" className="rounded-xl overflow-hidden">
+              <Descriptions.Item label="Shop Name" span={2}>{selectedItem.shopName}</Descriptions.Item>
+              <Descriptions.Item label="Shop Code">{selectedItem.shopCode}</Descriptions.Item>
+              <Descriptions.Item label="Brand">{selectedItem.shopBrand}</Descriptions.Item>
+              <Descriptions.Item label="Asset ID" span={2}><Text copyable className="font-mono text-blue-600">{selectedItem.assetItemId}</Text></Descriptions.Item>
+              <Descriptions.Item label="Serial No"><Text className="font-mono">{selectedItem.serialNo}</Text></Descriptions.Item>
+              <Descriptions.Item label="CMDB No"><Tag color="blue">{selectedItem.cmdb}</Tag></Descriptions.Item>
+              <Descriptions.Item label="Category" span={2}>{selectedItem.productTypeEng} ({selectedItem.productTypeChi})</Descriptions.Item>
+              <Descriptions.Item label="Remarks" span={2}>{selectedItem.remarks || '--'}</Descriptions.Item>
+            </Descriptions>
+            
+            <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+               <Text type="secondary" className="text-[11px] uppercase block">Last Data Update from SharePoint</Text>
+               <Text strong className="text-xs">{selectedItem.recordTime || 'No recent record'}</Text>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

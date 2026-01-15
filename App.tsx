@@ -64,10 +64,12 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [hasTokenError, setHasTokenError] = useState(false);
   const [isFirstCheckDone, setIsFirstCheckDone] = useState(false);// ✅ Token 錯誤追蹤
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const fetchAllData = useCallback(async (token: string) => {
     if (!token) {
       setHasTokenError(true);
+      setIsInitialLoading(false);
       return;
     }
     setLoading(true);
@@ -75,13 +77,10 @@ function App() {
       const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       
-      if (res.status === 401) { 
-        setHasTokenError(true); 
-        setLoading(false); 
-        return; 
-      }
-      
-      const data = await res.json();
+      if (res.status === 401) {
+        setHasTokenError(true);
+      } else {
+        const data = await res.json();
       if (data.value) {
         const mapped = data.value.map((item: any) => {
           const f = item.fields || {};
@@ -108,23 +107,27 @@ function App() {
         });
         setAllShops(mapped);
         setHasTokenError(false);
+     }
       }
-    } catch (err) { 
-     console.error("Sync error:", err);
+    } catch (err) {
+      console.error(err);
+      // 注意：除非明確是 401，否則不要輕易 setHasTokenError(true)，避免網路波動導致貨車出現
     } finally {
       setLoading(false);
+      setIsInitialLoading(false); // ✅ 第一次請求結束
     }
   }, []);
 
+// 修改後的 useEffect
   useEffect(() => {
-    document.body.classList.toggle('dark', isDarkMode);
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
-
-  useEffect(() => { 
-    if (graphToken) fetchAllData(graphToken); 
-    else setHasTokenError(true);
-  }, [graphToken, fetchAllData]);
+    const savedToken = localStorage.getItem('stockTakeToken');
+    if (savedToken) {
+      fetchAllData(savedToken);
+    } else {
+      setHasTokenError(true);
+      setIsInitialLoading(false);
+    }
+  }, [fetchAllData]);
 
   const renderContent = () => {
     switch (selectedMenuKey) {
@@ -192,8 +195,7 @@ function App() {
         <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
           
 {/* ✅ 關鍵修復 3：只有在有錯誤且不在加載中時才顯示貨車 */}
-          {isFirstCheckDone && hasTokenError && !loading ? <TruckFlagNotice /> : <div className="flex-1" />}
-
+          {!isInitialLoading && hasTokenError ? <TruckFlagNotice /> : <div className="flex-1" />}
           {/* RIGHT: 始終保留 Refresh 按鈕、Pool 標籤與 Profile */}
           <Space size="large">
             <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)} className="refresh-btn">Refresh</Button>

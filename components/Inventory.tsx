@@ -16,7 +16,7 @@ const { Option } = Select;
 
 interface Props {
   invToken: string;
-  shops: Shop[]; // ✅ 從 App.tsx 傳入的商店主檔
+  shops: Shop[]; // 從 App.tsx 傳入的商店主檔
 }
 
 export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
@@ -25,7 +25,7 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [detailVisible, setDetailVisible] = useState(false);
   
-  // ✅ 新增/編輯表單狀態
+  // 表單狀態
   const [form] = Form.useForm();
   const [formVisible, setFormVisible] = useState(false);
   const [formMode, setFormMode] = useState<'new' | 'edit'>('new');
@@ -81,26 +81,27 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
 
   useEffect(() => { fetchInventory(); }, [invToken]);
 
-  // ✅ 處理商店選擇後的自動填寫邏輯
+  // ✅ 智慧聯動：商店選擇後的自動填寫邏輯 (包含 CMDB 前 5 碼)
   const handleShopSelect = (value: string) => {
     const selectedShop = shops.find(s => `${s.id} - ${s.name}` === value);
     if (selectedShop) {
       form.setFieldsValue({
         shopCode: selectedShop.id,
         shopBrand: selectedShop.brand,
-        businessUnit: (selectedShop as any).businessUnit || '' 
+        businessUnit: (selectedShop as any).businessUnit || '',
+        // ✅ 自動填入 CMDB 的前 5 碼 (即 Shop Code)
+        cmdb: selectedShop.id 
       });
+      message.info(`Auto-filled: Shop Code ${selectedShop.id} & CMDB prefix.`);
     }
   };
 
-  // ✅ 開啟新增表單
   const handleAddNew = () => {
     setFormMode('new');
     form.resetFields();
     setFormVisible(true);
   };
 
-  // ✅ 開啟編輯表單
   const handleEdit = () => {
     setFormMode('edit');
     form.setFieldsValue(selectedItem);
@@ -191,7 +192,6 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
            <Text type="secondary">Asset Management System</Text>
         </Space>
         <Space>
-           {/* ✅ 新增項目按鈕 */}
            <Button icon={<PlusOutlined />} onClick={handleAddNew} size="large" className="rounded-xl font-bold">New Item</Button>
            <Button type="primary" icon={<ReloadOutlined />} onClick={fetchInventory} loading={loading} size="large" className="bg-teal-600 rounded-xl font-bold shadow-lg">Refresh Data</Button>
         </Space>
@@ -209,7 +209,7 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
         <Table columns={columns} dataSource={filteredData} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
       </Card>
 
-      {/* ✅ 1. 詳細資訊彈窗 */}
+      {/* 詳情彈窗 */}
       <Modal
         title={<Space><DatabaseOutlined className="text-teal-600" /> Asset Inventory Detail</Space>}
         visible={detailVisible}
@@ -217,7 +217,6 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
         width={850}
         centered
         footer={[
-          /* ✅ 修改：編輯按鈕現在會開啟表單 */
           <Button key="edit" icon={<EditOutlined />} onClick={handleEdit} className="rounded-lg border-teal-600 text-teal-600">Edit Asset</Button>,
           <Button key="close" type="primary" onClick={() => setDetailVisible(false)} className="bg-slate-800 border-none rounded-lg px-8">Close</Button>
         ]}
@@ -274,44 +273,52 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
         )}
       </Modal>
 
-      {/* ✅ 2. 編輯/新增表單彈窗 */}
+      {/* ✅ 編輯/新增表單彈窗 */}
       <Modal
         title={<Space><EditOutlined className="text-teal-600" /> {formMode === 'new' ? 'Add New Asset' : 'Edit Asset Detail'}</Space>}
         visible={formVisible}
         onCancel={() => setFormVisible(false)}
         onOk={() => form.submit()}
-        width={600}
+        width={650}
         okText="Save Record"
         centered
       >
-        <Form form={form} layout="vertical" onFinish={(values) => { message.success("Saving to SharePoint..."); setFormVisible(false); }}>
+        <Form form={form} layout="vertical" onFinish={(values) => { message.loading("Updating SharePoint..."); setFormVisible(false); }}>
           <Row gutter={16}>
             <Col span={24}>
-              <Form.Item name="shopName" label="Shop Name" rules={[{ required: true }]}>
-                {/* ✅ 使用 AutoComplete 實現智慧搜尋 */}
+              <Form.Item name="shopName" label="Shop Name (Type Code or Name to search)" rules={[{ required: true }]}>
                 <AutoComplete
                   options={shops.map(s => ({ value: `${s.id} - ${s.name}` }))}
                   onSelect={handleShopSelect}
-                  placeholder="Type shop code or name (e.g. 5110)"
+                  placeholder="e.g. 5110"
                   filterOption={(inputValue, option) =>
                     option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
                   }
                 />
               </Form.Item>
             </Col>
-            <Col span={8}><Form.Item name="shopCode" label="Shop Code"><Input disabled /></Form.Item></Col>
-            <Col span={8}><Form.Item name="shopBrand" label="Brand"><Input disabled /></Form.Item></Col>
-            <Col span={8}><Form.Item name="businessUnit" label="BU"><Input disabled /></Form.Item></Col>
+            
+            <Col span={8}><Form.Item name="shopCode" label="Shop Code"><Input disabled className="bg-slate-50" /></Form.Item></Col>
+            <Col span={8}><Form.Item name="shopBrand" label="Shop Brand"><Input disabled className="bg-slate-50" /></Form.Item></Col>
+            <Col span={8}><Form.Item name="businessUnit" label="Business Unit"><Input disabled className="bg-slate-50" /></Form.Item></Col>
             
             <Divider className="my-2" />
             
-            <Col span={24}><Form.Item name="assetName" label="Asset Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="assetItemId" label="Asset Item ID"><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="brand" label="Manufacturer (Brand)"><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="serialNo" label="Serial Number"><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="cmdb" label="CMDB Number"><Input /></Form.Item></Col>
+            <Col span={24}><Form.Item name="assetName" label="Asset Name" rules={[{ required: true }]}><Input placeholder="e.g. iPad Pro 11-inch" /></Form.Item></Col>
+            
             <Col span={12}>
-              <Form.Item name="stockTakeStatus" label="ST Status">
+              <Form.Item name="cmdb" label="CMDB Number" rules={[{ required: true }]}>
+                {/* 使用者在選擇商店後，這裡會自動出現前 5 碼，只需補齊後 4 碼 */}
+                <Input placeholder="ShopCode + 0001" maxLength={9} />
+              </Form.Item>
+            </Col>
+            
+            <Col span={12}><Form.Item name="assetItemId" label="Asset Item ID"><Input placeholder="e.g. EQ-12345" /></Form.Item></Col>
+            <Col span={12}><Form.Item name="brand" label="Manufacturer / Brand"><Input placeholder="e.g. Apple" /></Form.Item></Col>
+            <Col span={12}><Form.Item name="serialNo" label="Serial Number"><Input placeholder="Unique SN" /></Form.Item></Col>
+            
+            <Col span={12}>
+              <Form.Item name="stockTakeStatus" label="Stock Take Status">
                 <Select>
                   <Option value="Verified">Verified</Option>
                   <Option value="New Record">New Record</Option>
@@ -319,11 +326,18 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
                 </Select>
               </Form.Item>
             </Col>
+            
             <Col span={12}>
                <Form.Item name="inUseStatus" label="In Use Status">
-                 <Select><Option value="In Use">In Use</Option><Option value="Spare">Spare</Option></Select>
+                 <Select>
+                   <Option value="In Use">In Use</Option>
+                   <Option value="Spare">Spare</Option>
+                   <Option value="Damaged">Damaged</Option>
+                 </Select>
                </Form.Item>
             </Col>
+            
+            <Col span={24}><Form.Item name="remarks" label="Remarks"><Input.TextArea rows={2} /></Form.Item></Col>
           </Row>
         </Form>
       </Modal>

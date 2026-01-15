@@ -65,21 +65,33 @@ body {
 .main-content-area, .main-scroll-content {
   background-color: var(--bg-main) !important;
   transition: all 0.3s ease;
-   border-top-left-radius: 60px; 
-  border-bottom-left-radius: 60px;
-  overflow: hidden; /* 確保內容不會超出圓角 */
+   border-top-left-radius: 0px; 
+  border-bottom-left-radius: 0px;
+  overflow: visible; /* 確保內容不會超出圓角 */
   box-shadow: -20px 0 50px rgba(0, 0, 0, 0.15);
   position: relative;
   z-index: 200; /* 👈 必須高於 custom-sider 的 100 */
 }
 
 .app-header {
-  background-color: var(--bg-header) !important;
-  border-color: var(--border-color) !important;
+background-color: var(--bg-header) !important;
+  border-bottom: 1px solid var(--border-color) !important;
   color: var(--text-main) !important;
   transition: all 0.3s ease;
-   border-top-left-radius: 60px;
-   
+  height: 64px;
+  display: flex;
+  align-items: center;
+
+  /* ✅ 關鍵修正：只有 Header 左上角有大圓角 (60px) */
+  border-top-left-radius: 60px; 
+  margin-top: 0px;
+}
+
+.main-scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--bg-main) !important;
+  padding: 32px; /* 確保內容不會貼邊 */
 }
 
 .refresh-btn {

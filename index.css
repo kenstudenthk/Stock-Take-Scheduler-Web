@@ -1642,10 +1642,10 @@ body {
 }
 
 /* ============================================================
-   24. CAPYBARA NOTIFICATION OVERLAY
+   24. TRUCK "FLAG DRIVER" NOTIFICATION (HEADER LOOP)
    ============================================================ */
 /* 容器：佔據 Header 左側區域 */
-.capy-header-container {
+.truck-header-container {
   display: flex;
   align-items: center;
   flex: 1;
@@ -1655,7 +1655,7 @@ body {
   overflow: hidden; 
 }
 
-.capy-flag-walker {
+.truck-flag-driver {
   display: flex;
   flex-direction: row;
   align-items: flex-end; /* 讓內容底部對齊 */
@@ -1669,23 +1669,30 @@ body {
 }
 
 /* 縮小水豚 */
-.capybaraloader.flag-mode {
-  transform: scale(0.28);
-  transform-origin: left center;
-  margin-right: -80px; /* 修正縮放位移 */
-  z-index: 10;
+/* 縮小貨車比例以適應 Header (約 64px) */
+.truck-wrapper-mini {
+  transform: scale(0.38);
+  transform-origin: left bottom;
+  width: 200px;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  align-items: center;
+  justify-content: flex-end;
+  margin-right: -110px; /* 修正縮放位移 */
 }
 
 /* 旗幟訊息框 (位於水豚後方) */
-.capy-notice-flag {
-  background: #f43f5e;
+.truck-notice-flag {
+  background: #f83d3d;
   color: white;
-  padding: 8px 20px;
-  font-size: 13px;
+  padding: 6px 16px;
+  font-size: 12px;
   font-weight: 800;
-  border-radius: 8px 8px 0px 8px; /* 旗幟形狀 */
+  border-radius: 6px 4px 4px 6px; /* 旗幟形狀 */
   white-space: nowrap;
-  box-shadow: 4px 2px 0px rgba(0, 0, 0, 0.05);
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1697,71 +1704,36 @@ body {
 }
 
 /* 旗幟與水豚之間的連桿 */
-.capy-notice-flag::after {
+/* 旗幟連桿 */
+.truck-notice-flag::after {
   content: "";
   position: absolute;
-  right: -25px;
-  top: 70%;
-  width: 30px;
+  right: -20px;
+  top: 60%;
+  width: 25px;
   height: 3px;
-  background: #53381c;
-  z-index: -1;
+  background: #282828;
 }
 
-.capybaraloader.flag-leader {
-  transform: scale(0.3);
-  /* --- 關鍵修改：支點改為左下角 --- */
-  transform-origin: left bottom; 
-  margin-left: -10px;
-  margin-right: -80px;
-  z-index: 2;
-  /* 稍微往下壓一點，讓腳看起來踩在 Header 的 border-b 上 */
-  margin-bottom: -5px; 
+/* 貨車基礎動畫 (由 Uiverse 提供) */
+.truckBody { animation: truck-motion 1s linear infinite; }
+@keyframes truck-motion {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(3px); }
 }
 
-/* 走路路徑：從左邊界外走到刷新按鈕前 */
-@keyframes capy-patrol-loop {
-  /* 0% - 45%：從左側走到 Refresh 按鈕 (均速) */
-  0% {
-    left: -450px;
-  }
-  70% {
-    left: calc(100% - 380px); 
-  }
-  /* 45% - 55%：在按鈕旁停留 (暫停 1.5 秒觀察) */
-  80% {
-    left: calc(100% - 380px);
-  }
-  /* 55% - 100%：從按鈕走到右側完全消失 (均速) */
-  100% {
-    left: 120%;
-  }
+/* 巡邏路徑動畫 */
+@keyframes truck-patrol-loop {
+  0% { left: -400px; }
+  70% { left: calc(100% - 380px); } /* 走到按鈕前 */
+  80% { left: calc(100% - 380px); } /* 停留 */
+  100% { left: 110%; } /* 開出去 */
 }
 
-@keyframes flag-wave {
+@keyframes flag-wave-mini {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-3px); }
 }
-/* Capybara Core Animation Styles */
-.capybaraloader { width: 14em; height: 10em; position: relative; z-index: 1; --color: rgb(204, 125, 45); --color2: rgb(83, 56, 28); }
-.capybara { width: 100%; height: 7.5em; position: relative; z-index: 1; }
-.loader { width: 100%; height: 2.5em; position: relative; z-index: 1; overflow: hidden; }
-.capy { width: 85%; height: 100%; background: linear-gradient(var(--color), 90%, var(--color2)); border-radius: 45%; position: relative; z-index: 1; animation: movebody 1s linear infinite; }
-.capyhead { width: 7.5em; height: 7em; bottom: 0em; right: 0em; position: absolute; background-color: var(--color); z-index: 3; border-radius: 3.5em; box-shadow: -1em 0em var(--color2); animation: movebody 1s linear infinite; }
-.capyear { width: 2em; height: 2em; background: linear-gradient(-45deg, var(--color), 90%, var(--color2)); top: 0em; left: 0em; border-radius: 100%; position: absolute; overflow: hidden; z-index: 3; }
-.capyear2 { width: 100%; height: 1em; background-color: var(--color2); bottom: 0em; left: 0.5em; border-radius: 100%; position: absolute; transform: rotate(-45deg); }
-.capymouth { width: 3.5em; height: 2em; background-color: var(--color2); position: absolute; bottom: 0em; left: 2.5em; border-radius: 50%; display: flex; justify-content: space-around; align-items: center; padding: 0.5em; }
-.capylips { width: 0.25em; height: 0.75em; border-radius: 100%; transform: rotate(-45deg); background-color: var(--color); }
-.capylips:nth-child(2) { transform: rotate(45deg); }
-.capyeye { width: 2em; height: 0.5em; background-color: var(--color2); position: absolute; bottom: 3.5em; left: 1.5em; border-radius: 5em; transform: rotate(45deg); }
-.capyeye:nth-child(4) { transform: rotate(-45deg); left: 5.5em; width: 1.75em; }
-.capyleg { width: 6em; height: 5em; bottom: 0em; left: 0em; position: absolute; background: linear-gradient(var(--color), 95%, var(--color2)); z-index: 2; border-radius: 2em; animation: movebody 1s linear infinite; }
-.capyleg2 { width: 1.75em; height: 3em; bottom: 0em; left: 3.25em; position: absolute; background: linear-gradient(var(--color), 80%, var(--color2)); z-index: 2; border-radius: 0.75em; box-shadow: inset 0em -0.5em var(--color2); animation: moveleg 0.8s linear infinite; }
-.capyleg2:nth-child(3) { width: 1.25em; left: 0.5em; height: 2em; animation: moveleg2 0.8s linear infinite 0.075s; }
-.loaderline { width: 50em; height: 0.5em; border-top: 0.5em dashed var(--color2); animation: moveline 10s linear infinite; }
 
-@keyframes moveleg { 0% { transform: rotate(-45deg) translateX(-5%); } 50% { transform: rotate(45deg) translateX(5%); } 100% { transform: rotate(-45deg) translateX(-5%); } }
-@keyframes moveleg2 { 0% { transform: rotate(45deg); } 50% { transform: rotate(-45deg); } 100% { transform: rotate(45deg); } }
-@keyframes movebody { 0% { transform: translateX(0%); } 50% { transform: translateX(2%); } 100% { transform: translateX(0%); } }
-@keyframes moveline { 0% { transform: translateX(0%); opacity: 0%; } 5% { opacity: 100%; } 95% { opacity: 100%; } 100% { opacity: 0%; transform: translateX(-70%); } }
-
+/* 道路與燈柱 (可選，若覺得太亂可移除) */
+.road { width: 100%; height: 1.5px; background-color: #282828; border-radius: 3px; }

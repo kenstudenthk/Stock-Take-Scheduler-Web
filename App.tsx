@@ -22,36 +22,28 @@ const { Title, Text } = Typography;
 
 // ✅ NEW: 水豚拉旗幟通知組件
 // 結構為 [旗幟] -> [水豚] (水豚在右邊領頭走)
-const CapyFlagNotice: React.FC = () => (
-  <div className="capy-header-container">
-    <div className="capy-flag-walker">
-      {/* 1. 後方跟隨的旗幟 */}
-      <div className="capy-notice-flag">
-        <WarningOutlined />
-        TOKEN EXPIRED: PLEASE UPDATE IN SETTINGS
+const TruckFlagNotice: React.FC = () => (
+  <div className="truck-header-container">
+    <div className="truck-flag-driver">
+      {/* 旗幟在後 */}
+      <div className="truck-notice-flag">
+        <WarningFilled /> TOKEN EXPIRED: UPDATE IN SETTINGS
       </div>
 
-      {/* 2. 前方領頭的水豚 */}
-      <div className="capybaraloader flag-leader">
-        <div className="capybara">
-          <div className="capyhead">
-            <div className="capyear"><div className="capyear2"></div></div>
-            <div className="capyear"></div>
-            <div className="capymouth">
-              <div className="capylips"></div>
-              <div className="capylips"></div>
-            </div>
-            <div className="capyeye"></div>
-            <div className="capyeye"></div>
-          </div>
-          <div className="capyleg"></div>
-          <div className="capyleg2"></div>
-          <div className="capyleg2"></div>
-          <div className="capy"></div>
+{/* 貨車在前 (SVG 結構) */}
+      <div className="truck-wrapper-mini">
+        <div className="truckBody">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 198 93" style={{ width: '130px' }}>
+            <path strokeWidth="3" stroke="#282828" fill="#F83D3D" d="M135 22.5H177.264C178.295 22.5 179.22 23.133 179.594 24.0939L192.33 56.8443C192.442 57.1332 192.5 57.4404 192.5 57.7504V89C192.5 90.3807 191.381 91.5 190 91.5H135C133.619 91.5 132.5 90.3807 132.5 89V25C132.5 23.6193 133.619 22.5 135 22.5Z"></path>
+            <path strokeWidth="3" stroke="#282828" fill="#7D7C7C" d="M146 33.5H181.741C182.779 33.5 183.709 34.1415 184.078 35.112L190.538 52.112C191.16 53.748 189.951 55.5 188.201 55.5H146C144.619 55.5 143.5 54.3807 143.5 53V36C143.5 34.6193 144.619 33.5 146 33.5Z"></path>
+            <rect strokeWidth="3" stroke="#282828" fill="#DFDFDF" rx="2.5" height="90" width="121" y="1.5" x="6.5"></rect>
+          </svg>
         </div>
-        <div className="loader">
-          <div className="loaderline"></div>
+        <div className="flex justify-between w-[130px] px-4 absolute bottom-0">
+           <svg width="24" height="24"><circle cx="12" cy="12" r="10" fill="#282828" stroke="#282828" strokeWidth="2"/><circle cx="12" cy="12" r="5" fill="#DFDFDF"/></svg>
+           <svg width="24" height="24"><circle cx="12" cy="12" r="10" fill="#282828" stroke="#282828" strokeWidth="2"/><circle cx="12" cy="12" r="5" fill="#DFDFDF"/></svg>
         </div>
+        <div className="road"></div>
       </div>
     </div>
   </div>
@@ -193,7 +185,7 @@ function App() {
         <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
           
           {/* LEFT: 水豚拉著旗幟出現 */}
-          {hasTokenError ? <CapyFlagNotice /> : <div className="flex-1" />}
+          {hasTokenError ? <TruckFlagNotice /> : <div className="flex-1" />}
 
           {/* RIGHT: 始終保留 Refresh 按鈕、Pool 標籤與 Profile */}
           <Space size="large">

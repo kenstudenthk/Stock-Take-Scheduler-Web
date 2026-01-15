@@ -49,6 +49,9 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
+ant-layout.ant-layout-has-sider {
+  background: var(--sidebar-bg) !important; /* ✅ 讓底部背景變藍色 */
+}
 /* 列印優化：隱藏不必要的按鈕與導航 */
 @media print {
   .bin-button, .wrapper, .ant-btn, .navigation, .app-header, .new-shop-btn {
@@ -62,6 +65,9 @@ body {
 .main-content-area, .main-scroll-content {
   background-color: var(--bg-main) !important;
   transition: all 0.3s ease;
+   border-top-left-radius: 30px; 
+  border-bottom-left-radius: 30px;
+  overflow: hidden; /* 確保內容不會超出圓角 */
 }
 
 .app-header {
@@ -69,6 +75,8 @@ body {
   border-color: var(--border-color) !important;
   color: var(--text-main) !important;
   transition: all 0.3s ease;
+   border-top-left-radius: 30px;
+   
 }
 
 .refresh-btn {
@@ -106,7 +114,7 @@ body {
   width: 25px;
   height: 25px;
   background: transparent;
-  border-top-right-radius: 25px;
+  border-top-right-radius: 0px;
   /* Matches the background color of your Header */
   box-shadow: 5px -5px 0 5px var(--bg-header); 
   pointer-events: none;
@@ -121,7 +129,7 @@ body {
   width: 25px;
   height: 25px;
   background: transparent;
-  border-bottom-right-radius: 25px;
+  border-bottom-right-radius: 0px;
   /* Matches the background color of your Main Content Area */
   box-shadow: 5px 5px 0 5px var(--bg-main); 
   pointer-events: none;

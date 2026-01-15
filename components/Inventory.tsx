@@ -1,25 +1,35 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Input, Select, Card, Typography, Space, Tag, Button, Row, Col, message, Modal, Descriptions, Divider, Avatar } from 'antd';
+import { 
+  Table, Input, Select, Card, Typography, Space, Tag, Button, 
+  Row, Col, message, Modal, Descriptions, Divider, Avatar, Form, AutoComplete 
+} from 'antd';
 import { 
   SearchOutlined, ReloadOutlined, DatabaseOutlined, 
   BarcodeOutlined, IdcardOutlined, EditOutlined, 
-  PictureOutlined, GlobalOutlined, HistoryOutlined, UserOutlined 
+  PictureOutlined, GlobalOutlined, HistoryOutlined, UserOutlined, PlusOutlined 
 } from '@ant-design/icons';
 import { INV_FIELDS } from '../constants';
+import { Shop } from '../types';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 interface Props {
   invToken: string;
+  shops: Shop[]; // ✅ 從 App.tsx 傳入的商店主檔
 }
 
-export const Inventory: React.FC<Props> = ({ invToken }) => {
+export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [detailVisible, setDetailVisible] = useState(false);
   
+  // ✅ 新增/編輯表單狀態
+  const [form] = Form.useForm();
+  const [formVisible, setFormVisible] = useState(false);
+  const [formMode, setFormMode] = useState<'new' | 'edit'>('new');
+
   const [filters, setFilters] = useState({
     shopName: '',
     status: 'All',
@@ -71,6 +81,33 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
 
   useEffect(() => { fetchInventory(); }, [invToken]);
 
+  // ✅ 處理商店選擇後的自動填寫邏輯
+  const handleShopSelect = (value: string) => {
+    const selectedShop = shops.find(s => `${s.id} - ${s.name}` === value);
+    if (selectedShop) {
+      form.setFieldsValue({
+        shopCode: selectedShop.id,
+        shopBrand: selectedShop.brand,
+        businessUnit: (selectedShop as any).businessUnit || '' 
+      });
+    }
+  };
+
+  // ✅ 開啟新增表單
+  const handleAddNew = () => {
+    setFormMode('new');
+    form.resetFields();
+    setFormVisible(true);
+  };
+
+  // ✅ 開啟編輯表單
+  const handleEdit = () => {
+    setFormMode('edit');
+    form.setFieldsValue(selectedItem);
+    setDetailVisible(false);
+    setFormVisible(true);
+  };
+
   const filteredData = useMemo(() => {
     return data.filter(item => 
       (item.shopName || '').toLowerCase().includes(filters.shopName.toLowerCase()) &&
@@ -119,16 +156,10 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
       key: 'status',
       width: 180,
       render: (record: any) => {
-        let color = 'default';
-        if (record.stockTakeStatus === 'Verified') color = 'green';
-        if (record.stockTakeStatus === 'New Record') color = 'orange';
-        if (record.stockTakeStatus === 'Device Not Found') color = '#94a3b8'; // Grey
-
+        let color = record.stockTakeStatus === 'Verified' ? 'green' : (record.stockTakeStatus === 'New Record' ? 'orange' : '#94a3b8');
         return (
           <Space direction="vertical" size={0}>
-            <Tag color={color} className="font-bold uppercase" style={{ fontSize: '10px' }}>
-              {record.stockTakeStatus}
-            </Tag>
+            <Tag color={color} className="font-bold uppercase" style={{ fontSize: '10px' }}>{record.stockTakeStatus}</Tag>
             <Text style={{ fontSize: '10px', color: '#94a3b8' }}>In Use: {record.inUseStatus}</Text>
           </Space>
         );
@@ -140,8 +171,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
       width: 80,
       align: 'center' as const,
       render: (record: any) => (
-        /* ✅ 自定義動畫按鈕 */
-        <div className="tooltip-container" onClick={() => { setSelectedItem(record); setModalVisible(true); }}>
+        <div className="tooltip-container" onClick={() => { setSelectedItem(record); setDetailVisible(true); }}>
           <div className="icon">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22c-5.518 0-10-4.482-10-10s4.482-10 10-10 10 4.482 10 10-4.482 10-10 10zm-1-16h2v6h-2zm0 8h2v2h-2z" />
@@ -156,33 +186,22 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <Title level={2} style={{ margin: 0 }}>Inventory Database</Title>
-        <Button type="primary" icon={<ReloadOutlined />} onClick={fetchInventory} loading={loading} className="bg-teal-600 rounded-xl h-11 px-6 font-bold shadow-lg">Refresh Data</Button>
+        <Space direction="vertical" size={0}>
+           <Title level={2} style={{ margin: 0 }}>Inventory Database</Title>
+           <Text type="secondary">Asset Management System</Text>
+        </Space>
+        <Space>
+           {/* ✅ 新增項目按鈕 */}
+           <Button icon={<PlusOutlined />} onClick={handleAddNew} size="large" className="rounded-xl font-bold">New Item</Button>
+           <Button type="primary" icon={<ReloadOutlined />} onClick={fetchInventory} loading={loading} size="large" className="bg-teal-600 rounded-xl font-bold shadow-lg">Refresh Data</Button>
+        </Space>
       </div>
 
       <Card className="rounded-2xl border-none shadow-sm">
         <Row gutter={[16, 16]}>
-          <Col span={4}>
-            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Shop Search</Text>
-            <Input prefix={<SearchOutlined />} placeholder="Name..." onChange={e => setFilters({...filters, shopName: e.target.value})} className="rounded-lg h-10" />
-          </Col>
-          <Col span={4}>
-            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">ST Status</Text>
-            <Select className="w-full h-10" defaultValue="All" onChange={val => setFilters({...filters, status: val})}>
-              <Option value="All">All</Option>
-              <Option value="Verified">Verified</Option>
-              <Option value="New Record">New Record</Option>
-              <Option value="Device Not Found">Not Found</Option>
-            </Select>
-          </Col>
-          <Col span={4}>
-            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">CMDB / Serial</Text>
-            <Input placeholder="Search..." onChange={e => setFilters({...filters, cmdb: e.target.value})} className="rounded-lg h-10" />
-          </Col>
-          <Col span={12}>
-            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Asset Item ID</Text>
-            <Input prefix={<IdcardOutlined />} placeholder="Type Asset Item ID to search..." onChange={e => setFilters({...filters, assetItemId: e.target.value})} className="rounded-lg h-10" />
-          </Col>
+          <Col span={4}><Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Shop Search</Text><Input prefix={<SearchOutlined />} placeholder="Name..." onChange={e => setFilters({...filters, shopName: e.target.value})} className="rounded-lg h-10" /></Col>
+          <Col span={4}><Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">ST Status</Text><Select className="w-full h-10" defaultValue="All" onChange={val => setFilters({...filters, status: val})}><Option value="All">All</Option><Option value="Verified">Verified</Option><Option value="New Record">New Record</Option><Option value="Device Not Found">Not Found</Option></Select></Col>
+          <Col span={16}><Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Asset Item ID</Text><Input prefix={<IdcardOutlined />} placeholder="Type Asset Item ID to search..." onChange={e => setFilters({...filters, assetItemId: e.target.value})} className="rounded-lg h-10" /></Col>
         </Row>
       </Card>
 
@@ -190,16 +209,17 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
         <Table columns={columns} dataSource={filteredData} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
       </Card>
 
-      {/* ✅ 詳細資訊彈窗 */}
+      {/* ✅ 1. 詳細資訊彈窗 */}
       <Modal
         title={<Space><DatabaseOutlined className="text-teal-600" /> Asset Inventory Detail</Space>}
-        visible={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        visible={detailVisible}
+        onCancel={() => setDetailVisible(false)}
         width={850}
         centered
         footer={[
-          <Button key="edit" icon={<EditOutlined />} onClick={() => message.info("Edit mode enabled")} className="rounded-lg border-teal-600 text-teal-600">Edit Details</Button>,
-          <Button key="close" type="primary" onClick={() => setModalVisible(false)} className="bg-slate-800 border-none rounded-lg px-8">Close</Button>
+          /* ✅ 修改：編輯按鈕現在會開啟表單 */
+          <Button key="edit" icon={<EditOutlined />} onClick={handleEdit} className="rounded-lg border-teal-600 text-teal-600">Edit Asset</Button>,
+          <Button key="close" type="primary" onClick={() => setDetailVisible(false)} className="bg-slate-800 border-none rounded-lg px-8">Close</Button>
         ]}
       >
         {selectedItem && (
@@ -217,10 +237,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
                 <Tag color={selectedItem.stockTakeStatus === 'Verified' ? 'green' : (selectedItem.stockTakeStatus === 'New Record' ? 'orange' : 'default')} className="m-0 px-4 py-1 rounded-lg font-black text-[11px] uppercase">
                   {selectedItem.stockTakeStatus}
                 </Tag>
-                <div className="mt-2 flex flex-col items-end">
-                   <Text className="text-[10px] text-slate-400 font-bold uppercase">In Use Status</Text>
-                   <Text strong className="text-teal-600">{selectedItem.inUseStatus}</Text>
-                </div>
+                <div className="mt-2 text-right"><Text strong className="text-teal-600">{selectedItem.inUseStatus}</Text></div>
               </div>
             </div>
 
@@ -232,54 +249,83 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
                   <Descriptions.Item label="Brand">{selectedItem.shopBrand}</Descriptions.Item>
                   <Descriptions.Item label="BU">{selectedItem.businessUnit}</Descriptions.Item>
                   <Descriptions.Item label="Category">
-                     <Text strong>{selectedItem.productTypeEng}</Text><br/>
-                     <Text className="text-[11px] text-slate-400">{selectedItem.productTypeChi}</Text>
+                     <Text strong>{selectedItem.productTypeEng}</Text><br/><Text className="text-[11px] text-slate-400">{selectedItem.productTypeChi}</Text>
                   </Descriptions.Item>
                 </Descriptions>
-
-                <Descriptions title={<Text strong className="text-blue-700"><BarcodeOutlined /> Hardware Info</Text>} bordered column={2} size="small" className="mb-6">
+                <Descriptions title={<Text strong className="text-blue-700"><BarcodeOutlined /> Hardware Info</Text>} bordered column={2} size="small">
                   <Descriptions.Item label="CMDB No"><Text copyable className="font-mono">{selectedItem.cmdb}</Text></Descriptions.Item>
                   <Descriptions.Item label="Serial No"><Text copyable className="font-mono">{selectedItem.serialNo}</Text></Descriptions.Item>
                   <Descriptions.Item label="IP Address" span={2}><Tag color="cyan">{selectedItem.ipAddress || 'N/A'}</Tag></Descriptions.Item>
-                  <Descriptions.Item label="W to W" span={2}><Tag color="purple">{selectedItem.wToW || 'N/A'}</Tag></Descriptions.Item>
                 </Descriptions>
               </Col>
-
               <Col span={9}>
                 <Text strong className="text-slate-500 block mb-2 uppercase text-[11px]"><PictureOutlined /> Asset Photo</Text>
-                <div className="photo-placeholder">
-                  <PictureOutlined style={{ fontSize: '32px' }} />
-                  <span className="text-[10px] font-bold mt-2 uppercase">Coming Soon</span>
-                </div>
-
+                <div className="photo-placeholder"><PictureOutlined style={{ fontSize: '32px' }} /><span className="text-[10px] font-bold mt-2 uppercase">Coming Soon</span></div>
                 <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
                    <Text strong className="text-[10px] uppercase block mb-3 text-slate-400"><HistoryOutlined /> Audit Trace</Text>
                    <Space direction="vertical" size={12} className="w-full">
-                      <div className="flex items-center gap-3">
-                        <Avatar size="small" icon={<UserOutlined />} className="bg-teal-500" />
-                        <Space direction="vertical" size={0}>
-                          <Text className="text-[11px] font-bold">Created By</Text>
-                          <Text className="text-[10px] text-slate-500">{selectedItem.createdBy}</Text>
-                        </Space>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Avatar size="small" icon={<ReloadOutlined />} className="bg-blue-500" />
-                        <Space direction="vertical" size={0}>
-                          <Text className="text-[11px] font-bold">Record Time</Text>
-                          <Text className="text-[10px] text-slate-500">{selectedItem.recordTimeAlt}</Text>
-                        </Space>
-                      </div>
+                      <div className="flex items-center gap-3"><Avatar size="small" icon={<UserOutlined />} className="bg-teal-500" /><Space direction="vertical" size={0}><Text className="text-[11px] font-bold">Created By</Text><Text className="text-[10px] text-slate-500">{selectedItem.createdBy}</Text></Space></div>
+                      <div className="flex items-center gap-3"><Avatar size="small" icon={<ReloadOutlined />} className="bg-blue-500" /><Space direction="vertical" size={0}><Text className="text-[11px] font-bold">Record Time</Text><Text className="text-[10px] text-slate-500">{selectedItem.recordTimeAlt}</Text></Space></div>
                    </Space>
                 </div>
               </Col>
             </Row>
-
-            <Divider orientation="left"><Text type="secondary" className="text-xs uppercase">Remarks</Text></Divider>
-            <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 italic text-slate-600 text-xs">
-              {selectedItem.remarks || "No additional remarks."}
-            </div>
           </div>
         )}
+      </Modal>
+
+      {/* ✅ 2. 編輯/新增表單彈窗 */}
+      <Modal
+        title={<Space><EditOutlined className="text-teal-600" /> {formMode === 'new' ? 'Add New Asset' : 'Edit Asset Detail'}</Space>}
+        visible={formVisible}
+        onCancel={() => setFormVisible(false)}
+        onOk={() => form.submit()}
+        width={600}
+        okText="Save Record"
+        centered
+      >
+        <Form form={form} layout="vertical" onFinish={(values) => { message.success("Saving to SharePoint..."); setFormVisible(false); }}>
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item name="shopName" label="Shop Name" rules={[{ required: true }]}>
+                {/* ✅ 使用 AutoComplete 實現智慧搜尋 */}
+                <AutoComplete
+                  options={shops.map(s => ({ value: `${s.id} - ${s.name}` }))}
+                  onSelect={handleShopSelect}
+                  placeholder="Type shop code or name (e.g. 5110)"
+                  filterOption={(inputValue, option) =>
+                    option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}><Form.Item name="shopCode" label="Shop Code"><Input disabled /></Form.Item></Col>
+            <Col span={8}><Form.Item name="shopBrand" label="Brand"><Input disabled /></Form.Item></Col>
+            <Col span={8}><Form.Item name="businessUnit" label="BU"><Input disabled /></Form.Item></Col>
+            
+            <Divider className="my-2" />
+            
+            <Col span={24}><Form.Item name="assetName" label="Asset Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="assetItemId" label="Asset Item ID"><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="brand" label="Manufacturer (Brand)"><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="serialNo" label="Serial Number"><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="cmdb" label="CMDB Number"><Input /></Form.Item></Col>
+            <Col span={12}>
+              <Form.Item name="stockTakeStatus" label="ST Status">
+                <Select>
+                  <Option value="Verified">Verified</Option>
+                  <Option value="New Record">New Record</Option>
+                  <Option value="Device Not Found">Device Not Found</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+               <Form.Item name="inUseStatus" label="In Use Status">
+                 <Select><Option value="In Use">In Use</Option><Option value="Spare">Spare</Option></Select>
+               </Form.Item>
+            </Col>
+          </Row>
+        </Form>
       </Modal>
     </div>
   );

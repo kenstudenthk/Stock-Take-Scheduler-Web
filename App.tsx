@@ -164,3 +164,58 @@ function App() {
               </div>
               
               <div className={`${collapsed ? 'mt-6' : ''}`}>
+                <input 
+                  type="checkbox" 
+                  id="checkbox" 
+                  checked={!collapsed} 
+                  onChange={() => setCollapsed(!collapsed)} 
+                />
+                <label htmlFor="checkbox" className="toggle" style={{ transform: collapsed ? 'scale(0.5)' : 'scale(0.7)' }}>
+                  <div className="bars" id="bar1"></div>
+                  <div className="bars" id="bar2"></div>
+                  <div className="bars" id="bar3"></div>
+                </label>
+              </div>
+            </div>
+
+            <ul>
+              {[
+                { k: View.DASHBOARD, i: <HomeOutlined />, l: 'Dashboard' },
+                { k: View.SHOP_LIST, i: <UnorderedListOutlined />, l: 'Master List' },
+                { k: View.CALENDAR, i: <CalendarOutlined />, l: 'Schedules' },
+                { k: View.GENERATOR, i: <ToolOutlined />, l: 'Generator' },
+                { k: View.LOCATIONS, i: <ShopOutlined />, l: 'Map View' },
+                { k: View.INVENTORY, i: <UnorderedListOutlined />, l: 'Inventory' },
+                { k: View.SETTINGS, i: <SettingOutlined />, l: 'Settings' },
+              ].map(item => (
+                <li key={item.k} className={`list ${selectedMenuKey === item.k ? 'active' : ''}`} onClick={() => setSelectedMenuKey(item.k)}>
+                  <a href="#"><span className="icon">{item.i}</span>{!collapsed && <span className="title">{item.l}</span>}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="flex justify-center items-center px-4">
+            <div style={{ transform: collapsed ? 'scale(0.25)' : 'scale(0.35)', transition: '0.3s' }}>
+              <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
+            </div>
+          </div>
+        </div>
+      </Sider>
+      
+      <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
+        <Header className="app-header px-8 flex justify-end items-center h-16 border-b flex-shrink-0">
+          <Space size="large">
+            <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)} className="refresh-btn">Refresh</Button>
+            <Tag color="cyan" className="font-bold rounded-md">POOL: {allShops.length}</Tag>
+            <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" className="user-avatar" />
+          </Space>
+        </Header>
+        <Content className="main-scroll-content p-8 overflow-y-auto h-full">
+          {renderContent()}
+        </Content>
+      </Layout>
+    </Layout>
+  );
+}
+
+export default App;

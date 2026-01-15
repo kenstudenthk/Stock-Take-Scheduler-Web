@@ -1644,51 +1644,85 @@ body {
 /* ============================================================
    24. CAPYBARA NOTIFICATION OVERLAY
    ============================================================ */
-/* 通知容器：佔據 Header 左側剩餘空間 */
-/* The container that holds the walking Capy on the left of the header */
-.capy-header-container {
+/* 容器：佔據 Header 左側區域 */
+.capy-flag-container {
   display: flex;
   align-items: center;
-  flex: 1; /* Takes up remaining space on the left */
+  flex: 1;
   height: 100%;
   overflow: hidden;
   position: relative;
 }
 
-.capy-walker-wrapper {
+/* 整體走路進場的容器 */
+.capy-flag-walker {
   display: flex;
   align-items: center;
-  animation: capy-pull-in 2.5s ease-out forwards;
   position: absolute;
   left: 0;
+  /* 動畫：從左側走到位 */
+  animation: capy-walk-to-right 3.5s cubic-bezier(0.39, 0.575, 0.565, 1) forwards;
 }
 
-/* Small scale for header row */
-.capybaraloader.header-mini {
+/* 縮小水豚 */
+.capybaraloader.flag-mode {
   transform: scale(0.28);
   transform-origin: left center;
-  margin-right: -85px; 
-  flex-shrink: 0;
+  margin-right: -80px; /* 修正縮放位移 */
+  z-index: 10;
 }
 
-.capy-pull-message {
-  white-space: nowrap;
-  font-weight: 800;
+/* 旗幟訊息框 (像旗子一樣跟在後面) */
+.capy-notice-flag {
+  position: relative;
+  background: #f43f5e; /* 警告紅背景 */
+  color: white;
+  padding: 8px 18px;
   font-size: 13px;
-  color: #f43f5e;
-  background: rgba(244, 63, 94, 0.08);
-  padding: 8px 20px 8px 45px;
-  border-radius: 30px;
-  margin-left: -25px;
-  border: 1px solid rgba(244, 63, 94, 0.15);
-  z-index: -1;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 800;
+  border-radius: 6px;
+  white-space: nowrap;
+  margin-left: -15px;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* 旗幟的小尾巴效果 */
+  clip-path: polygon(100% 0%, 95% 50%, 100% 100%, 0% 100%, 0% 0%);
 }
 
-@keyframes capy-pull-in {
-  0% { transform: translateX(-120%); opacity: 0; }
-  100% { transform: translateX(10px); opacity: 1; }
+/* 旗幟與水豚之間的連線 (旗桿) */
+.capy-notice-flag::before {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  width: 25px;
+  height: 2px;
+  background: #53381c; /* 與水豚深色一致 */
+  z-index: -1;
+}
+
+/* 走路進場動畫：從左邊拉到右邊 */
+@keyframes capy-walk-to-right {
+  0% {
+    transform: translateX(-150%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(30px); /* 停在離左側 30px 處，面向 Refresh 按鈕 */
+    opacity: 1;
+  }
+}
+
+/* 旗幟微微飄動效果 */
+.capy-notice-flag {
+  animation: flag-wave 2s ease-in-out infinite;
+}
+
+@keyframes flag-wave {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-3px) rotate(-1deg); }
 }
 
 /* Capybara Core Animation Styles */

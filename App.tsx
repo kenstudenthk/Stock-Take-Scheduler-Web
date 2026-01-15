@@ -3,7 +3,7 @@ import { Layout, Button, Space, Tag, Avatar, message, Typography } from 'antd';
 import { 
   HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
   SettingOutlined, SyncOutlined, UnorderedListOutlined,
-  WarningFilled, BugOutlined
+  WarningFilled, BugOutlined 
 } from '@ant-design/icons';
 import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
@@ -15,19 +15,18 @@ import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
 import { ThemeToggle } from './components/ThemeToggle';
-import { ErrorReport } from './components/ErrorReport';
+import { ErrorReport } from './components/ErrorReport'; // ✅ 確保此組件已建立
 import './index.css';
 
-const [reportModalVisible, setReportModalVisible] = useState(false);
 const { Content, Header, Sider } = Layout;
 const { Title, Text } = Typography;
 
-// ✅ 貨車通知組件
+// ✅ 貨車拉旗幟循環通知組件 (保持不變)
 const TruckFlagNotice: React.FC = () => (
   <div className="truck-header-container">
     <div className="truck-flag-walker">
       <div className="truck-notice-flag">
-        <WarningFilled /> TOKEN EXPIRED: PLEASE UPDATE IN SETTINGS
+        <WarningFilled /> TOKEN EXPIRED: UPDATE IN SETTINGS
       </div>
       <div className="truck-wrapper-mini">
         <div className="truckBody-anim">
@@ -51,27 +50,15 @@ function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [collapsed, setCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(localStorage.getItem('theme') === 'dark');
-  
-  // ✅ 初始載入 Token
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
   const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
-  
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasTokenError, setHasTokenError] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  // ✅ 新增：統一的 Token 更新與持久化函數
-  const updateGraphToken = (newToken: string) => {
-    setGraphToken(newToken);
-    localStorage.setItem('stockTakeToken', newToken);
-    if (newToken) setHasTokenError(false);
-  };
-
-  const updateInvToken = (newToken: string) => {
-    setInvToken(newToken);
-    localStorage.setItem('stockTakeInvToken', newToken);
-  };
+  
+  // ✅ 修正：回報彈窗狀態必須定義在 App 組件內部
+  const [reportModalVisible, setReportModalVisible] = useState(false); 
 
   const fetchAllData = useCallback(async (token: string) => {
     if (!token) {
@@ -100,9 +87,7 @@ function App() {
               region: f[SP_FIELDS.REGION] || '',
               district: f[SP_FIELDS.DISTRICT] || '',
               brand: f[SP_FIELDS.BRAND] || '',
-              businessUnit: f[SP_FIELDS.BUSINESS_UNIT] || '',
               area: f[SP_FIELDS.AREA] || '',
-              masterStatus: f[SP_FIELDS.OLD_STATUS] || '',
               status: f[SP_FIELDS.STATUS] || 'Unplanned',
               scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
               groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
@@ -130,15 +115,14 @@ function App() {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  // ✅ 修正 useEffect 觸發邏輯
   useEffect(() => { 
-    if (graphToken) {
-      fetchAllData(graphToken); 
-    } else {
+    const savedToken = localStorage.getItem('stockTakeToken');
+    if (savedToken) fetchAllData(savedToken); 
+    else {
       setHasTokenError(true);
       setIsInitialLoading(false);
     }
-  }, [graphToken, fetchAllData]);
+  }, [fetchAllData]);
 
   const renderContent = () => {
     switch (selectedMenuKey) {
@@ -151,9 +135,9 @@ function App() {
       case View.SETTINGS: return (
         <Settings 
           token={graphToken} 
-          onUpdateToken={updateGraphToken} 
+          onUpdateToken={(t) => {setGraphToken(t); localStorage.setItem('stockTakeToken', t); setHasTokenError(false);}} 
           invToken={invToken} 
-          onUpdateInvToken={updateInvToken} 
+          onUpdateInvToken={(t) => {setInvToken(t); localStorage.setItem('stockTakeInvToken', t);}} 
         />
       );
       default: return null;
@@ -185,6 +169,7 @@ function App() {
               </div>
             </div>
             <ul>
+              {/* ✅ 菜單項渲染 */}
               {[
                 { k: View.DASHBOARD, i: <HomeOutlined />, l: 'Dashboard' },
                 { k: View.SHOP_LIST, i: <UnorderedListOutlined />, l: 'Master List' },
@@ -197,14 +182,15 @@ function App() {
                 <li key={item.k} className={`list ${selectedMenuKey === item.k ? 'active' : ''}`} onClick={() => setSelectedMenuKey(item.k)}>
                   <a href="#"><span className="icon">{item.i}</span>{!collapsed && <span className="title">{item.l}</span>}</a>
                 </li>
-                ))}
-                <li className="list mt-auto" onClick={() => setReportModalVisible(true)}>
-  <a href="#">
-    <span className="icon text-red-400"><BugOutlined /></span>
-    {!collapsed && <span className="title text-red-400">Report Error</span>}
-  </a>
-</li>
-    
+              ))}
+              
+              {/* ✅ 修正：Report Error 按鈕現在正確地放在 .map() 之外 */}
+              <li className="list mt-auto" onClick={() => setReportModalVisible(true)}>
+                <a href="#">
+                  <span className="icon text-red-400"><BugOutlined /></span>
+                  {!collapsed && <span className="title text-red-400 font-bold">Report Error</span>}
+                </a>
+              </li>
             </ul>
           </div>
           <div className="flex justify-center items-center px-4">
@@ -214,18 +200,14 @@ function App() {
           </div>
         </div>
       </Sider>
-    
       
       <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
         <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
-          
-          {/* ✅ 關鍵修正：只有在完成初始載入、確認有錯且沒在加載時，貨車才出動 */}
           {!isInitialLoading && hasTokenError && !loading ? <TruckFlagNotice /> : <div className="flex-1" />}
-
           <Space size="large">
-            <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)} className="refresh-btn">Refresh</Button>
-            <Tag color="cyan" className="font-bold rounded-md px-3 py-0.5">POOL: {allShops.length}</Tag>
-            <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" className="user-avatar" />
+            <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)}>Refresh</Button>
+            <Tag color="cyan" className="font-bold">POOL: {allShops.length}</Tag>
+            <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" />
           </Space>
         </Header>
         
@@ -233,11 +215,13 @@ function App() {
           {renderContent()}
         </Content>
       </Layout>
+
+      {/* ✅ 底部加入 ErrorReport 彈窗 */}
       <ErrorReport 
-  visible={reportModalVisible} 
-  onCancel={() => setReportModalVisible(false)} 
-  token={graphToken} 
-/>
+        visible={reportModalVisible} 
+        onCancel={() => setReportModalVisible(false)} 
+        token={graphToken} 
+      />
     </Layout>
   );
 }

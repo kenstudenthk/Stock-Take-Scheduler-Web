@@ -15,13 +15,13 @@ import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
 import { ThemeToggle } from './components/ThemeToggle';
-import { ErrorReport } from './components/ErrorReport'; // ✅ 確保此組件已建立
+import { ErrorReport } from './components/ErrorReport'; 
 import './index.css';
 
 const { Content, Header, Sider } = Layout;
 const { Title, Text } = Typography;
 
-// ✅ 貨車拉旗幟循環通知組件 (保持不變)
+// 貨車通知組件
 const TruckFlagNotice: React.FC = () => (
   <div className="truck-header-container">
     <div className="truck-flag-walker">
@@ -56,9 +56,19 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [hasTokenError, setHasTokenError] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  
-  // ✅ 修正：回報彈窗狀態必須定義在 App 組件內部
-  const [reportModalVisible, setReportModalVisible] = useState(false); 
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+
+  // ✅ 新增：統一的 Token 更新函數 (包含持久化儲存)
+  const updateGraphToken = (token: string) => {
+    setGraphToken(token);
+    localStorage.setItem('stockTakeToken', token);
+    if (token) setHasTokenError(false);
+  };
+
+  const updateInvToken = (token: string) => {
+    setInvToken(token);
+    localStorage.setItem('stockTakeInvToken', token);
+  };
 
   const fetchAllData = useCallback(async (token: string) => {
     if (!token) {
@@ -82,21 +92,21 @@ function App() {
               sharePointItemId: item.id,
               id: f[SP_FIELDS.SHOP_CODE] || item.id,
               name: f[SP_FIELDS.SHOP_NAME] || '',
-              brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
+              brand: f[SP_FIELDS.BRAND] || '',
               address: f[SP_FIELDS.ADDRESS_ENG] || '',
               region: f[SP_FIELDS.REGION] || '',
               district: f[SP_FIELDS.DISTRICT] || '',
-              brand: f[SP_FIELDS.BRAND] || '',
               area: f[SP_FIELDS.AREA] || '',
               status: f[SP_FIELDS.STATUS] || 'Unplanned',
-              masterStatus: f[SP_FIELDS.OLD_STATUS] || '',
+              // ✅ 關鍵：對應到 field_1 (結業狀態)
+              masterStatus: f[SP_FIELDS.OLD_STATUS] || '', 
               scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
               groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
               is_mtr: f[SP_FIELDS.MTR] === 'Yes',
-              phone: f[SP_FIELDS.PHONE] || '',
-              contactName: f[SP_FIELDS.CONTACT] || '',
               latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
               longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
+              // 補上 Inventory 需要的欄位
+              businessUnit: f[SP_FIELDS.BUSINESS_UNIT] || '',
             };
           });
           setAllShops(mapped);
@@ -104,7 +114,7 @@ function App() {
         }
       }
     } catch (err) {
-      console.error("Sync error:", err);
+      console.error(err);
     } finally {
       setLoading(false);
       setIsInitialLoading(false);
@@ -136,9 +146,9 @@ function App() {
       case View.SETTINGS: return (
         <Settings 
           token={graphToken} 
-          onUpdateToken={(t) => {setGraphToken(t); localStorage.setItem('stockTakeToken', t); setHasTokenError(false);}} 
+          onUpdateToken={updateGraphToken} 
           invToken={invToken} 
-          onUpdateInvToken={(t) => {setInvToken(t); localStorage.setItem('stockTakeInvToken', t);}} 
+          onUpdateInvToken={updateInvToken} 
         />
       );
       default: return null;
@@ -170,7 +180,6 @@ function App() {
               </div>
             </div>
             <ul>
-              {/* ✅ 菜單項渲染 */}
               {[
                 { k: View.DASHBOARD, i: <HomeOutlined />, l: 'Dashboard' },
                 { k: View.SHOP_LIST, i: <UnorderedListOutlined />, l: 'Master List' },
@@ -184,8 +193,6 @@ function App() {
                   <a href="#"><span className="icon">{item.i}</span>{!collapsed && <span className="title">{item.l}</span>}</a>
                 </li>
               ))}
-              
-              {/* ✅ 修正：Report Error 按鈕現在正確地放在 .map() 之外 */}
               <li className="list mt-auto" onClick={() => setReportModalVisible(true)}>
                 <a href="#">
                   <span className="icon text-red-400"><BugOutlined /></span>
@@ -195,9 +202,7 @@ function App() {
             </ul>
           </div>
           <div className="flex justify-center items-center px-4">
-            <div style={{ transform: collapsed ? 'scale(0.25)' : 'scale(0.35)', transition: '0.3s' }}>
-              <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
-            </div>
+            <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
           </div>
         </div>
       </Sider>
@@ -217,7 +222,6 @@ function App() {
         </Content>
       </Layout>
 
-      {/* ✅ 底部加入 ErrorReport 彈窗 */}
       <ErrorReport 
         visible={reportModalVisible} 
         onCancel={() => setReportModalVisible(false)} 

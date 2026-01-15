@@ -19,6 +19,12 @@ import './index.css';
 
 const { Content, Header, Sider } = Layout;
 const { Title, Text } = Typography;
+// 在 App.tsx 中修改 handleUpdateToken
+const handleUpdateToken = (newToken: string) => {
+  setGraphToken(newToken);
+  localStorage.setItem('stockTakeToken', newToken); // ✅ 必須確保這行存在
+  setHasTokenError(false);
+};
 
 // ✅ 貨車拉旗幟循環通知組件
 const TruckFlagNotice: React.FC = () => (

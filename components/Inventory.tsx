@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Input, Select, Card, Typography, Space, Tag, Button, Row, Col, message, Modal, Descriptions, Divider } from 'antd';
-import { SearchOutlined, ReloadOutlined, DatabaseOutlined, BarcodeOutlined, IdcardOutlined, InfoCircleOutlined } from '@ant-design/icons';
-import { INV_FIELDS } from '../constants';
+import { 
+  SearchOutlined, ReloadOutlined, DatabaseOutlined, 
+  BarcodeOutlined, IdcardOutlined, EditOutlined 
+} from '@ant-design/icons';
+import { INV_FIELDS } from '../constants'; // 使用您提供的 constants.ts
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -13,8 +16,8 @@ interface Props {
 export const Inventory: React.FC<Props> = ({ invToken }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null); // ✅ 儲存被選中的資產
-  const [modalVisible, setModalVisible] = useState(false);     // ✅ 控制 Modal 顯示
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [modalVisible, setModalVisible] = useState(false);
   
   const [filters, setFilters] = useState({
     shopName: '',
@@ -38,6 +41,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
           const f = item.fields || {};
           return {
             id: item.id,
+            // --- 使用 INV_FIELDS 進行精準對應 ---
             shopName: f[INV_FIELDS.SHOP_NAME] || '',
             shopBrand: f[INV_FIELDS.SHOP_BRAND] || '',
             shopCode: f[INV_FIELDS.SHOP_CODE] || '',
@@ -47,6 +51,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
             serialNo: f[INV_FIELDS.SERIAL_NO] || '',
             assetName: f[INV_FIELDS.ASSET_NAME] || '',
             inUseStatus: f[INV_FIELDS.IN_USE_STATUS] || 'N/A',
+            stockTakeStatus: f[INV_FIELDS.STOCK_TAKE_STATUS] || 'Unverified', // ✅ 新增盤點狀態
             brand: f[INV_FIELDS.BRAND] || '',
             recordTime: f[INV_FIELDS.RECORD_TIME] || '',
             assetItemId: f[INV_FIELDS.ASSET_ITEM_ID] || '',
@@ -79,11 +84,22 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
     {
       title: 'Shop / Store',
       key: 'shop',
-      width: '20%',
+      width: '18%',
       render: (record: any) => (
         <Space direction="vertical" size={0}>
-          <Text strong style={{ fontSize: '14px' }}>{record.shopName}</Text>
-          <Space><Tag color="orange" style={{ fontSize: '10px' }}>{record.shopBrand}</Tag></Space>
+          <Text strong style={{ fontSize: '13px' }}>{record.shopName}</Text>
+          <Tag color="orange" style={{ fontSize: '10px', borderRadius: '4px' }}>{record.shopBrand}</Tag>
+        </Space>
+      ),
+    },
+    {
+      title: 'Product Type', // ✅ 更新欄位名稱與格式
+      key: 'productType',
+      width: '15%',
+      render: (record: any) => (
+        <Space direction="vertical" size={0}>
+          <Text strong className="text-teal-700" style={{ fontSize: '13px' }}>{record.productTypeEng}</Text>
+          <Text style={{ color: '#94a3b8', fontSize: '11px' }}>{record.productTypeChi}</Text>
         </Space>
       ),
     },
@@ -93,39 +109,51 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
       render: (record: any) => (
         <Space direction="vertical" size={0}>
           <Text strong style={{ fontSize: '13px' }}>{record.assetName}</Text>
-          <Text type="secondary" style={{ fontSize: '11px' }}>SN: {record.serialNo} | CMDB: {record.cmdb}</Text>
+          <Space split={<Divider type="vertical" />}>
+            <Text type="secondary" style={{ fontSize: '11px' }}>SN: {record.serialNo}</Text>
+            <Text type="secondary" style={{ fontSize: '11px' }}>CMDB: {record.cmdb}</Text>
+          </Space>
         </Space>
       ),
     },
     {
-      title: 'Status',
-      dataIndex: 'inUseStatus',
+      title: 'Stock Take Status', // ✅ 更新狀態顯示邏輯
       key: 'status',
-      width: 130,
-      render: (status: string) => {
-        let color = status === 'In Use' ? 'green' : (status === 'Not Found' ? 'red' : 'blue');
-        return <Tag color={color} className="font-bold">{status}</Tag>;
+      width: 160,
+      render: (record: any) => {
+        let color = 'default';
+        const stStatus = record.stockTakeStatus;
+        
+        // 設定盤點狀態顏色
+        if (stStatus === 'Verified') color = 'green';
+        if (stStatus === 'New Record') color = 'orange';
+        if (stStatus === 'Device Not Found') color = '#94a3b8'; // Grey
+
+        return (
+          <Space direction="vertical" size={0}>
+            <Tag color={color} className="font-bold uppercase" style={{ fontSize: '10px' }}>
+              {stStatus}
+            </Tag>
+            <Text style={{ fontSize: '10px', color: '#94a3b8', paddingLeft: '4px' }}>
+              In Use: {record.inUseStatus}
+            </Text>
+          </Space>
+        );
       }
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 100,
+      width: 80,
       align: 'center' as const,
       render: (record: any) => (
-        /* ✅ 核心組件注入：使用您提供的 HTML 結構作為按鈕 */
-        <div 
-          className="tooltip-container" 
-          onClick={() => { setSelectedItem(record); setModalVisible(true); }}
-        >
+        <div className="tooltip-container" onClick={() => { setSelectedItem(record); setModalVisible(true); }}>
           <div className="icon">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22c-5.518 0-10-4.482-10-10s4.482-10 10-10 10 4.482 10 10-4.482 10-10 10zm-1-16h2v6h-2zm0 8h2v2h-2z" />
             </svg>
           </div>
-          <div className="tooltip">
-            <p>View Item Details</p>
-          </div>
+          <div className="tooltip"><p>View Details</p></div>
         </div>
       ),
     }
@@ -133,7 +161,6 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">
-      {/* Header 與 Filter 區塊保持不變 */}
       <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <Title level={2} style={{ margin: 0 }}>Inventory Database</Title>
         <Button type="primary" icon={<ReloadOutlined />} onClick={fetchInventory} loading={loading} className="bg-teal-600 rounded-xl h-11 px-6 font-bold shadow-lg">Refresh Data</Button>
@@ -146,14 +173,10 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
             <Input prefix={<SearchOutlined />} placeholder="Shop name..." onChange={e => setFilters({...filters, shopName: e.target.value})} className="rounded-lg h-10" />
           </Col>
           <Col span={4}>
-            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Serial No</Text>
-            <Input placeholder="Serial..." onChange={e => setFilters({...filters, serialNo: e.target.value})} className="rounded-lg h-10" />
+            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">CMDB / Serial</Text>
+            <Input placeholder="Search..." onChange={e => setFilters({...filters, cmdb: e.target.value})} className="rounded-lg h-10" />
           </Col>
-          <Col span={4}>
-            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">CMDB</Text>
-            <Input placeholder="CMDB..." onChange={e => setFilters({...filters, cmdb: e.target.value})} className="rounded-lg h-10" />
-          </Col>
-          <Col span={12}>
+          <Col span={16}>
             <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Asset Item ID</Text>
             <Input prefix={<IdcardOutlined />} placeholder="Search by Asset ID..." onChange={e => setFilters({...filters, assetItemId: e.target.value})} className="rounded-lg h-10" />
           </Col>
@@ -164,41 +187,49 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
         <Table columns={columns} dataSource={filteredData} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
       </Card>
 
-      {/* ✅ 詳情彈窗：與 Master List 邏輯一致 */}
       <Modal
-        title={<Space><DatabaseOutlined className="text-teal-600" /> 資產詳細資訊 Asset Details</Space>}
+        title={<Space><DatabaseOutlined className="text-teal-600" /> Asset Inventory Detail</Space>}
         visible={modalVisible}
         onCancel={() => setModalVisible(false)}
-        footer={[<Button key="close" type="primary" onClick={() => setModalVisible(false)} className="rounded-lg px-8">Close</Button>]}
+        footer={[
+          /* ✅ 新增 Edit 按鈕 */
+          <Button key="edit" icon={<EditOutlined />} onClick={() => message.info("Edit feature coming soon!")} className="rounded-lg border-teal-600 text-teal-600">
+            Edit Item
+          </Button>,
+          <Button key="close" type="primary" onClick={() => setModalVisible(false)} className="rounded-lg bg-slate-800 border-none">
+            Close
+          </Button>
+        ]}
         width={700}
         centered
-        className="detail-modal-styled"
       >
         {selectedItem && (
-          <div className="py-4">
+          <div className="py-2">
             <div className="flex justify-between items-start mb-6">
               <Space direction="vertical" size={0}>
                 <Title level={4} style={{ margin: 0 }}>{selectedItem.assetName}</Title>
-                <Text type="secondary" className="text-xs uppercase tracking-widest">{selectedItem.brand} | {selectedItem.businessUnit}</Text>
+                <Text type="secondary" className="text-xs uppercase">{selectedItem.brand} | {selectedItem.assetItemId}</Text>
               </Space>
-              <Tag color="teal" className="m-0 font-bold px-4 py-1 rounded-full uppercase">{selectedItem.inUseStatus}</Tag>
+              <div className="text-right">
+                <Tag color={selectedItem.stockTakeStatus === 'Verified' ? 'green' : (selectedItem.stockTakeStatus === 'New Record' ? 'orange' : 'default')} className="m-0 font-bold px-3 py-0.5 rounded-full">
+                  {selectedItem.stockTakeStatus}
+                </Tag>
+                <div className="text-[10px] text-slate-400 mt-1">In Use: {selectedItem.inUseStatus}</div>
+              </div>
             </div>
             
-            <Descriptions bordered column={2} size="small" className="rounded-xl overflow-hidden">
-              <Descriptions.Item label="Shop Name" span={2}>{selectedItem.shopName}</Descriptions.Item>
-              <Descriptions.Item label="Shop Code">{selectedItem.shopCode}</Descriptions.Item>
-              <Descriptions.Item label="Brand">{selectedItem.shopBrand}</Descriptions.Item>
-              <Descriptions.Item label="Asset ID" span={2}><Text copyable className="font-mono text-blue-600">{selectedItem.assetItemId}</Text></Descriptions.Item>
-              <Descriptions.Item label="Serial No"><Text className="font-mono">{selectedItem.serialNo}</Text></Descriptions.Item>
-              <Descriptions.Item label="CMDB No"><Tag color="blue">{selectedItem.cmdb}</Tag></Descriptions.Item>
-              <Descriptions.Item label="Category" span={2}>{selectedItem.productTypeEng} ({selectedItem.productTypeChi})</Descriptions.Item>
+            <Descriptions bordered column={2} size="small" className="rounded-xl overflow-hidden bg-slate-50">
+              <Descriptions.Item label="Shop Info" span={2}>
+                <Text strong>{selectedItem.shopName}</Text> ({selectedItem.shopCode})
+              </Descriptions.Item>
+              <Descriptions.Item label="CMDB">{selectedItem.cmdb}</Descriptions.Item>
+              <Descriptions.Item label="Serial No">{selectedItem.serialNo}</Descriptions.Item>
+              <Descriptions.Item label="Category" span={2}>
+                {selectedItem.productTypeEng} <br/>
+                <Text type="secondary" className="text-xs">{selectedItem.productTypeChi}</Text>
+              </Descriptions.Item>
               <Descriptions.Item label="Remarks" span={2}>{selectedItem.remarks || '--'}</Descriptions.Item>
             </Descriptions>
-            
-            <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-               <Text type="secondary" className="text-[11px] uppercase block">Last Data Update from SharePoint</Text>
-               <Text strong className="text-xs">{selectedItem.recordTime || 'No recent record'}</Text>
-            </div>
           </div>
         )}
       </Modal>

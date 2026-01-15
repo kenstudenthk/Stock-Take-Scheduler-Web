@@ -121,12 +121,17 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [isSaving, setIsSaving] = useState(false);
   const [loadingType, setLoadingType] = useState<'reset' | 'sync'>('sync');
 
-  const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed'), [shops]);
+  const activePool = useMemo(() => {
+    return shops.filter(s => 
+      s.masterStatus !== 'Closed' && 
+      s.status !== 'Closed'
+    );
+  }, [shops]);
   const regionOptions = useMemo(() => Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort(), [activePool]);
 
   const stats = useMemo(() => ({
     total: activePool.length, completed: activePool.filter(s => s.status === 'Done').length,
-    closed: activePool.filter(s => s.status === 'Closed').length, unplanned: activePool.filter(s => s.status === 'Unplanned').length
+    unplanned: activePool.filter(s => s.status === 'Unplanned').length
   }), [activePool]);
 
   // --- 地區數據邏輯：將代碼轉換為正式名稱與圖標物件 ---

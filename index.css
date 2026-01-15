@@ -1651,53 +1651,50 @@ body {
   flex: 1;
   height: 100%;
   position: relative;
-  overflow: hidden;
+  overflow: hidden; 
 }
 
 .truck-flag-walker {
   display: flex;
-  flex-direction: row;
-  align-items: flex-end;
+  flex-direction: row; 
+  align-items: flex-end; 
   position: absolute;
   bottom: 0px; 
   left: 0;
-  /* 使用 linear 確保全程勻速，16秒完成一次大循環 */
-  animation: truck-patrol-loop 16s linear infinite;
+  /* ✅ 修正 1：確保動畫名稱與下方的 @keyframes 一致 */
+  animation: truck-patrol-loop 16s linear infinite; 
   z-index: 5;
 }
 
-/* 縮小貨車並對齊底部 */
 .truck-wrapper-mini {
   transform: scale(0.35);
   transform-origin: left bottom;
   width: 200px;
-  height: 90px;
+  height: 100px;
   display: flex;
   flex-direction: column;
   position: relative;
   align-items: center;
   justify-content: flex-end;
-  margin-right: -115px;
-  margin-bottom: -4px;
+  margin-right: -115px; /* 修正縮放位移 */
+  margin-bottom: -5px; 
 }
 
-/* 旗幟訊息框 (位於貨車後方) */
 .truck-notice-flag {
   background: #f83d3d;
   color: white;
   padding: 6px 16px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   border-radius: 6px 2px 2px 6px;
   white-space: nowrap;
-  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 15px; 
   animation: flag-wave 1.5s ease-in-out infinite;
   z-index: 1;
-  position: relative;
 }
 
 .truck-notice-flag::after {
@@ -1710,23 +1707,15 @@ body {
   background: #282828;
 }
 
-/* --- 核心：均勻速度循環路徑 --- */
+/* ✅ 修正 2：勻速巡邏路徑 (確保從左到右消失後再循環) */
 @keyframes truck-patrol-loop {
-  0% {
-    left: -500px; /* 從左側外面開始 */
-  }
+  0% { left: -500px; }
   /* 0% - 70%：走很長一段路到 Refresh 按鈕前 (勻速) */
-  70% {
-    left: calc(100% - 380px); 
-  }
+  70% { left: calc(100% - 380px); } 
   /* 70% - 80%：停留在按鈕前，讓使用者看清楚訊息 */
-  80% {
-    left: calc(100% - 380px);
-  }
-  /* 80% - 100%：走完剩下的短路徑，消失在右側 (速度與第一段匹配) */
-  100% {
-    left: 115%;
-  }
+  80% { left: calc(100% - 380px); }
+  /* 80% - 100%：走完剩下的短路徑，消失在右側 */
+  100% { left: 115%; }
 }
 
 @keyframes flag-wave {

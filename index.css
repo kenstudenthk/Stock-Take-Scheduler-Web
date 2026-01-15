@@ -1650,18 +1650,20 @@ body {
   align-items: center;
   flex: 1;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
 }
 
-/* 整體走路進場的容器 */
+/* 走路主體：水豚 + 旗幟 */
 .capy-flag-walker {
   display: flex;
+  flex-direction: row; /* 水平排列 */
   align-items: center;
   position: absolute;
-  left: 0;
-  /* 動畫：從左側走到位 */
-  animation: capy-walk-to-right 3.5s cubic-bezier(0.39, 0.575, 0.565, 1) forwards;
+  top: 50%;
+  transform: translateY(-50%);
+  /* 5秒內從左走過來，停在右邊 */
+  animation: capy-walk-to-refresh 5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 /* 縮小水豚 */
@@ -1672,59 +1674,66 @@ body {
   z-index: 10;
 }
 
-/* 旗幟訊息框 (像旗子一樣跟在後面) */
+/* 旗幟訊息框 (位於水豚後方) */
 .capy-notice-flag {
-  position: relative;
-  background: #f43f5e; /* 警告紅背景 */
+  background: #f43f5e;
   color: white;
-  padding: 8px 18px;
+  padding: 8px 20px;
   font-size: 13px;
   font-weight: 800;
-  border-radius: 6px;
+  border-radius: 8px 4px 4px 8px; /* 旗幟形狀 */
   white-space: nowrap;
-  margin-left: -15px;
-  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   gap: 8px;
-  /* 旗幟的小尾巴效果 */
-  clip-path: polygon(100% 0%, 95% 50%, 100% 100%, 0% 100%, 0% 0%);
+  z-index: 1;
+  position: relative;
+  /* 旗幟飄動動畫 */
+  animation: flag-wave 1.5s ease-in-out infinite;
 }
 
-/* 旗幟與水豚之間的連線 (旗桿) */
-.capy-notice-flag::before {
+/* 旗幟與水豚之間的連桿 */
+.capy-notice-flag::after {
   content: "";
   position: absolute;
-  left: -20px;
+  right: -25px;
   top: 50%;
-  width: 25px;
-  height: 2px;
-  background: #53381c; /* 與水豚深色一致 */
+  width: 30px;
+  height: 3px;
+  background: #53381c;
   z-index: -1;
 }
 
-/* 走路進場動畫：從左邊拉到右邊 */
-@keyframes capy-walk-to-right {
+/* 水豚縮小至適合 Header 的比例 */
+.capybaraloader.flag-leader {
+  transform: scale(0.3);
+  transform-origin: left center;
+  margin-left: -10px; /* 緊貼連桿 */
+  margin-right: -80px; 
+  z-index: 2;
+}
+
+/* 走路路徑：從左邊界外走到刷新按鈕前 */
+@keyframes capy-walk-to-refresh {
   0% {
-    transform: translateX(-150%);
+    left: -300px;
     opacity: 0;
   }
+  15% {
+    opacity: 1;
+  }
   100% {
-    transform: translateX(30px); /* 停在離左側 30px 處，面向 Refresh 按鈕 */
+    /* 停在 Header 右側工具欄之前，預留約 20px */
+    left: calc(100% - 340px);
     opacity: 1;
   }
 }
 
-/* 旗幟微微飄動效果 */
-.capy-notice-flag {
-  animation: flag-wave 2s ease-in-out infinite;
-}
-
 @keyframes flag-wave {
-  0%, 100% { transform: translateY(0) rotate(0); }
-  50% { transform: translateY(-3px) rotate(-1deg); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
-
 /* Capybara Core Animation Styles */
 .capybaraloader { width: 14em; height: 10em; position: relative; z-index: 1; --color: rgb(204, 125, 45); --color2: rgb(83, 56, 28); }
 .capybara { width: 100%; height: 7.5em; position: relative; z-index: 1; }

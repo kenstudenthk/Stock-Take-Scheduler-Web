@@ -20,37 +20,24 @@ const { Content, Header, Sider } = Layout;
 const { Title, Text } = Typography;
 
 // ✅ NEW: Capybara 通知組件
-const TokenErrorOverlay: React.FC = () => (
-  <div className="capy-error-overlay">
-    <div className="capybaraloader">
-      <div className="capybara">
-        <div className="capyhead">
-          <div className="capyear">
-            <div className="capyear2"></div>
+const CapyHeaderNotice: React.FC = () => (
+  <div className="capy-header-container">
+    <div className="capy-walker-wrapper">
+      <div className="capybaraloader header-mini">
+        <div className="capybara">
+          <div className="capyhead">
+            <div className="capyear"><div className="capyear2"></div></div>
+            <div className="capyear"></div>
+            <div className="capymouth"><div className="capylips"></div><div className="capylips"></div></div>
+            <div className="capyeye"></div><div className="capyeye"></div>
           </div>
-          <div className="capyear"></div>
-          <div className="capymouth">
-            <div className="capylips"></div>
-            <div className="capylips"></div>
-          </div>
-          <div className="capyeye"></div>
-          <div className="capyeye"></div>
+          <div className="capyleg"></div><div className="capyleg2"></div><div className="capyleg2"></div><div className="capy"></div>
         </div>
-        <div className="capyleg"></div>
-        <div className="capyleg2"></div>
-        <div className="capyleg2"></div>
-        <div className="capy"></div>
+        <div className="loader"><div className="loaderline"></div></div>
       </div>
-      <div className="loader">
-        <div className="loaderline"></div>
+      <div className="capy-pull-message">
+        Attention: Please go to Settings to update the Token.
       </div>
-    </div>
-    <div className="capy-error-message">
-      <Title level={2} style={{ color: 'white', marginBottom: '10px' }}>Access Required</Title>
-      <Text style={{ color: '#94a3b8', fontSize: '16px' }}>
-        Microsoft Graph Token has expired. <br />
-        Please go to <b style={{ color: '#5eead4' }}>Settings</b> to update the Token to continue.
-      </Text>
     </div>
   </div>
 );
@@ -111,9 +98,7 @@ function App() {
         setAllShops(mapped);
         setHasTokenError(false); // 成功則隱藏水豚
       }
-    } catch (err) { 
-      message.error("Sync Error");
-      setHasTokenError(true); 
+    } catch (err) { setHasTokenError(true); 
     }
     setLoading(false);
   }, []);
@@ -203,7 +188,9 @@ function App() {
       </Sider>
       
       <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
-        <Header className="app-header px-8 flex justify-end items-center h-16 border-b flex-shrink-0">
+        <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
+          {/* 左側：如果 Token 錯誤，顯示水豚走動通知 */}
+          {hasTokenError ? <CapyHeaderNotice /> : <div className="flex-1" />}
           <Space size="large">
             <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)} className="refresh-btn">Refresh</Button>
             <Tag color="cyan" className="font-bold rounded-md">POOL: {allShops.length}</Tag>

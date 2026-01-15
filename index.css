@@ -1717,21 +1717,18 @@ body {
 
 /* 走路路徑：從左邊界外走到刷新按鈕前 */
 @keyframes capy-patrol-loop {
+  /* 0% - 45%：從左側走到 Refresh 按鈕 (均速) */
   0% {
-    left: -400px; /* 從左側外面開始 */
+    left: -450px;
   }
-  /* 40% 到 60%：走到 Refresh 按鈕附近並停下觀察一下 */
-  40% {
+  45% {
     left: calc(100% - 360px); 
   }
-  60% {
+  /* 45% - 55%：在按鈕旁停留 (暫停 1.5 秒觀察) */
+  55% {
     left: calc(100% - 360px);
   }
-  /* 85%：繼續向右走，直到完全消失在右側 */
-  85% {
-    left: 100%;
-  }
-  /* 86% 到 100%：在背景重置，準備下一次從左邊出來 */
+  /* 55% - 100%：從按鈕走到右側完全消失 (均速) */
   100% {
     left: 100%;
   }
@@ -1755,8 +1752,8 @@ body {
 .capyeye { width: 2em; height: 0.5em; background-color: var(--color2); position: absolute; bottom: 3.5em; left: 1.5em; border-radius: 5em; transform: rotate(45deg); }
 .capyeye:nth-child(4) { transform: rotate(-45deg); left: 5.5em; width: 1.75em; }
 .capyleg { width: 6em; height: 5em; bottom: 0em; left: 0em; position: absolute; background: linear-gradient(var(--color), 95%, var(--color2)); z-index: 2; border-radius: 2em; animation: movebody 1s linear infinite; }
-.capyleg2 { width: 1.75em; height: 3em; bottom: 0em; left: 3.25em; position: absolute; background: linear-gradient(var(--color), 80%, var(--color2)); z-index: 2; border-radius: 0.75em; box-shadow: inset 0em -0.5em var(--color2); animation: moveleg 1s linear infinite; }
-.capyleg2:nth-child(3) { width: 1.25em; left: 0.5em; height: 2em; animation: moveleg2 1s linear infinite 0.075s; }
+.capyleg2 { width: 1.75em; height: 3em; bottom: 0em; left: 3.25em; position: absolute; background: linear-gradient(var(--color), 80%, var(--color2)); z-index: 2; border-radius: 0.75em; box-shadow: inset 0em -0.5em var(--color2); animation: moveleg 0.8s linear infinite; }
+.capyleg2:nth-child(3) { width: 1.25em; left: 0.5em; height: 2em; animation: moveleg2 0.8s linear infinite 0.075s; }
 .loaderline { width: 50em; height: 0.5em; border-top: 0.5em dashed var(--color2); animation: moveline 10s linear infinite; }
 
 @keyframes moveleg { 0% { transform: rotate(-45deg) translateX(-5%); } 50% { transform: rotate(45deg) translateX(5%); } 100% { transform: rotate(-45deg) translateX(-5%); } }

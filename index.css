@@ -98,6 +98,36 @@ body {
   overflow: hidden; /* Prevent sidebar itself from scrolling if possible */
 }
 
+.navigation::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 25px;
+  height: 25px;
+  background: transparent;
+  border-top-right-radius: 25px;
+  /* Matches the background color of your Header */
+  box-shadow: 5px -5px 0 5px var(--bg-header); 
+  pointer-events: none;
+  z-index: 50;
+}
+
+.navigation::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 25px;
+  height: 25px;
+  background: transparent;
+  border-bottom-right-radius: 25px;
+  /* Matches the background color of your Main Content Area */
+  box-shadow: 5px 5px 0 5px var(--bg-main); 
+  pointer-events: none;
+  z-index: 50;
+}
+
 .navigation ul {
   flex: 1; /* This pushes the theme toggle to the absolute bottom */
   padding-left: 10px;

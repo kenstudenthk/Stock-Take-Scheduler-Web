@@ -3,7 +3,7 @@ import { Layout, Button, Space, Tag, Avatar, message, Typography } from 'antd';
 import { 
   HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
   SettingOutlined, SyncOutlined, UnorderedListOutlined,
-  WarningFilled
+  WarningFilled, BugOutlined
 } from '@ant-design/icons';
 import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
@@ -15,6 +15,7 @@ import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
 import { ThemeToggle } from './components/ThemeToggle';
+import { ErrorReport } from './components/ErrorReport';
 import './index.css';
 
 const [reportModalVisible, setReportModalVisible] = useState(false);

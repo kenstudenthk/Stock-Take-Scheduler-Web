@@ -66,6 +66,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [includeMTR, setIncludeMTR] = useState(true);
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resetRange, setResetRange] = useState<any>(null);
+  const [loadingType, setLoadingType] = useState<'reset' | 'sync'>('sync');
 
   // 過濾結業商店
   const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed' && s.status !== 'Closed'), [shops]);
@@ -121,6 +122,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   };
 
   const saveToSharePoint = async () => {
+    setLoadingType('sync');
     setIsSaving(true);
     try {
       for (const shop of generatedResult) {
@@ -143,10 +145,10 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     
     confirm({
       title: 'Reset Period?',
-      content: `Clearing ${targets.length} schedules. Proceed?`,
-      onOk: async () => {
-        setIsSaving(true);
-        try {
+    onOk: async () => {
+      setLoadingType('reset'); // 👈 ✅ 關鍵：設定為 reset 以顯示 Pac-man
+      setIsSaving(true);
+      try {
           for (const shop of targets) {
             await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
               method: 'PATCH',
@@ -155,11 +157,12 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
             });
           }
           setResetModalVisible(false); setResetRange(null); onRefresh(); message.success("Period Reset!");
-        } catch (err) { message.error("Reset Failed"); }
+        } finally {
         setIsSaving(false);
-      }
-    });
-  };
+}
+    }
+  });
+};
 
   const handleResetAll = () => {
     const plannedShops = shops.filter(s => s.status === 'Planned');
@@ -167,7 +170,8 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     confirm({
       title: 'RESET ALL?',
       onOk: async () => {
-        setIsSaving(true);
+        setLoadingType('reset'); // 👈 ✅ 關鍵：設定為 reset 以顯示 Pac-man
+      setIsSaving(true);
         try {
           for (const shop of plannedShops) {
             await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
@@ -177,15 +181,16 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
             });
           }
           onRefresh(); message.success("All Reset!");
-        } catch (err) { message.error("Reset Failed"); }
+        } finally {
         setIsSaving(false);
-      }
-    });
-  };
+}
+    }
+  });
+};
 
   return (
     <div className="w-full flex flex-col gap-8 pb-20">
-      {isSaving && <SyncGeometricLoader text="Modifying SharePoint Records..." />}
+      {isSaving && (loadingType === 'reset' ? <ResetChaseLoader /> : <SyncGeometricLoader />)}
 
       <div className="flex justify-between items-center">
         <Title level={2} className="m-0 text-slate-800">Schedule Generator</Title>

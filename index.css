@@ -1644,34 +1644,31 @@ body {
 /* ============================================================
    24. TRUCK "FLAG DRIVER" NOTIFICATION (HEADER LOOP)
    ============================================================ */
-/* 容器：佔據 Header 左側區域 */
+/* 容器：佔據 Header 左側剩餘區域 */
 .truck-header-container {
   display: flex;
   align-items: center;
   flex: 1;
   height: 100%;
   position: relative;
-  /* 必須為 hidden，這樣水豚走出去時才不會超出 Header */
-  overflow: hidden; 
+  overflow: hidden; /* 確保貨車進出時不會溢出 */
 }
 
 .truck-flag-walker {
   display: flex;
-  flex-direction: row;
-  align-items: flex-end; /* 讓內容底部對齊 */
+  flex-direction: row; /* 水平排列：旗幟在前，貨車在後（或反過來） */
+  align-items: flex-end; /* 讓輪胎與旗幟底部對齊 */
   position: absolute;
-  /* --- 關鍵修改：將頂部置中改為底部對齊 --- */
   bottom: 0px; 
   left: 0;
-  /* 移除原本的 transform: translateY(-50%)，只保留動畫 */
-  animation: capy-patrol-loop 16s linear infinite; 
+  /* 勻速 16 秒一圈的循環動畫 */
+  animation: truck-patrol-loop 16s linear infinite; 
   z-index: 5;
 }
 
-/* 縮小水豚 */
 /* 縮小貨車比例以適應 Header (約 64px) */
 .truck-wrapper-mini {
-  transform: scale(0.38);
+  transform: scale(0.35);
   transform-origin: left bottom;
   width: 200px;
   height: 100px;
@@ -1680,17 +1677,18 @@ body {
   position: relative;
   align-items: center;
   justify-content: flex-end;
-  margin-right: -110px; /* 修正縮放位移 */
+  margin-right: -115px; /* 修正縮放位移 */
+  margin-bottom: -5px; /* 讓輪胎踩在線條上 */
 }
 
-/* 旗幟訊息框 (位於水豚後方) */
+/* 旗幟訊息框 (位於貨車左側/後方) */
 .truck-notice-flag {
   background: #f83d3d;
   color: white;
   padding: 6px 16px;
   font-size: 12px;
   font-weight: 800;
-  border-radius: 6px 4px 4px 6px; /* 旗幟形狀 */
+  border-radius: 6px 4px 4px 6px;
   white-space: nowrap;
   box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -1698,12 +1696,10 @@ body {
   gap: 8px;
   z-index: 1;
   position: relative;
-  /* 旗幟飄動動畫 */
-   margin-bottom: 12px;
+  margin-bottom: 15px; /* 旗幟漂浮高度 */
   animation: flag-wave 1.5s ease-in-out infinite;
 }
 
-/* 旗幟與水豚之間的連桿 */
 /* 旗幟連桿 */
 .truck-notice-flag::after {
   content: "";
@@ -1711,39 +1707,35 @@ body {
   right: -20px;
   top: 60%;
   width: 25px;
-  height: 3px;
+  height: 2px;
   background: #282828;
-}
-
-/* 貨車基礎動畫 (由 Uiverse 提供) */
-.truckBody { animation: truck-motion 1s linear infinite; }
-@keyframes truck-motion {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(3px); }
 }
 
 /* 貨車震動動畫 */
 .truckBody-anim {
   animation: truck-bounce 1s linear infinite;
 }
+
 @keyframes truck-bounce {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(3px); }
 }
-/* 巡邏路徑動畫 */
+
+/* 巡邏路徑動畫：從左開到 Refresh 按鈕前，停頓後再開走 */
 @keyframes truck-patrol-loop {
-  0% { left: -400px; }
-  70% { left: calc(100% - 380px); } /* 走到按鈕前 */
-  80% { left: calc(100% - 380px); } /* 停留 */
-  100% { left: 110%; } /* 開出去 */
+  0% { left: -500px; }
+  45% { left: calc(100% - 380px); } /* 根據距離重新分配時間，確保勻速 */
+  60% { left: calc(100% - 380px); } /* 停留觀察 */
+  100% { left: 110%; } /* 開出右側 */
 }
 
-@keyframes flag-wave-mini {
+/* 旗幟上下飄動動畫 */
+@keyframes flag-wave {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+  50% { transform: translateY(-4px); }
 }
 
-/* 貨車下方的裝飾線 (道路) */
+/* 貨車下方的裝飾道路線 */
 .truck-road {
   width: 100%;
   height: 2px;

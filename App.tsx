@@ -17,6 +17,7 @@ import { Inventory } from './components/Inventory';
 import { ThemeToggle } from './components/ThemeToggle';
 import './index.css';
 
+const [reportModalVisible, setReportModalVisible] = useState(false);
 const { Content, Header, Sider } = Layout;
 const { Title, Text } = Typography;
 
@@ -195,6 +196,12 @@ function App() {
                 <li key={item.k} className={`list ${selectedMenuKey === item.k ? 'active' : ''}`} onClick={() => setSelectedMenuKey(item.k)}>
                   <a href="#"><span className="icon">{item.i}</span>{!collapsed && <span className="title">{item.l}</span>}</a>
                 </li>
+                <li className="list mt-auto" onClick={() => setReportModalVisible(true)}>
+  <a href="#">
+    <span className="icon text-red-400"><BugOutlined /></span>
+    {!collapsed && <span className="title text-red-400">Report Error</span>}
+  </a>
+</li>
               ))}
             </ul>
           </div>
@@ -205,6 +212,11 @@ function App() {
           </div>
         </div>
       </Sider>
+    <ErrorReport 
+  visible={reportModalVisible} 
+  onCancel={() => setReportModalVisible(false)} 
+  token={graphToken} 
+/>
       
       <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
         <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">

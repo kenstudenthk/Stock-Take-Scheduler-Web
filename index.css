@@ -1659,7 +1659,7 @@ body {
 .capy-flag-walker {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: bottom;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);

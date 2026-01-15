@@ -56,7 +56,8 @@ function App() {
   const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hasTokenError, setHasTokenError] = useState(false); // ✅ Token 錯誤追蹤
+  const [hasTokenError, setHasTokenError] = useState(false);
+  const [isFirstCheckDone, setIsFirstCheckDone] = useState(false);// ✅ Token 錯誤追蹤
 
   const fetchAllData = useCallback(async (token: string) => {
     if (!token) {
@@ -185,7 +186,7 @@ function App() {
         <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
           
 {/* ✅ 關鍵修復 3：只有在有錯誤且不在加載中時才顯示貨車 */}
-          {hasTokenError && !loading ? <TruckFlagNotice /> : <div className="flex-1" />}
+          {isFirstCheckDone && hasTokenError && !loading ? <TruckFlagNotice /> : <div className="flex-1" />}
 
           {/* RIGHT: 始終保留 Refresh 按鈕、Pool 標籤與 Profile */}
           <Space size="large">

@@ -16,7 +16,7 @@ const { Option } = Select;
 
 interface Props {
   invToken: string;
-  shops: Shop[]; // 從 App.tsx 傳入的商店主檔
+  shops: Shop[];
 }
 
 export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
@@ -25,11 +25,11 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [detailVisible, setDetailVisible] = useState(false);
   
-  // 表單狀態
   const [form] = Form.useForm();
   const [formVisible, setFormVisible] = useState(false);
   const [formMode, setFormMode] = useState<'new' | 'edit'>('new');
 
+  // ✅ 確保 filters 包含 cmdb
   const [filters, setFilters] = useState({
     shopName: '',
     status: 'All',
@@ -81,7 +81,6 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
 
   useEffect(() => { fetchInventory(); }, [invToken]);
 
-  // ✅ 智慧聯動：商店選擇後的自動填寫邏輯 (包含 CMDB 前 5 碼)
   const handleShopSelect = (value: string) => {
     const selectedShop = shops.find(s => `${s.id} - ${s.name}` === value);
     if (selectedShop) {
@@ -89,10 +88,8 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
         shopCode: selectedShop.id,
         shopBrand: selectedShop.brand,
         businessUnit: (selectedShop as any).businessUnit || '',
-        // ✅ 自動填入 CMDB 的前 5 碼 (即 Shop Code)
         cmdb: selectedShop.id 
       });
-      message.info(`Auto-filled: Shop Code ${selectedShop.id} & CMDB prefix.`);
     }
   };
 
@@ -109,6 +106,7 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
     setFormVisible(true);
   };
 
+  // ✅ 搜尋過濾邏輯
   const filteredData = useMemo(() => {
     return data.filter(item => 
       (item.shopName || '').toLowerCase().includes(filters.shopName.toLowerCase()) &&
@@ -198,10 +196,34 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
       </div>
 
       <Card className="rounded-2xl border-none shadow-sm">
-        <Row gutter={[16, 16]}>
-          <Col span={4}><Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Shop Search</Text><Input prefix={<SearchOutlined />} placeholder="Name..." onChange={e => setFilters({...filters, shopName: e.target.value})} className="rounded-lg h-10" /></Col>
-          <Col span={4}><Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">ST Status</Text><Select className="w-full h-10" defaultValue="All" onChange={val => setFilters({...filters, status: val})}><Option value="All">All</Option><Option value="Verified">Verified</Option><Option value="New Record">New Record</Option><Option value="Device Not Found">Not Found</Option></Select></Col>
-          <Col span={16}><Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Asset Item ID</Text><Input prefix={<IdcardOutlined />} placeholder="Type Asset Item ID to search..." onChange={e => setFilters({...filters, assetItemId: e.target.value})} className="rounded-lg h-10" /></Col>
+        <Row gutter={[12, 12]}>
+          <Col span={4}>
+            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Shop</Text>
+            <Input prefix={<SearchOutlined />} placeholder="Name..." onChange={e => setFilters({...filters, shopName: e.target.value})} className="rounded-lg h-10" />
+          </Col>
+          <Col span={4}>
+            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">ST Status</Text>
+            <Select className="w-full h-10" defaultValue="All" onChange={val => setFilters({...filters, status: val})}>
+              <Option value="All">All</Option>
+              <Option value="Verified">Verified</Option>
+              <Option value="New Record">New Record</Option>
+              <Option value="Device Not Found">Not Found</Option>
+            </Select>
+          </Col>
+          {/* ✅ 獨立的 CMDB 搜尋框 */}
+          <Col span={4}>
+            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">CMDB No.</Text>
+            <Input prefix={<BarcodeOutlined />} placeholder="04644..." onChange={e => setFilters({...filters, cmdb: e.target.value})} className="rounded-lg h-10" />
+          </Col>
+          {/* ✅ 獨立的 Serial 搜尋框 */}
+          <Col span={4}>
+            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Serial No.</Text>
+            <Input placeholder="SN..." onChange={e => setFilters({...filters, serialNo: e.target.value})} className="rounded-lg h-10" />
+          </Col>
+          <Col span={8}>
+            <Text strong className="text-slate-400 text-[10px] uppercase mb-1 block">Asset Item ID</Text>
+            <Input prefix={<IdcardOutlined />} placeholder="Search Asset ID..." onChange={e => setFilters({...filters, assetItemId: e.target.value})} className="rounded-lg h-10" />
+          </Col>
         </Row>
       </Card>
 
@@ -209,7 +231,8 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
         <Table columns={columns} dataSource={filteredData} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
       </Card>
 
-      {/* 詳情彈窗 */}
+      {/* 詳細資訊與表單 Modal 保持不變 */}
+      {/* ... (其餘詳情與表單代碼與前一版本一致) ... */}
       <Modal
         title={<Space><DatabaseOutlined className="text-teal-600" /> Asset Inventory Detail</Space>}
         visible={detailVisible}
@@ -273,7 +296,6 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
         )}
       </Modal>
 
-      {/* ✅ 編輯/新增表單彈窗 */}
       <Modal
         title={<Space><EditOutlined className="text-teal-600" /> {formMode === 'new' ? 'Add New Asset' : 'Edit Asset Detail'}</Space>}
         visible={formVisible}
@@ -297,46 +319,17 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
                 />
               </Form.Item>
             </Col>
-            
             <Col span={8}><Form.Item name="shopCode" label="Shop Code"><Input disabled className="bg-slate-50" /></Form.Item></Col>
-            <Col span={8}><Form.Item name="shopBrand" label="Shop Brand"><Input disabled className="bg-slate-50" /></Form.Item></Col>
+            <Col span={8}><Form.Item name="shopBrand" label="Shop Brand"><Input disabled className="bg-slate-50" /></Col>
             <Col span={8}><Form.Item name="businessUnit" label="Business Unit"><Input disabled className="bg-slate-50" /></Form.Item></Col>
-            
             <Divider className="my-2" />
-            
             <Col span={24}><Form.Item name="assetName" label="Asset Name" rules={[{ required: true }]}><Input placeholder="e.g. iPad Pro 11-inch" /></Form.Item></Col>
-            
-            <Col span={12}>
-              <Form.Item name="cmdb" label="CMDB Number" rules={[{ required: true }]}>
-                {/* 使用者在選擇商店後，這裡會自動出現前 5 碼，只需補齊後 4 碼 */}
-                <Input placeholder="ShopCode + 0001" maxLength={9} />
-              </Form.Item>
-            </Col>
-            
+            <Col span={12}><Form.Item name="cmdb" label="CMDB Number" rules={[{ required: true }]}><Input placeholder="ShopCode + 0001" maxLength={9} /></Form.Item></Col>
             <Col span={12}><Form.Item name="assetItemId" label="Asset Item ID"><Input placeholder="e.g. EQ-12345" /></Form.Item></Col>
             <Col span={12}><Form.Item name="brand" label="Manufacturer / Brand"><Input placeholder="e.g. Apple" /></Form.Item></Col>
             <Col span={12}><Form.Item name="serialNo" label="Serial Number"><Input placeholder="Unique SN" /></Form.Item></Col>
-            
-            <Col span={12}>
-              <Form.Item name="stockTakeStatus" label="Stock Take Status">
-                <Select>
-                  <Option value="Verified">Verified</Option>
-                  <Option value="New Record">New Record</Option>
-                  <Option value="Device Not Found">Device Not Found</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            
-            <Col span={12}>
-               <Form.Item name="inUseStatus" label="In Use Status">
-                 <Select>
-                   <Option value="In Use">In Use</Option>
-                   <Option value="Spare">Spare</Option>
-                   <Option value="Damaged">Damaged</Option>
-                 </Select>
-               </Form.Item>
-            </Col>
-            
+            <Col span={12}><Form.Item name="stockTakeStatus" label="Stock Take Status"><Select><Option value="Verified">Verified</Option><Option value="New Record">New Record</Option><Option value="Device Not Found">Device Not Found</Option></Select></Form.Item></Col>
+            <Col span={12}><Form.Item name="inUseStatus" label="In Use Status"><Select><Option value="In Use">In Use</Option><Option value="Spare">Spare</Option><Option value="Damaged">Damaged</Option></Select></Form.Item></Col>
             <Col span={24}><Form.Item name="remarks" label="Remarks"><Input.TextArea rows={2} /></Form.Item></Col>
           </Row>
         </Form>

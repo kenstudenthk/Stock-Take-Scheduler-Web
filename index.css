@@ -16,6 +16,7 @@
 }
 
   /* 主題色 - Light Mode (淺色) */
+body.light{
   --bg-main: #f8fafc;
   --bg-header: #ffffff;
   --text-main: #1e293b;

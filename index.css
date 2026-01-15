@@ -138,7 +138,7 @@ background-color: var(--bg-header) !important;
 .main-scroll-content {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--bg-main) !important;
+  background-color: var(--bg-header) !important;
 }
 
 .navigation ul li {
@@ -152,7 +152,7 @@ background-color: var(--bg-header) !important;
 
 /* 核心：選中時的背景必須與主內容區背景 (--bg-main) 同色 */
 .navigation ul li.active {
-  background: var(--bg-main) !important;
+  background: var(--bg-header) !important;
 }
 
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Input, Select, Card, Typography, Space, Tag, Button, Row, Col, message, Empty } from 'antd';
-import { SearchOutlined, ReloadOutlined, DatabaseOutlined, BarcodeOutlined } from '@ant-design/icons';
+import { Table, Input, Select, Card, Typography, Space, Tag, Button, Row, Col, message, Empty, Divider } from 'antd';
+import { SearchOutlined, ReloadOutlined, DatabaseOutlined, BarcodeOutlined, IdcardOutlined } from '@ant-design/icons';
 import { InventoryItem } from '../types';
+import { INV_FIELDS } from '../constants'; // Ensure we use the mapped field names
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -19,14 +20,15 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
     shopBrand: '',
     status: 'All',
     cmdb: '',
-    serialNo: ''
+    serialNo: '',
+    assetItemId: '' // ✅ Added filter state for Asset Item ID
   });
 
   const fetchInventory = async () => {
     if (!invToken) return;
     setLoading(true);
     try {
-      const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/2f2dff1c-8ce1-4b7b-9ff8-083a0ba1bb48/items?$expand=fields($select=*)&$top=999`;
+      const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/2f2dff1c-8ce1-4B7B-9FF8-083A0BA1BB48/items?$expand=fields($select=*)&$top=999`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${invToken}` } });
       const json = await res.json();
       
@@ -35,18 +37,19 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
           const f = item.fields || {};
           return {
             id: item.id,
-            // --- 根據你提供的 MG Graph JSON 進行精準對應 ---
-            shopName: f['Shop_x0020_Name'] || '',
-            shopBrand: f['Shop_x0020_Brand'] || '',
-            shopCode: f['ShopCode'] || '',
-            productTypeEng: f['Product_x0020_Type_x0020__x0028_'] || '',
-            productTypeChi: f['Product_x0020_Type_x0020__x0028_0'] || '',
-            cmdb: f['CMDB'] || '',
-            serialNo: f['SerialNo'] || '',
-            assetName: f['Asset_x0020_Name'] || '',
-            inUseStatus: f['In_x0020_Use_x0020_Status'] || 'N/A',
-            brand: f['Brand'] || '',
-            recordTime: f['Record_x0020_Time'] || '',
+            // --- Precise mapping based on SharePoint field names ---
+            shopName: f[INV_FIELDS.SHOP_NAME] || '',
+            shopBrand: f[INV_FIELDS.SHOP_BRAND] || '',
+            shopCode: f[INV_FIELDS.SHOP_CODE] || '',
+            productTypeEng: f[INV_FIELDS.PRODUCT_TYPE_ENG] || '',
+            productTypeChi: f[INV_FIELDS.PRODUCT_TYPE_CHI] || '',
+            cmdb: f[INV_FIELDS.CMDB] || '',
+            serialNo: f[INV_FIELDS.SERIAL_NO] || '',
+            assetName: f[INV_FIELDS.ASSET_NAME] || '',
+            inUseStatus: f[INV_FIELDS.IN_USE_STATUS] || 'N/A',
+            brand: f[INV_FIELDS.BRAND] || '',
+            recordTime: f[INV_FIELDS.RECORD_TIME] || '',
+            assetItemId: f[INV_FIELDS.ASSET_ITEM_ID] || '', // ✅ Map Asset Item ID to the data object
           };
         });
         setData(mapped);
@@ -65,7 +68,8 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
       item.shopBrand.toLowerCase().includes(filters.shopBrand.toLowerCase()) &&
       (filters.status === 'All' || item.inUseStatus === filters.status) &&
       item.cmdb.toLowerCase().includes(filters.cmdb.toLowerCase()) &&
-      item.serialNo.toLowerCase().includes(filters.serialNo.toLowerCase())
+      item.serialNo.toLowerCase().includes(filters.serialNo.toLowerCase()) &&
+      item.assetItemId.toLowerCase().includes(filters.assetItemId.toLowerCase()) // ✅ Added search logic
     );
   }, [data, filters]);
 
@@ -73,7 +77,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
     {
       title: 'Shop / Store',
       key: 'shop',
-      width: '22%',
+      width: '20%',
       render: (record: any) => (
         <Space direction="vertical" size={0}>
           <Text strong style={{ fontSize: '14px' }}>{record.shopName}</Text>
@@ -88,6 +92,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
     {
       title: 'Product Category',
       key: 'type',
+      width: '18%',
       render: (record: any) => (
         <div className="flex flex-col">
           <Text strong className="text-teal-700">{record.productTypeEng}</Text>
@@ -105,6 +110,8 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
             <Text type="secondary" style={{ fontSize: '12px' }}>SN: {record.serialNo}</Text>
             <Tag icon={<BarcodeOutlined />} color="blue">{record.cmdb}</Tag>
           </Space>
+          {/* ✅ Display Asset Item ID in the table row */}
+          <Text type="secondary" style={{ fontSize: '10px' }}>ID: {record.assetItemId}</Text> 
         </Space>
       ),
     },
@@ -144,16 +151,16 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
 
       <Card className="rounded-2xl border-none shadow-sm">
         <Row gutter={[16, 16]}>
-          <Col span={6}>
+          <Col span={4}> {/* ✅ Adjusted span to fit 5+ columns */}
             <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Shop Search</Text>
             <Input 
               prefix={<SearchOutlined />} 
-              placeholder="Type shop name..." 
+              placeholder="Shop name..." 
               onChange={e => setFilters({...filters, shopName: e.target.value})}
               className="rounded-lg h-10"
             />
           </Col>
-          <Col span={6}>
+          <Col span={4}>
             <Text strong className="text-slate-400 text-xs uppercase mb-2 block">In-Use Status</Text>
             <Select className="w-full h-10" defaultValue="All" onChange={val => setFilters({...filters, status: val})}>
               <Option value="All">All Status</Option>
@@ -162,7 +169,7 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
               <Option value="Not Found">Not Found</Option>
             </Select>
           </Col>
-          <Col span={6}>
+          <Col span={4}>
             <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Serial</Text>
             <Input 
               placeholder="Serial No..." 
@@ -170,11 +177,20 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
               className="rounded-lg h-10"
             />
           </Col>
-          <Col span={6}>
+          <Col span={4}>
             <Text strong className="text-slate-400 text-xs uppercase mb-2 block">CMDB</Text>
             <Input 
               placeholder="CMDB Number..." 
               onChange={e => setFilters({...filters, cmdb: e.target.value})}
+              className="rounded-lg h-10"
+            />
+          </Col>
+          <Col span={8}> {/* ✅ Added Asset Item ID Filter column */}
+            <Text strong className="text-slate-400 text-xs uppercase mb-2 block">Asset Item ID</Text>
+            <Input 
+              prefix={<IdcardOutlined />}
+              placeholder="Type Asset Item ID..." 
+              onChange={e => setFilters({...filters, assetItemId: e.target.value})}
               className="rounded-lg h-10"
             />
           </Col>
@@ -194,5 +210,3 @@ export const Inventory: React.FC<Props> = ({ invToken }) => {
     </div>
   );
 };
-
-import { Divider } from 'antd'; // 確保有引入 Divider

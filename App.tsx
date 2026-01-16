@@ -22,7 +22,12 @@ import './index.css';
 
 const { Content, Header, Sider } = Layout;
 const { Title, Text } = Typography;
-
+const hasAdminAccess = (user: any) => {
+  if (!user) return false;
+  const role = user.UserRole;
+  // ✅ 讓 Admin 同 App Owner 享有同樣權限
+  return role === 'Admin' || role === 'App Owner';
+};
 // 貨車通知組件 (保持不變)
 const TruckFlagNotice: React.FC = () => (
   <div className="truck-header-container">

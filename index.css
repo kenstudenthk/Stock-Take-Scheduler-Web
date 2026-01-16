@@ -1,6 +1,3 @@
-/* ============================================================
-   1. GLOBAL THEME & BASE
-   ============================================================ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,36 +5,33 @@
 :root {
   --primary-teal: #0d9488;
   --sidebar-bg: #2b3467;
-  --bg-unified: #ffffff;   /* ✅ THE SLAB COLOR */
-  --text-main: #1e293b;
-  --nav-item-height: 60px; /* Precise height for sliding calculation */
+  --bg-unified: #ffffff;      /* ✅ 核心背景：所有白色組件共用 */
+  --nav-item-height: 60px;    /* ✅ 必須與 Layout 中的 li 高度一致 */
   
-  /* ✅ THE EXTREME 3D STACKED SHADOW (From your reference) */
-  --shadow-3d: 
-    rgba(0, 0, 0, 0.15) -15px 0px 25px 0px inset,   /* Meaty inner lip */
-    rgba(0, 0, 0, 0.1) -40px 0px 40px -10px inset,  /* Inner depth */
-    rgba(0, 0, 0, 0.06) -2px 0px 1px,               /* Edge line */
+  /* ✅ 您要求的極致 3D 多層次陰影 (改為向左投影) */
+  --extreme-3d-shadow: 
+    rgba(0, 0, 0, 0.15) -15px 0px 25px 0px inset,   /* 內邊緣肉感 */
+    rgba(0, 0, 0, 0.1) -40px 0px 40px -10px inset,  /* 內部深度感 */
+    rgba(0, 0, 0, 0.06) -2px 0px 1px,               /* 物理邊緣細線 */
     rgba(0, 0, 0, 0.09) -4px 0px 2px, 
     rgba(0, 0, 0, 0.09) -8px 0px 4px, 
     rgba(0, 0, 0, 0.09) -16px 0px 8px, 
-    rgba(0, 0, 0, 0.18) -32px 0px 25px;             /* Deep floor diffusion */
+    rgba(0, 0, 0, 0.18) -32px 0px 25px;             /* 地面強力擴散 */
 }
 
 body.dark {
   --sidebar-bg: #0f172a;
   --bg-unified: #1e293b;
-  --text-main: #f8fafc;
 }
 
 body {
   margin: 0;
-  background-color: var(--sidebar-bg);
+  background-color: var(--sidebar-bg) !important;
   overflow: hidden;
-  font-family: 'Inter', sans-serif;
 }
 
 /* ============================================================
-   2. THE 3D SLAB (Main Content Area)
+   3D UNIFIED SLAB (主內容區 - 紅線陰影)
    ============================================================ */
 .main-content-area {
   background-color: var(--bg-unified) !important;
@@ -46,34 +40,30 @@ body {
   flex-direction: column;
   position: relative;
   
-  /* ✅ RADIUS POINTS 1 & 4: Top and Bottom Left (60px) */
+  /* ✅ RADIUS 1 & 4 (頂部與底部左側圓角) */
   border-top-left-radius: 60px !important; 
   border-bottom-left-radius: 60px !important;
   
-  /* ✅ APPLY EXTREME 3D SHADOW */
-  box-shadow: var(--shadow-3d);
+  /* ✅ 套用 3D 陰影 */
+  box-shadow: var(--extreme-3d-shadow);
   z-index: 100;
-  margin: 0;
   overflow: visible;
 }
 
 .app-header {
-  background-color: transparent !important;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-  height: 80px;
-  display: flex;
-  align-items: center;
-  padding: 0 80px !important; 
+  height: 90px;
+  padding: 0 80px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .main-scroll-content {
   flex: 1;
   overflow-y: auto;
-  padding: 40px 80px !important;
+  padding: 40px 80px !important; /* 確保內容避開大圓角 */
 }
 
 /* ============================================================
-   3. THE SLIDING PILL BRIDGE (Navigation)
+   SLIDING NAVIGATION (選單一體化與 3D 動效)
    ============================================================ */
 .custom-sider {
   background: var(--sidebar-bg) !important;
@@ -83,52 +73,48 @@ body {
 
 .navigation {
   position: relative;
-  margin-top: 40px;
-  padding-left: 15px; /* Spacing for the pill rounded edge */
+  margin-top: 20px;
+  padding-left: 15px; /* 為 Pill 的圓邊留出空間 */
 }
 
 .navigation ul {
   position: relative;
-  list-style: none;
-  padding: 0;
-  margin: 0;
 }
 
-/* ✅ THE MOVING PILL (This is the "Selected Menu Item") */
+/* ✅ 這是那個會滑動的物理零件 (The Pill Bridge) */
 .nav-indicator {
   position: absolute;
   left: 0;
-  /* Calculated position: (Index * Height) */
+  /* 動態位移計算：索引 * 高度 */
   top: calc(var(--active-index) * var(--nav-item-height));
   width: 100%;
   height: var(--nav-item-height);
   background: var(--bg-unified);
   
-  /* Pill Shape on the left */
   border-top-left-radius: 30px;
   border-bottom-left-radius: 30px;
   
-  /* ✅ SAME 3D SHADOW as the main Content Area */
-  box-shadow: var(--shadow-3d);
+  /* 同樣套用 3D 陰影，讓滑塊也有厚度 */
+  box-shadow: var(--extreme-3d-shadow);
   
-  /* Smooth "Item E to A" motion */
+  /* 動畫：使用貝茲曲線，產生「物理重量感」 */
   transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   z-index: 1;
 }
 
-/* ✅ THE SEAMLESS BRIDGE (Hides Yellow Arrow Shadow) */
+/* ✅ 橋樑 (解決黃色箭頭)：覆蓋垂直陰影線 */
 .nav-indicator::after {
   content: '';
   position: absolute;
   top: 0;
-  right: -50px; /* Plugs into the Content Slab */
-  width: 60px;
+  right: -50px; /* 插入主區域 */
+  width: 65px;
   height: 100%;
   background: var(--bg-unified);
   z-index: 2;
 }
 
-/* ✅ RADIUS POINTS 2 & 3: The Sliding Inverted Curves */
+/* ✅ RADIUS 2 & 3 (反向圓角)：配合橋樑向右偏移 */
 .nav-indicator::before {
   content: '';
   position: absolute;
@@ -139,6 +125,7 @@ body {
   background: transparent;
   border-bottom-right-radius: 20px;
   box-shadow: 10px 10px 0 10px var(--bg-unified);
+  z-index: 3;
 }
 
 .nav-indicator-bottom-curve {
@@ -150,9 +137,10 @@ body {
   background: transparent;
   border-top-right-radius: 20px;
   box-shadow: 10px -10px 0 10px var(--bg-unified);
+  z-index: 3;
 }
 
-/* ✅ NAV ITEM TEXT & ICONS */
+/* 選單項文字與圖標佈局 */
 .navigation ul li {
   position: relative;
   height: var(--nav-item-height);
@@ -165,25 +153,36 @@ body {
   height: 100%;
   width: 100%;
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.5); /* Faded for non-active */
-  font-weight: 700;
-  transition: color 0.4s ease;
+  color: rgba(255, 255, 255, 0.4); /* 未選中時淡出 */
+  transition: 0.3s;
 }
 
-/* When the indicator is behind this item, change text to dark blue */
+/* ✅ 選中時文字變深色 (解決看不見的問題) */
 .navigation ul li.active a {
   color: var(--sidebar-bg) !important;
 }
 
 .navigation ul li a .icon {
-  min-width: 60px;
+  min-width: 65px;
   display: flex;
   justify-content: center;
-  font-size: 1.5em;
+  font-size: 1.6em;
 }
 
 .navigation ul li a .title {
   padding-left: 10px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* 選中時圖標彈跳感 */
+.navigation ul li.active a .icon {
+  animation: iconBounce 0.4s ease-out;
+}
+@keyframes iconBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
 }
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

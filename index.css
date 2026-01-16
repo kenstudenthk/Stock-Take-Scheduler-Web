@@ -3,18 +3,22 @@
 @tailwind utilities;
 
 /* ============================================================
-   1. CORE VARIABLES
+   1. CORE VARIABLES & THEMES
    ============================================================ */
 :root {
   --sidebar-bg: #0d1117;
   --bg-unified: #ffffff;      
   
-  /* EXTREME 3D SHADOW (Refined for Web Slab) */
-  --extreme-shadow: 
-    rgba(0, 0, 0, 0.17) -15px 0px 25px 0px inset,
-    rgba(0, 0, 0, 0.1) -40px 0px 40px -10px inset, 
+  /* ✅ YOUR ORIGINAL REQUESTED 3D SHADOW (Adapted for Slab Edge) */
+  --extreme-3d-shadow: 
+    rgba(0, 0, 0, 0.17) -23px 0px 25px 0px inset,
+    rgba(0, 0, 0, 0.15) -36px 0px 30px 0px inset, 
+    rgba(0, 0, 0, 0.1) -79px 0px 40px -10px inset, 
     rgba(0, 0, 0, 0.06) -2px 0px 1px,               
-    rgba(0, 0, 0, 0.15) -25px 0px 25px;             
+    rgba(0, 0, 0, 0.09) -4px 0px 2px, 
+    rgba(0, 0, 0, 0.09) -8px 0px 4px, 
+    rgba(0, 0, 0, 0.09) -16px 0px 8px, 
+    rgba(0, 0, 0, 0.09) -32px 0px 16px;             
 }
 
 body.dark { --bg-unified: #161b22; }
@@ -25,11 +29,10 @@ body {
   overflow: hidden;
 }
 
-/* Ensure Ant Layout parts are transparent to show 3D effects */
 .ant-layout, .ant-layout-has-sider, .ant-layout-sider { background: transparent !important; }
 
 /* ============================================================
-   2. THE 3D SLAB (Main Content Area)
+   2. THE 3D SLAB (The Main Surface)
    ============================================================ */
 .main-content-area {
   background-color: var(--bg-unified) !important;
@@ -37,26 +40,25 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
+  
+  /* Point 1 & 4 Corners (60px) */
   border-top-left-radius: 60px !important; 
   border-bottom-left-radius: 60px !important;
-  box-shadow: var(--extreme-shadow) !important;
+  
+  /* ✅ Exact Shadow Logic from reference */
+  box-shadow: var(--extreme-3d-shadow) !important;
   z-index: 100;
   overflow: visible !important;
-}
-
-.app-header {
-  height: 90px;
-  padding: 0 90px !important;
 }
 
 .main-scroll-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 90px 90px 90px !important; /* Balanced Web Ratio */
+  padding: 30px 100px 100px 100px !important;
 }
 
 /* ============================================================
-   3. FH638 STYLE NAVIGATION (Left Sidebar)
+   3. FH638 NAVIGATION (GitHub Interaction Style)
    ============================================================ */
 
 .input {
@@ -65,54 +67,50 @@ body {
   width: 100%;
 }
 
-/* Base button style */
 .value {
   font-size: 14px;
   background-color: transparent;
-  border: 2px solid transparent;
-  padding: 12px 18px;
+  border: none;
+  padding: 12px 15px;
   color: #7d8590;
   display: flex;
   align-items: center;
   position: relative;
   gap: 12px;
   cursor: pointer;
-  border-radius: 12px;
-  transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 10px;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
   width: 100%;
 }
 
-/* FH638 Hover Blur Effect on siblings */
-.input:hover > div > :not(.value:hover) {
-  transition: 300ms;
+/* ✅ FH638 Hover Blur Effect on other items */
+.input:hover > :not(.value:hover) {
   filter: blur(1.5px);
-  transform: scale(0.95);
+  transform: scale(0.95, 0.95);
   opacity: 0.5;
+  transition: 300ms;
 }
 
-/* Hover/Active border and color */
-.value:not(.active-view):hover {
-  border: 2px solid #1a1f24;
-  color: #c9d1d9;
-}
-
-/* ✅ ACTIVE VIEW: Physical Margin Shift + Blue Indicator */
-.value.active-view {
-  background-color: #1a1f24;
+/* Hover/Active border and color logic */
+.value:hover, .value:focus, .value.active-nav {
   color: #ffffff;
-  outline: none;
-  margin-left: 17px; /* The physical "pushed in" effect */
-  border: 2px solid transparent;
 }
 
-/* Left side blue strip (only visible when active) */
+/* ✅ ACTIVE VIEW: Shift right 17px and Blue Strip */
+.value.active-nav {
+  background-color: #1a1f24;
+  outline: none;
+  margin-left: 17px; /* The physical horizontal shift */
+}
+
+/* Left side blue indicator strip */
 .value::before {
   content: "";
   position: absolute;
   top: 15%;
   left: -15px;
-  width: 5px;
+  width: 4px;
   height: 70%;
   background-color: #2f81f7;
   border-radius: 5px;
@@ -120,7 +118,7 @@ body {
   transition: 0.5s;
 }
 
-.value.active-view::before {
+.value.active-nav::before {
   opacity: 1;
 }
 

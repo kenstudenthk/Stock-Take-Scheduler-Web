@@ -2,18 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   1. CORE VARIABLES
+   ============================================================ */
 :root {
   --sidebar-bg: #0d1117;
   --bg-unified: #ffffff;      
-  --nav-item-height: 48px;    /* ✅ Optimized height for web ratio */
   
-  /* ✅ Extreme 3D Shadow (Matches your reference image) */
-  --extreme-3d-shadow: 
-    rgba(0, 0, 0, 0.17) -20px 0px 25px 0px inset,
+  /* EXTREME 3D SHADOW (Refined for Web Slab) */
+  --extreme-shadow: 
+    rgba(0, 0, 0, 0.17) -15px 0px 25px 0px inset,
     rgba(0, 0, 0, 0.1) -40px 0px 40px -10px inset, 
     rgba(0, 0, 0, 0.06) -2px 0px 1px,               
-    rgba(0, 0, 0, 0.09) -4px 0px 2px, 
-    rgba(0, 0, 0, 0.15) -25px 0px 20px;             
+    rgba(0, 0, 0, 0.15) -25px 0px 25px;             
 }
 
 body.dark { --bg-unified: #161b22; }
@@ -24,10 +25,11 @@ body {
   overflow: hidden;
 }
 
+/* Ensure Ant Layout parts are transparent to show 3D effects */
 .ant-layout, .ant-layout-has-sider, .ant-layout-sider { background: transparent !important; }
 
 /* ============================================================
-   RIGHT 3D SLAB (The Main Surface)
+   2. THE 3D SLAB (Main Content Area)
    ============================================================ */
 .main-content-area {
   background-color: var(--bg-unified) !important;
@@ -35,107 +37,98 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
-  border-top-left-radius: 50px !important; 
-  border-bottom-left-radius: 50px !important;
-  box-shadow: var(--extreme-3d-shadow) !important;
+  border-top-left-radius: 60px !important; 
+  border-bottom-left-radius: 60px !important;
+  box-shadow: var(--extreme-shadow) !important;
   z-index: 100;
   overflow: visible !important;
+}
+
+.app-header {
+  height: 90px;
+  padding: 0 90px !important;
 }
 
 .main-scroll-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 80px 80px 80px !important; /* Balanced Web Padding */
+  padding: 20px 90px 90px 90px !important; /* Balanced Web Ratio */
 }
 
 /* ============================================================
-   SIDEBAR MENU (Standardized Sizes)
+   3. FH638 STYLE NAVIGATION (Left Sidebar)
    ============================================================ */
-.input { display: flex; flex-direction: column; position: relative; }
 
-/* THE 3D SLIDING PILL */
-.nav-indicator {
-  position: absolute;
-  left: 0;
-  /* (Index * (Height + Gap)) */
-  top: calc(var(--active-index) * (var(--nav-item-height) + 4px));
+.input {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  height: var(--nav-item-height);
-  background: var(--bg-unified) !important;
-  border-top-left-radius: 22px !important;
-  border-bottom-left-radius: 22px !important;
-  box-shadow: var(--extreme-3d-shadow) !important;
-  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  z-index: 1;
 }
 
-/* THE SEAMLESS BRIDGE */
-.nav-indicator::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: -55px; 
-  width: 70px;
-  height: 100%;
-  background: var(--bg-unified) !important;
-  z-index: 2;
-}
-
-/* INVERTED RADII (The Bite Marks) */
-.nav-indicator::before {
-  content: ''; position: absolute; top: -20px; right: -55px;
-  width: 20px; height: 20px; background: transparent;
-  border-bottom-right-radius: 20px;
-  box-shadow: 10px 10px 0 10px var(--bg-unified); z-index: 3;
-}
-.nav-indicator-bottom-curve {
-  position: absolute; bottom: -20px; right: -55px;
-  width: 20px; height: 20px; background: transparent;
-  border-top-right-radius: 20px;
-  box-shadow: 10px -10px 0 10px var(--bg-unified); z-index: 3;
-}
-
-/* THE VALUE BUTTONS (Standard Heights) */
+/* Base button style */
 .value {
-  font-size: 13px;
+  font-size: 14px;
   background-color: transparent;
-  border: none;
-  height: var(--nav-item-height);
-  padding: 0 18px;
+  border: 2px solid transparent;
+  padding: 12px 18px;
   color: #7d8590;
   display: flex;
   align-items: center;
   position: relative;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
-  border-radius: 10px;
-  transition: all 0.4s ease;
+  border-radius: 12px;
+  transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
   width: 100%;
 }
 
-/* ACTIVE STATE (Physical Shift) */
-.value.active-view {
-  color: var(--sidebar-bg) !important; 
-  margin-left: 15px; /* THE SHIFT EFFECT */
-  font-weight: 900;
-}
-
-/* BLUE LEFT INDICATOR STRIP */
-.value::before {
-  content: ""; position: absolute; top: 25%; left: -12px;
-  width: 4px; height: 50%; background-color: #2f81f7;
-  border-radius: 5px; opacity: 0; transition: 0.5s;
-}
-.value.active-view::before { opacity: 1; }
-
-.value .anticon { font-size: 16px; }
-
-/* FH638 HOVER EFFECTS */
-.input:hover .menu-list-container > :not(.value:hover):not(.active-view) {
-  filter: blur(1.2px);
-  transform: scale(0.96);
-  opacity: 0.5;
+/* FH638 Hover Blur Effect on siblings */
+.input:hover > div > :not(.value:hover) {
   transition: 300ms;
+  filter: blur(1.5px);
+  transform: scale(0.95);
+  opacity: 0.5;
+}
+
+/* Hover/Active border and color */
+.value:not(.active-view):hover {
+  border: 2px solid #1a1f24;
+  color: #c9d1d9;
+}
+
+/* ✅ ACTIVE VIEW: Physical Margin Shift + Blue Indicator */
+.value.active-view {
+  background-color: #1a1f24;
+  color: #ffffff;
+  outline: none;
+  margin-left: 17px; /* The physical "pushed in" effect */
+  border: 2px solid transparent;
+}
+
+/* Left side blue strip (only visible when active) */
+.value::before {
+  content: "";
+  position: absolute;
+  top: 15%;
+  left: -15px;
+  width: 5px;
+  height: 70%;
+  background-color: #2f81f7;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.5s;
+}
+
+.value.active-view::before {
+  opacity: 1;
+}
+
+.value .icon-box {
+  width: 20px;
+  display: flex;
+  justify-content: center;
+  font-size: 18px;
 }
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

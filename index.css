@@ -1,133 +1,179 @@
+/* ============================================================
+   1. GLOBAL THEME & BASE (基礎設定與核心變數)
+   ============================================================ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   1. CORE VARIABLES & THEMES
-   ============================================================ */
 :root {
-  --sidebar-bg: #0d1117;
-  --bg-unified: #ffffff;      
-  
-  /* ✅ YOUR ORIGINAL REQUESTED 3D SHADOW (Adapted for Slab Edge) */
-  --extreme-3d-shadow: 
-    rgba(0, 0, 0, 0.17) -23px 0px 25px 0px inset,
-    rgba(0, 0, 0, 0.15) -36px 0px 30px 0px inset, 
-    rgba(0, 0, 0, 0.1) -79px 0px 40px -10px inset, 
-    rgba(0, 0, 0, 0.06) -2px 0px 1px,               
-    rgba(0, 0, 0, 0.09) -4px 0px 2px, 
-    rgba(0, 0, 0, 0.09) -8px 0px 4px, 
-    rgba(0, 0, 0, 0.09) -16px 0px 8px, 
-    rgba(0, 0, 0, 0.09) -32px 0px 16px;             
+  --primary-teal: #0d9488;
+  --sidebar-bg: #2b3467;
+  --bg-component: #ffffff; /* ✅ 一體化組件的核心顏色 */
+  --text-main: #1e293b;
+  --border-color: #f1f5f9;
 }
 
-body.dark { --bg-unified: #161b22; }
+/* 主題色 - Light Mode */
+body.light {
+  --sidebar-bg: #2b3467;
+  --bg-component: #ffffff; /* ✅ 修正：確保為純白 */
+  --text-main: #1e293b;
+  --border-color: #f1f5f9;
+}
+
+/* 主題色 - Dark Mode */
+body.dark {
+  --sidebar-bg: #0f172a;
+  --bg-component: #1e293b; /* ✅ 修正：深色模式統一背景 */
+  --text-main: #f8fafc;
+  --border-color: #334155;
+}
 
 body {
   margin: 0;
-  background-color: var(--sidebar-bg) !important;
-  overflow: hidden;
+  background-color: var(--sidebar-bg); /* 底層背景與側邊欄一致 */
+  color: var(--text-main);
+  transition: background-color 0.3s;
 }
 
-.ant-layout, .ant-layout-has-sider, .ant-layout-sider { background: transparent !important; }
+/* 確保 Ant Layout 背景不干擾圓角效果 */
+.ant-layout.ant-layout-has-sider {
+  background: var(--sidebar-bg) !important;
+}
 
 /* ============================================================
-   2. THE 3D SLAB (The Main Surface)
+   2. LAYOUT COMPONENTS (3D 懸浮主區域 - 右側白色部分)
    ============================================================ */
 .main-content-area {
-  background-color: var(--bg-unified) !important;
+  background-color: var(--bg-component) !important;
+  transition: all 0.3s ease;
   height: 100vh;
   display: flex;
   flex-direction: column;
   position: relative;
   
-  /* Point 1 & 4 Corners (60px) */
+  /* ✅ 內容區保持直角，確保紅線處陰影乾淨 */
+  border-top-left-radius: 0px !important; 
+  border-bottom-left-radius: 0px !important;
+  overflow: visible;
+
+  /* ✅ 紅線處 3D 陰影 (向左偏移) */
+  box-shadow: -20px 0 50px -15px rgba(0, 0, 0, 0.25);
+  z-index: 200; /* 層級低於選中的選單，才能被選單蓋住 */
+}
+
+.app-header {
+  background-color: var(--bg-component) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  color: var(--text-main) !important;
+  transition: all 0.3s ease;
+  height: 64px;
+  display: flex;
+  align-items: center;
+
+  /* ✅ 關鍵修正：Header 左上角 60px 圓角 */
   border-top-left-radius: 60px !important; 
-  border-bottom-left-radius: 60px !important;
-  
-  /* ✅ Exact Shadow Logic from reference */
-  box-shadow: var(--extreme-3d-shadow) !important;
-  z-index: 100;
-  overflow: visible !important;
+  margin-top: 0px;
+  padding-left: 40px;
 }
 
 .main-scroll-content {
   flex: 1;
   overflow-y: auto;
-  padding: 30px 100px 100px 100px !important;
+  background-color: var(--bg-component) !important;
+  padding: 32px;
 }
 
 /* ============================================================
-   3. FH638 NAVIGATION (GitHub Interaction Style)
+   3. CURVED SIDEBAR NAVIGATION (選單與視覺橋樑 - 黃色箭頭修正)
    ============================================================ */
-
-.input {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+.custom-sider {
+  background: var(--sidebar-bg) !important;
+  height: 100vh !important;
+  position: sticky !important;
+  top: 0;
+  left: 0;
+  z-index: 300; /* ✅ 提高側邊欄層級，使其高於內容區的陰影 */
+  overflow: visible !important; 
 }
 
-.value {
-  font-size: 14px;
-  background-color: transparent;
-  border: none;
-  padding: 12px 15px;
-  color: #7d8590;
-  display: flex;
-  align-items: center;
+.navigation ul {
+  padding-left: 10px;
+  margin-top: 20px;
+}
+
+.navigation ul li {
   position: relative;
-  gap: 12px;
-  cursor: pointer;
-  border-radius: 10px;
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  box-sizing: border-box;
   width: 100%;
+  list-style: none;
+  margin-bottom: 5px;
 }
 
-/* ✅ FH638 Hover Blur Effect on other items */
-.input:hover > :not(.value:hover) {
-  filter: blur(1.5px);
-  transform: scale(0.95, 0.95);
-  opacity: 0.5;
-  transition: 300ms;
+/* ✅ 選中項：加入左側陰影以維持整體組件的 3D 感 */
+.navigation ul li.active {
+  background: var(--bg-component) !important;
+  position: relative;
+  z-index: 500; /* 最高層級，擋住內容區陰影 */
+  border-top-left-radius: 30px;
+  border-bottom-left-radius: 30px;
+  
+  /* 選單左側也要有陰影，看起來才像一整塊卡片 */
+  box-shadow: -10px 0 20px -10px rgba(0, 0, 0, 0.3);
 }
 
-/* Hover/Active border and color logic */
-.value:hover, .value:focus, .value.active-nav {
-  color: #ffffff;
-}
-
-/* ✅ ACTIVE VIEW: Shift right 17px and Blue Strip */
-.value.active-nav {
-  background-color: #1a1f24;
-  outline: none;
-  margin-left: 17px; /* The physical horizontal shift */
-}
-
-/* Left side blue indicator strip */
-.value::before {
-  content: "";
+/* ✅ 視覺橋樑 (黃色箭頭核心修正)：完全覆蓋交界線 */
+.navigation ul li.active::after {
+  content: '';
   position: absolute;
-  top: 15%;
-  left: -15px;
-  width: 4px;
-  height: 70%;
-  background-color: #2f81f7;
-  border-radius: 5px;
-  opacity: 0;
-  transition: 0.5s;
+  top: 0;
+  right: -30px; /* ✅ 跨越側邊欄邊界，覆蓋內容區的垂直陰影 */
+  width: 40px;  /* 足夠寬度消除縫隙 */
+  height: 100%;
+  background: var(--bg-component);
+  z-index: 501;
+  pointer-events: none;
 }
 
-.value.active-nav::before {
-  opacity: 1;
-}
-
-.value .icon-box {
-  width: 20px;
+.navigation ul li a {
   display: flex;
-  justify-content: center;
-  font-size: 18px;
+  color: #fff;
+  align-items: center;
+  height: 50px;
 }
+
+.navigation ul li.active a {
+  color: var(--sidebar-bg); /* 選中時文字變深色 */
+}
+
+/* 經典上下弧形缺口：配合橋樑位置 */
+.navigation ul li.active a::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -25px; /* 同步向右移 */
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border-bottom-right-radius: 20px;
+  box-shadow: 10px 10px 0 10px var(--bg-component);
+  z-index: 502;
+}
+
+.navigation ul li.active a::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  right: -25px; /* 同步向右移 */
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border-top-right-radius: 20px;
+  box-shadow: 10px -10px 0 10px var(--bg-component);
+  z-index: 502;
+}
+
+.navigation ul::-webkit-scrollbar { display: none; }
+
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)
    ============================================================ */

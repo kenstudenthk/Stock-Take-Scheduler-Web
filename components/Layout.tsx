@@ -1,15 +1,15 @@
 import React, { useMemo } from 'react';
 import { 
   DashboardOutlined, 
-  ShopOutlined, 
+  UnorderedListOutlined, 
   CalendarOutlined, 
   ToolOutlined, 
-  EnvironmentOutlined, 
-  DatabaseOutlined, 
-  SettingOutlined 
+  ShopOutlined, 
+  SettingOutlined,
+  BugOutlined
 } from '@ant-design/icons';
 import { View } from '../types';
-import { Avatar, Space, Tag } from 'antd';
+import { Button, Space, Avatar, Tag } from 'antd';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,16 +20,19 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate, poolCount = 0 }) => {
   
-  // ✅ 定義與視圖對應的菜單項
+  // ✅ 1. 定義導航順序 (必須與顯示順序一致)
   const menuItems = useMemo(() => [
-    { id: View.DASHBOARD, label: 'Dashboard', icon: <DashboardOutlined /> },
-    { id: View.SHOP_LIST, label: 'Master List', icon: <DatabaseOutlined /> },
-    { id: View.CALENDAR, label: 'Schedules', icon: <CalendarOutlined /> },
-    { id: View.GENERATOR, label: 'Generator', icon: <ToolOutlined /> },
-    { id: View.LOCATIONS, label: 'Map View', icon: <EnvironmentOutlined /> },
-    { id: View.INVENTORY, label: 'Inventory', icon: <ShopOutlined /> },
-    { id: View.SETTINGS, label: 'Settings', icon: <SettingOutlined /> },
+    { id: View.DASHBOARD, icon: <DashboardOutlined />, label: 'Dashboard' },
+    { id: View.SHOP_LIST, icon: <UnorderedListOutlined />, label: 'Master List' },
+    { id: View.CALENDAR, icon: <CalendarOutlined />, label: 'Schedules' },
+    { id: View.GENERATOR, icon: <ToolOutlined />, label: 'Generator' },
+    { id: View.LOCATIONS, icon: <ShopOutlined />, label: 'Map View' },
+    { id: View.INVENTORY, icon: <UnorderedListOutlined />, label: 'Inventory' },
+    { id: View.SETTINGS, icon: <SettingOutlined />, label: 'Settings' },
   ], []);
+
+  // ✅ 2. 計算索引，驅動 CSS --active-index
+  const activeIndex = menuItems.findIndex(item => item.id === currentView);
 
   const toggleDarkMode = () => {
     document.documentElement.classList.toggle('dark');
@@ -38,58 +41,68 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
   return (
     <div className="h-screen w-full flex flex-row overflow-hidden bg-[#0d1117]">
       {/* --- 左側 Sidebar --- */}
-      <aside className="w-[280px] flex flex-col p-4 z-50">
-        {/* Logo 區域 */}
-        <div className="px-4 py-10 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg">
-            <span style={{ fontWeight: 900 }}>ST</span>
+      <aside className="custom-sider w-[280px] h-screen flex flex-col relative z-[500]">
+        <div className="px-8 py-10 flex items-center gap-4">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg border border-white/10">
+            <span style={{ fontWeight: 900, fontSize: '18px' }}>ST</span>
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-white text-sm font-bold leading-none">Stock Take</h1>
-            <p className="text-[#7d8590] text-[10px] uppercase font-black mt-1">Enterprise Pro</p>
+          <div className="flex flex-col text-white">
+            <h1 className="text-base font-bold leading-none tracking-tight">Stock Take</h1>
+            <p className="text-[9px] font-black text-blue-400 mt-1 uppercase tracking-widest">Enterprise</p>
           </div>
         </div>
 
-        {/* ✅ Uiverse FH638 選單結構 */}
-        <nav className="input flex-1">
-          {menuItems.map((item) => (
-            <button 
-              key={item.id}
-              className={`value ${currentView === item.id ? 'active-view' : ''}`}
-              onClick={() => onNavigate(item.id)}
-            >
-              <span className="icon-wrapper">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
+        {/* ✅ 3. FH638 選單結構 + 物理滑動塊 */}
+        <nav 
+          className="input flex-1 px-4" 
+          style={{ '--active-index': activeIndex } as React.CSSProperties}
+        >
+          <div className="relative">
+             {/* 這是那個會滑動的物理膠囊 */}
+             <div className="nav-indicator">
+                <div className="nav-indicator-bottom-curve" />
+             </div>
+
+             <div className="menu-list-container relative z-10">
+                {menuItems.map((item) => (
+                  <button 
+                    key={item.id}
+                    className={`value ${currentView === item.id ? 'active-view' : ''}`}
+                    onClick={() => onNavigate(item.id)}
+                  >
+                    <span className="icon-box">{item.icon}</span>
+                    <span className="label-text font-bold">{item.label}</span>
+                  </button>
+                ))}
+             </div>
+          </div>
         </nav>
 
-        {/* 使用者卡片 */}
-        <div className="mt-auto p-2">
-           <div className="flex items-center gap-3 rounded-xl bg-[#161b22] p-3 border border-[#30363d]">
-              <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" size="small" />
-              <div className="flex flex-col">
-                <p className="text-[11px] font-bold text-white m-0">Administrator</p>
-                <p className="text-[9px] text-[#7d8590] m-0 uppercase">System Manager</p>
+        <div className="p-6">
+           <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-4 border border-white/10">
+              <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" />
+              <div className="flex flex-col overflow-hidden">
+                <p className="truncate text-xs font-bold text-white m-0">Administrator</p>
+                <button className="text-[10px] text-blue-400 text-left hover:underline p-0 border-none bg-transparent">Sign Out</button>
               </div>
            </div>
         </div>
       </aside>
 
-      {/* --- 右側 3D Slab 內容區 --- */}
-      <div className="flex-1 flex flex-col main-content-area">
+      {/* --- ✅ 4. 右側一體化 3D 內容板 (The Slab) --- */}
+      <div className="flex-1 flex flex-col main-content-area relative z-[100]">
         <header className="app-header px-14 flex justify-between items-center bg-transparent border-none">
           <div className="flex flex-col">
-             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] m-0">Navigation Index</h2>
+             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] m-0">System Monitor</h2>
              <span className="text-2xl font-black text-slate-800 dark:text-white capitalize tracking-tighter">
                {currentView.replace('-', ' ')}
              </span>
           </div>
 
           <Space size="large">
-            <Tag color="blue" className="font-black px-4 py-1 rounded-full border-none shadow-sm text-[12px]">POOL: {poolCount}</Tag>
-            <button onClick={toggleDarkMode} className="h-11 w-11 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:scale-110 transition-transform">
-               <span className="material-symbols-outlined text-[20px] dark:text-white">contrast</span>
+            <Tag color="blue" className="font-black px-4 py-1 rounded-full border-none shadow-sm">POOL: {poolCount}</Tag>
+            <button onClick={toggleDarkMode} className="h-11 w-11 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm">
+               <span className="material-symbols-outlined text-[22px] dark:text-white">dark_mode</span>
             </button>
           </Space>
         </header>

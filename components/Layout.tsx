@@ -1,214 +1,126 @@
-import React, { useState } from 'react';
-import { View, NavItemProps } from '../types';
-
-const NavItem: React.FC<NavItemProps> = ({ view, currentView, icon, label, onClick, filled = false }) => {
-  const isActive = currentView === view;
-  return (
-    <button
-      onClick={() => onClick(view)}
-      className={`group flex w-full items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
-        isActive
-          ? 'bg-primary/10 text-primary dark:text-teal-400'
-          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-teal-400'
-      }`}
-    >
-      <span
-        className="material-symbols-outlined text-[24px]"
-        style={{ fontVariationSettings: isActive || filled ? "'FILL' 1" : "'FILL' 0" }}
-      >
-        {icon}
-      </span>
-      <span className={`text-sm ${isActive ? 'font-semibold' : 'font-medium'}`}>{label}</span>
-    </button>
-  );
-};
+import React, { useMemo } from 'react';
+import { 
+  HomeOutlined, 
+  UnorderedListOutlined, 
+  CalendarOutlined, 
+  ToolOutlined, 
+  ShopOutlined, 
+  SettingOutlined,
+  LogoutOutlined
+} from '@ant-design/icons';
+import { View } from '../types';
+import { Button, Space, Avatar, Tag } from 'antd';
 
 interface LayoutProps {
   children: React.ReactNode;
   currentView: View;
   onNavigate: (view: View) => void;
+  poolCount?: number;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate }) => {
-  // ✅ 新增：控制側邊欄開啟狀態
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate, poolCount = 0 }) => {
+  
+  // ✅ 1. 定義導航順序，這決定了滑動塊的位移位置
+  const menuItems = useMemo(() => [
+    { id: View.DASHBOARD, icon: <HomeOutlined />, label: 'Dashboard' },
+    { id: View.SHOP_LIST, icon: <UnorderedListOutlined />, label: 'Master List' },
+    { id: View.CALENDAR, icon: <CalendarOutlined />, label: 'Schedules' },
+    { id: View.GENERATOR, icon: <ToolOutlined />, label: 'Generator' },
+    { id: View.LOCATIONS, icon: <ShopOutlined />, label: 'Map View' },
+    { id: View.INVENTORY, icon: <UnorderedListOutlined />, label: 'Inventory' },
+    { id: View.SETTINGS, icon: <SettingOutlined />, label: 'Settings' },
+  ], []);
+
+  // ✅ 2. 計算目前視圖的索引 (用於 CSS 變數)
+  const activeIndex = menuItems.findIndex(item => item.id === currentView);
 
   const toggleDarkMode = () => {
     document.documentElement.classList.toggle('dark');
   };
 
   return (
-    <div className="flex h-screen w-full relative overflow-hidden">
-      {/* Sidebar - 側邊欄 */}
-      <aside 
-        className={`
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-          lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-72 flex flex-col 
-          border-r border-slate-200 dark:border-slate-700 bg-surface-light dark:bg-surface-dark 
-          transition-transform duration-300 ease-in-out shadow-xl lg:shadow-none
-        `}
-      >
-        <div className="flex items-center justify-between px-6 py-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-emerald-600 text-white shadow-lg shadow-primary/30">
-              <span className="material-symbols-outlined">inventory_2</span>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-base font-bold leading-none text-slate-900 dark:text-white">Stock Take</h1>
-              <p className="text-xs font-medium text-primary dark:text-teal-400 mt-1">Scheduler Pro</p>
-            </div>
+    <div className="h-screen w-full flex flex-row overflow-hidden bg-sidebar-bg">
+      {/* --- 左側導航欄 --- */}
+      <aside className="custom-sider w-[280px] h-screen flex flex-col relative">
+        <div className="px-8 py-10 flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white shadow-xl border border-white/5">
+            <span style={{ fontWeight: 900, fontSize: '20px' }}>ST</span>
           </div>
-
-          {/* ✅ 移至此處的 Uiverse 樣式按鈕 (僅在側邊欄內顯示) */}
-          <div className="flex items-center justify-center">
-            <input 
-              type="checkbox" 
-              id="checkbox" 
-              checked={isSidebarOpen} 
-              onChange={() => setIsSidebarOpen(!isSidebarOpen)} 
-            />
-            <label htmlFor="checkbox" className="toggle">
-              <div className="bars" id="bar1"></div>
-              <div className="bars" id="bar2"></div>
-              <div className="bars" id="bar3"></div>
-            </label>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-bold leading-none text-white tracking-tight">Stock Take</h1>
+            <p className="text-[10px] font-black text-teal-400 mt-1 uppercase tracking-[0.2em]">Scheduler Pro</p>
           </div>
         </div>
-        
 
-        <nav className="flex flex-1 flex-col gap-2 px-4 py-4">
-          <NavItem
-            view={View.DASHBOARD}
-            currentView={currentView}
-            icon="dashboard"
-            label="Dashboard"
-            onClick={(v) => { onNavigate(v); setIsSidebarOpen(false); }}
-            filled
-          />
-          <NavItem
-            view={View.LOCATIONS}
-            currentView={currentView}
-            icon="storefront"
-            label="Shop Locations"
-            onClick={(v) => { onNavigate(v); setIsSidebarOpen(false); }}
-          />
-           <NavItem
-            view={View.GENERATOR}
-            currentView={currentView}
-            icon="manufacturing"
-            label="Generator"
-            onClick={(v) => { onNavigate(v); setIsSidebarOpen(false); }}
-          />
-          <NavItem
-            view={View.CALENDAR}
-            currentView={currentView}
-            icon="calendar_month"
-            label="Schedules"
-            onClick={(v) => { onNavigate(v); setIsSidebarOpen(false); }}
-          />
-          <NavItem
-            view={View.REPORTS}
-            currentView={currentView}
-            icon="description"
-            label="Reports"
-            onClick={(v) => { onNavigate(v); setIsSidebarOpen(false); }}
-          />
-          <NavItem
-            view={View.SETTINGS}
-            currentView={currentView}
-            icon="settings"
-            label="Settings"
-            onClick={(v) => { onNavigate(v); setIsSidebarOpen(false); }}
-          />
+        {/* ✅ 3. 滑動導航 (The Mechanical Bridge) */}
+        <nav 
+          className="navigation flex-1" 
+          style={{ '--active-index': activeIndex } as React.CSSProperties}
+        >
+          <ul>
+            {/* 這是那個會上下滑動的實體 3D 滑塊 */}
+            <div className="nav-indicator">
+              <div className="nav-indicator-bottom-curve" />
+            </div>
+
+            {menuItems.map((item) => (
+              <li 
+                key={item.id} 
+                className={`list ${currentView === item.id ? 'active' : ''}`}
+                onClick={() => onNavigate(item.id)}
+              >
+                <a href="#" onClick={(e) => e.preventDefault()}>
+                  <span className="icon">{item.icon}</span>
+                  <span className="title">{item.label}</span>
+                </a>
+              </li>
+            ))}
+
+            <li className="list mt-auto opacity-50 hover:opacity-100 transition-opacity">
+              <a href="#" className="text-rose-400">
+                <span className="icon"><LogoutOutlined /></span>
+                <span className="title font-bold">Sign Out</span>
+              </a>
+            </li>
+          </ul>
         </nav>
 
-        
-
-        <div className="border-t border-slate-200 dark:border-slate-700 p-4">
-          <div className="flex items-center gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3 border border-slate-100 dark:border-slate-700/50">
-            <div
-              className="h-10 w-10 overflow-hidden rounded-full bg-slate-200 bg-cover bg-center"
-              style={{
-                backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCOwRhaVG0nys6AQtFT7UbpaKinLDW-zCp5RiCkIq62lIEC1nF2x8omMYhE3J5-dOXSqE5G79TMwlGuN9ktspu_Y9fpOMXeX3Ou1q4xlbD2HhrbhHNMXp_55Bh2KBA0G_R5Apm-9MQrQQCIWZgSL7IPPaB4nRDhHtk5K7kNB9KU0fLQ9v86FWvH5oMefWTLVg9rIwyVyb-Tfc8Hv1APU3p59t--RlHrskkf7J8JYe51-yf94OclIUIq2oQ1pw5ivQPWeHpZL1S3W-o')",
-              }}
-            ></div>
-            <div className="flex flex-col overflow-hidden">
-              <p className="truncate text-sm font-bold text-slate-900 dark:text-white">John Doe</p>
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">Inventory Manager</p>
-            </div>
-          </div>
+        <div className="p-6">
+           <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-4 border border-white/10">
+              <Avatar size="large" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" className="border-2 border-teal-500" />
+              <div className="flex flex-col">
+                <p className="text-sm font-bold text-white m-0">Administrator</p>
+                <p className="text-[10px] text-teal-400 m-0 uppercase font-black">Online Now</p>
+              </div>
+           </div>
         </div>
       </aside>
 
-      {/* 背景遮罩 (手機版開啟側邊欄時) */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Main Content - 主內容區 */}
-      <main className="flex flex-1 flex-col overflow-hidden relative">
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-700 bg-surface-light dark:bg-surface-dark px-6 transition-colors duration-200 z-20">
-          <div className="flex items-center gap-4 lg:hidden">
-            {/* ✅ 手機版 Header 內也放一個相同的按鈕，以便在側邊欄關閉時開啟它 */}
-            <div className="flex items-center justify-center">
-              <input 
-                type="checkbox" 
-                id="checkbox-header" 
-                checked={isSidebarOpen} 
-                onChange={() => setIsSidebarOpen(!isSidebarOpen)} 
-                className="hidden"
-              />
-              <label htmlFor="checkbox-header" className="toggle scale-75">
-                <div className="bars" id="bar1"></div>
-                <div className="bars" id="bar2"></div>
-                <div className="bars" id="bar3"></div>
-              </label>
-            </div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Stock Take</h2>
-          </div>
-          
-          <div className="hidden lg:flex items-center gap-4">
-            <nav className="flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
-               <span>App</span>
-               <span className="mx-2 text-slate-300 dark:text-slate-600">/</span>
-               <span className="text-primary dark:text-teal-400 capitalize">{currentView.toLowerCase().replace('_', ' ')}</span>
-            </nav>
+      {/* --- ✅ 4. 右側一體化 3D 內容區 (The Slab) --- */}
+      <div className="flex-1 flex flex-col main-content-area">
+        <header className="app-header flex justify-between items-center bg-transparent">
+          <div className="flex flex-col">
+             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] m-0 mb-1">Navigation / Context</h2>
+             <span className="text-2xl font-black text-slate-800 dark:text-white capitalize">
+               {currentView.replace('-', ' ')}
+             </span>
           </div>
 
-          <div className="flex flex-1 justify-end items-center gap-4">
-            <div className="hidden md:flex relative max-w-md w-full">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
-              </div>
-              <input
-                className="block w-full rounded-lg border-0 bg-slate-100 dark:bg-slate-800 py-2 pl-10 pr-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary sm:text-sm"
-                placeholder="Search shops, schedules..."
-                type="text"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors relative">
-                <span className="material-symbols-outlined text-[20px]">notifications</span>
-                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-secondary border-2 border-surface-light dark:border-surface-dark"></span>
-              </button>
-              <button
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
-                onClick={toggleDarkMode}
-              >
-                <span className="material-symbols-outlined text-[20px] hidden dark:block">light_mode</span>
-                <span className="material-symbols-outlined text-[20px] dark:hidden">dark_mode</span>
-              </button>
-            </div>
-          </div>
+          <Space size="middle">
+            <Tag color="cyan" className="font-black px-4 py-1 rounded-full border-none shadow-sm text-[12px]">POOL: {poolCount}</Tag>
+            <Button size="large" shape="round" className="font-bold border-slate-200 shadow-sm">Sync Data</Button>
+            <button onClick={toggleDarkMode} className="h-12 w-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-all hover:scale-110 active:scale-95">
+               <span className="material-symbols-outlined text-[24px] dark:text-white">palette</span>
+            </button>
+          </Space>
         </header>
-
-        <div className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark scroll-smooth">
+        
+        <main className="main-scroll-content">
+          <div className="fade-in-content">
             {children}
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

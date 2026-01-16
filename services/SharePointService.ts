@@ -138,6 +138,29 @@ class SharePointService {
   /**
    * 💾 Save Schedule as Audit Trail (Create new records in a separate list)
    */
+  
+  // 喺 SharePointService class 入面加入
+async getUserByEmail(email: string): Promise<any> {
+  try {
+    const listId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770';
+    // 透過 Graph API Filter 功能搵對應 Email 嘅 Item
+    const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${listId}/items?$filter=fields/Email eq '${email}'&$expand=fields($select=Email,Name,PasswordHash,UserRole)`;
+    
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${this.graphToken}` }
+    });
+    
+    const data = await response.json();
+    
+    if (data.value && data.value.length > 0) {
+      return data.value[0].fields; // 傳回用戶資料
+    }
+    return null;
+  } catch (error) {
+    console.error("搵唔到用戶:", error);
+    return null;
+  }
+}
   async saveScheduleAuditTrail(
     schedules: Array<{
       shopId: string;

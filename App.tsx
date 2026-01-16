@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Layout, Button, Space, Tag, Avatar, message, Typography } from 'antd';
 import { 
   HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
@@ -16,12 +16,14 @@ import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ErrorReport } from './components/ErrorReport'; 
+import { Login } from './components/Login';
+import SharePointService from './services/SharePointService'; // ✅ 確保匯入了 Service
 import './index.css';
 
 const { Content, Header, Sider } = Layout;
 const { Title, Text } = Typography;
 
-// 貨車通知組件
+// 貨車通知組件 (保持不變)
 const TruckFlagNotice: React.FC = () => (
   <div className="truck-header-container">
     <div className="truck-flag-walker">
@@ -58,7 +60,25 @@ function App() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
 
-  // ✅ 新增：統一的 Token 更新函數 (包含持久化儲存)
+  // ✅ 1. 初始化用戶狀態（從 Session 讀取防止 Refresh 消失）
+  const [currentUser, setCurrentUser] = useState<any>(JSON.parse(sessionStorage.getItem('currentUser') || 'null'));
+
+  // ✅ 2. 實例化 SharePointService
+  const sharePointService = useMemo(() => new SharePointService(graphToken), [graphToken]);
+
+  // ✅ 3. 登入攔截：如果未登入，就顯示 Login Page
+  if (!currentUser) {
+    return (
+      <Login 
+        sharePointService={sharePointService} 
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          sessionStorage.setItem('currentUser', JSON.stringify(user));
+        }} 
+      />
+    );
+  }
+
   const updateGraphToken = (token: string) => {
     setGraphToken(token);
     localStorage.setItem('stockTakeToken', token);
@@ -98,14 +118,12 @@ function App() {
               district: f[SP_FIELDS.DISTRICT] || '',
               area: f[SP_FIELDS.AREA] || '',
               status: f[SP_FIELDS.STATUS] || 'Unplanned',
-              // ✅ 關鍵：對應到 field_1 (結業狀態)
               masterStatus: f[SP_FIELDS.OLD_STATUS] || '', 
               scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
               groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
               is_mtr: f[SP_FIELDS.MTR] === 'Yes',
               latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
               longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
-              // 補上 Inventory 需要的欄位
               businessUnit: f[SP_FIELDS.BUSINESS_UNIT] || '',
             };
           });
@@ -134,6 +152,12 @@ function App() {
       setIsInitialLoading(false);
     }
   }, [fetchAllData]);
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    sessionStorage.removeItem('currentUser');
+    message.info("已登出系統");
+  };
 
   const renderContent = () => {
     switch (selectedMenuKey) {
@@ -213,7 +237,15 @@ function App() {
           <Space size="large">
             <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)}>Refresh</Button>
             <Tag color="cyan" className="font-bold">POOL: {allShops.length}</Tag>
-            <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" />
+            
+            {/* ✅ 修正了 size 報錯問題：改用 style 定義字體大細 */}
+            <div className="flex items-center gap-2 cursor-pointer" onClick={handleLogout} title="點擊登出">
+              <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" />
+              <div className="flex flex-col leading-tight">
+                <Text strong style={{ fontSize: '12px' }}>{currentUser.Name}</Text>
+                <Text type="secondary" style={{ fontSize: '10px' }}>{currentUser.UserRole}</Text>
+              </div>
+            </div>
           </Space>
         </Header>
         

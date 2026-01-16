@@ -3,20 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --primary-teal: #0d9488;
   --sidebar-bg: #2b3467;
-  --bg-unified: #ffffff;      /* ✅ THE SLAB COLOR: Perfectly matched */
-  --nav-item-height: 60px;    /* ✅ Fixed height for precise mechanical movement */
+  --bg-unified: #ffffff;      
+  --nav-item-height: 60px;    /* Matches the height of menu items */
   
-  /* ✅ THE EXTREME 3D STACKED SHADOW (Your reference logic) */
-  --extreme-3d-shadow: 
-    rgba(0, 0, 0, 0.17) -23px 0px 25px 0px inset,   /* Deep "Meaty" inner lip */
+  /* EXTREME 3D SHADOW (Your exact reference logic) */
+  --extreme-shadow: 
+    rgba(0, 0, 0, 0.17) -23px 0px 25px 0px inset,   
     rgba(0, 0, 0, 0.15) -36px 0px 30px 0px inset, 
     rgba(0, 0, 0, 0.1) -79px 0px 40px -10px inset, 
-    rgba(0, 0, 0, 0.06) -2px 0px 1px,               /* Hard Edge definition */
+    rgba(0, 0, 0, 0.06) -2px 0px 1px,               
     rgba(0, 0, 0, 0.09) -4px 0px 2px, 
     rgba(0, 0, 0, 0.09) -8px 0px 4px, 
-    rgba(0, 0, 0, 0.18) -32px 0px 25px;             /* Massive Floor Diffusion */
+    rgba(0, 0, 0, 0.09) -16px 0px 8px, 
+    rgba(0, 0, 0, 0.09) -32px 0px 16px;             
 }
 
 body.dark {
@@ -28,40 +28,24 @@ body {
   margin: 0;
   background-color: var(--sidebar-bg) !important;
   overflow: hidden;
-  font-family: 'Inter', sans-serif;
 }
 
-/* Ensure Ant Layout doesn't block the 3D depth */
-.ant-layout, .ant-layout-has-sider, .ant-layout-sider {
-  background: transparent !important;
-}
-
-/* ============================================================
-   2. THE 3D SLAB (Header + Content Area)
-   ============================================================ */
+/* 3D UNIFIED SLAB */
 .main-content-area {
   background-color: var(--bg-unified) !important;
   height: 100vh;
   display: flex;
   flex-direction: column;
   position: relative;
-  
-  /* ✅ RADIUS POINTS 1 & 4: Top and Bottom Left corners (60px) */
   border-top-left-radius: 60px !important; 
   border-bottom-left-radius: 60px !important;
-  
-  /* ✅ APPLY THE EXTREME 3D SHADOW (The Red Line) */
-  box-shadow: var(--extreme-3d-shadow) !important;
-  z-index: 100;
+  box-shadow: var(--extreme-shadow) !important;
   overflow: visible !important;
 }
 
 .app-header {
   height: 90px;
-  padding: 0 100px !important; /* Offset for the 60px corner */
-  border-bottom: 1px solid rgba(0,0,0,0.05) !important;
-  display: flex;
-  align-items: center;
+  padding: 0 100px !important;
 }
 
 .main-scroll-content {
@@ -70,62 +54,45 @@ body {
   padding: 40px 100px !important;
 }
 
-/* ============================================================
-   3. THE SLIDING PILL BRIDGE (Navigation Movement)
-   ============================================================ */
+/* NAVIGATION & SLIDING PILL */
 .custom-sider {
   background: var(--sidebar-bg) !important;
-  z-index: 200;
-  overflow: visible !important;
 }
 
 .navigation {
   position: relative;
   margin-top: 30px;
-  padding-left: 20px; /* Space for the pill's rounded edge */
+  padding-left: 20px;
 }
 
-.navigation ul {
-  position: relative;
-  list-style: none !important;
-  padding: 0 !important;
-}
-
-/* ✅ THE NAV INDICATOR: This is the physical Pill that travels E to A */
+/* THE SLIDING PILL HIGHLIGHT */
 .nav-indicator {
   position: absolute;
   left: 0;
-  /* Top = activeIndex * Height */
   top: calc(var(--active-index) * var(--nav-item-height));
   width: 100%;
   height: var(--nav-item-height);
   background: var(--bg-unified) !important;
-  
-  /* 3D Pill Shape */
   border-top-left-radius: 30px !important;
   border-bottom-left-radius: 30px !important;
-  
-  /* ✅ Match the Slab's 3D Shadow exactly */
-  box-shadow: var(--extreme-3d-shadow) !important;
-  
-  /* Smooth "Item E to A" Movement with a professional spring bounce */
+  box-shadow: var(--extreme-shadow) !important;
   transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  z-index: 1;
+  z-index: 1; /* Below the text */
 }
 
-/* ✅ THE BRIDGE: Physically plugs into the Content Area (Hides the Seam) */
+/* BRIDGE (To hide the vertical line/yellow arrow) */
 .nav-indicator::after {
   content: '';
   position: absolute;
   top: 0;
-  right: -50px; /* Extends deep into the main slab */
-  width: 70px;  /* Wide enough to mask the main slab's left shadow line */
+  right: -50px; 
+  width: 70px;
   height: 100%;
   background: var(--bg-unified) !important;
   z-index: 2;
 }
 
-/* ✅ RADIUS POINTS 2 & 3: Inverted Junction Jaws (Uiverse logic adapted) */
+/* INVERTED RADIUS (The Uiverse bite logic) */
 .nav-indicator::before {
   content: '';
   position: absolute;
@@ -135,7 +102,6 @@ body {
   height: 20px;
   background: transparent;
   border-bottom-right-radius: 20px;
-  /* The shadow here acts as the fill color for the curve */
   box-shadow: 10px 10px 0 10px var(--bg-unified);
   z-index: 3;
 }
@@ -152,12 +118,11 @@ body {
   z-index: 3;
 }
 
-/* Nav Item Styling */
+/* MENU ITEMS */
 .navigation ul li {
   position: relative;
   height: var(--nav-item-height);
-  width: 100%;
-  z-index: 10;
+  z-index: 10; /* Above the pill indicator */
   display: flex;
   align-items: center;
 }
@@ -168,29 +133,21 @@ body {
   width: 100%;
   height: 100%;
   padding: 0 25px;
+  color: rgba(255, 255, 255, 0.5) !important;
   text-decoration: none !important;
-  color: rgba(255, 255, 255, 0.5) !important; /* Non-active color */
-  font-weight: 800;
-  transition: all 0.3s ease;
+  transition: color 0.3s;
 }
 
-/* ✅ ACTIVE TEXT: Switches to dark blue when the white pill is behind it */
+/* WHEN ACTIVE: Change text to dark so it's visible on the white pill */
 .navigation ul li.active a {
   color: var(--sidebar-bg) !important;
-  transform: translateX(8px); /* Subtle "push-out" effect when selected */
 }
 
 .navigation ul li a .icon {
   min-width: 45px;
+  font-size: 1.5em;
   display: flex;
   justify-content: center;
-  font-size: 1.6em;
-}
-
-.navigation ul li a .title {
-  padding-left: 15px;
-  font-size: 14px;
-  letter-spacing: -0.02em;
 }
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

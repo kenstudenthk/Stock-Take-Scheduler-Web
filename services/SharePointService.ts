@@ -1,3 +1,5 @@
+import bcrypt from 'bcryptjs';
+
 interface SaveSchedulePayload {
   shopId: string;
   itemId: string;
@@ -21,7 +23,40 @@ class SharePointService {
   private graphToken: string;
   private siteId = 'pccw0.sharepoint.com:/sites/BonniesTeam';
   private listId = 'ce3a752e-7609-4468-81f8-8babaf503ad8';
+  async createMember(name: string, email: string, plainPassword: string, role: string) {
+  try {
+    const listId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770';
+    
+    // 1. 先將密碼雜湊化 (Hashing)
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(plainPassword, salt);
 
+    // 2. 準備傳送到 SharePoint 的資料
+    const payload = {
+      fields: {
+        Email: email,
+        Name: name,
+        PasswordHash: hash, // 儲存雜湊值，絕對唔儲存明文密碼！
+        UserRole: role
+      }
+    };
+
+    const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${listId}/items`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.graphToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error("建立成員失敗:", error);
+    return false;
+  }
+}
   constructor(token: string) {
     this.graphToken = token;
   }

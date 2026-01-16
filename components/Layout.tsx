@@ -1,15 +1,6 @@
 import React, { useMemo } from 'react';
-import { 
-  HomeOutlined, 
-  UnorderedListOutlined, 
-  CalendarOutlined, 
-  ToolOutlined, 
-  ShopOutlined, 
-  SettingOutlined,
-  BugOutlined
-} from '@ant-design/icons';
 import { View } from '../types';
-import { Button, Space, Avatar, Tag } from 'antd';
+import { Space, Avatar, Tag } from 'antd';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,89 +11,72 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate, poolCount = 0 }) => {
   
-  // 1. Navigation items in fixed order for sliding logic
+  // ✅ 導航項目清單與對應圖標
   const menuItems = useMemo(() => [
-    { id: View.DASHBOARD, icon: <HomeOutlined />, label: 'Dashboard' },
-    { id: View.SHOP_LIST, icon: <UnorderedListOutlined />, label: 'Master List' },
-    { id: View.CALENDAR, icon: <CalendarOutlined />, label: 'Schedules' },
-    { id: View.GENERATOR, icon: <ToolOutlined />, label: 'Generator' },
-    { id: View.LOCATIONS, icon: <ShopOutlined />, label: 'Map View' },
-    { id: View.INVENTORY, icon: <UnorderedListOutlined />, label: 'Inventory' },
-    { id: View.SETTINGS, icon: <SettingOutlined />, label: 'Settings' },
+    { id: View.DASHBOARD, label: 'Dashboard', icon: 'dashboard' },
+    { id: View.SHOP_LIST, label: 'Master List', icon: 'list_alt' },
+    { id: View.CALENDAR, label: 'Schedules', icon: 'calendar_today' },
+    { id: View.GENERATOR, icon: 'settings_suggest', label: 'Generator' },
+    { id: View.LOCATIONS, icon: 'map', label: 'Map View' },
+    { id: View.INVENTORY, icon: 'inventory_2', label: 'Inventory' },
+    { id: View.SETTINGS, icon: 'settings', label: 'Settings' },
   ], []);
-
-  // 2. Calculate current index for the CSS --active-index variable
-  const activeIndex = menuItems.findIndex(item => item.id === currentView);
 
   const toggleDarkMode = () => {
     document.documentElement.classList.toggle('dark');
   };
 
   return (
-    <div className="h-screen w-full flex flex-row overflow-hidden bg-sidebar-bg">
-      {/* Sidebar (The Floor) */}
-      <aside className="custom-sider w-[280px] h-screen flex flex-col relative z-[50]">
-        <div className="px-8 py-10 flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white shadow-xl border border-white/5">
-            <span style={{ fontWeight: 900, fontSize: '20px' }}>ST</span>
+    <div className="h-screen w-full flex flex-row overflow-hidden bg-[#0d1117]">
+      {/* --- 左側導航欄 (採用新設計) --- */}
+      <aside className="w-[260px] flex flex-col p-4">
+        <div className="px-4 py-8 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg">
+            <span className="material-symbols-outlined">analytics</span>
           </div>
-          <div className="flex flex-col text-white">
-            <h1 className="text-xl font-black leading-none italic">STOCK PRO</h1>
-            <p className="text-[10px] font-black text-teal-400 mt-1 uppercase">Enterprise</p>
+          <div className="flex flex-col">
+            <h1 className="text-sm font-bold text-white">Stock Take</h1>
+            <p className="text-[10px] text-slate-500 uppercase font-black">Pro Edition</p>
           </div>
         </div>
 
-        {/* 3. Sliding Pill Navigation Area */}
-        <nav 
-          className="navigation flex-1" 
-          style={{ '--active-index': activeIndex } as React.CSSProperties}
-        >
-          <ul className="relative">
-            {/* THIS IS THE PILL HIGHLIGHT THAT SLIDES */}
-            <div className="nav-indicator">
-              <div className="nav-indicator-bottom-curve" />
-            </div>
-
-            {menuItems.map((item) => (
-              <li 
-                key={item.id} 
-                className={`list ${currentView === item.id ? 'active' : ''}`}
-                onClick={() => onNavigate(item.id)}
-              >
-                <a href="#" onClick={(e) => e.preventDefault()}>
-                  <span className="icon">{item.icon}</span>
-                  <span className="title font-bold">{item.label}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
+        {/* ✅ Uiverse 結構：.input 容器 */}
+        <nav className="input flex-1">
+          {menuItems.map((item) => (
+            <button 
+              key={item.id}
+              className={`value ${currentView === item.id ? 'active-nav' : ''}`}
+              onClick={() => onNavigate(item.id)}
+            >
+              {/* 使用 Material Icons 以保持一致性，或替換為您提供的 SVG */}
+              <span className="material-symbols-outlined !text-[20px]">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
         </nav>
 
-        <div className="p-8">
-           <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-4 border border-white/10">
-              <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" />
+        {/* 使用者卡片 */}
+        <div className="mt-auto p-2">
+           <div className="flex items-center gap-3 rounded-xl bg-[#161b22] p-3 border border-[#30363d]">
+              <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" size="small" />
               <div className="flex flex-col">
-                <p className="text-sm font-bold text-white m-0">Admin</p>
-                <p className="text-[10px] text-teal-400 m-0 uppercase font-black">Online</p>
+                <p className="text-[11px] font-bold text-white m-0">Admin User</p>
+                <button className="text-[10px] text-blue-400 text-left hover:underline">Sign out</button>
               </div>
            </div>
         </div>
       </aside>
 
-      {/* 4. THE 3D SLAB (Main Area) */}
-      <div className="flex-1 flex flex-col main-content-area z-[100]">
-        <header className="app-header px-14 flex justify-between items-center bg-transparent">
-          <div className="flex flex-col">
-             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] m-0">Navigation</h2>
-             <span className="text-2xl font-black text-slate-800 dark:text-white capitalize">
-               {currentView.replace('-', ' ')}
-             </span>
-          </div>
-
-          <Space size="large">
-            <Tag color="cyan" className="font-black px-4 py-1 rounded-full border-none">POOL: {poolCount}</Tag>
-            <button onClick={toggleDarkMode} className="h-12 w-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-sm">
-               <span className="material-symbols-outlined text-[24px] dark:text-white">contrast</span>
+      {/* --- 右側內容區 (維持原本 3D Slab 結構，但背景微調) --- */}
+      <div className="flex-1 flex flex-col main-content-area">
+        <header className="app-header px-10 flex justify-between items-center bg-transparent">
+          <span className="text-lg font-bold text-slate-800 dark:text-white capitalize">
+            {currentView.replace('-', ' ')}
+          </span>
+          <Space size="middle">
+            <Tag color="blue" className="rounded-full px-3">POOL: {poolCount}</Tag>
+            <button onClick={toggleDarkMode} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+               <span className="material-symbols-outlined text-[20px] dark:text-white">dark_mode</span>
             </button>
           </Space>
         </header>

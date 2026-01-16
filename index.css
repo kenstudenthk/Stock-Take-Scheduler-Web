@@ -3,151 +3,123 @@
 @tailwind utilities;
 
 :root {
-  --sidebar-bg: #2b3467;
-  --bg-unified: #ffffff;      
-  --nav-item-height: 60px;    /* Matches the height of menu items */
-  
-  /* EXTREME 3D SHADOW (Your exact reference logic) */
-  --extreme-shadow: 
-    rgba(0, 0, 0, 0.17) -23px 0px 25px 0px inset,   
-    rgba(0, 0, 0, 0.15) -36px 0px 30px 0px inset, 
-    rgba(0, 0, 0, 0.1) -79px 0px 40px -10px inset, 
-    rgba(0, 0, 0, 0.06) -2px 0px 1px,               
-    rgba(0, 0, 0, 0.09) -4px 0px 2px, 
-    rgba(0, 0, 0, 0.09) -8px 0px 4px, 
-    rgba(0, 0, 0, 0.09) -16px 0px 8px, 
-    rgba(0, 0, 0, 0.09) -32px 0px 16px;             
+  --sidebar-bg: #0d1117;
+  --bg-unified: #ffffff;
 }
 
 body.dark {
-  --sidebar-bg: #0f172a;
-  --bg-unified: #1e293b;
+  --bg-unified: #0d1117; /* 深色模式下內容區顏色 */
 }
 
 body {
   margin: 0;
-  background-color: var(--sidebar-bg) !important;
+  background-color: var(--sidebar-bg);
+}
+
+/* ============================================================
+   NEW MENU DESIGN (FH638 Style)
+   ============================================================ */
+
+.input {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: #0d1117;
+  justify-content: flex-start;
+  transition: 1s;
   overflow: hidden;
 }
 
-/* 3D UNIFIED SLAB */
+.value {
+  font-size: 14px;
+  background-color: transparent;
+  border: 2px solid transparent;
+  padding: 12px 15px;
+  color: #7d8590;
+  display: flex;
+  align-items: center;
+  position: relative;
+  gap: 12px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+/* Hover 狀態：非懸停項縮放與模糊 */
+.input:hover > :not(.value:hover) {
+  transition: 300ms;
+  filter: blur(1.5px);
+  transform: scale(0.95, 0.95);
+  opacity: 0.6;
+}
+
+/* Hover 邊框效果 */
+.value:hover {
+  color: #e6edf3;
+  border: 2px solid #30363d;
+}
+
+/* 選中狀態 (Active-Nav) 與 Focus 邏輯 */
+.value.active-nav,
+.value:active {
+  background-color: #1a1f24;
+  color: #ffffff;
+  outline: none;
+  margin-left: 17px; /* 經典偏移效果 */
+  border: 2px solid transparent;
+}
+
+/* 左側藍色指示條 */
+.value::before {
+  content: "";
+  position: absolute;
+  top: 15%;
+  left: -15px;
+  width: 5px;
+  height: 70%;
+  background-color: #2f81f7;
+  border-radius: 5px;
+  opacity: 0;
+  transition: 0.5s;
+}
+
+.value.active-nav::before {
+  opacity: 1;
+}
+
+.value svg, .value .material-symbols-outlined {
+  width: 20px;
+  color: inherit;
+}
+
+/* ============================================================
+   RIGHT CONTENT SLAB (維持 3D 感)
+   ============================================================ */
 .main-content-area {
   background-color: var(--bg-unified) !important;
   height: 100vh;
   display: flex;
   flex-direction: column;
   position: relative;
-  border-top-left-radius: 60px !important; 
-  border-bottom-left-radius: 60px !important;
-  box-shadow: var(--extreme-shadow) !important;
-  overflow: visible !important;
+  border-top-left-radius: 50px !important; 
+  border-bottom-left-radius: 50px !important;
+  /* 極簡 3D 陰影 */
+  box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+  z-index: 10;
 }
 
 .app-header {
-  height: 90px;
-  padding: 0 100px !important;
+  height: 80px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .main-scroll-content {
   flex: 1;
   overflow-y: auto;
-  padding: 40px 100px !important;
-}
-
-/* NAVIGATION & SLIDING PILL */
-.custom-sider {
-  background: var(--sidebar-bg) !important;
-}
-
-.navigation {
-  position: relative;
-  margin-top: 30px;
-  padding-left: 20px;
-}
-
-/* THE SLIDING PILL HIGHLIGHT */
-.nav-indicator {
-  position: absolute;
-  left: 0;
-  top: calc(var(--active-index) * var(--nav-item-height));
-  width: 100%;
-  height: var(--nav-item-height);
-  background: var(--bg-unified) !important;
-  border-top-left-radius: 30px !important;
-  border-bottom-left-radius: 30px !important;
-  box-shadow: var(--extreme-shadow) !important;
-  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  z-index: 1; /* Below the text */
-}
-
-/* BRIDGE (To hide the vertical line/yellow arrow) */
-.nav-indicator::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: -50px; 
-  width: 70px;
-  height: 100%;
-  background: var(--bg-unified) !important;
-  z-index: 2;
-}
-
-/* INVERTED RADIUS (The Uiverse bite logic) */
-.nav-indicator::before {
-  content: '';
-  position: absolute;
-  top: -20px;
-  right: -50px;
-  width: 20px;
-  height: 20px;
-  background: transparent;
-  border-bottom-right-radius: 20px;
-  box-shadow: 10px 10px 0 10px var(--bg-unified);
-  z-index: 3;
-}
-
-.nav-indicator-bottom-curve {
-  position: absolute;
-  bottom: -20px;
-  right: -50px;
-  width: 20px;
-  height: 20px;
-  background: transparent;
-  border-top-right-radius: 20px;
-  box-shadow: 10px -10px 0 10px var(--bg-unified);
-  z-index: 3;
-}
-
-/* MENU ITEMS */
-.navigation ul li {
-  position: relative;
-  height: var(--nav-item-height);
-  z-index: 10; /* Above the pill indicator */
-  display: flex;
-  align-items: center;
-}
-
-.navigation ul li a {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  padding: 0 25px;
-  color: rgba(255, 255, 255, 0.5) !important;
-  text-decoration: none !important;
-  transition: color 0.3s;
-}
-
-/* WHEN ACTIVE: Change text to dark so it's visible on the white pill */
-.navigation ul li.active a {
-  color: var(--sidebar-bg) !important;
-}
-
-.navigation ul li a .icon {
-  min-width: 45px;
-  font-size: 1.5em;
-  display: flex;
-  justify-content: center;
+  padding: 30px;
 }
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

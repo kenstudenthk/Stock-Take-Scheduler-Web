@@ -3,22 +3,23 @@
 @tailwind utilities;
 
 /* ============================================================
-   1. THEME & CORE VARIABLES
+   1. GLOBAL VARIABLES & CORE
    ============================================================ */
 :root {
+  --primary-teal: #0d9488;
   --sidebar-bg: #2b3467;
-  --bg-unified: #ffffff;   
-  --nav-item-height: 56px; /* ✅ 必須與 Layout 中的按鈕高度精確匹配 */
+  --bg-unified: #ffffff;      /* ✅ 核心背景：所有平台組件必須共用 */
+  --nav-item-height: 56px;    /* ✅ 與 Layout 列表項高度精確對齊 */
   
-  /* ✅ 您要求的極致 3D 堆疊陰影 (針對紅線邊界) */
-  --extreme-3d-shadow: 
-    rgba(0, 0, 0, 0.15) -15px 0px 25px 0px inset,   /* 內邊緣肉感 */
-    rgba(0, 0, 0, 0.1) -40px 0px 40px -10px inset,  /* 內部厚度 */
-    rgba(0, 0, 0, 0.06) -2px 0px 1px,               /* 物理邊界線 */
+  /* ✅ 極致 3D 陰影 (參考您提供的邏輯，改為向左投影) */
+  --shadow-extreme-3d: 
+    rgba(0, 0, 0, 0.15) -15px 0px 25px 0px inset,   /* 內側肉感 */
+    rgba(0, 0, 0, 0.1) -40px 0px 40px -10px inset,  /* 內部深度 */
+    rgba(0, 0, 0, 0.06) -2px 0px 1px,               /* 物理邊緣細線 */
     rgba(0, 0, 0, 0.09) -4px 0px 2px, 
     rgba(0, 0, 0, 0.09) -8px 0px 4px, 
     rgba(0, 0, 0, 0.09) -16px 0px 8px, 
-    rgba(0, 0, 0, 0.18) -32px 0px 25px;             /* 地面強力擴散 */
+    rgba(0, 0, 0, 0.18) -32px 0px 25px;             /* 地面擴散 */
 }
 
 body.dark {
@@ -32,13 +33,13 @@ body {
   overflow: hidden;
 }
 
-/* 確保 Ant Design 的布局背景不會擋住我們的 3D 效果 */
+/* 移除 Ant Layout 預設背景，確保透出底層藍色以呈現圓角效果 */
 .ant-layout, .ant-layout-has-sider, .ant-layout-sider {
   background: transparent !important;
 }
 
 /* ============================================================
-   2. 3D UNIFIED SLAB (主內容區 - 圓角 1 & 4)
+   2. THE 3D UNIFIED SLAB (主內容區 - 圓角 1 & 4)
    ============================================================ */
 .main-content-area {
   background-color: var(--bg-unified) !important;
@@ -47,45 +48,40 @@ body {
   flex-direction: column;
   position: relative;
   
-  /* ✅ 圓角 1 & 4：頂部與底部左側圓角 */
+  /* ✅ RADIUS 1 & 4: 頂部與底部左側圓角 */
   border-top-left-radius: 60px !important; 
   border-bottom-left-radius: 60px !important;
   
-  /* ✅ 強制執行 3D 陰影 (紅線部分) */
-  box-shadow: var(--extreme-3d-shadow) !important;
-  z-index: 100;
+  /* ✅ 套用 3D 陰影 (紅線部分) */
+  box-shadow: var(--shadow-extreme-3d) !important;
+  margin: 0;
   overflow: visible !important;
 }
 
 .app-header {
-  background-color: transparent !important;
   height: 80px;
-  display: flex;
-  align-items: center;
-  padding: 0 80px !important; /* 避開左上角 60px 圓角 */
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  padding: 0 80px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .main-scroll-content {
   flex: 1;
   overflow-y: auto;
-  background-color: transparent !important;
-  padding: 40px 80px !important;
+  padding: 40px 80px !important; /* 確保內容不被左上角大圓角擋住 */
 }
 
 /* ============================================================
-   3. SLIDING NAVIGATION (選單移動與圓角 2 & 3)
+   3. SLIDING NAVIGATION (指標滑動與圓角 2 & 3)
    ============================================================ */
 .custom-sider {
   background: var(--sidebar-bg) !important;
-  z-index: 200;
   overflow: visible !important;
 }
 
 .navigation {
   position: relative;
-  margin-top: 30px;
-  padding-left: 20px; /* 為滑塊的圓邊留空間 */
+  margin-top: 20px;
+  padding-left: 20px; /* 為指標器的圓弧留空間 */
 }
 
 .navigation ul {
@@ -95,28 +91,27 @@ body {
   margin: 0 !important;
 }
 
-/* ✅ 這是那個會滑動的物理橋樑 (Indicator) */
+/* ✅ 這是那個滑動的物理零件 (Nav Indicator) */
 .nav-indicator {
   position: absolute;
   left: 0;
-  /* 位移 = 索引 * 高度 */
+  /* 動態位移：根據 Layout 傳入的 index 計算 */
   top: calc(var(--active-index) * var(--nav-item-height));
   width: 100%;
   height: var(--nav-item-height);
   background: var(--bg-unified) !important;
   
+  /* 指標器本身的形狀與陰影 */
   border-top-left-radius: 28px !important;
   border-bottom-left-radius: 28px !important;
+  box-shadow: var(--shadow-extreme-3d) !important;
   
-  /* 滑塊也帶有同樣的 3D 陰影以維持連貫性 */
-  box-shadow: var(--extreme-3d-shadow) !important;
-  
-  /* 物理滑動動畫 (Item E to A) */
+  /* 滑動動畫：使用貝茲曲線，創造物理重量感 (Item E to A) */
   transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   z-index: 1;
 }
 
-/* ✅ 視覺銜接 (解決黃色箭頭)：蓋住內容區的陰影線 */
+/* ✅ 橋樑 (解決黃色箭頭)：向右延伸，蓋住垂直陰影線 */
 .nav-indicator::after {
   content: '';
   position: absolute;
@@ -128,7 +123,7 @@ body {
   z-index: 2;
 }
 
-/* ✅ 圓角 2 & 3：滑塊上下方的凹進圓角 */
+/* ✅ RADIUS 2 & 3: 使用反向圓角技術實現「咬合」效果 */
 .nav-indicator::before {
   content: '';
   position: absolute;
@@ -154,40 +149,43 @@ body {
   z-index: 3;
 }
 
-/* 選單項樣式：確保不遮擋滑塊 */
+/* 選單項樣式 (確保文字顯示在指標器之上) */
 .navigation ul li {
   position: relative;
   height: var(--nav-item-height);
-  z-index: 10;
+  z-index: 10; /* 高於指標器，但背景透明 */
   display: flex;
   align-items: center;
 }
 
-.navigation ul li button {
+.navigation ul li a {
+  display: flex;
+  align-items: center;
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
   padding: 0 20px;
-  color: rgba(255, 255, 255, 0.5); /* 未選中時文字淡出 */
+  text-decoration: none !important;
+  color: rgba(255, 255, 255, 0.5) !important;
   font-weight: 700;
-  transition: color 0.3s;
+  transition: all 0.3s;
 }
 
-/* ✅ 關鍵修正：當選中時 (背景變白)，文字變回深色 */
-.navigation ul li.active button {
+/* ✅ 選中項文字變深色 (解決看不見的問題) */
+.navigation ul li.active a {
   color: var(--sidebar-bg) !important;
 }
 
-.navigation ul li.active .icon {
-  animation: navPop 0.4s ease-out;
+.navigation ul li a .icon {
+  min-width: 45px;
+  display: flex;
+  justify-content: center;
+  font-size: 1.4em;
 }
 
-@keyframes navPop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.25); }
-  100% { transform: scale(1); }
+.navigation ul li a .title {
+  padding-left: 10px;
+  font-size: 13px;
+  letter-spacing: -0.01em;
 }
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

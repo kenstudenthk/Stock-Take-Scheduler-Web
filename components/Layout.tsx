@@ -74,6 +74,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
             </label>
           </div>
         </div>
+        
 
         <nav className="flex flex-1 flex-col gap-2 px-4 py-4">
           <NavItem
@@ -120,6 +121,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
             onClick={(v) => { onNavigate(v); setIsSidebarOpen(false); }}
           />
         </nav>
+
+        
 
         <div className="border-t border-slate-200 dark:border-slate-700 p-4">
           <div className="flex items-center gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3 border border-slate-100 dark:border-slate-700/50">

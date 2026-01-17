@@ -11,17 +11,17 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService }) => {
-  const [email, setEmail] = useState('');
+  const [aliasemail, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) return message.warning("請填寫 Email 同密碼");
+    if (!aliasemail || !password) return message.warning("請填寫 Email 同密碼");
     
     setLoading(true);
     try {
       // 1. 去 SharePoint 搵用戶
-      const user = await sharePointService.getUserByEmail(email);
+      const user = await sharePointService.getUserByAliasEmail(aliasemail);
       
       if (user) {
         // 2. 用 bcrypt 比對密碼
@@ -58,7 +58,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
             placeholder="Email" 
             size="large"
             className="rounded-xl bg-[#0d1117] border-slate-700 text-white"
-            value={email}
+            value={aliasemail}
             onChange={e => setEmail(e.target.value)}
           />
           

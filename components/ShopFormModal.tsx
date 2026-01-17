@@ -19,7 +19,7 @@ interface Props {
   onCancel: () => void;
   onSuccess: () => void;
   graphToken: string;
-  shops: Shop[]; // 確保接收所有門市資料以提取選項
+  shops: Shop[]; // 接收所有門市資料以動態提取選項
 }
 
 export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSuccess, graphToken, shops }) => {
@@ -28,10 +28,12 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
   const [searchOptions, setSearchOptions] = useState<any[]>([]);
   const [searchText, setSearchText] = useState('');
 
-  // ✅ 從 SharePoint 數據中動態提取唯一選項
+  // ✅ 1. 動態提取唯一選項，並加入安全檢查防止 map 報錯
   const dynamicOptions = useMemo(() => {
+    const safeShops = shops || []; // 確保 shops 不為空
+
     const getUnique = (key: keyof Shop) => 
-      Array.from(new Set(shops.map(s => s[key]).filter(Boolean)))
+      Array.from(new Set(safeShops.map(s => s[key]).filter(Boolean)))
         .sort()
         .map(val => ({ label: val, value: val }));
 
@@ -44,6 +46,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     };
   }, [shops]);
 
+  // ✅ 2. 初始資料載入 (編輯或新增)
   useEffect(() => {
     if (visible) {
       if (shop) {
@@ -73,7 +76,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     }
   }, [shop, visible]);
 
-  // ✅ 還原原本的 Input 樣式
+  // ✅ 3. 渲染原本的 Input 樣式
   const renderInput = (label: string, key: string, span: number = 12) => (
     <Col span={span}>
       <div className="st-inputBox-pro">
@@ -88,11 +91,10 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     </Col>
   );
 
-  // ✅ 使用原本樣式包裝的 Select 組件
+  // ✅ 4. 使用原本樣式包裝的 Select 組件
   const renderSelect = (label: string, key: string, options: any[], span: number = 12) => (
     <Col span={span}>
       <div className="st-inputBox-pro">
-        {/* 利用 Select 的特殊類名來匹配你的 CSS */}
         <Select
           className="st-input-select-wrapper"
           variant="borderless"

@@ -21,45 +21,45 @@ interface BatchUpdatePayload {
 
 class SharePointService {
   private graphToken: string;
-  private siteId = 'pccw0.sharepoint.com:/sites/BonniesTeam';
-  private listId = 'ce3a752e-7609-4468-81f8-8babaf503ad8'; // 主表 ID
-  private memberListId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770'; // 成員表 ID
+  // ✅ 修正位 1：Site ID 路徑結尾必須有冒號 ":"
+  private siteId = 'pccw0.sharepoint.com:/sites/BonniesTeam:'; 
+  private listId = 'ce3a752e-7609-4468-81f8-8babaf503ad8';
+  private memberListId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770';
 
   constructor(token: string) {
     this.graphToken = token;
   }
 
-  /**
-   * 🔐 登入：透過 AliasEmail 搵用戶
-   */
   async getUserByAliasEmail(aliasemail: string): Promise<any> {
     try {
-    const listId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770';
-      const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${listId}/items?$filter=fields/AliasEmail eq '${aliasemail}'&$expand=fields`;
+      // ✅ 修正位 2：確保 URL 拼接正確
+      const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items?$filter=fields/AliasEmail eq '${aliasemail}'&$expand=fields`;
+      
+      const response = await fetch(url, {
+        headers: { 
+          'Authorization': `Bearer ${this.graphToken}`,
+          // ✅ 修正位 3：加入 Prefer Header，防止索引未完全同步導致的 400 錯誤
+          'Prefer': 'HonorNonIndexedQueriesWarningMayFailOverTime'
+        }
+      });
 
-const response = await fetch(url, {
-      headers: { 
-        'Authorization': `Bearer ${this.graphToken}`,
-        'Prefer': 'HonorNonIndexedQueriesWarningMayFailOverTime' // ✅ 加多呢行 Header 增加成功率
+      if (!response.ok) {
+        const errorData = await response.json();
+        // 如果仲係 400，請展開下面呢個 Object 話我知 "message" 寫乜
+        console.error("Graph API 報錯詳情:", errorData);
+        return null;
       }
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Graph API 報錯詳情:", errorData);
+      const data = await response.json();
+      if (data.value && data.value.length > 0) {
+        return data.value[0].fields; 
+      }
+      return null;
+    } catch (error) {
+      console.error("登入連線失敗:", error);
       return null;
     }
-
-    const data = await response.json();
-    if (data.value && data.value.length > 0) {
-      return data.value[0].fields; 
-    }
-    return null;
-  } catch (error) {
-    console.error("搵唔到用戶:", error);
-    return null;
   }
-}
 
   /**
    * 👤 建立新成員（Hash 密碼後儲存）

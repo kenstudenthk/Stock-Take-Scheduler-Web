@@ -224,4 +224,27 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
           padding: 0.8rem; width: 100%; border-radius: 3rem; background-color: #323232;
           color: #fff; border: none; cursor: pointer; transition: all 0.3s;
           font-weight: 700; font-size: 1rem; margin-top: 10px;
-          box-shadow:
+          box-shadow: 4px 4px #323232;
+        }
+        .submit-btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px #323232; background-color: #58bc82; }
+        .confirm-bg:hover { background-color: #44d8a4; }
+
+        .footer-span { margin-top: 5px; font-size: 0.75rem; color: #666; cursor: pointer; text-align: center; }
+        .footer-span a { color: #58bc82; font-weight: 700; text-decoration: underline; }
+
+        /* Tooltip */
+        .custom-tooltip { position: relative; display: inline-block; cursor: pointer; }
+        .custom-tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+        .tooltiptext {
+          visibility: hidden; width: 180px; background-color: #333; color: #fff; text-align: center;
+          border-radius: 5px; padding: 8px; position: absolute; z-index: 100; top: 150%; left: 50%;
+          margin-left: -160px; opacity: 0; transition: opacity 0.3s; font-size: 10px;
+        }
+        .custom-tooltip .icon {
+          display: inline-block; width: 20px; height: 20px; color: #fff; border-radius: 50%;
+          text-align: center; line-height: 20px; font-weight: bold; font-size: 12px;
+        }
+      `}</style>
+    </div>
+  );
+};

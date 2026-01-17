@@ -293,6 +293,7 @@ return (
         token={graphToken} 
       />
     </Layout>
-  );
+  )
+};
 
 export default App;

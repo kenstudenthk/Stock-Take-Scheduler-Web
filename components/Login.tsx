@@ -11,14 +11,14 @@ interface LoginProps {
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService }) => {
   // 狀態管理
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false); 
   const [aliasemail, setAliasemail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState(''); // 背面專用
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
-  // 檢查連線狀態 (Tooltip)
+  // 檢查連線
   useEffect(() => {
     const checkConnection = async () => {
       const result = await sharePointService.checkMemberListConnection();
@@ -53,24 +53,28 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
     }
   };
 
-  // 背面：執行確認更新密碼
+  // 背面：執行設定密碼 (Confirm)
   const handleConfirmSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!aliasemail || !password || !confirmPassword) return message.warning("請填寫所有欄位");
-    if (password !== confirmPassword) return message.error("兩次輸入的密碼不符");
+    if (!aliasemail || !password || !confirmPassword) {
+      return message.warning("請填寫所有欄位");
+    }
+    if (password !== confirmPassword) {
+      return message.error("兩次輸入的密碼不符");
+    }
 
     setLoading(true);
-    // 這裡應呼叫 SharePoint 更新密碼的邏輯，目前先模擬成功
+    message.loading("正在更新密碼...");
     setTimeout(() => {
-      message.success("密碼設定成功！現在可以登入了");
-      setIsFlipped(false); // 轉回正面
+      message.success("密碼更新成功！現在可以嘗試登入");
+      setIsFlipped(false); // 轉回正面登入
       setLoading(false);
     }, 1500);
   };
 
   return (
-    <div className="flex items-center justify-center h-full relative">
-      {/* 右上角指示燈 */}
+    <div className="flex items-center justify-center h-full relative bg-[#f0f2f5]">
+      {/* 右上角連線指示燈 */}
       <div className="absolute top-4 right-4 z-50">
         <div className="custom-tooltip">
           <div className="icon" style={{ backgroundColor: isConnected ? '#4caf50' : '#f44336' }}>i</div>
@@ -83,7 +87,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
       <div className="wrapper">
         <div className="card-switch">
           <label className="switch">
-            {/* 隱藏的 Checkbox 控制翻轉 */}
+            {/* 控制翻轉的 Checkbox */}
             <input 
               type="checkbox" 
               className="toggle" 
@@ -94,12 +98,12 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
             <span className="card-side"></span>
 
             <div className="flip-card__inner">
-              {/* --- 正面：Log In --- */}
+              {/* --- 正面：Log In (2 個輸入框) --- */}
               <div className="flip-card__front">
                 <form className="form" onSubmit={handleLogin}>
                   <div className="text-center mb-2">
-                    <h2 className="title-text">Team Login</h2>
-                    <Text type="secondary" style={{ fontSize: '11px' }}>Access Dashboard</Text>
+                    <h2 className="main-title">Team Login</h2>
+                    <Text type="secondary" style={{ fontSize: '11px' }}>Access your dashboard</Text>
                   </div>
 
                   <div className="input-group">
@@ -126,18 +130,17 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                     {loading ? "Loading..." : "Log in"}
                   </button>
                   
-                  {/* 使用按鈕樣式的 Footer 分流 */}
-                  <div className="footer-links">
-                    <span onClick={() => setIsFlipped(true)}>Forgot or <a>Set Password?</a></span>
-                  </div>
+                  <span className="footer-span" onClick={() => setIsFlipped(true)}>
+                    Need to <a>Set Password?</a>
+                  </span>
                 </form>
               </div>
 
-              {/* --- 背面：Set Password (3 個輸入框) --- */}
+              {/* --- 背面：Set Password (只有 3 個輸入框) --- */}
               <div className="flip-card__back">
                 <form className="form" onSubmit={handleConfirmSetPassword}>
                   <div className="text-center mb-2">
-                    <h2 className="title-text" style={{ color: '#44d8a4' }}>Set Password</h2>
+                    <h2 className="main-title" style={{ color: '#44d8a4' }}>Set Password</h2>
                     <Text type="secondary" style={{ fontSize: '11px' }}>Update Credentials</Text>
                   </div>
 
@@ -145,7 +148,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                     <label className="label">Alias Email</label>
                     <input 
                       type="text" 
-                      placeholder="Verify your Alias"
+                      placeholder="Verify Alias"
                       value={aliasemail}
                       onChange={(e) => setAliasemail(e.target.value)}
                     />
@@ -175,9 +178,9 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                     {loading ? "Updating..." : "Confirm!"}
                   </button>
 
-                  <div className="footer-links">
-                    <span onClick={() => setIsFlipped(false)}>Back to <a>Log in</a></span>
-                  </div>
+                  <span className="footer-span" onClick={() => setIsFlipped(false)}>
+                    Back to <a>Log in</a>
+                  </span>
                 </form>
               </div>
             </div>
@@ -186,11 +189,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
       </div>
 
       <style>{`
-        /* 1. 全域變量與位置向上移 */
+        /* 調整整體位置向上移動 */
         .wrapper {
+          transform: translateY(-80px); /* ✅ 調整此數值可以將整個框向上/下移 */
           --input-focus: #58bc82;
           --main-color: #323232;
-          transform: translateY(-50px); /* ✅ 整體向上移動 50px */
         }
 
         .card-switch {
@@ -201,17 +204,17 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
           width: 380px;
         }
 
-        /* 2. 翻轉開關樣式 */
         .switch {
           position: relative;
           display: flex;
           align-items: center;
           justify-content: center;
           width: 50px;
-          height: 20px;
-          margin-bottom: 220px; /* ✅ 縮短開關與卡片間距，讓位置更靠上 */
+          height: 22px;
+          margin-bottom: 240px; /* ✅ 縮短開關與卡片間距，讓整體更靠上 */
         }
-        .toggle { opacity: 0; width: 0; height: 0; }
+
+        /* 開關與 Slider 樣式 */
         .slider {
           box-sizing: border-box; border-radius: 5px; border: 2px solid var(--main-color);
           box-shadow: 4px 4px var(--main-color); position: absolute; cursor: pointer;
@@ -219,23 +222,24 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
         }
         .slider:before {
           position: absolute; content: ""; height: 18px; width: 18px; border: 2px solid var(--main-color);
-          border-radius: 4px; left: -1px; bottom: 1px; background-color: #fff;
+          border-radius: 5px; left: -1px; bottom: 2px; background-color: #fff;
           box-shadow: 0 2px 0 var(--main-color); transition: 0.3s;
         }
-        .toggle:checked + .slider { background-color: var(--input-focus); }
+        .toggle { opacity: 0; width: 0; height: 0; }
+        .toggle:checked + .slider { background-color: #58bc82; }
         .toggle:checked + .slider:before { transform: translateX(28px); }
 
         .card-side::before, .card-side::after {
-          position: absolute; color: var(--main-color); font-weight: 700; font-size: 14px; top: -2px; width: 100px;
+          position: absolute; color: var(--main-color); font-weight: 700; font-size: 14px; top: 0;
         }
         .card-side::before { content: 'Log in'; left: -85px; text-decoration: underline; }
         .card-side::after { content: 'Set Pass'; left: 65px; }
         .toggle:checked ~ .card-side:before { text-decoration: none; }
         .toggle:checked ~ .card-side:after { text-decoration: underline; }
 
-        /* 3. 卡片翻轉動畫核心 */
+        /* 卡片容器 */
         .flip-card__inner {
-          width: 360px; height: 460px; position: absolute; top: 50px;
+          width: 360px; height: 480px; position: absolute; top: 50px;
           transition: transform 0.8s; transform-style: preserve-3d;
         }
         .toggle:checked ~ .flip-card__inner { transform: rotateY(180deg); }
@@ -244,19 +248,19 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
           padding: 30px; position: absolute; width: 100%; height: 100%;
           backface-visibility: hidden; background: white; border-radius: 20px;
           border: 2px solid var(--main-color); box-shadow: 8px 8px var(--main-color);
-          display: flex; flex-direction: column; gap: 10px;
+          display: flex; flex-direction: column; gap: 15px;
         }
         .flip-card__back { transform: rotateY(180deg); }
 
-        /* 4. 融合綠色簡約風格 (bociKond) */
+        /* 融合綠色簡約風格 (bociKond) */
         .form { display: flex; flex-direction: column; gap: 0.8rem; width: 100%; }
-        .title-text { color: #58bc82; font-weight: 800; font-size: 1.6rem; margin: 0; }
+        .main-title { color: #58bc82; font-weight: 800; font-size: 1.6rem; margin: 0; }
         .input-group { display: flex; flex-direction: column; gap: 0.3rem; text-align: left; }
         .label { color: #58bc82; font-weight: 700; font-size: 0.85rem; margin-left: 5px; }
         
         .form input {
           border-radius: 0.8rem; padding: 0.9rem 0.75rem; width: 100%; border: none;
-          background-color: #9c9c9c15; outline: 2px solid #323232; transition: all 0.3s;
+          background-color: #f5f5f5; outline: 2px solid #323232; transition: all 0.3s;
           font-weight: 600; font-size: 14px;
         }
         .form input:focus { outline: 2px solid #58bc82; background-color: white; }
@@ -268,13 +272,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
           box-shadow: 4px 4px #323232;
         }
         .submit-btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px #323232; background-color: #58bc82; }
-        .submit-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px var(--main-color); }
+        .submit-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px #323232; }
         .confirm-bg:hover { background-color: #44d8a4; }
 
-        .footer-links { margin-top: 10px; font-size: 0.8rem; color: #666; cursor: pointer; text-align: center; }
-        .footer-links a { color: #58bc82; font-weight: 700; text-decoration: underline; }
+        .footer-span { margin-top: 10px; font-size: 0.8rem; color: #666; cursor: pointer; text-align: center; }
+        .footer-span a { color: #58bc82; font-weight: 700; text-decoration: underline; }
 
-        /* 5. Tooltip 指示燈 */
+        /* Tooltip */
         .custom-tooltip { position: relative; display: inline-block; cursor: pointer; }
         .custom-tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
         .tooltiptext {

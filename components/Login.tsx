@@ -208,13 +208,25 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
         }
         .toggle-hidden:checked ~ .flip-card__inner { transform: rotateY(180deg); }
 
-        .flip-card__front, .flip-card__back {
-          padding: 25px 30px; position: absolute; width: 100%; height: 100%;
-          backface-visibility: hidden; background: white; border-radius: 20px;
-          border: 2px solid var(--main-color); box-shadow: 10px 10px var(--main-color);
-          display: flex; flex-direction: column; gap: 12px;
-        }
-        .flip-card__back { transform: rotateY(180deg); }
+      .flip-card__front, .flip-card__back {
+  padding: 20px;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  background: lightgrey;
+  gap: 20px;
+  border-radius: 5px;
+  border: 2px solid var(--main-color);
+  box-shadow: 4px 4px var(--main-color);
+}
+
+.flip-card__back {
+  width: 100%;
+  transform: rotateY(180deg);
+}
 
         /* 表單元素 */
         .form { display: flex; flex-direction: column; gap: 0.8rem; width: 100%; }

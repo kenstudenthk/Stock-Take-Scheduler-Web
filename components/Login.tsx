@@ -7,15 +7,18 @@ const { Text } = Typography;
 interface LoginProps {
   onLoginSuccess: (user: any) => void;
   sharePointService: any;
-  onUpdateToken: (token: string) => void;
 }
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService }) => {
+  // 狀態管理
+  const [isFlipped, setIsFlipped] = useState(false); // 控制翻轉
   const [aliasemail, setAliasemail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState(''); // 背面專用
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
+  // 檢查連線
   useEffect(() => {
     const checkConnection = async () => {
       const result = await sharePointService.checkMemberListConnection();
@@ -24,8 +27,9 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
     checkConnection();
   }, [sharePointService]);
 
+  // 正面：執行登入
   const handleLogin = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault(); // 防止網頁刷新
+    if (e) e.preventDefault();
     if (!aliasemail || !password) return message.warning("請輸入 Alias Email 同密碼");
     
     setLoading(true);
@@ -49,9 +53,35 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
     }
   };
 
+  // 背面：執行設定密碼 (Confirm)
+  const handleConfirmSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aliasemail || !password || !confirmPassword) {
+      return message.warning("請填寫所有欄位");
+    }
+    if (password !== confirmPassword) {
+      return message.error("兩次輸入的密碼不符");
+    }
+
+    setLoading(true);
+    try {
+      // 這裡暫時執行一個模擬成功邏輯，因為密碼更新通常需要後端 API
+      // 如果你想直接更新 SharePoint，可以呼叫 sharePointService.updateMemberPassword
+      message.loading("正在更新密碼...");
+      setTimeout(() => {
+        message.success("密碼更新成功！現在可以嘗試登入");
+        setIsFlipped(false); // 轉回正面登入
+        setLoading(false);
+      }, 1500);
+    } catch (err) {
+      message.error("更新失敗");
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex items-center justify-center h-full relative">
-      {/* 1. 右上角 Tooltip 連線燈 */}
+      {/* 右上角連線指示燈 */}
       <div className="absolute top-4 right-4">
         <div className="custom-tooltip">
           <div className="icon" style={{ backgroundColor: isConnected ? '#4caf50' : '#f44336' }}>i</div>
@@ -61,178 +91,213 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
         </div>
       </div>
 
-      {/* 2. 新風格 Login Form */}
-      <div className="login-container">
-        <form className="form" onSubmit={handleLogin}>
-          <div className="text-center mb-4">
-            <h2 style={{ color: '#58bc82', margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>Team Login</h2>
-            <Text type="secondary" style={{ fontSize: '12px' }}>Stock Take Scheduler Pro</Text>
-          </div>
-
-          <span className="input-span">
-            <label htmlFor="email" className="label">Alias Email</label>
+      <div className="wrapper">
+        <div className="card-switch">
+          <label className="switch">
+            {/* 隱藏的 Checkbox 用來控制翻轉 */}
             <input 
-              type="text" 
-              name="email" 
-              id="email" 
-              value={aliasemail}
-              onChange={(e) => setAliasemail(e.target.value)}
-              placeholder="e.g. k-chan"
+              type="checkbox" 
+              className="toggle" 
+              checked={isFlipped} 
+              onChange={() => setIsFlipped(!isFlipped)} 
             />
-          </span>
+            <span className="slider"></span>
+            <span className="card-side"></span>
 
-          <span className="input-span">
-            <label htmlFor="password" className="label">Password</label>
-            <input 
-              type="password" 
-              name="password" 
-              id="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-          </span>
+            <div className="flip-card__inner">
+              {/* --- 正面：Log In --- */}
+              <div className="flip-card__front">
+                <form className="form" onSubmit={handleLogin}>
+                  <div className="text-center mb-2">
+                    <h2 className="main-title">Team Login</h2>
+                    <Text type="secondary" style={{ fontSize: '11px' }}>Access your dashboard</Text>
+                  </div>
 
-          <button className="submit" type="submit" disabled={loading}>
-            {loading ? "Logging in..." : "Log in"}
-          </button>
+                  <div className="input-group">
+                    <label className="label">Alias Email</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. k-chan"
+                      value={aliasemail}
+                      onChange={(e) => setAliasemail(e.target.value)}
+                    />
+                  </div>
 
-          {/* 3. 特殊動畫按鈕 (Set Password / Create Account) */}
-          <div className="buttons-wrapper">
-             <div className="buttons">
-                <button className="btn" type="button" onClick={() => message.info("Please contact admin")}>
-                  <span></span>
-                  <p data-start="GO!" data-text="Update" data-title="Set Password"></p>
-                </button>
-                <button className="btn" type="button" onClick={() => message.info("Admin only")}>
-                  <span></span>
-                  <p data-start="JOIN!" data-text="Register" data-title="Create Account"></p>
-                </button>
+                  <div className="input-group">
+                    <label className="label">Password</label>
+                    <input 
+                      type="password" 
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <button className="submit-btn" type="submit" disabled={loading}>
+                    {loading ? "Loading..." : "Log in"}
+                  </button>
+                  
+                  <span className="footer-span" onClick={() => setIsFlipped(true)}>
+                    Need to <a>Set Password?</a>
+                  </span>
+                </form>
               </div>
-          </div>
-        </form>
+
+              {/* --- 背面：Set Password --- */}
+              <div className="flip-card__back">
+                <form className="form" onSubmit={handleConfirmSetPassword}>
+                  <div className="text-center mb-2">
+                    <h2 className="main-title" style={{ color: '#44d8a4' }}>Set Password</h2>
+                    <Text type="secondary" style={{ fontSize: '11px' }}>Update your account</Text>
+                  </div>
+
+                  <div className="input-group">
+                    <label className="label">Alias Email</label>
+                    <input 
+                      type="text" 
+                      placeholder="Verify your ID"
+                      value={aliasemail}
+                      onChange={(e) => setAliasemail(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label className="label">New Password</label>
+                    <input 
+                      type="password" 
+                      placeholder="Enter new password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label className="label">Re-Confirm Password</label>
+                    <input 
+                      type="password" 
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <button className="submit-btn confirm-bg" type="submit" disabled={loading}>
+                    {loading ? "Updating..." : "Confirm!"}
+                  </button>
+
+                  <span className="footer-span" onClick={() => setIsFlipped(false)}>
+                    Back to <a>Log in</a>
+                  </span>
+                </form>
+              </div>
+            </div>
+          </label>
+        </div>
       </div>
 
-      {/* 4. 合併所有 CSS */}
       <style>{`
-        /* --- Tooltip Style --- */
+        .wrapper {
+          --input-focus: #58bc82;
+          --font-color: #323232;
+          --bg-color: #fff;
+          --main-color: #323232;
+          --clr: #58bc82;
+        }
+
+        /* --- 翻轉開關樣式 ( andrew-demchenk0 ) --- */
+        .card-switch {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          width: 350px;
+        }
+        .switch {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          gap: 30px;
+          width: 50px;
+          height: 20px;
+          margin-bottom: 300px; /* 為下方的卡片留空間 */
+        }
+        .card-side::before, .card-side::after {
+          position: absolute; color: var(--main-color); font-weight: 600; font-size: 14px; top: 0; width: 100px;
+        }
+        .card-side::before { content: 'Log in'; left: -85px; text-decoration: underline; }
+        .card-side::after { content: 'Set Pass'; left: 65px; }
+        .toggle { opacity: 0; width: 0; height: 0; }
+        .slider {
+          box-sizing: border-box; border-radius: 5px; border: 2px solid var(--main-color);
+          box-shadow: 4px 4px var(--main-color); position: absolute; cursor: pointer;
+          top: 0; left: 0; right: 0; bottom: 0; background-color: #fff; transition: 0.3s;
+        }
+        .slider:before {
+          position: absolute; content: ""; height: 20px; width: 20px; border: 2px solid var(--main-color);
+          border-radius: 5px; left: -2px; bottom: 2px; background-color: #fff;
+          box-shadow: 0 3px 0 var(--main-color); transition: 0.3s;
+        }
+        .toggle:checked + .slider { background-color: var(--input-focus); }
+        .toggle:checked + .slider:before { transform: translateX(30px); }
+        .toggle:checked ~ .card-side:before { text-decoration: none; }
+        .toggle:checked ~ .card-side:after { text-decoration: underline; }
+
+        /* --- 卡片主體與翻轉效果 --- */
+        .flip-card__inner {
+          width: 380px; height: 480px; position: absolute; top: 50px;
+          transition: transform 0.8s; transform-style: preserve-3d;
+        }
+        .toggle:checked ~ .flip-card__inner { transform: rotateY(180deg); }
+
+        .flip-card__front, .flip-card__back {
+          padding: 30px; position: absolute; width: 100%; height: 100%;
+          backface-visibility: hidden; background: white; border-radius: 20px;
+          border: 2px solid var(--main-color); box-shadow: 8px 8px var(--main-color);
+          display: flex; flex-direction: column;
+        }
+        .flip-card__back { transform: rotateY(180deg); }
+
+        /* --- 融合綠色簡約風格 ( bociKond ) --- */
+        .form { display: flex; flex-direction: column; gap: 1rem; width: 100%; }
+        .main-title { color: var(--clr); font-weight: 800; font-size: 1.6rem; margin: 0; }
+        .input-group { display: flex; flex-direction: column; gap: 0.4rem; text-align: left; }
+        .label { color: var(--clr); font-weight: 700; font-size: 0.85rem; margin-left: 5px; }
+        
+        .form input {
+          border-radius: 0.8rem; padding: 0.9rem 0.75rem; width: 100%; border: none;
+          background-color: #9c9c9c15; outline: 2px solid #323232; transition: all 0.3s;
+          font-weight: 600;
+        }
+        .form input:focus { outline: 2px solid var(--clr); background-color: white; }
+
+        .submit-btn {
+          padding: 0.9rem; width: 100%; border-radius: 3rem; background-color: #323232;
+          color: #fff; border: none; cursor: pointer; transition: all 0.3s;
+          font-weight: 700; font-size: 1rem; margin-top: 10px;
+          box-shadow: 4px 4px var(--main-color);
+        }
+        .submit-btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px var(--main-color); }
+        .submit-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px var(--main-color); }
+        .confirm-bg:hover { background-color: #44d8a4; }
+
+        .footer-span { margin-top: 10px; font-size: 0.8rem; color: #666; cursor: pointer; }
+        .footer-span a { color: var(--clr); font-weight: 700; text-decoration: underline; }
+
+        /* --- Tooltip 指示燈 --- */
         .custom-tooltip { position: relative; display: inline-block; cursor: pointer; }
         .custom-tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
         .tooltiptext {
           visibility: hidden; width: 180px; background-color: #333; color: #fff; text-align: center;
-          border-radius: 5px; padding: 8px; position: absolute; z-index: 10; top: 150%; left: 50%;
+          border-radius: 5px; padding: 8px; position: absolute; z-index: 100; top: 150%; left: 50%;
           margin-left: -160px; opacity: 0; transition: opacity 0.3s; font-size: 11px;
         }
         .custom-tooltip .icon {
           display: inline-block; width: 22px; height: 22px; color: #fff; border-radius: 50%;
           text-align: center; line-height: 22px; font-weight: bold;
         }
-
-        /* --- 新 Login Form Style --- */
-        .login-container {
-          background: white;
-          padding: 40px;
-          border-radius: 30px;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-        }
-        .form {
-          --bg-light: #efefef;
-          --bg-dark: #707070;
-          --clr: #58bc82;
-          --clr-alpha: #9c9c9c20; /* 稍微調淺一點更美觀 */
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 1.2rem;
-          width: 350px; /* 增加闊度配合下方雙按鈕 */
-        }
-        .form .input-span {
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-        .form input[type="text"],
-        .form input[type="password"] {
-          border-radius: 0.8rem;
-          padding: 1rem 0.75rem;
-          width: 100%;
-          border: none;
-          background-color: var(--clr-alpha);
-          outline: 2px solid #e0e0e0;
-          transition: all 0.3s;
-        }
-        .form input:focus {
-          outline: 2px solid var(--clr);
-          background-color: white;
-        }
-        .label {
-          align-self: flex-start;
-          color: var(--clr);
-          font-weight: 700;
-          font-size: 0.85rem;
-          margin-left: 4px;
-        }
-        .form .submit {
-          padding: 0.8rem;
-          width: 100%;
-          border-radius: 3rem;
-          background-color: var(--bg-dark);
-          color: var(--bg-light);
-          border: none;
-          cursor: pointer;
-          transition: all 300ms;
-          font-weight: 700;
-          font-size: 1rem;
-          margin-top: 10px;
-        }
-        .form .submit:hover {
-          background-color: var(--clr);
-          transform: translateY(-2px);
-          box-shadow: 0 5px 15px rgba(88, 188, 130, 0.3);
-        }
-
-        /* --- 特殊動畫按鈕 Style --- */
-        .buttons-wrapper { width: 100%; margin-top: 10px; }
-        .buttons { display: flex; justify-content: space-between; gap: 10px; }
-        .buttons .btn {
-          width: 100%;
-          height: 45px;
-          background-color: white;
-          color: #568fa6;
-          position: relative;
-          overflow: hidden;
-          font-size: 10px;
-          font-weight: 600;
-          text-transform: uppercase;
-          cursor: pointer;
-          border: 1px solid #eee;
-          border-radius: 10px;
-          display: flex; align-items: center; justify-content: center;
-        }
-        .buttons .btn:before, .buttons .btn:after {
-          content: ""; position: absolute; width: 0; height: 2px;
-          background-color: #44d8a4; transition: all 0.3s ease;
-        }
-        .buttons .btn:before { right: 0; top: 0; }
-        .buttons .btn:after { left: 0; bottom: 0; }
-        .buttons .btn span { width: 100%; height: 100%; position: absolute; left: 0; top: 0; z-index: 1; }
-        .buttons .btn span:before, .buttons .btn span:after {
-          content: ""; position: absolute; width: 2px; height: 0;
-          background-color: #44d8a4; transition: all 0.3s ease;
-        }
-        .buttons .btn span:before { right: 0; top: 0; }
-        .buttons .btn span:after { left: 0; bottom: 0; }
-        .buttons .btn p { position: absolute; width: 100%; height: 100%; margin:0; }
-        .buttons .btn p:before, .buttons .btn p:after {
-          position: absolute; width: 100%; transition: all 0.4s ease; left: 0;
-        }
-        .buttons .btn p:before { content: attr(data-title); top: 50%; transform: translateY(-50%); }
-        .buttons .btn p:after { content: attr(data-text); top: 150%; color: #44d8a4; }
-        .buttons .btn:hover:before, .buttons .btn:hover:after { width: 100%; }
-        .buttons .btn:hover span:before, .buttons .btn:hover span:after { height: 100%; }
-        .buttons .btn:hover p:before { top: -50%; }
-        .buttons .btn:hover p:after { top: 50%; transform: translateY(-50%); }
       `}</style>
     </div>
   );

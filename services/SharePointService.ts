@@ -23,7 +23,7 @@ class SharePointService {
   private graphToken: string;
   private siteId = 'pccw0.sharepoint.com:/sites/BonniesTeam';
   private listId = 'ce3a752e-7609-4468-81f8-8babaf503ad8';
-  async createMember(name: string, email: string, plainPassword: string, role: string) {
+  async createMember(name: string, aliasemail: string, plainPassword: string, role: string) {
   try {
     const listId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770';
     
@@ -34,7 +34,7 @@ class SharePointService {
     // 2. 準備傳送到 SharePoint 的資料
     const payload = {
       fields: {
-        Email: email,
+        AliasEmail: aliasemail,
         Name: name,
         PasswordHash: hash, // 儲存雜湊值，絕對唔儲存明文密碼！
         UserRole: role
@@ -175,7 +175,7 @@ class SharePointService {
    */
   
   // 喺 SharePointService class 入面加入
-async getUserByEmail(email: string): Promise<any> {
+async getUserByAliasEmail(AliasEmail: string): Promise<any> {
   try {
     const listId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770';
     // 透過 Graph API Filter 功能搵對應 Email 嘅 Item

@@ -17,18 +17,20 @@ import { Inventory } from './components/Inventory';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ErrorReport } from './components/ErrorReport'; 
 import { Login } from './components/Login';
-import SharePointService from './services/SharePointService'; // ✅ 確保匯入了 Service
+import SharePointService from './services/SharePointService';
 import './index.css';
 
 const { Content, Header, Sider } = Layout;
 const { Title, Text } = Typography;
+
+// 權限檢查工具
 const hasAdminAccess = (user: any) => {
   if (!user) return false;
   const role = user.UserRole;
-  // ✅ 讓 Admin 同 App Owner 享有同樣權限
   return role === 'Admin' || role === 'App Owner';
 };
-// 貨車通知組件 (保持不變)
+
+// 貨車通知組件
 const TruckFlagNotice: React.FC = () => (
   <div className="truck-header-container">
     <div className="truck-flag-walker">
@@ -65,22 +67,13 @@ function App() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
 
-  // ✅ 1. 初始化用戶狀態（從 Session 讀取防止 Refresh 消失）
+  // 初始化用戶狀態
   const [currentUser, setCurrentUser] = useState<any>(JSON.parse(sessionStorage.getItem('currentUser') || 'null'));
 
-  // ✅ 2. 實例化 SharePointService
+  // 實例化 SharePointService
   const sharePointService = useMemo(() => new SharePointService(graphToken), [graphToken]);
-  const updateGraphToken = (token: string) => {
-    setGraphToken(token);
-    localStorage.setItem('stockTakeToken', token);
-    if (token) setHasTokenError(false);
-  };
 
-  const updateInvToken = (token: string) => {
-    setInvToken(token);
-    localStorage.setItem('stockTakeInvToken', token);
-  };
-
+  // 獲取數據函數
   const fetchAllData = useCallback(async (token: string) => {
     if (!token) {
       setHasTokenError(true);
@@ -130,6 +123,21 @@ function App() {
     }
   }, []);
 
+  // ✅ 更新 Token 同時觸發數據刷新
+  const updateGraphToken = (token: string) => {
+    setGraphToken(token);
+    localStorage.setItem('stockTakeToken', token);
+    if (token) {
+      setHasTokenError(false);
+      fetchAllData(token); // <--- 即時刷新！
+    }
+  };
+
+  const updateInvToken = (token: string) => {
+    setInvToken(token);
+    localStorage.setItem('stockTakeInvToken', token);
+  };
+
   useEffect(() => {
     document.body.classList.toggle('dark', isDarkMode);
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
@@ -151,7 +159,8 @@ function App() {
   };
 
   const renderContent = () => {
-  if (selectedMenuKey === View.SETTINGS) {
+    // 1. Settings 頁面：開放給 Guest 更新 Token
+    if (selectedMenuKey === View.SETTINGS) {
       return (
         <Settings 
           token={graphToken} 
@@ -162,7 +171,7 @@ function App() {
       );
     }
 
-    // 2. 其他頁面：如果未登入，顯示 Login 畫面
+    // 2. 其他頁面：未登入則顯示 Login
     if (!currentUser) {
       return (
         <Login 
@@ -176,6 +185,7 @@ function App() {
       );
     }
     
+    // 3. 已登入功能
     switch (selectedMenuKey) {
       case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} />;
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
@@ -183,14 +193,13 @@ function App() {
       case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory invToken={invToken} shops={allShops} />;
-      
       default: return null;
     }
   };
 
-return (
+  return (
     <Layout className="h-screen flex flex-row theme-transition overflow-hidden">
-      {/* --- 左邊 Sidebar：永遠顯示，方便隨時撳 Settings --- */}
+      {/* --- 左邊 Sidebar：永遠顯示 --- */}
       <Sider trigger={null} collapsible collapsed={collapsed} width={260} className="custom-sider h-screen sticky top-0 left-0">
         <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-4`}>
           <div className="flex flex-col">
@@ -241,14 +250,14 @@ return (
         </div>
       </Sider>
       
-      {/* --- 右邊區域：包含 Header 同 Content --- */}
+      {/* --- 右邊區域 --- */}
       <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
-        
-        {/* ✅ 關鍵判斷：如果冇登入，而且唔係喺 Settings 頁面，就顯示 Login 畫面覆蓋右邊 */}
+        {/* 如果未登入且唔係 Settings，顯示 Login 覆蓋右邊 */}
         {(!currentUser && selectedMenuKey !== View.SETTINGS) ? (
           <div className="h-full w-full">
             <Login 
               sharePointService={sharePointService} 
+              onUpdateToken={updateGraphToken}
               onLoginSuccess={(user) => {
                 setCurrentUser(user);
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
@@ -256,15 +265,12 @@ return (
             />
           </div>
         ) : (
-          /* ✅ 如果已登入，或者正處於 Settings 頁面，就顯示正常的內容 */
           <>
             <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
               {!isInitialLoading && hasTokenError && !loading ? <TruckFlagNotice /> : <div className="flex-1" />}
               <Space size="large">
                 <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)}>Refresh</Button>
                 <Tag color="cyan" className="font-bold">POOL: {allShops.length}</Tag>
-                
-                {/* 如果有用戶就顯示頭像，冇就顯示 Guest（例如在 Settings 頁面未登入時） */}
                 {currentUser ? (
                   <div className="flex items-center gap-2 cursor-pointer" onClick={handleLogout} title="點擊登出">
                     <Avatar src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.Name}`} />
@@ -274,13 +280,11 @@ return (
                     </div>
                   </div>
                 ) : (
-                  <Tag color="orange">GUEST MODE (SETUP)</Tag>
+                  <Tag color="orange">GUEST (SETUP)</Tag>
                 )}
               </Space>
             </Header>
-            
             <Content className="main-scroll-content p-8 overflow-y-auto h-full">
-              {/* renderContent() 會根據選單顯示 Dashboard 或 Settings */}
               {renderContent()}
             </Content>
           </>
@@ -293,7 +297,7 @@ return (
         token={graphToken} 
       />
     </Layout>
-  )
-};
+  );
+}
 
 export default App;

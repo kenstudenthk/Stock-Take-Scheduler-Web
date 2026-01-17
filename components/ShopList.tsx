@@ -88,6 +88,14 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
       key: 'shopInfo',
       width: '18%',
       render: (record: Shop) => (
+        <Space align="center" size={12}>
+        {record.brandIcon && (
+        <img 
+          src={record.brandIcon} 
+          alt={record.brand} 
+          style={{ width: 32, height: 32, objectFit: 'contain' }} 
+        />
+      )}
         <Space direction="vertical" size={0}>
           <Text strong className={record.status?.toLowerCase() === 'closed' ? 'line-through opacity-50' : ''} style={{ fontSize: '14px' }}>{record.name}</Text>
           <Space><Tag color={record.status?.toLowerCase() === 'closed' ? 'default' : 'blue'}>{record.brand}</Tag><Text type="secondary" code style={{ fontSize: '10px' }}>{record.id}</Text></Space>

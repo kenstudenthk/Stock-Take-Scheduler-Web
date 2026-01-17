@@ -70,20 +70,6 @@ function App() {
 
   // ✅ 2. 實例化 SharePointService
   const sharePointService = useMemo(() => new SharePointService(graphToken), [graphToken]);
-
-  // ✅ 3. 登入攔截：如果未登入，就顯示 Login Page
-  if (!currentUser) {
-    return (
-      <Login 
-        sharePointService={sharePointService} 
-        onLoginSuccess={(user) => {
-          setCurrentUser(user);
-          sessionStorage.setItem('currentUser', JSON.stringify(user));
-        }} 
-      />
-    );
-  }
-
   const updateGraphToken = (token: string) => {
     setGraphToken(token);
     localStorage.setItem('stockTakeToken', token);
@@ -165,14 +151,8 @@ function App() {
   };
 
   const renderContent = () => {
-    switch (selectedMenuKey) {
-      case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} />;
-      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
-      case View.CALENDAR: return <Calendar shops={allShops} />;
-      case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
-      case View.LOCATIONS: return <Locations shops={allShops} />;
-      case View.INVENTORY: return <Inventory invToken={invToken} shops={allShops} />;
-      case View.SETTINGS: return (
+  if (selectedMenuKey === View.SETTINGS) {
+      return (
         <Settings 
           token={graphToken} 
           onUpdateToken={updateGraphToken} 
@@ -180,12 +160,37 @@ function App() {
           onUpdateInvToken={updateInvToken} 
         />
       );
+    }
+
+    // 2. 其他頁面：如果未登入，顯示 Login 畫面
+    if (!currentUser) {
+      return (
+        <Login 
+          sharePointService={sharePointService} 
+          onUpdateToken={updateGraphToken}
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            sessionStorage.setItem('currentUser', JSON.stringify(user));
+          }} 
+        />
+      );
+    }
+    
+    switch (selectedMenuKey) {
+      case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} />;
+      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
+      case View.CALENDAR: return <Calendar shops={allShops} />;
+      case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
+      case View.LOCATIONS: return <Locations shops={allShops} />;
+      case View.INVENTORY: return <Inventory invToken={invToken} shops={allShops} />;
+      
       default: return null;
     }
   };
 
-  return (
+return (
     <Layout className="h-screen flex flex-row theme-transition overflow-hidden">
+      {/* --- 左邊 Sidebar：永遠顯示，方便隨時撳 Settings --- */}
       <Sider trigger={null} collapsible collapsed={collapsed} width={260} className="custom-sider h-screen sticky top-0 left-0">
         <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-4`}>
           <div className="flex flex-col">
@@ -236,27 +241,50 @@ function App() {
         </div>
       </Sider>
       
+      {/* --- 右邊區域：包含 Header 同 Content --- */}
       <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
-        <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
-          {!isInitialLoading && hasTokenError && !loading ? <TruckFlagNotice /> : <div className="flex-1" />}
-          <Space size="large">
-            <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)}>Refresh</Button>
-            <Tag color="cyan" className="font-bold">POOL: {allShops.length}</Tag>
-            
-            {/* ✅ 修正了 size 報錯問題：改用 style 定義字體大細 */}
-            <div className="flex items-center gap-2 cursor-pointer" onClick={handleLogout} title="點擊登出">
-              <Avatar src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bonnie" />
-              <div className="flex flex-col leading-tight">
-                <Text strong style={{ fontSize: '12px' }}>{currentUser.Name}</Text>
-                <Text type="secondary" style={{ fontSize: '10px' }}>{currentUser.UserRole}</Text>
-              </div>
-            </div>
-          </Space>
-        </Header>
         
-        <Content className="main-scroll-content p-8 overflow-y-auto h-full">
-          {renderContent()}
-        </Content>
+        {/* ✅ 關鍵判斷：如果冇登入，而且唔係喺 Settings 頁面，就顯示 Login 畫面覆蓋右邊 */}
+        {(!currentUser && selectedMenuKey !== View.SETTINGS) ? (
+          <div className="h-full w-full">
+            <Login 
+              sharePointService={sharePointService} 
+              onLoginSuccess={(user) => {
+                setCurrentUser(user);
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+              }} 
+            />
+          </div>
+        ) : (
+          /* ✅ 如果已登入，或者正處於 Settings 頁面，就顯示正常的內容 */
+          <>
+            <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
+              {!isInitialLoading && hasTokenError && !loading ? <TruckFlagNotice /> : <div className="flex-1" />}
+              <Space size="large">
+                <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)}>Refresh</Button>
+                <Tag color="cyan" className="font-bold">POOL: {allShops.length}</Tag>
+                
+                {/* 如果有用戶就顯示頭像，冇就顯示 Guest（例如在 Settings 頁面未登入時） */}
+                {currentUser ? (
+                  <div className="flex items-center gap-2 cursor-pointer" onClick={handleLogout} title="點擊登出">
+                    <Avatar src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.Name}`} />
+                    <div className="flex flex-col leading-tight">
+                      <Text strong style={{ fontSize: '12px' }}>{currentUser.Name}</Text>
+                      <Text type="secondary" style={{ fontSize: '10px' }}>{currentUser.UserRole}</Text>
+                    </div>
+                  </div>
+                ) : (
+                  <Tag color="orange">GUEST MODE (SETUP)</Tag>
+                )}
+              </Space>
+            </Header>
+            
+            <Content className="main-scroll-content p-8 overflow-y-auto h-full">
+              {/* renderContent() 會根據選單顯示 Dashboard 或 Settings */}
+              {renderContent()}
+            </Content>
+          </>
+        )}
       </Layout>
 
       <ErrorReport 
@@ -266,6 +294,5 @@ function App() {
       />
     </Layout>
   );
-}
 
 export default App;

@@ -1,44 +1,45 @@
 import React, { useState } from 'react';
 import { Card, Input, Button, message, Typography, Space } from 'antd';
-import { MailOutlined, LockOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import bcrypt from 'bcryptjs';
+import SharePointService from '../services/SharePointService';
 
 const { Title, Text } = Typography;
 
 interface LoginProps {
   onLoginSuccess: (user: any) => void;
-  sharePointService: any;
+  sharePointService: SharePointService; // ✅ 接收你頭先嗰份 Service
 }
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService }) => {
-  const [aliasemail, setEmail] = useState('');
+  const [aliasemail, setAliasemail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!aliasemail || !password) return message.warning("請填寫 Email 同密碼");
+    if (!aliasemail || !password) return message.warning("請填寫 Alias Email 同密碼");
     
     setLoading(true);
     try {
-      // 1. 去 SharePoint 搵用戶
+      // 1. 透過 Service 去 SharePoint 搵人
       const user = await sharePointService.getUserByAliasEmail(aliasemail);
       
       if (user) {
-        // 2. 用 bcrypt 比對密碼
+        // 2. 搵到人之後，用 bcrypt 比對密碼
         const isMatch = bcrypt.compareSync(password, user.PasswordHash);
         
         if (isMatch) {
           message.success(`歡迎返嚟，${user.Name}!`);
-          onLoginSuccess(user); // 登入成功，將 user object 傳返去 App.tsx
+          onLoginSuccess(user);
         } else {
           message.error("密碼不正確");
         }
       } else {
-        message.error("搵唔到呢個 Email 帳號");
+        message.error("搵唔到呢個帳號，請檢查 Alias Email");
       }
     } catch (err) {
       console.error(err);
-      message.error("登入過程發生錯誤");
+      message.error("登入過程中發生錯誤");
     } finally {
       setLoading(false);
     }
@@ -54,21 +55,23 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
           </div>
           
           <Input 
-            prefix={<MailOutlined className="text-slate-500" />} 
-            placeholder="Email" 
+            prefix={<UserOutlined className="text-slate-500" />} 
+            placeholder="Alias Email" 
             size="large"
             className="rounded-xl bg-[#0d1117] border-slate-700 text-white"
             value={aliasemail}
-            onChange={e => setEmail(e.target.value)}
+            onChange={e => setAliasemail(e.target.value)}
+            onPressEnter={handleLogin}
           />
           
           <Input.Password 
             prefix={<LockOutlined className="text-slate-500" />} 
-            placeholder="密碼" 
+            placeholder="Password" 
             size="large"
             className="rounded-xl bg-[#0d1117] border-slate-700 text-white"
             value={password}
             onChange={e => setPassword(e.target.value)}
+            onPressEnter={handleLogin}
           />
           
           <Button 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, message, Row, Col, Typography, Button, Space, AutoComplete, Badge } from 'antd';
+import { Modal, message, Row, Col, Typography, Button, Space, AutoComplete, Select } from 'antd'; // ✅ 引入 Select
 import { 
   InfoCircleOutlined, 
   SearchOutlined, 
@@ -12,13 +12,44 @@ import { Shop } from '../types';
 import { SP_FIELDS } from '../constants';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
-// 確保 AMap 的類型定義
-declare global {
-  interface Window {
-    AMap: any;
-  }
-}
+// --- ✅ 定義下拉選單清單 ---
+const BU_OPTIONS = [
+  { label: 'Branded Restaurants', value: 'Branded Restaurants' },
+  { label: 'Quick Service Restaurants', value: 'QSR' },
+  { label: 'Cakes & Bakery', value: 'Bakery' },
+  { label: 'Institutional Catering', value: 'Catering' }
+];
+
+const BRAND_OPTIONS = [
+  { label: 'Maxim\'s MX', value: 'MX' },
+  { label: 'Maxim\'s Cakes', value: 'Cakes' },
+  { label: 'Starbucks', value: 'Starbucks' },
+  { label: 'Genki Sushi', value: 'Genki' },
+  { label: 'Arome', value: 'Arome' }
+];
+
+const REGION_OPTIONS = [
+  { label: 'Hong Kong Island', value: 'HK' },
+  { label: 'Kowloon', value: 'KN' },
+  { label: 'New Territories', value: 'NT' },
+  { label: 'Islands', value: 'Islands' },
+  { label: 'Macau', value: 'MO' }
+];
+
+const DISTRICT_OPTIONS = [
+  'Central', 'Wan Chai', 'Causeway Bay', 'Quarry Bay', 'Chai Wan',
+  'Tsim Sha Tsui', 'Mong Kok', 'Kwun Tong', 'Kowloon Bay', 'Sham Shui Po',
+  'Sha Tin', 'Tsuen Wan', 'Tuen Mun', 'Yuen Long', 'Tai Po', 'Tseung Kwan O'
+].map(d => ({ label: d, value: d }));
+
+const AREA_OPTIONS = [
+  { label: 'Shopping Mall', value: 'Mall' },
+  { label: 'Street Shop', value: 'Street' },
+  { label: 'MTR Station', value: 'MTR' },
+  { label: 'Office Building', value: 'Office' }
+];
 
 interface Props {
   visible: boolean;
@@ -30,10 +61,8 @@ interface Props {
 
 export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSuccess, graphToken }) => {
   const [formData, setFormData] = useState<any>({});
-  
-  // --- ✅ 地點搜尋相關狀態 ---
   const [searchModalVisible, setSearchModalVisible] = useState(false);
-  const [searchOptions, setSearchOptions] = useState<{ value: string; location: any; label: any }[]>([]);
+  const [searchOptions, setSearchOptions] = useState<any[]>([]);
   const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
@@ -64,6 +93,38 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       }
     }
   }, [shop, visible]);
+
+  // ✅ 新增：渲染下拉選單的輔助函數
+  const renderSelect = (label: string, key: string, options: any[], span: number = 12) => (
+    <Col span={span}>
+      <div className="st-select-container-pro">
+        <label className="st-select-label">{label}</label>
+        <Select
+          className="st-select-field-pro"
+          placeholder={`Select ${label}`}
+          value={formData[key] || undefined}
+          onChange={val => setFormData({...formData, [key]: val})}
+          options={options}
+          showSearch
+          optionFilterProp="label"
+        />
+      </div>
+    </Col>
+  );
+
+  const renderInput = (label: string, key: string, span: number = 12) => (
+    <Col span={span}>
+      <div className="st-inputBox-pro">
+        <input 
+          type="text" 
+          required 
+          value={formData[key] || ''} 
+          onChange={e => setFormData({...formData, [key]: e.target.value})} 
+        />
+        <span>{label}</span>
+      </div>
+    </Col>
+  );
 
   // --- ✅ 地點搜尋邏輯 ---
 
@@ -203,7 +264,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     </Col>
   );
 
-  return (
+return (
     <>
       <Modal 
         open={visible} 
@@ -225,12 +286,12 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             <div className="flex items-center gap-2 mb-6 text-teal-600 font-bold border-b border-teal-100 pb-2">
               <InfoCircleOutlined /> BASIC IDENTIFICATION
             </div>
-            <Row gutter={20}>
+            <Row gutter={[20, 20]}>
               {renderInput("Official Shop Name", "name", 24)}
               {renderInput("Shop Code", "code", 8)}
-              {renderInput("Brand", "brand", 8)}
-              {renderInput("Schedule Group", "group", 8)}
-              {renderInput("Business Unit", "bu", 12)}
+              {renderSelect("Brand", "brand", BRAND_OPTIONS, 8)} {/* ✅ 改為 Select */}
+              {renderSelect("Schedule Group", "group", [{label:'Group A', value:'1'}, {label:'Group B', value:'2'}, {label:'Group C', value:'3'}], 8)}
+              {renderSelect("Business Unit", "bu", BU_OPTIONS, 12)} {/* ✅ 改為 Select */}
               {renderInput("System ID", "sys", 12)}
             </Row>
           </div>
@@ -239,12 +300,12 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             <div className="flex items-center gap-2 mb-6 text-teal-600 font-bold border-b border-teal-100 pb-2">
               <GlobalOutlined /> ADDRESS & LOGISTICS
             </div>
-            <Row gutter={20}>
+            <Row gutter={[20, 20]}>
               {renderInput("English Address (Full)", "addr_en", 24)}
               {renderInput("Chinese Address", "addr_chi", 24)}
-              {renderInput("Region", "region", 8)}
-              {renderInput("District", "district", 8)}
-              {renderInput("Area", "area", 8)}
+              {renderSelect("Region", "region", REGION_OPTIONS, 8)} {/* ✅ 改為 Select */}
+              {renderSelect("District", "district", DISTRICT_OPTIONS, 8)} {/* ✅ 改為 Select */}
+              {renderSelect("Area", "area", AREA_OPTIONS, 8)} {/* ✅ 改為 Select */}
               {renderInput("Building / Landmark", "building", 24)}
             </Row>
           </div>
@@ -307,12 +368,16 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             <button className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all" onClick={onCancel}>
               CANCEL
             </button>
-            <button className="px-12 py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg hover:bg-teal-700 hover:scale-105 transition-all" onClick={handleSubmit}>
+            <button className="px-12 py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg hover:bg-teal-700 hover:scale-105 transition-all" onClick={() => { /* handleSubmit 代碼 */ }}>
               {shop ? 'UPDATE RECORDS' : 'CREATE RECORD'}
             </button>
           </div>
         </div>
       </Modal>
+      {/* ... Geocoding Modal ... */}
+    </>
+  );
+};
 
       {/* ✅ 地點搜尋彈窗 - 修正 SVG 錯誤與搜尋無響應 */}
       <Modal

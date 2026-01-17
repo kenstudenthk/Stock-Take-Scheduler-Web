@@ -217,7 +217,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
           </div>
         </div>
       </Card>
-      <ShopFormModal visible={formOpen} shop={targetShop} onCancel={() => setFormOpen(false)} onSuccess={() => { setFormOpen(false); onRefresh(); }} graphToken={graphToken} />
+      <ShopFormModal visible={formOpen} shop={targetShop} onCancel={() => setFormOpen(false)} onSuccess={() => { setFormOpen(false); onRefresh(); }} graphToken={graphToken} shops={shops} />
     </div>
   );
 };

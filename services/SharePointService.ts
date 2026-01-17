@@ -64,7 +64,7 @@ class SharePointService {
           AliasEmail: aliasemail,
           Name: name,
           PasswordHash: hash,
-          UserRole: role
+          Role: role
         }
       };
 

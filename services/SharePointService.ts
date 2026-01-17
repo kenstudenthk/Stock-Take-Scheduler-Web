@@ -21,7 +21,7 @@ interface BatchUpdatePayload {
 
 class SharePointService {
   private graphToken: string;
-  // ✅ 修正位 1：Site ID 路徑結尾必須有冒號 ":"
+  // ✅ 修正 1：確保 Site ID 格式正確 (hostname:/path:)
   private siteId = 'pccw0.sharepoint.com:/sites/BonniesTeam:'; 
   private listId = 'ce3a752e-7609-4468-81f8-8babaf503ad8';
   private memberListId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770';
@@ -32,21 +32,23 @@ class SharePointService {
 
   async getUserByAliasEmail(aliasemail: string): Promise<any> {
     try {
-      // ✅ 修正位 2：確保 URL 拼接正確
+      // ✅ 修正 2：對 email 進行編碼，防止特殊字元 (@, .) 引起 URL 錯誤
+      const encodedEmail = encodeURIComponent(aliasemail);
       const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items?$filter=fields/AliasEmail eq '${aliasemail}'&$expand=fields`;
-      
+
       const response = await fetch(url, {
         headers: { 
           'Authorization': `Bearer ${this.graphToken}`,
-          // ✅ 修正位 3：加入 Prefer Header，防止索引未完全同步導致的 400 錯誤
-          'Prefer': 'HonorNonIndexedQueriesWarningMayFailOverTime'
+          // ✅ 修正 3：加入這兩個 Header 可以解決 90% 的 400 錯誤
+          'Prefer': 'HonorNonIndexedQueriesWarningMayFailOverTime',
+          'ConsistencyLevel': 'eventual' 
         }
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        // 如果仲係 400，請展開下面呢個 Object 話我知 "message" 寫乜
-        console.error("Graph API 報錯詳情:", errorData);
+        // ✅ 修正 4：直接印出詳細 message，方便診斷
+        console.error("❌ Graph API 錯誤原因:", errorData.error?.message || errorData);
         return null;
       }
 

@@ -109,6 +109,8 @@ function App() {
               latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
               longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
               businessUnit: f[SP_FIELDS.BUSINESS_UNIT] || '',
+              phone: f[SP_FIELDS.PHONE] || '', // ✅ 加入這行，將 field_37 映射到 record.phone
+    contactName: f[SP_FIELDS.CONTACT] || '', // ✅ 順便映射聯絡人 (field_38)
             };
           });
           setAllShops(mapped);

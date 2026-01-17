@@ -34,22 +34,32 @@ class SharePointService {
    */
   async getUserByAliasEmail(aliasemail: string): Promise<any> {
     try {
-      const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items?$filter=fields/AliasEmail eq '${aliasemail}'&$expand=fields($select=AliasEmail,Name,PasswordHash,UserRole)`;
-      
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${this.graphToken}` }
-      });
-      
-      const data = await response.json();
-      if (data.value && data.value.length > 0) {
-        return data.value[0].fields; 
+    const listId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770';
+      const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${listId}/items?$filter=fields/AliasEmail eq '${aliasemail}'&$expand=fields`;
+
+const response = await fetch(url, {
+      headers: { 
+        'Authorization': `Bearer ${this.graphToken}`,
+        'Prefer': 'HonorNonIndexedQueriesWarningMayFailOverTime' // ✅ 加多呢行 Header 增加成功率
       }
-      return null;
-    } catch (error) {
-      console.error("搵唔到用戶:", error);
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Graph API 報錯詳情:", errorData);
       return null;
     }
+
+    const data = await response.json();
+    if (data.value && data.value.length > 0) {
+      return data.value[0].fields; 
+    }
+    return null;
+  } catch (error) {
+    console.error("搵唔到用戶:", error);
+    return null;
   }
+}
 
   /**
    * 👤 建立新成員（Hash 密碼後儲存）

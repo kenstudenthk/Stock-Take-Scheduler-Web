@@ -78,10 +78,10 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
       <div className="wrapper">
         <div className="card-switch">
           <label className="switch">
-            {/* ✅ 修正：改用 display: none 徹底消除小方塊 */}
+            {/* ✅ 修正 1：徹底隱藏 Checkbox，消除頂部小方塊 */}
             <input 
               type="checkbox" 
-              className="toggle-hidden" 
+              className="toggle-checkbox" 
               checked={isFlipped} 
               onChange={() => setIsFlipped(!isFlipped)} 
             />
@@ -97,12 +97,12 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                     <Text type="secondary" style={{ fontSize: '11px' }}>Access Dashboard</Text>
                   </div>
 
-                  <div className="input-group">
+                  <div className="input-group-field">
                     <label className="label">Alias Email</label>
                     <input type="text" placeholder="e.g. k-chan" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
                   </div>
 
-                  <div className="input-group">
+                  <div className="input-group-field">
                     <label className="label">Password</label>
                     <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
                   </div>
@@ -112,7 +112,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                 </form>
               </div>
 
-              {/* --- 背面：Set Password (只有 3 個輸入框) --- */}
+              {/* --- 背面：Set Password (只有 3 個欄位) --- */}
               <div className="flip-card__back">
                 <form className="form" onSubmit={handleConfirmSetPassword}>
                   <div className="text-center mb-1">
@@ -120,17 +120,17 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                     <Text type="secondary" style={{ fontSize: '11px' }}>Update Credentials</Text>
                   </div>
 
-                  <div className="input-group">
+                  <div className="input-group-field">
                     <label className="label">Alias Email</label>
-                    <input type="text" placeholder="Verify Alias" value={aliasemail} onChange={(e) => setAliasemail(target.value)} />
+                    <input type="text" placeholder="Verify Alias" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
                   </div>
 
-                  <div className="input-group">
+                  <div className="input-group-field">
                     <label className="label">New Password</label>
                     <input type="password" placeholder="New Password" value={password} onChange={(e) => setPassword(e.target.value)} />
                   </div>
 
-                  <div className="input-group">
+                  <div className="input-group-field">
                     <label className="label">Re-Confirm Password</label>
                     <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                   </div>
@@ -145,11 +145,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
       </div>
 
       <style>{`
-        /* ✅ 核心修正：將整個登入框移至紅線位置 (更靠上) */
+        /* ✅ 修正 2：將登入框大幅上移 (translateY -220px) */
         .wrapper {
-          transform: translateY(-180px); /* 從 -80px 改為 -180px */
+          transform: translateY(-220px); 
           --input-focus: #58bc82;
           --main-color: #323232;
+          --font-color: #323232;
+          --bg-color: #fff;
         }
 
         .card-switch {
@@ -165,84 +167,82 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 60px;
-          height: 26px;
-          margin-bottom: 220px; /* 縮短開關與卡片的垂直距離 */
+          width: 50px;
+          height: 20px;
+          margin-bottom: 250px; /* 縮短與卡片的距離 */
+          cursor: pointer;
         }
 
-        /* ✅ 修正：徹底隱藏 Checkbox 避免出現小黑點 */
-        .toggle-hidden {
+        /* ✅ 徹底移除原生 Checkbox 避免小黑塊 */
+        .toggle-checkbox {
           position: absolute;
-          opacity: 0;
-          width: 0;
-          height: 0;
-          display: none;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border-width: 0;
         }
 
-        /* 開關樣式 */
+        /* Slider 背景 */
         .slider {
-          box-sizing: border-box; border-radius: 6px; border: 2px solid var(--main-color);
-          box-shadow: 3px 3px var(--main-color); position: absolute; cursor: pointer;
+          box-sizing: border-box; border-radius: 5px; border: 2px solid var(--main-color);
+          box-shadow: 4px 4px var(--main-color); position: absolute;
           top: 0; left: 0; right: 0; bottom: 0; background-color: #fff; transition: 0.3s;
         }
-        .slider:before {
-          position: absolute; content: ""; height: 18px; width: 18px; border: 2px solid var(--main-color);
-          border-radius: 4px; left: 2px; bottom: 2px; background-color: #fff;
-          box-shadow: 0 2px 0 var(--main-color); transition: 0.3s;
-        }
-        .toggle-hidden:checked + .slider { background-color: #58bc82; }
-        .toggle-hidden:checked + .slider:before { transform: translateX(34px); }
 
+        /* Slider 圓鈕 */
+        .slider:before {
+          box-sizing: border-box; position: absolute; content: ""; height: 20px; width: 20px;
+          border: 2px solid var(--main-color); border-radius: 5px; left: -2px; bottom: 2px;
+          background-color: var(--bg-color); box-shadow: 0 3px 0 var(--main-color); transition: 0.3s;
+        }
+
+        .toggle-checkbox:checked + .slider { background-color: #58bc82; }
+        .toggle-checkbox:checked + .slider:before { transform: translateX(30px); }
+
+        /* 文字標籤定位 */
         .card-side::before, .card-side::after {
-          position: absolute; color: var(--main-color); font-weight: 700; font-size: 13px; top: 4px; white-space: nowrap;
+          position: absolute; color: var(--font-color); font-weight: 700; font-size: 14px; top: 0; width: 100px;
         }
         .card-side::before { content: 'Log in'; left: -85px; text-decoration: underline; }
-        .card-side::after { content: 'Set Pass'; left: 75px; }
-        .toggle-hidden:checked ~ .card-side:before { text-decoration: none; }
-        .toggle-hidden:checked ~ .card-side:after { text-decoration: underline; }
+        .card-side::after { content: 'Set Pass'; left: 65px; }
+        .toggle-checkbox:checked ~ .card-side:before { text-decoration: none; }
+        .toggle-checkbox:checked ~ .card-side:after { text-decoration: underline; }
 
-        /* 卡片翻轉 */
+        /* 卡片容器 */
         .flip-card__inner {
-          width: 360px; height: 460px; position: absolute; top: 60px;
+          width: 360px; height: 480px; position: absolute; top: 60px;
           transition: transform 0.8s; transform-style: preserve-3d;
         }
-        .toggle-hidden:checked ~ .flip-card__inner { transform: rotateY(180deg); }
+        .toggle-checkbox:checked ~ .flip-card__inner { transform: rotateY(180deg); }
 
-      .flip-card__front, .flip-card__back {
-  padding: 20px;
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  background: lightgrey;
-  gap: 20px;
-  border-radius: 5px;
-  border: 2px solid var(--main-color);
-  box-shadow: 4px 4px var(--main-color);
-}
+        .flip-card__front, .flip-card__back {
+          padding: 30px; position: absolute; width: 100%; height: 100%;
+          backface-visibility: hidden; background: white; border-radius: 20px;
+          border: 2px solid var(--main-color); box-shadow: 10px 10px var(--main-color);
+          display: flex; flex-direction: column; gap: 12px;
+        }
+        .flip-card__back { transform: rotateY(180deg); }
 
-.flip-card__back {
-  width: 100%;
-  transform: rotateY(180deg);
-}
-
-        /* 表單元素 */
+        /* 表單元素 (融合你的綠色簡潔風) */
         .form { display: flex; flex-direction: column; gap: 0.8rem; width: 100%; }
         .main-title { color: #58bc82; font-weight: 800; font-size: 1.5rem; margin: 0; }
-        .input-group { display: flex; flex-direction: column; gap: 0.3rem; text-align: left; }
+        .input-group-field { display: flex; flex-direction: column; gap: 0.3rem; text-align: left; }
         .label { color: #58bc82; font-weight: 700; font-size: 0.8rem; margin-left: 5px; }
         
         .form input {
-          border-radius: 0.8rem; padding: 0.8rem; width: 100%; border: none;
+          border-radius: 0.8rem; padding: 0.85rem; width: 100%; border: none;
           background-color: #f8fafc; outline: 2px solid #323232; transition: all 0.3s;
           font-weight: 600; font-size: 14px;
         }
-        .form input:focus { outline: 2px solid #58bc82; background-color: white; box-shadow: 0 0 0 4px rgba(88, 188, 130, 0.1); }
+        .form input:focus { outline: 2px solid #58bc82; background-color: white; }
 
+        /* ✅ 修正 3：按鈕樣式與點擊效果 */
         .submit-btn {
-          padding: 0.8rem; width: 100%; border-radius: 3rem; background-color: #323232;
+          padding: 0.85rem; width: 100%; border-radius: 3rem; background-color: #323232;
           color: #fff; border: none; cursor: pointer; transition: all 0.3s;
           font-weight: 700; font-size: 1rem; margin-top: 10px;
           box-shadow: 4px 4px #323232;
@@ -251,16 +251,16 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
         .submit-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px #323232; }
         .confirm-bg:hover { background-color: #44d8a4; }
 
-        .footer-span { margin-top: 5px; font-size: 0.75rem; color: #666; cursor: pointer; text-align: center; }
+        .footer-span { margin-top: 10px; font-size: 0.8rem; color: #666; cursor: pointer; text-align: center; }
         .footer-span a { color: #58bc82; font-weight: 700; text-decoration: underline; }
 
         /* Tooltip */
         .custom-tooltip { position: relative; display: inline-block; cursor: pointer; }
         .custom-tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
         .tooltiptext {
-          visibility: hidden; width: 160px; background-color: #333; color: #fff; text-align: center;
+          visibility: hidden; width: 180px; background-color: #333; color: #fff; text-align: center;
           border-radius: 5px; padding: 8px; position: absolute; z-index: 100; top: 150%; left: 50%;
-          margin-left: -140px; opacity: 0; transition: opacity 0.3s; font-size: 10px;
+          margin-left: -160px; opacity: 0; transition: opacity 0.3s; font-size: 10px;
         }
         .custom-tooltip .icon {
           display: inline-block; width: 20px; height: 20px; color: #fff; border-radius: 50%;

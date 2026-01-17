@@ -99,7 +99,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
 
                   <div className="field-group">
                     <label className="field-label">Alias Email</label>
-                    <input type="text" placeholder="e.g. k-chan" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
+                    <input type="text" placeholder="e.g. k.ab.chan@pccw.com" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
                   </div>
 
                   <div className="field-group">
@@ -122,7 +122,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
 
                   <div className="field-group">
                     <label className="field-label">Alias Email</label>
-                    <input type="text" placeholder="Verify Alias" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
+                    <input type="text" placeholder="Please enter the email with @pccw.com" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
                   </div>
 
                   <div className="field-group">

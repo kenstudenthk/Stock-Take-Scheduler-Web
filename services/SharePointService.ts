@@ -29,7 +29,17 @@ class SharePointService {
   constructor(token: string) {
     this.graphToken = token;
   }
-
+  async checkMemberListConnection(): Promise<boolean> {
+  try {
+    const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}`;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${this.graphToken}` }
+    });
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+}
   async getUserByAliasEmail(aliasemail: string): Promise<any> {
     try {
       // ✅ 修正 2：對 email 進行編碼，防止特殊字元 (@, .) 引起 URL 錯誤

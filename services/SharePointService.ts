@@ -179,7 +179,7 @@ async getUserByAliasEmail(aliasemail: string): Promise<any> {
   try {
     const listId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770';
     // 透過 Graph API Filter 功能搵對應 Email 嘅 Item
-    const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${listId}/items?$filter=fields/Email eq '${aliasemail}'&$expand=fields($select=AliasEmail,Name,PasswordHash,UserRole)`;
+    const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${listId}/items?$filter=fields/AliasEmail eq '${aliasemail}'&$expand=fields($select=AliasEmail,Name,PasswordHash,UserRole)`;
     
     const response = await fetch(url, {
       headers: { 'Authorization': `Bearer ${this.graphToken}` }

@@ -1,13 +1,9 @@
 // ShopFormModal.tsx
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Modal, message, Row, Col, Typography, Button, Space, AutoComplete, Select, Divider } from 'antd';
+import { Modal, message, Row, Col, Typography, Space, Select, Divider } from 'antd';
 import { 
   InfoCircleOutlined, 
-  SearchOutlined, 
-  PhoneOutlined, 
-  EnvironmentOutlined,
-  CopyOutlined,
   GlobalOutlined
 } from '@ant-design/icons';
 import { Shop } from '../types';
@@ -27,7 +23,6 @@ interface Props {
 export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSuccess, graphToken, shops }) => {
   const [formData, setFormData] = useState<any>({});
 
-  // ✅ 1. 動態提取唯一選項
   const dynamicOptions = useMemo(() => {
     const safeShops = shops || []; 
     const getUnique = (key: keyof Shop) => 
@@ -44,7 +39,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     };
   }, [shops]);
 
-  // ✅ 2. 初始資料載入
   useEffect(() => {
     if (visible) {
       if (shop) {
@@ -74,29 +68,27 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     }
   }, [shop, visible]);
 
-  // ✅ 3. 渲染 Uiverse 風格的 Input (保留原本的 Title Movement 結構)
   const renderInput = (label: string, key: string, span: number = 12) => (
     <Col span={span}>
       <div className="st-inputBox-pro">
         <input 
-          className="uiverse-input-field" // 加入新類名
+          className="uiverse-input-field" 
           type="text" 
           required 
           value={formData[key] || ''} 
           onChange={e => setFormData({...formData, [key]: e.target.value})} 
-          placeholder=" " // 確保 placeholder 為空，以便讓 span 標籤能正確觸發移動邏輯
+          placeholder=" " 
         />
         <span>{label}</span>
       </div>
     </Col>
   );
 
-  // ✅ 4. 渲染 Uiverse 風格的 Select
   const renderSelect = (label: string, key: string, options: any[], span: number = 12) => (
     <Col span={span}>
       <div className="st-inputBox-pro select-container-uiverse">
         <Select
-          className="st-input-select-wrapper uiverse-select-field"
+          className="uiverse-select-field"
           variant="borderless"
           showSearch
           placeholder=" "
@@ -104,16 +96,15 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           onChange={val => setFormData({...formData, [key]: val})}
           options={options}
           optionFilterProp="label"
-          style={{ width: '100%', paddingTop: '10px' }}
+          style={{ width: '100%' }}
         />
-        <span className="static-label">{label}</span>
+        <span className="uiverse-floating-label">{label}</span>
       </div>
     </Col>
   );
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.code) return message.warning("Shop Name and Code are required!");
-    
     const isEdit = !!shop;
     const url = isEdit 
       ? `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`
@@ -138,18 +129,20 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         open={visible} 
         onCancel={onCancel} 
         footer={null} 
-        width={900} 
+        width={1000} 
         centered 
-        bodyStyle={{ padding: '32px', backgroundColor: '#f8fafc' }}
+        bodyStyle={{ padding: '40px', backgroundColor: '#f8fafc' }}
       >
-        <div className="mb-6">
-          <Title level={3} style={{ margin: 0 }}>{shop ? 'Store Profile Manager' : 'New Store Registration'}</Title>
-          <Text type="secondary">Managing SharePoint records directly.</Text>
+        <div className="mb-8">
+          <Title level={3} style={{ margin: 0, fontWeight: 900 }}>{shop ? 'STORE PROFILE MANAGER' : 'NEW STORE REGISTRATION'}</Title>
+          <Text type="secondary">Real-time SharePoint Data Synchronization</Text>
         </div>
 
         <div className="st-form-section">
-          <Divider orientation="left" style={{ color: '#0d9488' }}><InfoCircleOutlined /> BASIC IDENTIFICATION</Divider>
-          <Row gutter={[20, 24]}>
+          <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800 }}>
+            <InfoCircleOutlined /> BASIC IDENTIFICATION
+          </Divider>
+          <Row gutter={[24, 32]}>
             {renderInput("Official Shop Name", "name", 24)}
             {renderInput("Shop Code", "code", 8)}
             {renderSelect("Brand", "brand", dynamicOptions.brands, 8)}
@@ -159,9 +152,11 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           </Row>
         </div>
 
-        <div className="st-form-section mt-8">
-          <Divider orientation="left" style={{ color: '#0d9488' }}><GlobalOutlined /> ADDRESS & LOGISTICS</Divider>
-          <Row gutter={[20, 24]}>
+        <div className="st-form-section mt-10">
+          <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800 }}>
+            <GlobalOutlined /> ADDRESS & LOGISTICS
+          </Divider>
+          <Row gutter={[24, 32]}>
             {renderInput("English Address (Full)", "addr_en", 24)}
             {renderInput("Chinese Address", "addr_chi", 24)}
             {renderSelect("Region", "region", dynamicOptions.regions, 8)}
@@ -171,51 +166,95 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           </Row>
         </div>
 
-        <div className="flex justify-end gap-4 mt-12">
-          <button className="px-8 py-3 bg-white border-2 border-black text-black rounded-xl font-bold hover:bg-slate-50 transition-all shadow-[2.5px_3px_0_#000] active:translate-y-1 active:shadow-none" onClick={onCancel}>
+        <div className="flex justify-end gap-6 mt-16">
+          <button className="px-10 py-3 bg-white border-2 border-black text-black rounded-xl font-black hover:bg-slate-50 transition-all shadow-[3px_3px_0_#000] active:translate-y-1 active:shadow-none" onClick={onCancel}>
             CANCEL
           </button>
-          <button className="px-12 py-3 bg-teal-500 text-white border-2 border-black rounded-xl font-bold shadow-[4px_4px_0_#000] hover:bg-teal-600 hover:scale-[1.02] transition-all" onClick={handleSubmit}>
-            {shop ? 'UPDATE RECORDS' : 'CREATE RECORD'}
+          <button className="px-14 py-3 bg-teal-500 text-white border-2 border-black rounded-xl font-black shadow-[5px_5px_0_#000] hover:bg-teal-600 hover:scale-[1.02] transition-all" onClick={handleSubmit}>
+            {shop ? 'SAVE CHANGES' : 'CREATE RECORD'}
           </button>
         </div>
 
-        {/* ✅ 注入 Uiverse 文字框樣式 */}
         <style>{`
+          /* 1. 基礎容器設定 */
+          .st-inputBox-pro {
+            position: relative;
+            width: 100%;
+          }
+
+          /* 2. Input 文字框與垂直居中 (Vertical Center) */
           .uiverse-input-field {
             width: 100% !important;
-            padding: 0.875rem !important;
+            height: 54px !important; /* 固定高度以便居中 */
+            padding: 0 1rem !important;
             font-size: 1rem !important;
-            border: 1.5px solid #000 !important;
-            border-radius: 0.5rem !important;
-            box-shadow: 2.5px 3px 0 #000 !important;
+            font-weight: 700 !important;
+            border: 2px solid #000 !important;
+            border-radius: 0.6rem !important;
+            box-shadow: 3px 4px 0 #000 !important;
             outline: none !important;
-            transition: ease 0.25s !important;
+            transition: all 0.25s ease !important;
             background: white !important;
+            display: flex !important;
+            align-items: center !important;
+          }
+
+          /* 3. 標題字體更大且更高 (Bigger & Higher) */
+          .st-inputBox-pro span {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 13px !important; /* 更大的標題 */
+            font-weight: 800 !important;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: transparent;
+            padding: 0 4px;
+          }
+
+          /* 標題浮動邏輯：移動到更高位置 */
+          .uiverse-input-field:focus ~ span,
+          .uiverse-input-field:not(:placeholder-shown) ~ span,
+          .uiverse-select-field.ant-select-in-form-item ~ span,
+          .select-container-uiverse span {
+            transform: translateY(-42px) translateX(-4px) !important; /* 向上移動更多 */
+            font-size: 12px !important;
+            color: #0d9488 !important;
+            background: #f8fafc; /* 與背景色融合 */
+          }
+
+          /* 4. Select 組件修復：垂直居中與邊框同步 */
+          .select-container-uiverse {
+            border: 2px solid #000 !important;
+            border-radius: 0.6rem !important;
+            box-shadow: 3px 4px 0 #000 !important;
+            background: white !important;
+            height: 54px !important;
+            display: flex;
+            align-items: center; /* 強制垂直居中 */
+          }
+
+          .uiverse-select-field {
+            width: 100% !important;
+          }
+
+          .uiverse-select-field .ant-select-selector {
+            height: 50px !important;
+            display: flex !important;
+            align-items: center !important; /* 數值居中關鍵 */
+            font-weight: 800 !important;
+            font-size: 14px !important;
+            color: #000 !important;
+            background: transparent !important;
           }
 
           .uiverse-input-field:focus {
-            box-shadow: 5.5px 7px 0 black !important;
-          }
-
-          /* 修復原本 Title Movement 的 span 定位，確保不會被 box-shadow 遮擋 */
-          .st-inputBox-pro span {
-            pointer-events: none;
-            transition: 0.3s;
-          }
-
-          /* 針對 Select 的容器同步風格 */
-          .select-container-uiverse {
-            border: 1.5px solid #000 !important;
-            border-radius: 0.5rem !important;
-            box-shadow: 2.5px 3px 0 #000 !important;
-            background: white !important;
-            padding-right: 8px !important;
-          }
-          
-          .uiverse-select-field .ant-select-selection-item {
-            font-weight: bold !important;
-            color: #000 !important;
+            box-shadow: 6px 7px 0 black !important;
+            border-color: #0d9488 !important;
           }
         `}</style>
       </Modal>

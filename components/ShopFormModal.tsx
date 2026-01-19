@@ -134,7 +134,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         footer={null} 
         width={1000} 
         centered 
-        bodyStyle={{ padding: '50px 40px', backgroundColor: '#f8fafc' }}
+        bodyStyle={{ padding: '60px 40px 40px 40px', backgroundColor: '#f8fafc' }} // 增加頂部內邊距防止標題被擋住
       >
         <div className="mb-10">
           <Title level={2} style={{ margin: 0, fontWeight: 900, fontSize: '28px' }}>{shop ? 'STORE PROFILE MANAGER' : 'NEW STORE REGISTRATION'}</Title>
@@ -145,7 +145,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800, fontSize: '12px' }}>
             <InfoCircleOutlined /> BASIC IDENTIFICATION
           </Divider>
-          <Row gutter={[24, 45]}> {/* 增加行間距給漂浮標題空間 */}
+          <Row gutter={[24, 50]}> {/* 增加行間距給超高漂浮標題 */}
             {renderInput("Official Shop Name", "name", 24)}
             {renderInput("Shop Code", "code", 8)}
             {renderSelect("Brand", "brand", dynamicOptions.brands, 8)}
@@ -159,7 +159,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800, fontSize: '12px' }}>
             <GlobalOutlined /> ADDRESS & LOGISTICS
           </Divider>
-          <Row gutter={[24, 45]}>
+          <Row gutter={[24, 50]}>
             {renderInput("English Address (Full)", "addr_en", 24)}
             {renderInput("Chinese Address", "addr_chi", 24)}
             {renderSelect("Region", "region", dynamicOptions.regions, 8)}
@@ -184,30 +184,24 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             width: 100%;
           }
 
-          /* --- 1. Input 基礎樣式 (無陰影) --- */
-          .uiverse-input-field {
+          /* --- 1. Input 與 Select 容器基礎設定 (無陰影) --- */
+          .uiverse-input-field, .select-container-uiverse {
             width: 100% !important;
             height: 56px !important;
-            padding: 0 1.2rem !important;
-            font-size: 1rem !important;
-            font-weight: 700 !important;
+            background: white !important;
             border: 2.5px solid #000 !important;
             border-radius: 0.6rem !important;
-            outline: none !important;
+            box-shadow: none !important; /* 平常無陰影 */
             transition: all 0.2s ease !important;
-            background: white !important;
-            display: flex !important;
-            align-items: center !important;
-            box-shadow: none !important;
           }
 
-          /* --- 2. Editing (Focus) 時顯示陰影 --- */
-          .uiverse-input-field:focus {
+          /* --- 2. 編輯時彈出影子 (Focus Effect) --- */
+          .uiverse-input-field:focus, .select-container-uiverse:focus-within {
             box-shadow: 3px 4px 0 #000 !important;
             border-color: #0d9488 !important;
           }
 
-          /* --- 3. 標題文字 (更大、平時居中) --- */
+          /* --- 3. 標題位置：更大 (15px) 且更高 (-62px) --- */
           .st-inputBox-pro .floating-label {
             position: absolute;
             left: 16px;
@@ -215,17 +209,16 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             transform: translateY(-50%);
             pointer-events: none;
             transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 15px !important; /* 標題加大至 15px */
+            font-size: 15px !important; 
             font-weight: 800 !important;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             background: transparent;
-            padding: 0 4px;
             z-index: 10;
           }
 
-          /* --- 4. 標題浮動動畫 (更高：-52px) --- */
+          /* 標題浮動：飛得更高！ */
           .uiverse-input-field:focus ~ .floating-label,
           .uiverse-input-field:not(:placeholder-shown) ~ .floating-label,
           .select-container-uiverse:focus-within .floating-label,
@@ -233,59 +226,45 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             transform: translateY(-52px) translateX(-4px) !important; /* 向上移動至更高的位置 */
             font-size: 13px !important;
             color: #0d9488 !important;
-            background: #f8fafc !important; /* 遮擋背景色 */
+            background: #f8fafc !important; /* 使用背景色遮擋框線 */
             padding: 0 8px !important;
             font-weight: 900 !important;
           }
 
-          /* --- 5. Select 容器與垂直居中修復 --- */
+          /* --- 4. Select 文字絕對居中修正 --- */
           .select-container-uiverse {
-            border: 2.5px solid #000 !important;
-            border-radius: 0.6rem !important;
-            background: white !important;
-            height: 56px !important;
-            display: flex;
-            align-items: center;
-            overflow: visible;
-            box-shadow: none !important;
-            transition: all 0.2s ease;
+            display: flex !important;
+            align-items: center !important;
+            overflow: visible !important;
           }
 
-          .select-container-uiverse:focus-within {
-            box-shadow: 3px 4px 0 #000 !important;
-            border-color: #0d9488 !important;
-          }
-
-          /* 核心：解決 Select 選中文字掉到框外的關鍵修復 */
+          /* 關鍵：徹底重置 Ant Design 內部的 Padding */
           .uiverse-select-field .ant-select-selector {
-            height: 52px !important; /* 略小於容器高度 */
+            height: 100% !important;
             display: flex !important;
             align-items: center !important; 
-            padding: 0 12px !important;
+            padding: 0 14px !important;
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
           }
 
-          .uiverse-select-field .ant-select-selection-item {
-            font-weight: 800 !important;
-            font-size: 15px !important; /* 內容文字與 Input 同大 */
-            color: #000 !important;
-            line-height: 52px !important; /* 強制行高與 selector 一致 */
-            display: flex;
-            align-items: center;
-          }
-
-          /* 修復 Search 狀態下的位置 */
-          .uiverse-select-field .ant-select-selection-search {
-            inset-inline-start: 12px !important;
-            display: flex;
-            align-items: center;
-          }
-
+          .uiverse-select-field .ant-select-selection-item,
           .uiverse-select-field .ant-select-selection-placeholder {
-            line-height: 52px !important;
-            font-weight: 700;
+            line-height: 50px !important; /* 確保行高能讓文字在 56px 的框內居中 */
+            font-weight: 800 !important;
+            font-size: 15px !important;
+            color: #000 !important;
+            display: flex !important;
+            align-items: center !important;
+            margin: 0 !important;
+          }
+
+          /* 解決 Search Input 導致選中文字下掉的問題 */
+          .uiverse-select-field .ant-select-selection-search {
+            inset-inline-start: 14px !important;
+            display: flex !important;
+            align-items: center !important;
           }
         `}</style>
       </Modal>

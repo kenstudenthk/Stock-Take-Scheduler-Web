@@ -1,7 +1,7 @@
 // ShopFormModal.tsx
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Modal, message, Row, Col, Typography, Space, Select, Divider } from 'antd';
+import { Modal, message, Row, Col, Typography, Select, Divider } from 'antd';
 import { 
   InfoCircleOutlined, 
   GlobalOutlined
@@ -23,6 +23,7 @@ interface Props {
 export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSuccess, graphToken, shops }) => {
   const [formData, setFormData] = useState<any>({});
 
+  // 1. 動態提取唯一選項
   const dynamicOptions = useMemo(() => {
     const safeShops = shops || []; 
     const getUnique = (key: keyof Shop) => 
@@ -39,6 +40,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     };
   }, [shops]);
 
+  // 2. 初始資料載入
   useEffect(() => {
     if (visible) {
       if (shop) {
@@ -57,7 +59,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           contact: shop.contactName || '',
           remark: (shop as any).remark || '',
           sys: (shop as any).sys || '',
-          bu: shop.businessUnit || '',
+          bu: (shop as any).businessUnit || '',
           lat: shop.latitude || '',
           lng: shop.longitude || '',
           group: shop.groupId?.toString() || '1'
@@ -68,6 +70,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     }
   }, [shop, visible]);
 
+  // 3. 渲染 Input (支援 Title Movement)
   const renderInput = (label: string, key: string, span: number = 12) => (
     <Col span={span}>
       <div className="st-inputBox-pro">
@@ -79,29 +82,33 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           onChange={e => setFormData({...formData, [key]: e.target.value})} 
           placeholder=" " 
         />
-        <span>{label}</span>
+        <span className="floating-label">{label}</span>
       </div>
     </Col>
   );
 
-  const renderSelect = (label: string, key: string, options: any[], span: number = 12) => (
-    <Col span={span}>
-      <div className="st-inputBox-pro select-container-uiverse">
-        <Select
-          className="uiverse-select-field"
-          variant="borderless"
-          showSearch
-          placeholder=" "
-          value={formData[key] || undefined}
-          onChange={val => setFormData({...formData, [key]: val})}
-          options={options}
-          optionFilterProp="label"
-          style={{ width: '100%' }}
-        />
-        <span className="uiverse-floating-label">{label}</span>
-      </div>
-    </Col>
-  );
+  // 4. 渲染 Select (同步 Input 的標題移動效果)
+  const renderSelect = (label: string, key: string, options: any[], span: number = 12) => {
+    const hasValue = formData[key] !== undefined && formData[key] !== '';
+    return (
+      <Col span={span}>
+        <div className={`st-inputBox-pro select-container-uiverse ${hasValue ? 'has-value' : ''}`}>
+          <Select
+            className="uiverse-select-field"
+            variant="borderless"
+            showSearch
+            placeholder=" "
+            value={formData[key] || undefined}
+            onChange={val => setFormData({...formData, [key]: val})}
+            options={options}
+            optionFilterProp="label"
+            style={{ width: '100%' }}
+          />
+          <span className="floating-label">{label}</span>
+        </div>
+      </Col>
+    );
+  };
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.code) return message.warning("Shop Name and Code are required!");
@@ -135,7 +142,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       >
         <div className="mb-8">
           <Title level={3} style={{ margin: 0, fontWeight: 900 }}>{shop ? 'STORE PROFILE MANAGER' : 'NEW STORE REGISTRATION'}</Title>
-          <Text type="secondary">Real-time SharePoint Data Synchronization</Text>
+          <Text type="secondary">Managing Real-time SharePoint Records</Text>
         </div>
 
         <div className="st-form-section">
@@ -176,16 +183,16 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         </div>
 
         <style>{`
-          /* 1. 基礎容器設定 */
+          /* 1. 容器基礎設定 */
           .st-inputBox-pro {
             position: relative;
             width: 100%;
           }
 
-          /* 2. Input 文字框與垂直居中 (Vertical Center) */
+          /* 2. Input 文字框與垂直居中設定 */
           .uiverse-input-field {
             width: 100% !important;
-            height: 54px !important; /* 固定高度以便居中 */
+            height: 56px !important; /* 固定高度 */
             padding: 0 1rem !important;
             font-size: 1rem !important;
             font-weight: 700 !important;
@@ -199,15 +206,15 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             align-items: center !important;
           }
 
-          /* 3. 標題字體更大且更高 (Bigger & Higher) */
-          .st-inputBox-pro span {
+          /* 3. 標題文字樣式 (更大) */
+          .st-inputBox-pro .floating-label {
             position: absolute;
-            left: 12px;
+            left: 14px;
             top: 50%;
             transform: translateY(-50%);
             pointer-events: none;
             transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 13px !important; /* 更大的標題 */
+            font-size: 14px !important; /* 增加到 14px */
             font-weight: 800 !important;
             color: #64748b;
             text-transform: uppercase;
@@ -216,40 +223,51 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             padding: 0 4px;
           }
 
-          /* 標題浮動邏輯：移動到更高位置 */
-          .uiverse-input-field:focus ~ span,
-          .uiverse-input-field:not(:placeholder-shown) ~ span,
-          .uiverse-select-field.ant-select-in-form-item ~ span,
-          .select-container-uiverse span {
-            transform: translateY(-42px) translateX(-4px) !important; /* 向上移動更多 */
-            font-size: 12px !important;
+          /* 4. 標題上移邏輯 (更高) */
+          .uiverse-input-field:focus ~ .floating-label,
+          .uiverse-input-field:not(:placeholder-shown) ~ .floating-label,
+          .select-container-uiverse:focus-within .floating-label,
+          .select-container-uiverse.has-value .floating-label {
+            transform: translateY(-44px) translateX(-4px) !important; /* 向上移動至框外 */
+            font-size: 13px !important;
             color: #0d9488 !important;
-            background: #f8fafc; /* 與背景色融合 */
+            background: #f8fafc !important; /* 背景遮罩確保文字清晰 */
+            padding: 0 8px !important;
           }
 
-          /* 4. Select 組件修復：垂直居中與邊框同步 */
+          /* 5. Select 垂直居中修復 */
           .select-container-uiverse {
             border: 2px solid #000 !important;
             border-radius: 0.6rem !important;
             box-shadow: 3px 4px 0 #000 !important;
             background: white !important;
-            height: 54px !important;
+            height: 56px !important;
             display: flex;
-            align-items: center; /* 強制垂直居中 */
-          }
-
-          .uiverse-select-field {
-            width: 100% !important;
+            align-items: center;
+            overflow: visible;
           }
 
           .uiverse-select-field .ant-select-selector {
-            height: 50px !important;
+            height: 52px !important;
             display: flex !important;
-            align-items: center !important; /* 數值居中關鍵 */
+            align-items: center !important; /* 關鍵：強制選中文字垂直居中 */
             font-weight: 800 !important;
             font-size: 14px !important;
             color: #000 !important;
             background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding-top: 0 !important; /* 移除頂部內邊距防止偏位 */
+          }
+
+          .uiverse-select-field .ant-select-selection-search {
+             display: flex;
+             align-items: center;
+          }
+
+          /* 選項文字強制加粗 */
+          .ant-select-item-option-content {
+            font-weight: 700 !important;
           }
 
           .uiverse-input-field:focus {

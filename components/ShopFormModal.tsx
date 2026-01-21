@@ -225,7 +225,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           .uiverse-input-field:not(:placeholder-shown) ~ .floating-label,
           .select-container-uiverse:focus-within .floating-label,
           .select-container-uiverse.has-value .floating-label {
-            transform: translateY(-52px) translateX(-4px) !important; 
+            transform: translateY(-68px) translateX(-4px) !important; 
             font-size: 14px !important;
             color: #0d9488 !important;
             background: #f8fafc !important; 

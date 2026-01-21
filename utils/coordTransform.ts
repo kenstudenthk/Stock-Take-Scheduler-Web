@@ -1,4 +1,5 @@
-// 座標轉換常量
+// utils/coordTransform.ts
+
 const EE = 0.00669342162296594323;
 const A = 6378245.0;
 const PI = Math.PI;
@@ -32,4 +33,22 @@ export const wgs84ToGcj02 = (lng: number, lat: number) => {
   dLat = (dLat * 180.0) / ((A * (1 - EE)) / (magic * sqrtMagic) * PI);
   dLon = (dLon * 180.0) / (A / sqrtMagic * Math.cos(radLat) * PI);
   return [lng + dLon, lat + dLat];
+};
+
+/**
+ * GCJ-02 (火星座標) 轉換為 WGS-84 (GPS)
+ * 用於將高德搜尋結果轉為系統內部座標
+ */
+export const gcj02towgs84 = (lng: number, lat: number) => {
+  let dLat = transformLat(lng - 105.0, lat - 35.0);
+  let dLon = transformLon(lng - 105.0, lat - 35.0);
+  const radLat = lat / 180.0 * PI;
+  let magic = Math.sin(radLat);
+  magic = 1 - EE * magic * magic;
+  const sqrtMagic = Math.sqrt(magic);
+  dLat = (dLat * 180.0) / ((A * (1 - EE)) / (magic * sqrtMagic) * PI);
+  dLon = (dLon * 180.0) / (A / sqrtMagic * Math.cos(radLat) * PI);
+  const mglat = lat + dLat;
+  const mglng = lng + dLon;
+  return [lng * 2 - mglng, lat * 2 - mglat];
 };

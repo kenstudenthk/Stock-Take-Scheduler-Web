@@ -34,7 +34,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       Array.from(new Set(safeShops.map(s => s[key]).filter(Boolean)))
         .sort()
     }
-  }, [shops]);
+  ), [shops]);
 
   // ✅ 2. 初始資料載入 (編輯或新增)
   useEffect(() => {

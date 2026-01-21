@@ -33,7 +33,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     const getUnique = (key: keyof Shop) => 
       Array.from(new Set(safeShops.map(s => s[key]).filter(Boolean)))
         .sort()
-	@@ -46,7 +44,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     };
   }, [shops]);
 
@@ -41,7 +40,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
   useEffect(() => {
     if (visible) {
       if (shop) {
-	@@ -76,27 +74,29 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     }
   }, [shop, visible]);
 
@@ -69,7 +67,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           variant="borderless"
           showSearch
           placeholder=" "
-	@@ -149,7 +149,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
 
         <div className="st-form-section">
           <Divider orientation="left" style={{ color: '#0d9488' }}><InfoCircleOutlined /> BASIC IDENTIFICATION</Divider>
@@ -77,7 +74,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             {renderInput("Official Shop Name", "name", 24)}
             {renderInput("Shop Code", "code", 8)}
             {renderSelect("Brand", "brand", dynamicOptions.brands, 8)}
-	@@ -159,9 +159,9 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           </Row>
         </div>
 

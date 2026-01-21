@@ -1879,3 +1879,38 @@ background-color: var(--bg-header) !important;
   letter-spacing: 1px;
   margin-top: 8px;
 }
+
+/* ============================================================
+   27. /* ShopFormModal Custom Retro Styles */
+   ============================================================ */
+
+.st-inputBox-pro { position: relative; width: 100%; display: flex; align-items: center; }
+.uiverse-input-field {
+  width: 100% !important; height: 54px !important; background: white !important;
+  border: 2.5px solid #000 !important; border-radius: 0.6rem !important;
+  padding: 0 16px !important; font-size: 15px !important; font-weight: 700 !important;
+  outline: none !important; transition: all 0.2s ease !important;
+  display: flex !important; align-items: center !important;
+}
+.uiverse-input-field:focus, .sel-ext-wrapper:focus-within .uiverse-input-field {
+  box-shadow: 3px 4px 0 #000 !important; border-color: #0d9488 !important;
+}
+.st-inputBox-pro .floating-label {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; transition: 0.3s; font-size: 15px !important; 
+  font-weight: 800 !important; color: #64748b; text-transform: uppercase; z-index: 20;
+}
+.uiverse-input-field:focus ~ .floating-label, .uiverse-input-field:not(:placeholder-shown) ~ .floating-label,
+.sel-ext-wrapper.has-content .floating-label, .sel-ext-wrapper:focus-within .floating-label {
+  transform: translateY(-70px) translateX(-4px) !important;
+  font-size: 14px !important; color: #0d9488 !important;
+  background: #f8fafc !important; padding: 0 10px !important; font-weight: 900 !important;
+}
+.uv-hide-sel { position: absolute !important; width: 100% !important; height: 100% !important; top: 0; left: 0; opacity: 0; z-index: 5; }
+.ext-btn {
+  position: absolute !important; right: -35px !important; top: 50% !important;
+  transform: translateY(-50%) !important; width: 32px; height: 32px;
+  background: #0d9488; color: white; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: 2px solid #000; box-shadow: 2px 2px 0 #000; z-index: 30;
+}

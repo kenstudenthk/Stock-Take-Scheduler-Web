@@ -1,64 +1,35 @@
-// ShopFormModal.tsx - Part 1
+// ShopFormModal.tsx
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Modal, message, Row, Col, Typography, Select, Divider, AutoComplete, Input } from 'antd';
-import { 
-  InfoCircleOutlined, GlobalOutlined, SearchOutlined, DownOutlined 
-} from '@ant-design/icons';
+import { InfoCircleOutlined, GlobalOutlined, SearchOutlined, DownOutlined } from '@ant-design/icons';
 import { Shop } from '../types';
-import { gcj02towgs84 } from '../utils/coordTransform'; // 導入座標轉換
+import { gcj02towgs84 } from '../utils/coordTransform';
 
 const { Title, Text } = Typography;
 
-interface Props {
-  visible: boolean;
-  shop: Shop | null;
-  onCancel: () => void;
-  onSuccess: () => void;
-  graphToken: string;
-  shops: Shop[];
-}
-
-export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSuccess, graphToken, shops }) => {
+export const ShopFormModal: React.FC<{visible:boolean, shop:Shop|null, onCancel:()=>void, onSuccess:()=>void, graphToken:string, shops:Shop[]}> = ({ visible, shop, onCancel, onSuccess, graphToken, shops }) => {
   const [formData, setFormData] = useState<any>({});
   const [searchText, setSearchText] = useState('');
 
-  // 1. 動態選項提取
   const opts = useMemo(() => {
     const s = shops || [];
     const getU = (k: keyof Shop) => Array.from(new Set(s.map(i => i[k]).filter(Boolean))).sort().map(v => ({ label: v, value: v }));
-    return { brands: getU('brand'), regions: getU('region'), districts: getU('district'), areas: getU('area') };
+    return { brands: getU('brand'), reg: getU('region'), dist: getU('district'), areas: getU('area') };
   }, [shops]);
 
-  // 2. 還原 Location Search (Amap API 模擬搜尋)
-  const handleAmapSearch = (value: string) => {
-    setSearchText(value);
-    // 這裡應呼叫 window.AMap.Autocomplete 或搜尋專案既有門市
-  };
-
+  // 地圖地點搜尋 (模擬 Amap 選中)
   const onLocationSelect = (v: string, o: any) => {
     const s = o.data;
-    // 進行座標轉換
-    const [wgsLng, wgsLat] = gcj02towgs84(s.longitude, s.latitude);
-    setFormData({
-      ...formData,
-      name: s.name,
-      addr_en: s.address,
-      lat: wgsLat,
-      lng: wgsLng
-    });
+    const [wgsLng, wgsLat] = gcj02towgs84(s.longitude || 0, s.latitude || 0);
+    setFormData({ ...formData, name: s.name, addr_en: s.address, lat: wgsLat, lng: wgsLng });
     setSearchText('');
-    message.success("Location coordinates updated.");
+    message.success("Coordinates updated via Amap logic.");
   };
 
   useEffect(() => {
     if (visible && shop) {
-      setFormData({
-        name: shop.name || '', code: shop.id || '', brand: shop.brand || '',
-        region: shop.region || '', district: shop.district || '', area: shop.area || '',
-        addr_en: shop.address || '', lat: shop.latitude || '', lng: shop.longitude || '',
-        bu: shop.businessUnit || '', group: shop.groupId?.toString() || '1'
-      });
+      setFormData({ name: shop.name, code: shop.id, brand: shop.brand, region: shop.region, district: shop.district, area: shop.area, addr_en: shop.address, lat: shop.latitude, lng: shop.longitude, bu: shop.businessUnit, group: shop.groupId?.toString() || '1' });
     }
   }, [shop, visible]);
 
@@ -76,6 +47,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       <span className="floating-label">{l}</span>
     </div></Col>
   );
+
   const onSave = async () => {
     if (!formData.name || !formData.code) return message.warning("Required!");
     const isEdit = !!shop;
@@ -91,16 +63,23 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       <div className="flex justify-between mb-8">
         <div><Title level={3} style={{margin:0, fontWeight:900}}>STORE PROFILE</Title><Text type="secondary">Amap & SharePoint Sync</Text></div>
         <div style={{width:'300px'}}>
-          <AutoComplete onSearch={handleAmapSearch} onSelect={onLocationSelect} value={searchText} style={{width:'100%'}}>
-            <Input.Search placeholder="Search Address for Lat/Lng..." enterButton={<SearchOutlined />} />
+          <AutoComplete onSearch={setSearchText} onSelect={onLocationSelect} value={searchText} style={{width:'100%'}}>
+            <Input.Search placeholder="Search Amap Location..." enterButton={<SearchOutlined />} />
           </AutoComplete>
         </div>
       </div>
       <div className="st-form-section">
         <Divider orientation="left" style={{color:'#0d9488',fontWeight:800}}><InfoCircleOutlined /> BASIC IDENTIFICATION</Divider>
         <Row gutter={[24, 75]}>
-          {renderInp("Official Shop Name", "name", 24)} {renderInp("Shop Code", "code", 8)}
+          {renderInp("Name", "name", 24)} {renderInp("Code", "code", 8)}
           {renderSel("Brand", "brand", opts.brands, 8)} {renderSel("Group", "group", [{label:'A',value:'1'},{label:'B',value:'2'}], 8)}
+        </Row>
+      </div>
+      <div className="st-form-section mt-12">
+        <Divider orientation="left" style={{color:'#0d9488',fontWeight:800}}><GlobalOutlined /> ADDRESS & LOGISTICS</Divider>
+        <Row gutter={[24, 75]}>
+          {renderInp("English Address", "addr_en", 24)} {renderSel("Region", "region", opts.reg, 8)}
+          {renderSel("District", "district", opts.dist, 8)} {renderSel("Area", "area", opts.areas, 8)}
         </Row>
       </div>
       <div className="flex justify-end gap-6 mt-16">

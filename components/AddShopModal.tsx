@@ -1,4 +1,4 @@
-// ShopFormModal.tsx
+// ShopFormModal.tsx - Part 1
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Modal, message, Row, Col, Typography, Select, Divider, AutoComplete, Input } from 'antd';
@@ -152,7 +152,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       <div className="flex justify-between items-start mb-8">
         <div>
           <Title level={3} style={{ margin: 0, fontWeight: 900 }}>{shop ? 'Store Profile Manager' : 'New Store Registration'}</Title>
-          <Text type="secondary">Direct SharePoint Master Data Access</Text>
+          <Text type="secondary">Managing SharePoint records directly.</Text>
         </div>
         <div style={{ width: '280px' }}>
           <AutoComplete options={searchOptions} onSelect={handleSelectSearch} onSearch={setSearchText} value={searchText} style={{ width: '100%' }}>
@@ -171,6 +171,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           {renderInput("System ID", "sys", 12)}
         </Row>
       </div>
+
       <div className="st-form-section mt-12">
         <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800 }}><GlobalOutlined /> ADDRESS & LOGISTICS</Divider>
         <Row gutter={[24, 75]}>
@@ -182,10 +183,12 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           {renderInput("Building / Landmark", "building", 24)}
         </Row>
       </div>
+
       <div className="flex justify-end gap-6 mt-16">
         <button className="px-10 py-3 bg-white border-2 border-black text-black rounded-xl font-black hover:bg-slate-50 shadow-[3px_3px_0_#000] active:translate-y-1 active:shadow-none" onClick={onCancel}>CANCEL</button>
         <button className="px-14 py-3 bg-teal-500 text-white border-2 border-black rounded-xl font-black shadow-[4px_4px_0_#000] hover:bg-teal-600 hover:scale-[1.02]" onClick={handleSubmit}>SAVE RECORDS</button>
       </div>
+
       <style>{`
         .st-inputBox-pro { position: relative; width: 100%; }
         .uiverse-input-field, .uiverse-select-container {

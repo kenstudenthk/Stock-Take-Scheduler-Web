@@ -1,12 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Modal, message, Row, Col, Typography, Select, Divider, AutoComplete, Input } from 'antd';
+import { Modal, message, Row, Col, Typography, Select, Divider, AutoComplete, Input, Button } from 'antd';
 import { 
   InfoCircleOutlined, 
   GlobalOutlined,
-  SearchOutlined
+  SearchOutlined 
 } from '@ant-design/icons';
 import { Shop } from '../types';
-import { SP_FIELDS } from '../constants';
 
 const { Title, Text } = Typography;
 
@@ -23,7 +22,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
   const [formData, setFormData] = useState<any>({});
   const [searchText, setSearchText] = useState('');
 
-  // ✅ 1. 修復 dynamicOptions 邏輯
+  // ✅ 1. 動態提取唯一選項
   const dynamicOptions = useMemo(() => {
     const safeShops = shops || [];
     const getUnique = (key: keyof Shop) => 
@@ -39,7 +38,42 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     };
   }, [shops]);
 
-  // ✅ 2. 修復初始資料載入
+  // ✅ 2. 地點搜尋與座標抓取邏輯 (還原功能)
+  const searchOptions = useMemo(() => {
+    if (!searchText) return [];
+    return shops
+      .filter(s => 
+        s.name?.toLowerCase().includes(searchText.toLowerCase()) || 
+        s.id?.toLowerCase().includes(searchText.toLowerCase())
+      )
+      .map(s => ({
+        label: `${s.id} - ${s.name}`,
+        value: s.id,
+        data: s // 攜帶完整門市資料包括座標
+      }));
+  }, [searchText, shops]);
+
+  const onSearchSelect = (value: string, option: any) => {
+    const s = option.data;
+    setFormData({
+      ...formData,
+      name: s.name,
+      code: s.id,
+      brand: s.brand,
+      region: s.region,
+      district: s.district,
+      area: s.area,
+      addr_en: s.address,
+      bu: s.businessUnit,
+      sys: s.sys,
+      lat: s.latitude, // ✅ 成功抓取緯度
+      lng: s.longitude // ✅ 成功抓取經度
+    });
+    setSearchText('');
+    message.info(`Location data for ${s.name} loaded.`);
+  };
+
+  // ✅ 3. 初始資料載入
   useEffect(() => {
     if (visible) {
       if (shop) {
@@ -53,16 +87,19 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           addr_en: shop.address || '',
           addr_chi: (shop as any).address_chi || '',
           building: (shop as any).building || '',
+          phone: shop.phone || '',
+          contact: shop.contactName || '',
           bu: shop.businessUnit || '',
-          sys: (shop as any).sys || '',
+          lat: shop.latitude || '',
+          lng: shop.longitude || '',
+          group: shop.groupId?.toString() || '1'
         });
       } else {
-        setFormData({});
+        setFormData({ group: '1' });
       }
     }
   }, [shop, visible]);
 
-  // ✅ 3. 定義 handleSubmit 邏輯
   const handleSubmit = async () => {
     if (!formData.name || !formData.code) return message.warning("Shop Name and Code are required!");
     const isEdit = !!shop;
@@ -83,7 +120,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     } catch (err) { message.error("Network Error"); }
   };
 
-  // ✅ 4. 渲染 Input 樣式
   const renderInput = (label: string, key: string, span: number = 12) => (
     <Col span={span}>
       <div className="st-inputBox-pro">
@@ -99,7 +135,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     </Col>
   );
 
-  // ✅ 5. 渲染 Select 組件
   const renderSelect = (label: string, key: string, options: any[], span: number = 12) => (
     <Col span={span}>
       <div className="st-inputBox-pro">
@@ -127,9 +162,24 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       centered 
       bodyStyle={{ padding: '32px', backgroundColor: '#f8fafc' }}
     >
-      <div className="mb-6">
-        <Title level={3} style={{ margin: 0 }}>{shop ? 'Store Profile Manager' : 'New Store Registration'}</Title>
-        <Text type="secondary">Managing SharePoint records directly.</Text>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <Title level={3} style={{ margin: 0 }}>{shop ? 'Store Profile Manager' : 'New Store Registration'}</Title>
+          <Text type="secondary">Managing SharePoint master data.</Text>
+        </div>
+        
+        {/* ✅ Location Search UI */}
+        <div style={{ width: '300px' }}>
+          <AutoComplete
+            options={searchOptions}
+            onSelect={onSearchSelect}
+            onSearch={setSearchText}
+            value={searchText}
+            style={{ width: '100%' }}
+          >
+            <Input.Search placeholder="Search existing location..." enterButton={<SearchOutlined />} />
+          </AutoComplete>
+        </div>
       </div>
 
       <div className="st-form-section">
@@ -154,16 +204,10 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       </div>
 
       <div className="flex justify-end gap-4 mt-8">
-        <button 
-          className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all" 
-          onClick={onCancel}
-        >
+        <button className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all" onClick={onCancel}>
           CANCEL
         </button>
-        <button 
-          className="px-12 py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg hover:bg-teal-700 hover:scale-105 transition-all" 
-          onClick={handleSubmit}
-        >
+        <button className="px-12 py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg hover:bg-teal-700 hover:scale-105 transition-all" onClick={handleSubmit}>
           {shop ? 'UPDATE RECORDS' : 'CREATE RECORD'}
         </button>
       </div>

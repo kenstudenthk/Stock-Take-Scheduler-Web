@@ -132,20 +132,20 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         open={visible} 
         onCancel={onCancel} 
         footer={null} 
-        width={1000} 
+        width={800} /* ✅ 縮小表單寬度以適應螢幕 */
         centered 
-        bodyStyle={{ padding: '80px 40px 40px 40px', backgroundColor: '#f8fafc' }}
+        styles={{ body: { padding: '80px 40px 40px 40px', backgroundColor: '#f8fafc', maxHeight: '90vh', overflowY: 'auto' } }}
       >
         <div className="mb-10">
-          <Title level={2} style={{ margin: 0, fontWeight: 900, fontSize: '28px' }}>{shop ? 'STORE PROFILE MANAGER' : 'NEW STORE REGISTRATION'}</Title>
-          <Text type="secondary" style={{ fontSize: '14px' }}>Real-time SharePoint Data Synchronization</Text>
+          <Title level={3} style={{ margin: 0, fontWeight: 900, fontSize: '24px' }}>{shop ? 'STORE PROFILE MANAGER' : 'NEW STORE REGISTRATION'}</Title>
+          <Text type="secondary" style={{ fontSize: '13px' }}>Managing SharePoint Records</Text>
         </div>
 
         <div className="st-form-section">
-          <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800, fontSize: '12px' }}>
+          <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800, fontSize: '11px' }}>
             <InfoCircleOutlined /> BASIC IDENTIFICATION
           </Divider>
-          <Row gutter={[24, 60]}>
+          <Row gutter={[20, 70]}> {/* ✅ 增加間距給更高的漂浮標題 */}
             {renderInput("Official Shop Name", "name", 24)}
             {renderInput("Shop Code", "code", 8)}
             {renderSelect("Brand", "brand", dynamicOptions.brands, 8)}
@@ -156,10 +156,10 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         </div>
 
         <div className="st-form-section mt-14">
-          <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800, fontSize: '12px' }}>
+          <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800, fontSize: '11px' }}>
             <GlobalOutlined /> ADDRESS & LOGISTICS
           </Divider>
-          <Row gutter={[24, 60]}>
+          <Row gutter={[20, 70]}>
             {renderInput("English Address (Full)", "addr_en", 24)}
             {renderInput("Chinese Address", "addr_chi", 24)}
             {renderSelect("Region", "region", dynamicOptions.regions, 8)}
@@ -184,10 +184,10 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             width: 100%;
           }
 
-          /* --- 1. 基礎容器設定：加粗黑邊框，移除初始陰影 --- */
+          /* --- 1. Input 與 Select 容器 (平常無陰影，僅加粗邊框) --- */
           .uiverse-input-field, .select-container-uiverse {
             width: 100% !important;
-            height: 56px !important;
+            height: 52px !important; /* 稍微縮小一點點高度更精緻 */
             background: white !important;
             border: 2.5px solid #000 !important;
             border-radius: 0.6rem !important;
@@ -197,13 +197,13 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             align-items: center !important;
           }
 
-          /* --- 2. Focus (正在編輯) 時才彈出黑色影子 --- */
+          /* --- 2. Focus (正在編輯) 時才彈出影子 --- */
           .uiverse-input-field:focus, .select-container-uiverse:focus-within {
             box-shadow: 3px 4px 0 #000 !important;
             border-color: #0d9488 !important;
           }
 
-          /* --- 3. 標題：更大 (15px) 且更高 (-68px) --- */
+          /* --- 3. 標題：更高 (-75px) 且背景色完全覆蓋 --- */
           .st-inputBox-pro .floating-label {
             position: absolute;
             left: 16px;
@@ -220,69 +220,70 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             z-index: 20;
           }
 
-          /* 標題浮動：完全跳出黑色邊框 */
+          /* 標題浮動：移動到極高位置，確保遠離邊框 */
           .uiverse-input-field:focus ~ .floating-label,
           .uiverse-input-field:not(:placeholder-shown) ~ .floating-label,
           .select-container-uiverse:focus-within .floating-label,
           .select-container-uiverse.has-value .floating-label {
-            transform: translateY(-68px) translateX(-4px) !important; 
+            transform: translateY(-75px) translateX(-4px) !important; 
             font-size: 14px !important;
             color: #0d9488 !important;
             background: #f8fafc !important; 
-            padding: 0 10px !important;
+            padding: 4px 12px !important; /* 增加 Padding 遮擋後面的線 */
             font-weight: 900 !important;
           }
 
-          /* --- 4. Select 垂直居中終極方案 --- */
-          .select-container-uiverse {
-            padding: 0 !important;
-            overflow: visible !important;
-          }
-
-          /* 強制將 Ant Select 的觸發區域撐滿 56px 高度 */
+          /* --- 4. Select 文字位移終極修正 --- */
           .uiverse-select-field {
             height: 100% !important;
             width: 100% !important;
-          }
-
-          .uiverse-select-field .ant-select-selector {
-            height: 56px !important;
-            line-height: 56px !important;
             display: flex !important;
             align-items: center !important;
-            padding: 0 16px !important;
+          }
+
+          /* 強制重置 Ant Design 內部所有的偏移量 */
+          .uiverse-select-field .ant-select-selector {
+            height: 48px !important;
+            line-height: 48px !important;
+            display: flex !important;
+            align-items: center !important; 
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
+            padding: 0 16px !important;
+            margin: 0 !important;
           }
 
-          /* 選中文字 (Selected Item) 的絕對置中 */
+          /* 關鍵：修正選中文字 (Selected Item) 的垂直位置，不再掉下去 */
           .uiverse-select-field .ant-select-selection-item {
             font-weight: 800 !important;
             font-size: 15px !important;
             color: #000 !important;
             display: flex !important;
             align-items: center !important;
-            height: 56px !important; /* 與容器同高 */
-            line-height: 1 !important; /* 配合 flex-center 使用 */
+            height: 48px !important;
+            line-height: 1 !important; /* 抵消內部的 line-height 繼承 */
             margin: 0 !important;
+            padding: 0 !important;
           }
 
-          /* 佔位符置中 */
           .uiverse-select-field .ant-select-selection-placeholder {
-            line-height: 56px !important;
-            height: 56px !important;
+            line-height: 48px !important;
             display: flex !important;
             align-items: center !important;
-            font-weight: 700;
           }
 
-          /* 搜索輸入框置中 */
+          /* 搜索與圖標置中 */
           .uiverse-select-field .ant-select-selection-search {
             inset-inline-start: 16px !important;
             display: flex !important;
             align-items: center !important;
-            height: 56px !important;
+          }
+          
+          .uiverse-select-field .ant-select-arrow {
+            display: flex !important;
+            align-items: center !important;
+            top: 50% !important;
           }
         `}</style>
       </Modal>

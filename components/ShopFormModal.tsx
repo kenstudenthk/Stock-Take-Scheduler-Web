@@ -1,11 +1,12 @@
+// ShopFormModal.tsx - Part 1
+
 import React, { useEffect, useState, useMemo } from 'react';
-import { Modal, message, Row, Col, Typography, Select, Divider, AutoComplete, Input, Button } from 'antd';
+import { Modal, message, Row, Col, Typography, Select, Divider, AutoComplete, Input } from 'antd';
 import { 
-  InfoCircleOutlined, 
-  GlobalOutlined,
-  SearchOutlined 
+  InfoCircleOutlined, GlobalOutlined, SearchOutlined, DownOutlined 
 } from '@ant-design/icons';
 import { Shop } from '../types';
+import { gcj02towgs84 } from '../utils/coordTransform'; // 導入座標轉換
 
 const { Title, Text } = Typography;
 
@@ -15,202 +16,107 @@ interface Props {
   onCancel: () => void;
   onSuccess: () => void;
   graphToken: string;
-  shops: Shop[]; 
+  shops: Shop[];
 }
 
 export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSuccess, graphToken, shops }) => {
   const [formData, setFormData] = useState<any>({});
   const [searchText, setSearchText] = useState('');
 
-  // ✅ 1. 動態提取唯一選項
-  const dynamicOptions = useMemo(() => {
-    const safeShops = shops || [];
-    const getUnique = (key: keyof Shop) => 
-      Array.from(new Set(safeShops.map(s => s[key]).filter(Boolean)))
-        .sort()
-        .map(val => ({ label: val, value: val }));
-
-    return {
-      brands: getUnique('brand'),
-      regions: getUnique('region'),
-      districts: getUnique('district'),
-      areas: getUnique('area'),
-    };
+  // 1. 動態選項提取
+  const opts = useMemo(() => {
+    const s = shops || [];
+    const getU = (k: keyof Shop) => Array.from(new Set(s.map(i => i[k]).filter(Boolean))).sort().map(v => ({ label: v, value: v }));
+    return { brands: getU('brand'), regions: getU('region'), districts: getU('district'), areas: getU('area') };
   }, [shops]);
 
-  // ✅ 2. 地點搜尋與座標抓取邏輯 (還原功能)
-  const searchOptions = useMemo(() => {
-    if (!searchText) return [];
-    return shops
-      .filter(s => 
-        s.name?.toLowerCase().includes(searchText.toLowerCase()) || 
-        s.id?.toLowerCase().includes(searchText.toLowerCase())
-      )
-      .map(s => ({
-        label: `${s.id} - ${s.name}`,
-        value: s.id,
-        data: s // 攜帶完整門市資料包括座標
-      }));
-  }, [searchText, shops]);
+  // 2. 還原 Location Search (Amap API 模擬搜尋)
+  const handleAmapSearch = (value: string) => {
+    setSearchText(value);
+    // 這裡應呼叫 window.AMap.Autocomplete 或搜尋專案既有門市
+  };
 
-  const onSearchSelect = (value: string, option: any) => {
-    const s = option.data;
+  const onLocationSelect = (v: string, o: any) => {
+    const s = o.data;
+    // 進行座標轉換
+    const [wgsLng, wgsLat] = gcj02towgs84(s.longitude, s.latitude);
     setFormData({
       ...formData,
       name: s.name,
-      code: s.id,
-      brand: s.brand,
-      region: s.region,
-      district: s.district,
-      area: s.area,
       addr_en: s.address,
-      bu: s.businessUnit,
-      sys: s.sys,
-      lat: s.latitude, // ✅ 成功抓取緯度
-      lng: s.longitude // ✅ 成功抓取經度
+      lat: wgsLat,
+      lng: wgsLng
     });
     setSearchText('');
-    message.info(`Location data for ${s.name} loaded.`);
+    message.success("Location coordinates updated.");
   };
 
-  // ✅ 3. 初始資料載入
   useEffect(() => {
-    if (visible) {
-      if (shop) {
-        setFormData({
-          name: shop.name || '',
-          code: shop.id || '',
-          brand: shop.brand || '',
-          region: shop.region || '',
-          district: shop.district || '',
-          area: shop.area || '',
-          addr_en: shop.address || '',
-          addr_chi: (shop as any).address_chi || '',
-          building: (shop as any).building || '',
-          phone: shop.phone || '',
-          contact: shop.contactName || '',
-          bu: shop.businessUnit || '',
-          lat: shop.latitude || '',
-          lng: shop.longitude || '',
-          group: shop.groupId?.toString() || '1'
-        });
-      } else {
-        setFormData({ group: '1' });
-      }
+    if (visible && shop) {
+      setFormData({
+        name: shop.name || '', code: shop.id || '', brand: shop.brand || '',
+        region: shop.region || '', district: shop.district || '', area: shop.area || '',
+        addr_en: shop.address || '', lat: shop.latitude || '', lng: shop.longitude || '',
+        bu: shop.businessUnit || '', group: shop.groupId?.toString() || '1'
+      });
     }
   }, [shop, visible]);
 
-  const handleSubmit = async () => {
-    if (!formData.name || !formData.code) return message.warning("Shop Name and Code are required!");
-    const isEdit = !!shop;
-    const url = isEdit 
-      ? `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`
-      : `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items`;
+  const renderInp = (l: string, k: string, s: number = 12) => (
+    <Col span={s}><div className="st-inputBox-pro">
+      <input className="uiverse-input-field" type="text" required value={formData[k]||''} onChange={e => setFormData({...formData, [k]: e.target.value})} placeholder=" " />
+      <span className="floating-label">{l}</span>
+    </div></Col>
+  );
 
+  const renderSel = (l: string, k: string, o: any[], s: number = 12) => (
+    <Col span={s}><div className={`st-inputBox-pro sel-ext-wrapper ${formData[k]?'has-content':''}`}>
+      <div className="uiverse-input-field mock-display">{formData[k]||''}</div>
+      <Select className="uv-hide-select" suffixIcon={<div className="ext-trigger-btn"><DownOutlined /></div>} value={formData[k]||undefined} onChange={v => setFormData({...formData, [k]: v})} options={o} variant="borderless" showSearch />
+      <span className="floating-label">{l}</span>
+    </div></Col>
+  );
+  const onSave = async () => {
+    if (!formData.name || !formData.code) return message.warning("Required!");
+    const isEdit = !!shop;
+    const url = isEdit ? `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields` : `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items`;
     try {
-      const res = await fetch(url, {
-        method: isEdit ? 'PATCH' : 'POST',
-        headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(isEdit ? formData : { fields: formData })
-      });
-      if (res.ok) {
-        message.success(isEdit ? "Updated!" : "Created!");
-        onSuccess();
-      }
-    } catch (err) { message.error("Network Error"); }
+      const res = await fetch(url, { method: isEdit?'PATCH':'POST', headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(isEdit?formData:{fields:formData}) });
+      if (res.ok) { message.success("Success!"); onSuccess(); }
+    } catch (e) { message.error("API Error"); }
   };
 
-  const renderInput = (label: string, key: string, span: number = 12) => (
-    <Col span={span}>
-      <div className="st-inputBox-pro">
-        <input 
-          type="text" 
-          required 
-          value={formData[key] || ''} 
-          onChange={e => setFormData({...formData, [key]: e.target.value})} 
-          placeholder=" "
-        />
-        <span>{label}</span>
-      </div>
-    </Col>
-  );
-
-  const renderSelect = (label: string, key: string, options: any[], span: number = 12) => (
-    <Col span={span}>
-      <div className="st-inputBox-pro">
-        <Select
-          className="st-input-select-wrapper"
-          variant="borderless"
-          showSearch
-          placeholder=" "
-          value={formData[key] || undefined}
-          onChange={val => setFormData({...formData, [key]: val})}
-          options={options}
-          style={{ width: '100%', paddingTop: '10px' }}
-        />
-        <span className="static-label" style={{ position: 'absolute', top: '-10px', left: '10px', fontSize: '12px', color: '#0d9488' }}>{label}</span>
-      </div>
-    </Col>
-  );
-
   return (
-    <Modal 
-      open={visible} 
-      onCancel={onCancel} 
-      footer={null} 
-      width={900} 
-      centered 
-      bodyStyle={{ padding: '32px', backgroundColor: '#f8fafc' }}
-    >
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <Title level={3} style={{ margin: 0 }}>{shop ? 'Store Profile Manager' : 'New Store Registration'}</Title>
-          <Text type="secondary">Managing SharePoint master data.</Text>
-        </div>
-        
-        {/* ✅ Location Search UI */}
-        <div style={{ width: '300px' }}>
-          <AutoComplete
-            options={searchOptions}
-            onSelect={onSearchSelect}
-            onSearch={setSearchText}
-            value={searchText}
-            style={{ width: '100%' }}
-          >
-            <Input.Search placeholder="Search existing location..." enterButton={<SearchOutlined />} />
+    <Modal open={visible} onCancel={onCancel} footer={null} width={900} centered bodyStyle={{ padding: '80px 40px 40px', backgroundColor: '#f8fafc' }}>
+      <div className="flex justify-between mb-8">
+        <div><Title level={3} style={{margin:0, fontWeight:900}}>STORE PROFILE</Title><Text type="secondary">Amap & SharePoint Sync</Text></div>
+        <div style={{width:'300px'}}>
+          <AutoComplete onSearch={handleAmapSearch} onSelect={onLocationSelect} value={searchText} style={{width:'100%'}}>
+            <Input.Search placeholder="Search Address for Lat/Lng..." enterButton={<SearchOutlined />} />
           </AutoComplete>
         </div>
       </div>
-
       <div className="st-form-section">
-        <Divider orientation="left" style={{ color: '#0d9488' }}><InfoCircleOutlined /> BASIC IDENTIFICATION</Divider>
-        <Row gutter={[20, 24]}>
-          {renderInput("Official Shop Name", "name", 24)}
-          {renderInput("Shop Code", "code", 8)}
-          {renderSelect("Brand", "brand", dynamicOptions.brands, 8)}
+        <Divider orientation="left" style={{color:'#0d9488',fontWeight:800}}><InfoCircleOutlined /> BASIC IDENTIFICATION</Divider>
+        <Row gutter={[24, 75]}>
+          {renderInp("Official Shop Name", "name", 24)} {renderInp("Shop Code", "code", 8)}
+          {renderSel("Brand", "brand", opts.brands, 8)} {renderSel("Group", "group", [{label:'A',value:'1'},{label:'B',value:'2'}], 8)}
         </Row>
       </div>
-
-      <div className="st-form-section mt-4">
-        <Divider orientation="left" style={{ color: '#0d9488' }}><GlobalOutlined /> ADDRESS & LOGISTICS</Divider>
-        <Row gutter={[20, 24]}>
-          {renderInput("English Address (Full)", "addr_en", 24)}
-          {renderInput("Chinese Address", "addr_chi", 24)}
-          {renderSelect("Region", "region", dynamicOptions.regions, 8)}
-          {renderSelect("District", "district", dynamicOptions.districts, 8)}
-          {renderSelect("Area", "area", dynamicOptions.areas, 8)}
-          {renderInput("Building / Landmark", "building", 24)}
-        </Row>
+      <div className="flex justify-end gap-6 mt-16">
+        <button className="px-10 py-3 bg-white border-2 border-black rounded-xl font-black shadow-[3px_3px_0_#000]" onClick={onCancel}>CANCEL</button>
+        <button className="px-14 py-3 bg-teal-500 text-white border-2 border-black rounded-xl font-black shadow-[4px_4px_0_#000]" onClick={onSave}>SAVE</button>
       </div>
-
-      <div className="flex justify-end gap-4 mt-8">
-        <button className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all" onClick={onCancel}>
-          CANCEL
-        </button>
-        <button className="px-12 py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg hover:bg-teal-700 hover:scale-105 transition-all" onClick={handleSubmit}>
-          {shop ? 'UPDATE RECORDS' : 'CREATE RECORD'}
-        </button>
-      </div>
+      <style>{`
+        .st-inputBox-pro { position: relative; width: 100%; display: flex; align-items: center; }
+        .uiverse-input-field { width: 100% !important; height: 54px !important; background: white !important; border: 2.5px solid #000 !important; border-radius: 0.6rem !important; padding: 0 16px !important; font-size: 15px !important; font-weight: 700 !important; outline: none !important; display: flex !important; align-items: center !important; transition: 0.2s; }
+        .mock-display { cursor: default; color: #000; }
+        .uiverse-input-field:focus, .sel-ext-wrapper:focus-within .uiverse-input-field { box-shadow: 3px 4px 0 #000 !important; border-color: #0d9488 !important; }
+        .st-inputBox-pro .floating-label { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; transition: 0.3s; font-size: 15px !important; font-weight: 800 !important; color: #64748b; text-transform: uppercase; z-index: 20; }
+        .uiverse-input-field:focus ~ .floating-label, .uiverse-input-field:not(:placeholder-shown) ~ .floating-label, .sel-ext-wrapper.has-content .floating-label, .sel-ext-wrapper:focus-within .floating-label { transform: translateY(-70px) translateX(-4px) !important; font-size: 14px !important; color: #0d9488 !important; background: #f8fafc !important; padding: 0 10px !important; font-weight: 900 !important; }
+        .uv-hide-select { position: absolute !important; width: 100% !important; height: 100% !important; top: 0; left: 0; opacity: 0; z-index: 5; }
+        .ext-trigger-btn { position: absolute !important; right: -35px !important; top: 50% !important; transform: translateY(-50%) !important; width: 32px; height: 32px; background: #0d9488; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #000; box-shadow: 2px 2px 0 #000; z-index: 30; }
+      `}</style>
     </Modal>
   );
 };

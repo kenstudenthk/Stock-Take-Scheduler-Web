@@ -115,9 +115,17 @@ export const Calendar: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     <div className="flex flex-col lg:flex-row gap-8 bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 min-h-[700px]">
       <div className="flex-1">
         <div className="mb-8 flex justify-between items-start">
-          <div><Title level={3} className="m-0 text-slate-900">Schedule Overview</Title><Text className="text-slate-400 font-medium text-lg">{selectedDate.format('dddd, MMMM D, YYYY')}</Text></div>
-          <Button icon={<ExportOutlined />} onClick={() => setExportModalVisible(true)} className="h-10 rounded-xl font-bold bg-slate-900 text-white border-none shadow-lg px-6">EXPORT</Button>
-        </div>
+  <div>
+    <Title level={3} className="m-0 text-slate-900">Schedule Overview</Title>
+    <Text className="text-slate-400 font-medium text-lg">{selectedDate.format('dddd, MMMM D, YYYY')}</Text>
+  </div>
+  <button 
+    className="uiverse-export-btn" 
+    onClick={() => setExportModalVisible(true)}
+  >
+    <span>EXPORT DATA</span>
+  </button>
+</div>
 
         {dailyData.total > 0 ? (
           <div className="flex flex-col gap-4">
@@ -157,7 +165,77 @@ export const Calendar: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         </div>
       </Modal>
 
-      <style>{`.group-expand-card { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 20px; overflow: hidden; transition: all 0.4s ease; height: 72px; margin-bottom:12px; } .group-expand-card.active { height: auto; max-height: 2000px; background: #fff; border-color: #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); } .group-card-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; } .group-card-detail { opacity: 0; transition: opacity 0.3s; } .group-expand-card.active .group-card-detail { opacity: 1; }`}</style>
+      <style>{`.group-expand-card { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 20px; overflow: hidden; transition: all 0.4s ease; height: 72px; margin-bottom:12px; } .group-expand-card.active { height: auto; max-height: 2000px; background: #fff; border-color: #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); } .group-card-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; } .group-card-detail { opacity: 0; transition: opacity 0.3s; } .group-expand-card.active .group-card-detail { opacity: 1; } /* Calendar.tsx 底部 style 標籤內 */
+
+.uiverse-export-btn {
+  position: relative;
+  margin: 0;
+  padding: 0.8em 1.5em; /* 稍微增加寬度 */
+  outline: none;
+  text-decoration: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border: none;
+  text-transform: uppercase;
+  background-color: #333;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 700; /* 加粗一點更符合系統風格 */
+  font-size: 14px;  /* 稍微縮小以配合介面比例 */
+  font-family: inherit;
+  z-index: 0;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.02, 0.01, 0.47, 1);
+}
+
+.uiverse-export-btn:hover {
+  animation: sh0 0.5s ease-in-out both;
+}
+
+@keyframes sh0 {
+  0% { transform: rotate(0deg) translate3d(0, 0, 0); }
+  25% { transform: rotate(7deg) translate3d(0, 0, 0); }
+  50% { transform: rotate(-7deg) translate3d(0, 0, 0); }
+  75% { transform: rotate(1deg) translate3d(0, 0, 0); }
+  100% { transform: rotate(0deg) translate3d(0, 0, 0); }
+}
+
+.uiverse-export-btn:hover span {
+  animation: storm 0.7s ease-in-out both;
+  animation-delay: 0.06s;
+}
+
+.uiverse-export-btn::before,
+.uiverse-export-btn::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0;
+  transition: transform 0.15s cubic-bezier(0.02, 0.01, 0.47, 1), opacity 0.15s cubic-bezier(0.02, 0.01, 0.47, 1);
+  z-index: -1;
+  transform: translate(100%, -25%) translate3d(0, 0, 0);
+}
+
+.uiverse-export-btn:hover::before,
+.uiverse-export-btn:hover::after {
+  opacity: 0.15;
+  transition: transform 0.2s cubic-bezier(0.02, 0.01, 0.47, 1), opacity 0.2s cubic-bezier(0.02, 0.01, 0.47, 1);
+}
+
+.uiverse-export-btn:hover::before {
+  transform: translate3d(50%, 0, 0) scale(0.9);
+}
+
+.uiverse-export-btn:hover::after {
+  transform: translate(50%, 0) scale(1.1);
+}`}</style>
     </div>
   );
 };

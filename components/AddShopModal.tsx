@@ -1,4 +1,4 @@
-// ShopFormModal.tsx - Part 1
+// ShopFormModal.tsx
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Modal, message, Row, Col, Typography, Select, Divider, AutoComplete, Input } from 'antd';
@@ -9,7 +9,6 @@ import {
   DownOutlined
 } from '@ant-design/icons';
 import { Shop } from '../types';
-import { SP_FIELDS } from '../constants';
 
 const { Title, Text } = Typography;
 
@@ -153,7 +152,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
       <div className="flex justify-between items-start mb-8">
         <div>
           <Title level={3} style={{ margin: 0, fontWeight: 900 }}>{shop ? 'Store Profile Manager' : 'New Store Registration'}</Title>
-          <Text type="secondary">Managing SharePoint records directly.</Text>
+          <Text type="secondary">Direct SharePoint Master Data Access</Text>
         </div>
         <div style={{ width: '280px' }}>
           <AutoComplete options={searchOptions} onSelect={handleSelectSearch} onSearch={setSearchText} value={searchText} style={{ width: '100%' }}>
@@ -161,9 +160,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           </AutoComplete>
         </div>
       </div>
-
-      // ShopFormModal.tsx - Part 2
-
       <div className="st-form-section">
         <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800 }}><InfoCircleOutlined /> BASIC IDENTIFICATION</Divider>
         <Row gutter={[24, 75]}>
@@ -175,7 +171,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           {renderInput("System ID", "sys", 12)}
         </Row>
       </div>
-
       <div className="st-form-section mt-12">
         <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800 }}><GlobalOutlined /> ADDRESS & LOGISTICS</Divider>
         <Row gutter={[24, 75]}>
@@ -187,14 +182,10 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           {renderInput("Building / Landmark", "building", 24)}
         </Row>
       </div>
-
       <div className="flex justify-end gap-6 mt-16">
-        <button className="px-10 py-3 bg-white border-2 border-black text-black rounded-xl font-black hover:bg-slate-50 transition-all shadow-[3px_3px_0_#000] active:translate-y-1 active:shadow-none" onClick={onCancel}>CANCEL</button>
-        <button className="px-14 py-3 bg-teal-500 text-white border-2 border-black rounded-xl font-black shadow-[4px_4px_0_#000] hover:bg-teal-600 hover:scale-[1.02] transition-all" onClick={handleSubmit}>
-          {shop ? 'UPDATE RECORDS' : 'CREATE RECORD'}
-        </button>
+        <button className="px-10 py-3 bg-white border-2 border-black text-black rounded-xl font-black hover:bg-slate-50 shadow-[3px_3px_0_#000] active:translate-y-1 active:shadow-none" onClick={onCancel}>CANCEL</button>
+        <button className="px-14 py-3 bg-teal-500 text-white border-2 border-black rounded-xl font-black shadow-[4px_4px_0_#000] hover:bg-teal-600 hover:scale-[1.02]" onClick={handleSubmit}>SAVE RECORDS</button>
       </div>
-
       <style>{`
         .st-inputBox-pro { position: relative; width: 100%; }
         .uiverse-input-field, .uiverse-select-container {
@@ -207,22 +198,18 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         }
         .st-inputBox-pro .floating-label {
           position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
-          pointer-events: none; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          font-size: 15px !important; font-weight: 800 !important; color: #64748b;
-          text-transform: uppercase; letter-spacing: 0.8px; z-index: 20;
+          pointer-events: none; transition: 0.3s; font-size: 15px !important; font-weight: 800 !important;
+          color: #64748b; text-transform: uppercase; z-index: 20;
         }
-        .uiverse-input-field:focus ~ .floating-label,
-        .uiverse-input-field:not(:placeholder-shown) ~ .floating-label,
-        .uiverse-select-container:focus-within .floating-label,
-        .uiverse-select-container.has-content .floating-label {
-          transform: translateY(-70px) translateX(-4px) !important;
-          font-size: 14px !important; color: #0d9488 !important;
-          background: #f8fafc !important; padding: 4px 10px !important; font-weight: 900 !important;
+        .uiverse-input-field:focus ~ .floating-label, .uiverse-input-field:not(:placeholder-shown) ~ .floating-label,
+        .uiverse-select-container:focus-within .floating-label, .uiverse-select-container.has-content .floating-label {
+          transform: translateY(-70px) translateX(-4px) !important; font-size: 14px !important;
+          color: #0d9488 !important; background: #f8fafc !important; padding: 0 10px !important; font-weight: 900 !important;
         }
         .uiverse-input-field { padding: 0 16px !important; font-size: 15px !important; font-weight: 700 !important; outline: none !important; }
         .uiverse-select-core .ant-select-selector { height: 54px !important; padding: 0 16px !important; display: flex !important; align-items: center !important; }
-        .uiverse-select-core .ant-select-selection-item { font-weight: 800 !important; font-size: 15px !important; line-height: 1 !important; display: flex !important; align-items: center !important; }
-        .external-arrow { position: absolute !important; right: -28px !important; top: 50% !important; transform: translateY(-50%) !important; color: #0d9488 !important; font-size: 14px !important; font-weight: 900 !important; }
+        .uiverse-select-core .ant-select-selection-item { font-weight: 800 !important; font-size: 15px !important; line-height: 54px !important; display: flex !important; align-items: center !important; }
+        .external-arrow { position: absolute !important; right: -28px !important; top: 50% !important; transform: translateY(-50%) !important; color: #0d9488 !important; font-size: 14px !important; }
         .uiverse-select-core .ant-select-arrow { inset-inline-end: -28px !important; }
       `}</style>
     </Modal>

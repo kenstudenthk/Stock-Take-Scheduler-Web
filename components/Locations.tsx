@@ -34,7 +34,6 @@ const SummaryCard = ({ label, value, bgColor, icon }: any) => (
 export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const mapRef = useRef<any>(null);
   const infoWindowRef = useRef<any>(null);
-  // ✅ 修改：使用對象存儲 Marker，方便通過 ID 快速查找
   const markersRef = useRef<{ [key: string]: any }>({}); 
   
   const [search, setSearch] = useState('');
@@ -67,29 +66,56 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     closed: filteredShops.filter(s => s.status === 'Closed').length
   }), [filteredShops]);
 
-  // 2. 地圖初始化
+  // ✅ 2. 地圖初始化與控制項加載
   useEffect(() => {
     if (!window.AMap || mapRef.current) return;
+    
+    // 初始化地圖
     mapRef.current = new window.AMap.Map('map-container', {
-      center: [114.177216, 22.303719], zoom: 11, viewMode: '3D'
+      center: [114.177216, 22.303719], 
+      zoom: 11, 
+      viewMode: '3D', // 3D 模式才能完整使用 ControlBar
+      pitch: 45 // 初始傾斜角度
     });
+
+    // 加載控制項插件
+    window.AMap.plugin(['AMap.ToolBar', 'AMap.MapType', 'AMap.Scale', 'AMap.ControlBar'], () => {
+      // 1. 縮放工具欄 (右下角)
+      mapRef.current.addControl(new window.AMap.ToolBar({
+        position: 'RB',
+        offset: new window.AMap.Pixel(20, 40)
+      }));
+
+      // 2. 地圖類型切換 (右上角 - 衛星圖/普通圖)
+      mapRef.current.addControl(new window.AMap.MapType({
+        defaultType: 0, // 0: 2D, 1: 衛星圖
+        position: 'RT'
+      }));
+
+      // 3. 比例尺 (左下角)
+      mapRef.current.addControl(new window.AMap.Scale());
+
+      // 4. 3D 控制盤 (左上角 - 控制旋轉和俯仰)
+      mapRef.current.addControl(new window.AMap.ControlBar({
+        position: {
+          top: '20px',
+          left: '20px'
+        }
+      }));
+    });
+
     infoWindowRef.current = new window.AMap.InfoWindow({
       offset: new window.AMap.Pixel(0, -20)
     });
   }, []);
 
-  // ✅ 3. 地圖聯動：列表點擊處理函數
+  // 3. 地圖聯動：列表點擊處理函數
   const handleShopClick = (shop: Shop) => {
     const marker = markersRef.current[shop.id];
     if (marker && mapRef.current) {
       const [lng, lat] = wgs84ToGcj02(shop.longitude, shop.latitude);
-      
-      // 1. 地圖平滑位移並放大
       mapRef.current.setZoomAndCenter(17, [lng, lat], false, 600); 
-
-      // 2. 觸發 Marker 的點擊事件來開啟 InfoWindow
       marker.emit('click', { target: marker });
-      
       message.success(`Focusing on: ${shop.name}`, 1);
     } else {
       message.warning("Marker not found on map.");
@@ -100,7 +126,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   useEffect(() => {
     if (!mapRef.current) return;
     
-    // 清除舊的 Marker
     const existingMarkers = Object.values(markersRef.current);
     if (existingMarkers.length > 0) {
       mapRef.current.remove(existingMarkers);
@@ -145,7 +170,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         infoWindowRef.current.open(mapRef.current, [lng, lat]);
       });
 
-      // ✅ 將 Marker 存入引用以供列表點擊時調用
       markersRef.current[shop.id] = marker;
       newMarkersList.push(marker);
     });
@@ -156,7 +180,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* 標頭 */}
       <div className="flex justify-between items-center">
         <div>
           <Title level={2} className="m-0 text-slate-800">Interactive Map</Title>
@@ -164,7 +187,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         </div>
       </div>
 
-      {/* Summary Boxes */}
       <Row gutter={[20, 20]}>
         <Col span={6}><SummaryCard label="Total on Map" value={stats.total} bgColor="#1e293b" icon={<ShopOutlined style={{color:'white'}} />} /></Col>
         <Col span={6}><SummaryCard label="Completed" value={stats.completed} bgColor="#10b981" icon={<CheckCircleOutlined style={{color:'white'}} />} /></Col>
@@ -172,7 +194,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         <Col span={6}><SummaryCard label="Closed" value={stats.closed} bgColor="#ef4444" icon={<CloseCircleOutlined style={{color:'white'}} />} /></Col>
       </Row>
 
-      {/* Filter Bar */}
       <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
         <Space size="large">
           <Space><CalendarOutlined className="text-teal-600" /><Text strong className="uppercase text-[11px] tracking-widest">Date Filter:</Text></Space>
@@ -184,7 +205,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         </div>
       </div>
 
-      {/* Legend 圖例區域 */}
       <div className="flex items-center gap-6 px-2">
         <Space size={4} className="text-slate-400"><TagsOutlined /><Text className="text-[10px] uppercase font-black tracking-widest">Legend:</Text></Space>
         <div className="flex gap-4 flex-wrap">
@@ -198,10 +218,8 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       </div>
 
       <div className="flex gap-6 h-[720px]">
-        {/* 地圖容器 */}
         <div id="map-container" className="flex-1 rounded-[40px] overflow-hidden border border-slate-100 shadow-sm bg-slate-50" style={{ height: '100%', width: '100%' }}></div>
         
-        {/* 右側面板 */}
         <div className="w-[400px] flex flex-col gap-4">
           <Card className="rounded-[32px] border-none shadow-sm" bodyStyle={{ padding: '24px' }}>
               <div className="flex items-center gap-2 mb-4 text-teal-600"><FilterOutlined /><Text strong className="uppercase tracking-widest text-[11px]">Quick Search</Text></div>
@@ -222,7 +240,6 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
                 const groupLetter = shop.groupId ? String.fromCharCode(64 + shop.groupId) : '-';
 
                 return (
-                  // ✅ 增加 onClick 聯動
                   <div 
                     key={shop.id} 
                     onClick={() => handleShopClick(shop)}

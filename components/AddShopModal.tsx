@@ -1,4 +1,4 @@
-// ShopFormModal.tsx
+// ShopFormModal.tsx - Part 1
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Modal, message, Row, Col, Typography, Select, Divider, AutoComplete, Input } from 'antd';
@@ -26,14 +26,12 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
   const [formData, setFormData] = useState<any>({});
   const [searchText, setSearchText] = useState('');
 
-  // ✅ 1. 動態提取唯一選項
   const dynamicOptions = useMemo(() => {
     const safeShops = shops || []; 
     const getUnique = (key: keyof Shop) => 
       Array.from(new Set(safeShops.map(s => s[key]).filter(Boolean)))
         .sort()
         .map(val => ({ label: val, value: val }));
-
     return {
       bus: getUnique('businessUnit'),
       brands: getUnique('brand'),
@@ -43,7 +41,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     };
   }, [shops]);
 
-  // ✅ 2. 地點快速搜尋邏輯 (Location Search)
   const searchOptions = useMemo(() => {
     if (!searchText) return [];
     return shops
@@ -75,7 +72,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     setSearchText('');
   };
 
-  // ✅ 3. 初始資料載入
   useEffect(() => {
     if (visible) {
       if (shop) {
@@ -105,24 +101,15 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     }
   }, [shop, visible]);
 
-  // ✅ 4. 渲染文字框 (標題移動 + 僅在 Focus 時顯示陰影)
   const renderInput = (label: string, key: string, span: number = 12) => (
     <Col span={span}>
       <div className="st-inputBox-pro">
-        <input 
-          className="uiverse-input-field" 
-          type="text" 
-          required 
-          value={formData[key] || ''} 
-          onChange={e => setFormData({...formData, [key]: e.target.value})} 
-          placeholder=" " 
-        />
+        <input className="uiverse-input-field" type="text" required value={formData[key] || ''} onChange={e => setFormData({...formData, [key]: e.target.value})} placeholder=" " />
         <span className="floating-label">{label}</span>
       </div>
     </Col>
   );
 
-  // ✅ 5. 渲染下拉選單 (箭頭移至右側框外)
   const renderSelect = (label: string, key: string, options: any[], span: number = 12) => {
     const hasValue = formData[key] !== undefined && formData[key] !== '';
     return (
@@ -151,138 +138,93 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     const url = isEdit 
       ? `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`
       : `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items`;
-
     try {
       const res = await fetch(url, {
         method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(isEdit ? formData : { fields: formData })
       });
-      if (res.ok) {
-        message.success(isEdit ? "Updated!" : "Created!");
-        onSuccess();
-      }
+      if (res.ok) { message.success(isEdit ? "Updated!" : "Created!"); onSuccess(); }
     } catch (err) { message.error("Network Error"); }
   };
 
   return (
-    <>
-      <Modal 
-        open={visible} 
-        onCancel={onCancel} 
-        footer={null} 
-        width={900} 
-        centered 
-        bodyStyle={{ padding: '80px 40px 40px 40px', backgroundColor: '#f8fafc' }}
-      >
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <Title level={3} style={{ margin: 0, fontWeight: 900 }}>{shop ? 'Store Profile Manager' : 'New Store Registration'}</Title>
-            <Text type="secondary">Managing SharePoint records directly.</Text>
-          </div>
-          
-          <div style={{ width: '280px' }}>
-            <AutoComplete
-              options={searchOptions}
-              onSelect={handleSelectSearch}
-              onSearch={setSearchText}
-              value={searchText}
-              style={{ width: '100%' }}
-            >
-              <Input.Search placeholder="Quick Search Shop..." enterButton={<SearchOutlined />} />
-            </AutoComplete>
-          </div>
+    <Modal open={visible} onCancel={onCancel} footer={null} width={900} centered bodyStyle={{ padding: '80px 40px 40px 40px', backgroundColor: '#f8fafc' }}>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <Title level={3} style={{ margin: 0, fontWeight: 900 }}>{shop ? 'Store Profile Manager' : 'New Store Registration'}</Title>
+          <Text type="secondary">Managing SharePoint records directly.</Text>
         </div>
-
-        <div className="st-form-section">
-          <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800 }}><InfoCircleOutlined /> BASIC IDENTIFICATION</Divider>
-          <Row gutter={[24, 75]}>
-            {renderInput("Official Shop Name", "name", 24)}
-            {renderInput("Shop Code", "code", 8)}
-            {renderSelect("Brand", "brand", dynamicOptions.brands, 8)}
-            {renderSelect("Schedule Group", "group", [{label:'Group A', value:'1'},{label:'Group B', value:'2'},{label:'Group C', value:'3'}], 8)}
-            {renderSelect("Business Unit", "bu", dynamicOptions.bus, 12)}
-            {renderInput("System ID", "sys", 12)}
-          </Row>
+        <div style={{ width: '280px' }}>
+          <AutoComplete options={searchOptions} onSelect={handleSelectSearch} onSearch={setSearchText} value={searchText} style={{ width: '100%' }}>
+            <Input.Search placeholder="Quick Search Shop..." enterButton={<SearchOutlined />} />
+          </AutoComplete>
         </div>
+      </div>
 
-        <div className="st-form-section mt-12">
-          <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800 }}><GlobalOutlined /> ADDRESS & LOGISTICS</Divider>
-          <Row gutter={[24, 75]}>
-            {renderInput("English Address (Full)", "addr_en", 24)}
-            {renderInput("Chinese Address", "addr_chi", 24)}
-            {renderSelect("Region", "region", dynamicOptions.regions, 8)}
-            {renderSelect("District", "district", dynamicOptions.districts, 8)}
-            {renderSelect("Area", "area", dynamicOptions.areas, 8)}
-            {renderInput("Building / Landmark", "building", 24)}
-          </Row>
-        </div>
+      // ShopFormModal.tsx - Part 2
 
-        <div className="flex justify-end gap-6 mt-16">
-          <button className="px-10 py-3 bg-white border-2 border-black text-black rounded-xl font-black hover:bg-slate-50 transition-all shadow-[3px_3px_0_#000] active:translate-y-1 active:shadow-none" onClick={onCancel}>
-            CANCEL
-          </button>
-          <button className="px-14 py-3 bg-teal-500 text-white border-2 border-black rounded-xl font-black shadow-[5px_5px_0_#000] hover:bg-teal-600 hover:scale-[1.02] transition-all" onClick={handleSubmit}>
-            {shop ? 'UPDATE RECORDS' : 'CREATE RECORD'}
-          </button>
-        </div>
+      <div className="st-form-section">
+        <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800 }}><InfoCircleOutlined /> BASIC IDENTIFICATION</Divider>
+        <Row gutter={[24, 75]}>
+          {renderInput("Official Shop Name", "name", 24)}
+          {renderInput("Shop Code", "code", 8)}
+          {renderSelect("Brand", "brand", dynamicOptions.brands, 8)}
+          {renderSelect("Schedule Group", "group", [{label:'Group A', value:'1'},{label:'Group B', value:'2'},{label:'Group C', value:'3'}], 8)}
+          {renderSelect("Business Unit", "bu", dynamicOptions.bus, 12)}
+          {renderInput("System ID", "sys", 12)}
+        </Row>
+      </div>
 
-        <style>{`
-          .st-inputBox-pro { position: relative; width: 100%; }
+      <div className="st-form-section mt-12">
+        <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800 }}><GlobalOutlined /> ADDRESS & LOGISTICS</Divider>
+        <Row gutter={[24, 75]}>
+          {renderInput("English Address (Full)", "addr_en", 24)}
+          {renderInput("Chinese Address", "addr_chi", 24)}
+          {renderSelect("Region", "region", dynamicOptions.regions, 8)}
+          {renderSelect("District", "district", dynamicOptions.districts, 8)}
+          {renderSelect("Area", "area", dynamicOptions.areas, 8)}
+          {renderInput("Building / Landmark", "building", 24)}
+        </Row>
+      </div>
 
-          .uiverse-input-field, .uiverse-select-container {
-            width: 100% !important;
-            height: 54px !important;
-            background: white !important;
-            border: 2.5px solid #000 !important;
-            border-radius: 0.6rem !important;
-            transition: all 0.2s ease !important;
-            display: flex !important;
-            align-items: center !important;
-            box-shadow: none !important;
-          }
+      <div className="flex justify-end gap-6 mt-16">
+        <button className="px-10 py-3 bg-white border-2 border-black text-black rounded-xl font-black hover:bg-slate-50 transition-all shadow-[3px_3px_0_#000] active:translate-y-1 active:shadow-none" onClick={onCancel}>CANCEL</button>
+        <button className="px-14 py-3 bg-teal-500 text-white border-2 border-black rounded-xl font-black shadow-[4px_4px_0_#000] hover:bg-teal-600 hover:scale-[1.02] transition-all" onClick={handleSubmit}>
+          {shop ? 'UPDATE RECORDS' : 'CREATE RECORD'}
+        </button>
+      </div>
 
-          .uiverse-input-field:focus, .uiverse-select-container:focus-within {
-            box-shadow: 3px 4px 0 #000 !important;
-            border-color: #0d9488 !important;
-          }
-
-          .st-inputBox-pro .floating-label {
-            position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
-            pointer-events: none; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 15px !important; font-weight: 800 !important; color: #64748b;
-            text-transform: uppercase; letter-spacing: 0.8px; z-index: 20;
-          }
-
-          .uiverse-input-field:focus ~ .floating-label,
-          .uiverse-input-field:not(:placeholder-shown) ~ .floating-label,
-          .uiverse-select-container:focus-within .floating-label,
-          .uiverse-select-container.has-content .floating-label {
-            transform: translateY(-70px) translateX(-4px) !important;
-            font-size: 14px !important; color: #0d9488 !important;
-            background: #f8fafc !important; padding: 4px 10px !important; font-weight: 900 !important;
-          }
-
-          .uiverse-input-field { padding: 0 16px !important; font-size: 15px !important; font-weight: 700 !important; outline: none !important; }
-
-          .uiverse-select-core .ant-select-selector {
-            height: 54px !important; padding: 0 16px !important;
-            display: flex !important; align-items: center !important;
-          }
-
-          .uiverse-select-core .ant-select-selection-item {
-            font-weight: 800 !important; font-size: 15px !important; line-height: 1 !important; display: flex !important; align-items: center !important;
-          }
-
-          .external-arrow {
-            position: absolute !important; right: -28px !important; top: 50% !important;
-            transform: translateY(-50%) !important; color: #0d9488 !important;
-            font-size: 14px !important; font-weight: 900 !important;
-          }
-
-          .uiverse-select-core .ant-select-arrow { inset-inline-end: -28px !important; }
-        `}</style>
-      </Modal>
-    </>
+      <style>{`
+        .st-inputBox-pro { position: relative; width: 100%; }
+        .uiverse-input-field, .uiverse-select-container {
+          width: 100% !important; height: 54px !important; background: white !important;
+          border: 2.5px solid #000 !important; border-radius: 0.6rem !important;
+          transition: all 0.2s ease !important; display: flex !important; align-items: center !important;
+        }
+        .uiverse-input-field:focus, .uiverse-select-container:focus-within {
+          box-shadow: 3px 4px 0 #000 !important; border-color: #0d9488 !important;
+        }
+        .st-inputBox-pro .floating-label {
+          position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+          pointer-events: none; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          font-size: 15px !important; font-weight: 800 !important; color: #64748b;
+          text-transform: uppercase; letter-spacing: 0.8px; z-index: 20;
+        }
+        .uiverse-input-field:focus ~ .floating-label,
+        .uiverse-input-field:not(:placeholder-shown) ~ .floating-label,
+        .uiverse-select-container:focus-within .floating-label,
+        .uiverse-select-container.has-content .floating-label {
+          transform: translateY(-70px) translateX(-4px) !important;
+          font-size: 14px !important; color: #0d9488 !important;
+          background: #f8fafc !important; padding: 4px 10px !important; font-weight: 900 !important;
+        }
+        .uiverse-input-field { padding: 0 16px !important; font-size: 15px !important; font-weight: 700 !important; outline: none !important; }
+        .uiverse-select-core .ant-select-selector { height: 54px !important; padding: 0 16px !important; display: flex !important; align-items: center !important; }
+        .uiverse-select-core .ant-select-selection-item { font-weight: 800 !important; font-size: 15px !important; line-height: 1 !important; display: flex !important; align-items: center !important; }
+        .external-arrow { position: absolute !important; right: -28px !important; top: 50% !important; transform: translateY(-50%) !important; color: #0d9488 !important; font-size: 14px !important; font-weight: 900 !important; }
+        .uiverse-select-core .ant-select-arrow { inset-inline-end: -28px !important; }
+      `}</style>
+    </Modal>
   );
 };

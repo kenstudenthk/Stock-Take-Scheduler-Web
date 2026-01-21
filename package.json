@@ -17,9 +17,16 @@
     "dayjs": "^1.11.13",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
+<<<<<<< HEAD
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind": "^4.0.0"
+=======
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+>>>>>>> e19f44a (Update canlander.tsx)
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

@@ -43,7 +43,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     };
   }, [shops]);
 
-  // ✅ 2. 地點快速搜尋邏輯
+  // ✅ 2. 地點快速搜尋邏輯 (Location Search)
   const searchOptions = useMemo(() => {
     if (!searchText) return [];
     return shops
@@ -122,7 +122,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
     </Col>
   );
 
-  // ✅ 5. 渲染下拉選單 (模擬文字框外觀 + 箭頭移至右側框外)
+  // ✅ 5. 渲染下拉選單 (箭頭移至右側框外)
   const renderSelect = (label: string, key: string, options: any[], span: number = 12) => {
     const hasValue = formData[key] !== undefined && formData[key] !== '';
     return (
@@ -171,7 +171,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
         open={visible} 
         onCancel={onCancel} 
         footer={null} 
-        width={900} /* 保持您腳本中的寬度 */
+        width={900} 
         centered 
         bodyStyle={{ padding: '80px 40px 40px 40px', backgroundColor: '#f8fafc' }}
       >
@@ -181,7 +181,6 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
             <Text type="secondary">Managing SharePoint records directly.</Text>
           </div>
           
-          {/* ✅ 還原搜尋功能 */}
           <div style={{ width: '280px' }}>
             <AutoComplete
               options={searchOptions}
@@ -197,7 +196,7 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
 
         <div className="st-form-section">
           <Divider orientation="left" style={{ color: '#0d9488', fontWeight: 800 }}><InfoCircleOutlined /> BASIC IDENTIFICATION</Divider>
-          <Row gutter={[24, 75]}> {/* 增加垂直間距給高漂浮標題 */}
+          <Row gutter={[24, 75]}>
             {renderInput("Official Shop Name", "name", 24)}
             {renderInput("Shop Code", "code", 8)}
             {renderSelect("Brand", "brand", dynamicOptions.brands, 8)}
@@ -223,4 +222,67 @@ export const ShopFormModal: React.FC<Props> = ({ visible, shop, onCancel, onSucc
           <button className="px-10 py-3 bg-white border-2 border-black text-black rounded-xl font-black hover:bg-slate-50 transition-all shadow-[3px_3px_0_#000] active:translate-y-1 active:shadow-none" onClick={onCancel}>
             CANCEL
           </button>
-          <button className="px-14 py-3 bg-teal-500 text-white border-2 border-black rounded-xl font-black shadow-
+          <button className="px-14 py-3 bg-teal-500 text-white border-2 border-black rounded-xl font-black shadow-[5px_5px_0_#000] hover:bg-teal-600 hover:scale-[1.02] transition-all" onClick={handleSubmit}>
+            {shop ? 'UPDATE RECORDS' : 'CREATE RECORD'}
+          </button>
+        </div>
+
+        <style>{`
+          .st-inputBox-pro { position: relative; width: 100%; }
+
+          .uiverse-input-field, .uiverse-select-container {
+            width: 100% !important;
+            height: 54px !important;
+            background: white !important;
+            border: 2.5px solid #000 !important;
+            border-radius: 0.6rem !important;
+            transition: all 0.2s ease !important;
+            display: flex !important;
+            align-items: center !important;
+            box-shadow: none !important;
+          }
+
+          .uiverse-input-field:focus, .uiverse-select-container:focus-within {
+            box-shadow: 3px 4px 0 #000 !important;
+            border-color: #0d9488 !important;
+          }
+
+          .st-inputBox-pro .floating-label {
+            position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+            pointer-events: none; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 15px !important; font-weight: 800 !important; color: #64748b;
+            text-transform: uppercase; letter-spacing: 0.8px; z-index: 20;
+          }
+
+          .uiverse-input-field:focus ~ .floating-label,
+          .uiverse-input-field:not(:placeholder-shown) ~ .floating-label,
+          .uiverse-select-container:focus-within .floating-label,
+          .uiverse-select-container.has-content .floating-label {
+            transform: translateY(-70px) translateX(-4px) !important;
+            font-size: 14px !important; color: #0d9488 !important;
+            background: #f8fafc !important; padding: 4px 10px !important; font-weight: 900 !important;
+          }
+
+          .uiverse-input-field { padding: 0 16px !important; font-size: 15px !important; font-weight: 700 !important; outline: none !important; }
+
+          .uiverse-select-core .ant-select-selector {
+            height: 54px !important; padding: 0 16px !important;
+            display: flex !important; align-items: center !important;
+          }
+
+          .uiverse-select-core .ant-select-selection-item {
+            font-weight: 800 !important; font-size: 15px !important; line-height: 1 !important; display: flex !important; align-items: center !important;
+          }
+
+          .external-arrow {
+            position: absolute !important; right: -28px !important; top: 50% !important;
+            transform: translateY(-50%) !important; color: #0d9488 !important;
+            font-size: 14px !important; font-weight: 900 !important;
+          }
+
+          .uiverse-select-core .ant-select-arrow { inset-inline-end: -28px !important; }
+        `}</style>
+      </Modal>
+    </>
+  );
+};

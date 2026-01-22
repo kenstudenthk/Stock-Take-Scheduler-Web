@@ -130,36 +130,39 @@ background-color: var(--bg-header) !important;
 /* ✅ 3. 懸浮選單主體 (UI Verse 風格) */
 .uiverse-sidebar-wrapper {
   position: fixed;
-  left: 1.5rem;
+  left: 1rem;       /* 這裡可以微調整個側邊欄的左邊距 */
   top: 0;
-  height: 100vh;    /* 佔滿全高 */
-  width: 4rem;      /* 設定寬度確保 Logo 與選單對齊 */
+  height: 100vh;
+  width: 5rem;      /* 固定寬度，方便 Logo 置中 */
   z-index: 2000;
   display: flex;
   flex-direction: column;
-  pointer-events: none; /* 防止透明容器遮擋背景 */
+  justify-content: center; /* ✅ 讓選單內容 (ul) 垂直置中 */
+  align-items: center;
 }
 
 .nav-brand-logo, .uiverse-nav-ul {
   pointer-events: auto;
 }
 
+/* ✅ 修正 ST Logo：對齊 Header 並稍微往左移 */
 .nav-brand-logo {
-pointer-events: auto;
+  position: absolute;  /* ✅ 使用絕對定位，脫離 Flex 佈局的自動分配 */
+  top: 1.25rem;        /* ✅ 這裡調整上下位置，與您的 Header 內容對齊 */
+  left: 0.5rem;        /* ✅ 這裡調整左右位置，增加或減少值來往左/往右移 */
+  
   color: #05043e;
   font-weight: 900;
   font-size: 1.6rem;
   letter-spacing: -1px;
-  /* 根據您 Header 的 padding/height 調整，通常 1.5rem ~ 2rem 即可對齊 */
-  margin-top: 2rem; 
   text-align: center;
-  transition: opacity 0.3s;
+  width: 100%;        /* 配合容器寬度 */
 }
 
 .uiverse-nav-ul {
 pointer-events: auto;
   list-style: none;
-  margin: auto 0;   /* margin: auto 會自動推擠上下空間達到置中 */
+  margin: 0;   /* margin: auto 會自動推擠上下空間達到置中 */
   padding: 0.75rem;
   background-color: #05043e;
   display: flex;

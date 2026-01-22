@@ -103,144 +103,113 @@ background-color: var(--bg-header) !important;
 /* ============================================================
    3. CURVED SIDEBAR NAVIGATION (圓弧缺口側邊欄)
    ============================================================ */
-.custom-sider {
-  background: var(--sidebar-bg) !important;
-  height: 100vh !important;
-  position: sticky !important;
-  top: 0;
-  left: 0;
-  z-index: 100;
-  overflow: visible !important;
-}
-
-.navigation {
-  position: relative;
-  height: 100vh;
-  width: 100%;
+.uiverse-nav-wrapper {
+  position: fixed;
+  left: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Prevent sidebar itself from scrolling if possible */
-}
-
-.navigation ul {
-  flex: 1; /* This pushes the theme toggle to the absolute bottom */
-  padding-left: 10px;
-  margin-top: 10px;
-  overflow-y: auto; /* If you have many menu items, only the menu list scrolls, not the whole sidebar */
-}
-
-/* Ensure the main area fills remaining space correctly */
-.main-content-area {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.main-scroll-content {
-  flex: 1;
-  overflow-y: auto;
-  background-color: var(--bg-header) !important;
-}
-
-.navigation ul li {
-  position: relative;
-  width: 100%;
-  list-style: none;
-  border-top-left-radius: 30px;
-  border-bottom-left-radius: 30px;
-  margin-bottom: 2px;
-}
-
-/* 核心：選中時的背景必須與主內容區背景 (--bg-main) 同色 */
-.navigation ul li.active {
-  background: var(--bg-main) !important;
-  position: relative;
-  z-index: 500;
-  border-top-left-radius: 30px;
-  border-bottom-left-radius: 30px;
-  box-shadow: -10px 0 20px -10px rgba(0, 0, 0, 0.2);
-}
-
-
-
-.navigation ul li a {
-  display: flex;
-  width: 100%;
-  color: #fff;
-  text-decoration: none;
   align-items: center;
 }
 
-.navigation ul li.active a {
-  color: var(--sidebar-bg); /* 選中時文字/圖標變回深藍色 */
+.nav-brand-logo {
+  color: #05043e;
+  font-weight: 900;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  letter-spacing: -1px;
 }
 
-.navigation ul li a .icon {
-  min-width: 60px;
-  height: 60px;
+.uiverse-nav-ul {
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem;
+  background-color: #05043e;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  box-shadow: 0 10px 50px 0 rgba(5, 4, 62, 0.25);
+}
+
+.uiverse-nav-ul li + li {
+  margin-top: 0.75rem;
+}
+
+/* 分隔線 */
+.nav-li-separator {
+  margin-top: 2rem !important;
+  padding-top: 1rem;
+  border-top: 1px solid #363664;
+}
+
+.uiverse-nav-ul a {
+  color: #FFF;
+  text-decoration: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5em;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* 選中時的圖標彈跳動畫 */
-.navigation ul li.active a .icon {
-  animation: navBounce 0.4s ease-out;
+.uiverse-nav-ul a:hover, 
+.uiverse-nav-ul a.active {
+  background-color: #30305a;
 }
 
-@keyframes navBounce {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); }
-  100% { transform: scale(1); }
+.uiverse-nav-ul a i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.navigation ul li a .title {
-  padding: 0 10px;
-  font-weight: 600;
+/* ✅ Tooltip Span 樣式 */
+.uiverse-nav-ul a span {
+  position: absolute;
+  background-color: #30305a;
+  color: #fff;
   white-space: nowrap;
-}
-
-.navigation ul::-webkit-scrollbar {
-  display: none;
-}
-.navigation ul li.active::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: -20px; /* 向右延伸覆蓋陰影線 */
-  width: 25px;
-  height: 100%;
-  background: var(--bg-main);
-  z-index: 501;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  left: calc(100% + 1.5rem);
+  transform-origin: center left;
+  transform: scale(0);
+  opacity: 0;
+  transition: .15s ease;
   pointer-events: none;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-/* 經典上下弧形缺口 (調整以適應新架構) */
-.navigation ul li.active a::before {
-  content: '';
+/* Tooltip 三角形箭頭 */
+.uiverse-nav-ul a span:before {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
   position: absolute;
-  top: -20px;
-  right: -20px; /* 同步向右移 */
-  width: 20px;
-  height: 20px;
-  background: transparent;
-  border-bottom-right-radius: 20px;
-  box-shadow: 10px 10px 0 10px var(--bg-main);
+  background-color: #30305a;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  border-radius: 2px;
 }
 
-.navigation ul li.active a::after {
-  content: '';
-  position: absolute;
-  bottom: -20px;
-  right: -20px; /* 同步向右移 */
-  width: 20px;
-  height: 20px;
-  background: transparent;
-  border-top-right-radius: 20px;
-  box-shadow: 10px -10px 0 10px var(--bg-main);
+/* ✅ 滑鼠懸停顯示 Tooltip */
+.uiverse-nav-ul a:hover span {
+  transform: scale(1);
+  opacity: 1;
 }
 
+.logout-btn:hover {
+  background-color: #ef4444 !important;
+}
 
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

@@ -37,11 +37,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
     setConfirmPassword('');
   };
 
-  // ✅ 核心修正：手動觸發切換，避免 Checkbox 冒泡覆寫
-  const handleModeSwitch = (e: React.MouseEvent, targetMode: 'set' | 'change') => {
-    e.preventDefault(); // 阻止冒泡
+  // ✅ 修復 1：手動模式切換，避免事件冒泡干擾
+  const switchMode = (e: React.MouseEvent, target: 'set' | 'change') => {
+    e.preventDefault();
     e.stopPropagation();
-    setMode(targetMode);
+    setMode(target);
     setIsFlipped(true);
     resetFields();
   };
@@ -109,13 +109,18 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
     }
   };
 
-  return (
-    <div className="login-viewport-wrapper">
+ return (
+    <div className="login-viewport-wrapper" onClick={(e) => e.stopPropagation()}>
       <div className="status-indicator">
-        <div className="custom-tooltip">
-          <div className="icon" style={{ backgroundColor: isConnected ? '#4caf50' : '#f44336' }}>i</div>
-          <div className="tooltiptext">{isConnected ? "SPO: OK" : "Token Error"}</div>
-        </div>
+        <div 
+          className="status-circle" 
+          style={{ backgroundColor: isConnected ? '#4caf50' : '#f44336' }}
+        />
+        {!isConnected && (
+          <span className="status-error-text animate-fade-in">
+            Please go Setting update Token
+          </span>
+        )}
       </div>
 
       <div className="main-login-container">

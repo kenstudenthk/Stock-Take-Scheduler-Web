@@ -23,30 +23,24 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 定義選單數據
-  const topMenuItems = [
+  // 定義選單
+  const menuItems = [
     { key: View.DASHBOARD, label: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
     { key: View.SHOP_LIST, label: 'Master List', icon: <Package />, path: '/shop-list' },
     { key: View.CALENDAR, label: 'Schedules', icon: <CalendarIcon />, path: '/calendar' },
     { key: View.GENERATOR, label: 'Generator', icon: <ShieldAlert />, path: '/generator' },
     { key: View.LOCATIONS, label: 'Map View', icon: <MapPin />, path: '/locations' },
-  ];
-
-  const bottomMenuItems = [
     { key: View.INVENTORY, label: 'Inventory', icon: <FileWarning />, path: '/inventory' },
-    { key: View.SETTINGS, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];
 
   return (
-    <div className="flex w-full bg-[#f2f5f7]">
-      
-      {/* ✅ 側邊導航容器 */}
-      <aside className="side-nav-container">
-        <div className="nav-st-logo">ST</div>
+    <div className="app-layout-root">
+      {/* ✅ 這裡改用你提供的 HTML 結構，完全不使用 Ant Design */}
+      <aside className="uiverse-sidebar-nav">
+        <div className="nav-brand-st">ST</div>
         
-        <ul className="uiverse-nav-ul">
-          {/* 上半部分選單 */}
-          {topMenuItems.map((item) => (
+        <ul className="nav-ul-container">
+          {menuItems.map((item) => (
             <li key={item.key}>
               <a 
                 onClick={() => navigate(item.path)}
@@ -58,28 +52,26 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
             </li>
           ))}
 
-          {/* ✅ 下半部分選單 (從第 6 項開始，加上分隔線) */}
-          {bottomMenuItems.map((item, index) => (
-            <li key={item.key} className={index === 0 ? 'nav-item-separator' : ''}>
-              <a 
-                onClick={() => navigate(item.path)}
-                className={location.pathname === item.path ? 'active' : ''}
-              >
-                <i>{item.icon}</i>
-                <span>{item.label}</span>
-              </a>
-            </li>
-          ))}
+          {/* 分隔線 (Settings 之前) */}
+          <li className="nav-item-separator">
+            <a 
+              onClick={() => navigate('/settings')}
+              className={location.pathname === '/settings' ? 'active' : ''}
+            >
+              <i><SettingsIcon /></i>
+              <span>Settings</span>
+            </a>
+          </li>
 
-          {/* Profile & Logout */}
           <li>
-            <a className="profile-link">
+            <a className="profile-nav-link">
               <i><User /></i>
               <span>{user?.Name || 'Profile'}</span>
             </a>
           </li>
+
           <li>
-            <a onClick={onLogout} className="logout-nav-item">
+            <a onClick={onLogout} className="logout-nav-link">
               <i><LogOut /></i>
               <span>Logout</span>
             </a>
@@ -87,8 +79,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
         </ul>
       </aside>
 
-      {/* 主內容區 */}
-      <main className="main-content-layout">
+      {/* ✅ 主內容區域：不需要再被 Layout 包裹 */}
+      <main className="app-main-content">
         {children}
       </main>
     </div>

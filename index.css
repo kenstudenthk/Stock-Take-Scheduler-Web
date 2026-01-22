@@ -1972,7 +1972,7 @@ background-color: var(--bg-header) !important;
   width: 60px;
   height: 26px;
   cursor: pointer;
-  margin: 0 auto 600px auto; 
+  margin: 0 auto 20px auto; 
 }
 
 .slider-base {
@@ -1995,11 +1995,16 @@ background-color: var(--bg-header) !important;
 .side-labels::after { content: 'Security'; left: 75px; }
 
 .flip-card-container {
-  position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
-  width: 380px; height: 560px; transition: transform 0.8s; transform-style: preserve-3d;
+  position: relative;
+  width: 380px;
+  height: 560px;
+  transition: transform 0.8s;
+  transform-style: preserve-3d;
 }
 
-.hidden-toggle:checked ~ .flip-card-container { transform: translateX(-50%) rotateY(180deg); }
+.flip-card-container.is-flipped {
+  transform: rotateY(180deg);
+}
 
 .flip-card-front-side, .flip-card-back-side {
   position: absolute; inset: 0; padding: 30px 35px; backface-visibility: hidden;
@@ -2050,7 +2055,7 @@ background-color: var(--bg-header) !important;
   font-weight: 800; 
   font-size: 1.1rem; 
   margin-top: auto; /* 確保按鈕推到底部 */
-  margin-bottom: 10px;
+  margin-bottom: 15px;
   box-shadow: 4px 4px #323232;
 }
 

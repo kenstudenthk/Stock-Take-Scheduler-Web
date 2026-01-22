@@ -33,45 +33,28 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
     { key: View.INVENTORY, label: 'Inventory', icon: <FileWarning />, path: '/inventory' },
   ];
 
-  return (
-    <div className="app-layout-root">
-      {/* ✅ 這裡改用你提供的 HTML 結構，完全不使用 Ant Design */}
-      <aside className="uiverse-sidebar-nav">
-        <div className="nav-brand-st">ST</div>
-        
-        <ul className="nav-ul-container">
+ return (
+    <div className="flex w-full bg-[#f2f5f7]">
+      {/* 側邊導航 */}
+      <aside className="uiverse-sidebar-wrapper">
+        <div className="nav-st-logo">ST</div>
+        <ul className="uiverse-nav-ul">
           {menuItems.map((item) => (
             <li key={item.key}>
-              <a 
-                onClick={() => navigate(item.path)}
-                className={location.pathname === item.path ? 'active' : ''}
-              >
+              <a onClick={() => navigate(item.path)} className={location.pathname === item.path ? 'active' : ''}>
                 <i>{item.icon}</i>
                 <span>{item.label}</span>
               </a>
             </li>
           ))}
-
-          {/* 分隔線 (Settings 之前) */}
-          <li className="nav-item-separator">
-            <a 
-              onClick={() => navigate('/settings')}
-              className={location.pathname === '/settings' ? 'active' : ''}
-            >
+          <li className="nav-item-sep">
+            <a onClick={() => navigate('/settings')} className={location.pathname === '/settings' ? 'active' : ''}>
               <i><SettingsIcon /></i>
               <span>Settings</span>
             </a>
           </li>
-
           <li>
-            <a className="profile-nav-link">
-              <i><User /></i>
-              <span>{user?.Name || 'Profile'}</span>
-            </a>
-          </li>
-
-          <li>
-            <a onClick={onLogout} className="logout-nav-link">
+            <a onClick={onLogout} className="logout-nav-btn">
               <i><LogOut /></i>
               <span>Logout</span>
             </a>
@@ -79,10 +62,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
         </ul>
       </aside>
 
-      {/* ✅ 主內容區域：不需要再被 Layout 包裹 */}
-      <main className="app-main-content">
+      {/* 主內容區：ml-[110px] 給左邊側邊欄留位置 */}
+      <main className="flex-1 p-8 ml-[110px] min-h-screen overflow-auto">
         {children}
       </main>
     </div>
-  );
-};
+);

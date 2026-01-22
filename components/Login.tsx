@@ -139,15 +139,17 @@ const handleModeSwitch = (e: React.MouseEvent, targetMode: 'set' | 'change') => 
             />
             <span className="slider-base"></span>
             <span className="side-labels"></span>
+            </label>
+        </div>
 
-            <div className="flip-card-container">
-              {/* --- 正面：Log In --- */}
-              <div className="flip-card-front-side" onClick={(e) => e.stopPropagation()}>
-                <form className="inner-form" onSubmit={handleLogin}>
-                  <div className="text-center">
-                    <h2 className="brand-title">Team Login</h2>
-                    <Text type="secondary" style={{ fontSize: '11px' }}>Stock Take Scheduler</Text>
-                  </div>
+     <div className={`flip-card-container ${isFlipped ? 'is-flipped' : ''}`}>
+          {/* --- Front: Log In --- */}
+          <div className="flip-card-front-side">
+            <form className="inner-form" onSubmit={handleLogin}>
+              <div className="text-center">
+                <h2 className="brand-title">Team Login</h2>
+                <Text type="secondary" style={{ fontSize: '11px' }}>Stock Take Scheduler</Text>
+              </div>
                  <div className="form-content-area">
                     <div className="field-group">
                       <label className="field-label">Alias Email</label>
@@ -169,7 +171,7 @@ const handleModeSwitch = (e: React.MouseEvent, targetMode: 'set' | 'change') => 
               {/* --- 背面：Security --- */}
               <div className="flip-card-back-side" onClick={(e) => e.stopPropagation()}>
                 <form className="inner-form" onSubmit={handleConfirmAction}>
-                  <div className="text-center mb-1">
+                  <div className="text-center">
                     <h2 className="brand-title" style={{ color: mode === 'change' ? '#3b82f6' : '#44d8a4' }}>
                       {mode === 'change' ? 'Change Password' : 'Set Password'}
                     </h2>
@@ -200,15 +202,15 @@ const handleModeSwitch = (e: React.MouseEvent, targetMode: 'set' | 'change') => 
                   <button className={`main-submit-btn ${mode === 'change' ? 'change-mode-hover' : ''}`} type="submit" disabled={loading}>
                     {mode === 'change' ? 'UPDATE NOW' : 'SAVE CREDENTIALS'}
                   </button>
-                  <div className="bottom-link-group">
+                  <div className="bottom-link">
                     <span className="bottom-link" onClick={() => setIsFlipped(false)}>Back to <a>Log in</a></span>
-                  </div>
+                  
                 </form>
               </div>
             </div>
-          </label>
+          
         </div>
       </div>
-    </div>
+   
   );
 };

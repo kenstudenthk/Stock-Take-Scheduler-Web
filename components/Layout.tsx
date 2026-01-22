@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  HomeOutlined, 
+HomeOutlined, 
   EnvironmentOutlined, 
   DatabaseOutlined, 
   CalendarOutlined, 
@@ -8,7 +8,8 @@ import {
   SettingOutlined, 
   LogoutOutlined, 
   UserOutlined, 
-  SafetyCertificateOutlined 
+  SafetyCertificateOutlined,
+  BugOutlined
 } from '@ant-design/icons';
 import { View } from '../types';
 

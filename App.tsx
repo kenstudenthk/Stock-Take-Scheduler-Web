@@ -22,7 +22,7 @@ import { Login } from './components/Login';
 import SharePointService from './services/SharePointService';
 import './index.css';
 
-const { Content, Header, Sider } = Layout;
+//const { Content, Header, Sider } = Layout;
 const { Text } = Typography;
 
 // 權限檢查工具

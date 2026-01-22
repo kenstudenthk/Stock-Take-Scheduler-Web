@@ -171,45 +171,77 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                 </form>
               </div>
 
-              {/* --- 背面：Set / Change Password --- */}
-              <div className="flip-card-back-side">
-                <form className="inner-form" onSubmit={handleConfirmUpdatePassword}>
-                  <div className="text-center mb-1">
-                    <h2 className="brand-title" style={{ color: mode === 'change' ? '#3b82f6' : '#44d8a4' }}>
-                      {mode === 'change' ? 'Change Password' : 'Set Password'}
-                    </h2>
-                    <Text type="secondary" style={{ fontSize: '11px' }}>Update SPO PasswordHash</Text>
-                  </div>
+             {/* --- 背面：Set / Change Password --- */}
+<div className="flip-card-back-side">
+  <form className="inner-form" onSubmit={handleConfirmUpdatePassword}>
+    <div className="text-center mb-1">
+      {/* 標題會隨模式動態改變顏色和文字 */}
+      <h2 className="brand-title" style={{ color: mode === 'change' ? '#3b82f6' : '#44d8a4' }}>
+        {mode === 'change' ? 'Change Password' : 'Set Password'}
+      </h2>
+      <Text type="secondary" style={{ fontSize: '11px' }}>
+        {mode === 'change' ? 'Identity Verification Required' : 'Create New Credentials'}
+      </Text>
+    </div>
 
-                  <div className="field-group">
-                    <label className="field-label">Alias Email</label>
-                    <input type="text" placeholder="Enter Alias Email" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
-                  </div>
+    <div className="field-group">
+      <label className="field-label">Alias Email</label>
+      <input 
+        type="text" 
+        placeholder="Enter Alias Email" 
+        value={aliasemail} 
+        onChange={(e) => setAliasemail(e.target.value)} 
+      />
+    </div>
 
-                  {mode === 'change' && (
-                    <div className="field-group">
-                      <label className="field-label" style={{ color: '#3b82f6' }}>Old Password</label>
-                      <input type="password" placeholder="Verify Old Password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
-                    </div>
-                  )}
+    {/* ✅ 關鍵修復：確保這裡的邏輯能正確渲染 Old Password */}
+    {mode === 'change' && (
+      <div className="field-group animate-fade-in">
+        <label className="field-label" style={{ color: '#3b82f6' }}>Old Password</label>
+        <input 
+          type="password" 
+          placeholder="Verify Current Password" 
+          value={oldPassword} 
+          style={{ border: '2px solid #3b82f6' }} // 增加視覺區分
+          onChange={(e) => setOldPassword(e.target.value)} 
+          required={mode === 'change'}
+        />
+      </div>
+    )}
 
-                  <div className="field-group">
-                    <label className="field-label">New Password</label>
-                    <input type="password" placeholder="Enter New Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                  </div>
+    <div className="field-group">
+      <label className="field-label">New Password</label>
+      <input 
+        type="password" 
+        placeholder="Enter New Password" 
+        value={password} 
+        onChange={(e) => setPassword(e.target.value)} 
+      />
+    </div>
 
-                  <div className="field-group">
-                    <label className="field-label">Confirm New Password</label>
-                    <input type="password" placeholder="Re-enter New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                  </div>
+    <div className="field-group">
+      <label className="field-label">Confirm New Password</label>
+      <input 
+        type="password" 
+        placeholder="Re-enter New Password" 
+        value={confirmPassword} 
+        onChange={(e) => setConfirmPassword(e.target.value)} 
+      />
+    </div>
 
-                  <button className={`main-submit-btn ${mode === 'change' ? 'change-btn' : 'confirm-mode'}`} type="submit" disabled={loading}>
-                    {mode === 'change' ? 'Update Now' : 'Save Credentials'}
-                  </button>
-                  
-                  <span className="bottom-link" onClick={() => { setIsFlipped(false); resetFields(); }}>Back to <a>Log in</a></span>
-                </form>
-              </div>
+    <button 
+      className={`main-submit-btn ${mode === 'change' ? 'change-btn' : 'confirm-mode'}`} 
+      type="submit" 
+      disabled={loading}
+    >
+      {mode === 'change' ? 'UPDATE NOW' : 'SAVE PASSWORD'}
+    </button>
+    
+    <span className="bottom-link" onClick={() => { setIsFlipped(false); resetFields(); }}>
+      Back to <a>Log in</a>
+    </span>
+  </form>
+</div>
             </div>
           </label>
         </div>

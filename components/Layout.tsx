@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-HomeOutlined, 
+  HomeOutlined, 
   EnvironmentOutlined, 
   DatabaseOutlined, 
   CalendarOutlined, 
@@ -31,7 +31,7 @@ export const Layout: React.FC<LayoutProps> = ({
   onReportError
 }) => {
   
-const menuItems = [
+  const menuItems = [
     { key: View.DASHBOARD, label: 'Dashboard', icon: <HomeOutlined /> },
     { key: View.SHOP_LIST, label: 'Master List', icon: <DatabaseOutlined /> },
     { key: View.CALENDAR, label: 'Schedules', icon: <CalendarOutlined /> },
@@ -40,11 +40,13 @@ const menuItems = [
     { key: View.INVENTORY, label: 'Inventory', icon: <WarningOutlined /> },
   ];
 
-return (
+  return (
     <div className="flex h-screen w-full bg-[#f2f5f7] overflow-hidden">
-      {/* 懸浮側邊欄 */}
+      
       <aside className="uiverse-sidebar-wrapper">
+        {/* ✅ Logo 獨立於選單之外 */}
         <div className="nav-brand-logo">ST</div>
+        
         <ul className="uiverse-nav-ul">
           {menuItems.map((item) => (
             <li key={item.key}>
@@ -58,7 +60,6 @@ return (
             </li>
           ))}
 
-          {/* 分隔線與功能項 */}
           <li className="nav-item-sep">
             <a 
               onClick={() => onViewChange(View.SETTINGS)}
@@ -69,9 +70,9 @@ return (
             </a>
           </li>
           
-          <li onClick={onReportError}>
-            <a className="report-link">
-              <i className="text-red-400"><WarningOutlined /></i>
+          <li>
+            <a className="report-link" onClick={onReportError}>
+              <i className="text-red-400"><BugOutlined /></i>
               <span className="text-red-400">Report Error</span>
             </a>
           </li>
@@ -92,8 +93,7 @@ return (
         </ul>
       </aside>
 
-      {/* 主內容區 */}
-      <main className="flex-1 overflow-y-auto p-8 ml-[110px]">
+      <main className="flex-1 overflow-y-auto p-8 ml-[100px]">
         {children}
       </main>
     </div>

@@ -49,40 +49,45 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
     }
   };
 
+// Login.tsx
+
 const handleConfirmSetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!aliasemail || !password || !confirmPassword) return message.warning("請填寫所有欄位");
-    if (password !== confirmPassword) return message.error("兩次輸入的密碼不符");
+  e.preventDefault();
+  
+  // 基礎檢查
+  if (!aliasemail || !password || !confirmPassword) return message.warning("請填寫所有欄位");
+  if (password !== confirmPassword) return message.error("兩次輸入的密碼不符");
 
-    setLoading(true);
-    const hide = message.loading("正在加密並更新密碼...", 0); // 0 表示不自動消失
+  setLoading(true);
+  const hide = message.loading("正在安全加密並更新至 SharePoint...", 0);
 
-    try {
-      // ✅ 1. 生成加密文字 (Hash)
-      // 使用 10 作為 salt rounds
-      const salt = bcrypt.genSaltSync(10);
-      const hash = bcrypt.hashSync(password, salt);
+  try {
+    // ✅ STEP 1: 使用 bcryptjs 加密密碼
+    // saltRounds = 10 是平衡安全與速度的最佳設定
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(password, salt);
 
-      // ✅ 2. 調用 SharePoint Service 進行更新
-      // 假設您的 sharePointService 有 updatePassword 方法
-      const success = await sharePointService.updatePasswordByEmail(aliasemail, hash);
+    // ✅ STEP 2: 調用 Service 將加密後的 Hash 傳回 SPO
+    const isSuccess = await sharePointService.updatePasswordByEmail(aliasemail, hash);
 
-      if (success) {
-        message.success("密碼設定成功，請重新登入！");
-        setIsFlipped(false);
-        setPassword(''); // 清空密碼欄位
-        setConfirmPassword('');
-      } else {
-        message.error("更新失敗：找不到帳號或連線中斷");
-      }
-    } catch (err) {
-      console.error(err);
-      message.error("發生錯誤，請稍後再試");
-    } finally {
-      hide(); // 隱藏 Loading
-      setLoading(false);
+    if (isSuccess) {
+      message.success("密碼設定成功！依家可以登入。");
+      
+      // 清空欄位並翻轉回登入畫面
+      setPassword('');
+      setConfirmPassword('');
+      setIsFlipped(false);
+    } else {
+      message.error("更新失敗：找不到帳號 'AliasEmail' 或連線錯誤");
     }
-  };
+  } catch (err) {
+    console.error("Login Component Error:", err);
+    message.error("發生系統錯誤，請檢查網路連線");
+  } finally {
+    hide(); // 關閉 Loading
+    setLoading(false);
+  }
+};
 
   return (
     <div className="login-viewport-wrapper">

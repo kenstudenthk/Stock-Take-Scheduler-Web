@@ -201,72 +201,67 @@ function App() {
   };
 
   // ✅ 最終渲染結構：完全捨棄 Ant Design Layout 標籤
-  return (
-    <ConfigProvider theme={themeConfig}>
-      {/* 判斷是否顯示 Login 介面 (全屏) */}
-      {!currentUser && selectedMenuKey !== View.SETTINGS ? (
-        <Login 
-          sharePointService={sharePointService} 
-          onLoginSuccess={(user) => {
-            setCurrentUser(user);
-            sessionStorage.setItem('currentUser', JSON.stringify(user));
-          }} 
-        />
-      ) : (
-        /* ✅ 使用自定義的 Layout (Tooltip Sidebar 樣式) */
-        <Layout 
-          onLogout={handleLogout} 
-          user={currentUser}
-          // 注意：確保你的 components/Layout.tsx 接收這些 props
-        >
-          {/* 這裡是原本 Header 區域的功能：放在頂部 */}
-          <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4">
-              {!isInitialLoading && hasTokenError && !loading && <TruckFlagNotice />}
-              <Button 
-                icon={<SyncOutlined spin={loading} />} 
-                onClick={() => fetchAllData(graphToken)}
-                className="rounded-lg font-semibold"
-              >
-                Refresh Data
-              </Button>
-              <Tag color="processing" className="rounded-md px-3 font-bold">POOL: {allShops.length}</Tag>
-            </div>
-
-            {/* 這裡顯示當前用戶或是 Guest 標籤 */}
-            <div className="flex items-center gap-3">
-              {currentUser ? (
-                <div className="flex items-center gap-2">
-                  <div className="text-right">
-                    <div className="text-[12px] font-bold text-gray-800">{currentUser.Name}</div>
-                    <div className="text-[10px] text-gray-500 uppercase">{currentUser.UserRole}</div>
-                  </div>
-                  <Avatar 
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.Name}`}
-                    className="border-2 border-teal-500"
-                  />
-                </div>
-              ) : (
-                <Tag color="orange" className="font-bold uppercase">Setup Mode (Guest)</Tag>
-              )}
-            </div>
-          </div>
-
-          {/* 核心內容視圖 */}
-          <div className="view-container">
-            {renderContent()}
-          </div>
-        </Layout>
-      )}
-
-      {/* 錯誤回報 Modal */}
-      <ErrorReport 
-        visible={reportModalVisible} 
-        onCancel={() => setReportModalVisible(false)} 
-        token={graphToken} 
+// App.tsx 結尾的渲染邏輯
+return (
+  <ConfigProvider
+    theme={{
+      token: {
+        colorPrimary: '#05043e',
+        borderRadius: 8,
+      },
+    }}
+  >
+    {/* 如果未登入且不是 Settings，顯示 Login */}
+    {!currentUser && selectedMenuKey !== View.SETTINGS ? (
+      <Login 
+        sharePointService={sharePointService} 
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          sessionStorage.setItem('currentUser', JSON.stringify(user));
+        }} 
       />
-    </ConfigProvider>
-  );
+    ) : (
+      /* ✅ 使用我們新寫的自定義 Layout (在 components/Layout.tsx) */
+      <Layout onLogout={handleLogout} user={currentUser}>
+        
+        {/* 頂部控制列：原本 Header 的內容 */}
+        <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center gap-4">
+            <Button 
+              icon={<SyncOutlined spin={loading} />} 
+              onClick={() => fetchAllData(graphToken)}
+            >
+              Refresh Data
+            </Button>
+            <Tag color="cyan">POOL: {allShops.length}</Tag>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {currentUser && (
+              <>
+                <div className="text-right">
+                  <div className="text-[12px] font-bold">{currentUser.Name}</div>
+                  <div className="text-[10px] text-gray-400">{currentUser.UserRole}</div>
+                </div>
+                <Avatar src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.Name}`} />
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 頁面內容 */}
+        {renderContent()}
+      </Layout>
+    )}
+
+    {/* 錯誤回報彈窗 */}
+    <ErrorReport 
+      visible={reportModalVisible} 
+      onCancel={() => setReportModalVisible(false)} 
+      token={graphToken} 
+    />
+  </ConfigProvider>
+);
 }
 
 export default App;

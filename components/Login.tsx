@@ -38,13 +38,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
   };
 
   // ✅ 修復 1：手動模式切換，避免事件冒泡干擾
-  const switchMode = (e: React.MouseEvent, target: 'set' | 'change') => {
-    e.preventDefault();
-    e.stopPropagation();
-    setMode(target);
-    setIsFlipped(true);
-    resetFields();
-  };
+const handleModeSwitch = (e: React.MouseEvent, targetMode: 'set' | 'change') => {
+  e.preventDefault(); 
+  e.stopPropagation(); // 阻止冒泡，防止觸發外層 checkbox
+  setMode(targetMode);
+  setIsFlipped(true);
+  resetFields();
+};
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -144,20 +144,22 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
               {/* --- 正面：Log In --- */}
               <div className="flip-card-front-side" onClick={(e) => e.stopPropagation()}>
                 <form className="inner-form" onSubmit={handleLogin}>
-                  <div className="text-center mb-1">
+                  <div className="text-center">
                     <h2 className="brand-title">Team Login</h2>
                     <Text type="secondary" style={{ fontSize: '11px' }}>Stock Take Scheduler</Text>
                   </div>
-                  <div className="field-group">
-                    <label className="field-label">Alias Email</label>
-                    <input type="text" placeholder="kilson.km.li@pccw.com" value={aliasemail} onChange={e => setAliasemail(e.target.value)} />
-                  </div>
-                  <div className="field-group">
-                    <label className="field-label">Password</label>
-                    <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
+                 <div className="form-content-area">
+                    <div className="field-group">
+                      <label className="field-label">Alias Email</label>
+                      <input type="text" placeholder="kilson.km.li@pccw.com" value={aliasemail} onChange={e => setAliasemail(e.target.value)} />
+                    </div>
+                    <div className="field-group">
+                      <label className="field-label">Password</label>
+                      <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
+                    </div>
                   </div>
                   <button className="main-submit-btn" type="submit" disabled={loading}>LOG IN</button>
-                  <div className="flex flex-col gap-2 mt-4">
+                  <div className="bottom-link-group">
                     <span className="bottom-link" onClick={(e) => handleModeSwitch(e, 'set')}>First time? <a>Set Password</a></span>
                     <span className="bottom-link" onClick={(e) => handleModeSwitch(e, 'change')}>Forgot? <a>Change Password</a></span>
                   </div>
@@ -172,10 +174,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                       {mode === 'change' ? 'Change Password' : 'Set Password'}
                     </h2>
                   </div>
-                  <div className="field-group">
-                    <label className="field-label">Alias Email</label>
-                    <input type="text" value={aliasemail} onChange={e => setAliasemail(e.target.value)} />
-                  </div>
+                  <div className="form-content-area">
+                    <div className="field-group">
+                      <label className="field-label">Alias Email</label>
+                      <input type="text" value={aliasemail} onChange={e => setAliasemail(e.target.value)} />
+                    </div>
 
                   {/* ✅ 正確渲染 Old Password */}
                   {mode === 'change' && (
@@ -193,10 +196,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                     <label className="field-label">Confirm New Password</label>
                     <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
                   </div>
+                    </div>
                   <button className={`main-submit-btn ${mode === 'change' ? 'change-mode-hover' : ''}`} type="submit" disabled={loading}>
                     {mode === 'change' ? 'UPDATE NOW' : 'SAVE CREDENTIALS'}
                   </button>
-                  <span className="bottom-link" onClick={() => setIsFlipped(false)}>Back to <a>Log in</a></span>
+                  <div className="bottom-link-group">
+                    <span className="bottom-link" onClick={() => setIsFlipped(false)}>Back to <a>Log in</a></span>
+                  </div>
                 </form>
               </div>
             </div>

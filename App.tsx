@@ -180,7 +180,6 @@ function App() {
       return (
         <Login 
           sharePointService={sharePointService} 
-          onUpdateToken={updateGraphToken}
           onLoginSuccess={(user) => {
             setCurrentUser(user);
             sessionStorage.setItem('currentUser', JSON.stringify(user));
@@ -201,106 +200,72 @@ function App() {
     }
   };
 
+  // ✅ 最終渲染結構：完全捨棄 Ant Design Layout 標籤
   return (
-    <Layout className="h-screen flex flex-row theme-transition overflow-hidden">
-      {/* --- 左邊 Sidebar：永遠顯示 --- */}
-      <Sider trigger={null} collapsible collapsed={collapsed} width={260} className="custom-sider h-screen sticky top-0 left-0">
-        <div className={`navigation ${collapsed ? 'active' : ''} flex flex-col justify-between h-full pb-4`}>
-          <div className="flex flex-col">
-            <div className={`flex items-center px-6 py-8 ${collapsed ? 'justify-center flex-col' : 'justify-between'}`}>
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-lg">
-                  <span style={{ fontWeight: 900, fontSize: '18px' }}>ST</span>
-                </div>
-                {!collapsed && (
-                  <div className="flex flex-col">
-                    <h1 className="text-base font-bold leading-none text-white">Stock Take</h1>
-                    <p className="text-[10px] font-medium text-teal-400 mt-1 uppercase tracking-widest">Pro</p>
-                  </div>
-                )}
-              </div>
-              <div className={`${collapsed ? 'mt-6' : ''}`}>
-                <input type="checkbox" id="checkbox" checked={!collapsed} onChange={() => setCollapsed(!collapsed)} />
-                <label htmlFor="checkbox" className="toggle" style={{ transform: collapsed ? 'scale(0.5)' : 'scale(0.7)' }}>
-                  <div className="bars" id="bar1"></div><div className="bars" id="bar2"></div><div className="bars" id="bar3"></div>
-                </label>
-              </div>
+    <ConfigProvider theme={themeConfig}>
+      {/* 判斷是否顯示 Login 介面 (全屏) */}
+      {!currentUser && selectedMenuKey !== View.SETTINGS ? (
+        <Login 
+          sharePointService={sharePointService} 
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            sessionStorage.setItem('currentUser', JSON.stringify(user));
+          }} 
+        />
+      ) : (
+        /* ✅ 使用自定義的 Layout (Tooltip Sidebar 樣式) */
+        <Layout 
+          onLogout={handleLogout} 
+          user={currentUser}
+          // 注意：確保你的 components/Layout.tsx 接收這些 props
+        >
+          {/* 這裡是原本 Header 區域的功能：放在頂部 */}
+          <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4">
+              {!isInitialLoading && hasTokenError && !loading && <TruckFlagNotice />}
+              <Button 
+                icon={<SyncOutlined spin={loading} />} 
+                onClick={() => fetchAllData(graphToken)}
+                className="rounded-lg font-semibold"
+              >
+                Refresh Data
+              </Button>
+              <Tag color="processing" className="rounded-md px-3 font-bold">POOL: {allShops.length}</Tag>
             </div>
-            <ul>
-              {[
-                { k: View.DASHBOARD, i: <HomeOutlined />, l: 'Dashboard' },
-                { k: View.SHOP_LIST, i: <UnorderedListOutlined />, l: 'Master List' },
-                { k: View.CALENDAR, i: <CalendarOutlined />, l: 'Schedules' },
-                { k: View.GENERATOR, i: <ToolOutlined />, l: 'Generator' },
-                { k: View.LOCATIONS, i: <ShopOutlined />, l: 'Map View' },
-                { k: View.INVENTORY, i: <UnorderedListOutlined />, l: 'Inventory' },
-                { k: View.SETTINGS, i: <SettingOutlined />, l: 'Settings' },
-              ].map(item => (
-                <li key={item.k} className={`list ${selectedMenuKey === item.k ? 'active' : ''}`} onClick={() => setSelectedMenuKey(item.k)}>
-                  <a href="#"><span className="icon">{item.i}</span>{!collapsed && <span className="title">{item.l}</span>}</a>
-                </li>
-              ))}
-              <li className="list mt-auto" onClick={() => setReportModalVisible(true)}>
-                <a href="#">
-                  <span className="icon text-red-400"><BugOutlined /></span>
-                  {!collapsed && <span className="title text-red-400 font-bold">Report Error</span>}
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div className="flex justify-center items-center px-4">
-            <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
-          </div>
-        </div>
-      </Sider>
-      
-      {/* --- 右邊區域 --- */}
-      <Layout className="flex flex-1 flex-col overflow-hidden main-content-area">
-        {/* 如果未登入且唔係 Settings，顯示 Login 覆蓋右邊 */}
-        {(!currentUser && selectedMenuKey !== View.SETTINGS) ? (
-          <div className="h-full w-full">
-            <Login 
-              sharePointService={sharePointService} 
-              onUpdateToken={updateGraphToken}
-              onLoginSuccess={(user) => {
-                setCurrentUser(user);
-                sessionStorage.setItem('currentUser', JSON.stringify(user));
-              }} 
-            />
-          </div>
-        ) : (
-          <>
-            <Header className="app-header px-8 flex justify-between items-center h-16 border-b flex-shrink-0 bg-white">
-              {!isInitialLoading && hasTokenError && !loading ? <TruckFlagNotice /> : <div className="flex-1" />}
-              <Space size="large">
-                <Button icon={<SyncOutlined spin={loading} />} onClick={() => fetchAllData(graphToken)}>Refresh</Button>
-                <Tag color="cyan" className="font-bold">POOL: {allShops.length}</Tag>
-                {currentUser ? (
-                  <div className="flex items-center gap-2 cursor-pointer" onClick={handleLogout} title="點擊登出">
-                    <Avatar src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.Name}`} />
-                    <div className="flex flex-col leading-tight">
-                      <Text strong style={{ fontSize: '12px' }}>{currentUser.Name}</Text>
-                      <Text type="secondary" style={{ fontSize: '10px' }}>{currentUser.UserRole}</Text>
-                    </div>
-                  </div>
-                ) : (
-                  <Tag color="orange">GUEST (SETUP)</Tag>
-                )}
-              </Space>
-            </Header>
-            <Content className="main-scroll-content p-8 overflow-y-auto h-full">
-              {renderContent()}
-            </Content>
-          </>
-        )}
-      </Layout>
 
+            {/* 這裡顯示當前用戶或是 Guest 標籤 */}
+            <div className="flex items-center gap-3">
+              {currentUser ? (
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <div className="text-[12px] font-bold text-gray-800">{currentUser.Name}</div>
+                    <div className="text-[10px] text-gray-500 uppercase">{currentUser.UserRole}</div>
+                  </div>
+                  <Avatar 
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.Name}`}
+                    className="border-2 border-teal-500"
+                  />
+                </div>
+              ) : (
+                <Tag color="orange" className="font-bold uppercase">Setup Mode (Guest)</Tag>
+              )}
+            </div>
+          </div>
+
+          {/* 核心內容視圖 */}
+          <div className="view-container">
+            {renderContent()}
+          </div>
+        </Layout>
+      )}
+
+      {/* 錯誤回報 Modal */}
       <ErrorReport 
         visible={reportModalVisible} 
         onCancel={() => setReportModalVisible(false)} 
         token={graphToken} 
       />
-    </Layout>
+    </ConfigProvider>
   );
 }
 

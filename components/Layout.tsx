@@ -4,12 +4,12 @@ import {
   EnvironmentOutlined, 
   DatabaseOutlined, 
   CalendarOutlined, 
-  WarningOutlined, 
   SettingOutlined, 
   LogoutOutlined, 
   UserOutlined, 
   SafetyCertificateOutlined,
-  BugOutlined
+  BugOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 import { View } from '../types';
 
@@ -42,11 +42,13 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className="flex h-screen w-full bg-[#f2f5f7] overflow-hidden">
-      
+      {/* 側邊導航容器 */}
       <aside className="uiverse-sidebar-wrapper">
-        {/* ✅ Logo 獨立於選單之外 */}
+        
+        {/* ✅ ST Logo: 獨立於選單外，由 CSS 定位到頂部 */}
         <div className="nav-brand-logo">ST</div>
         
+        {/* ✅ 選單列表: 由 CSS 定位到垂直置中 */}
         <ul className="uiverse-nav-ul">
           {menuItems.map((item) => (
             <li key={item.key}>
@@ -60,6 +62,7 @@ export const Layout: React.FC<LayoutProps> = ({
             </li>
           ))}
 
+          {/* 分隔線區域 (對應範本 li:nth-child(6) 的邏輯，這裡直接寫類名控制) */}
           <li className="nav-item-sep">
             <a 
               onClick={() => onViewChange(View.SETTINGS)}
@@ -93,6 +96,7 @@ export const Layout: React.FC<LayoutProps> = ({
         </ul>
       </aside>
 
+      {/* 主內容區 */}
       <main className="flex-1 overflow-y-auto p-8 ml-[100px]">
         {children}
       </main>

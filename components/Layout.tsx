@@ -23,24 +23,30 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const menuItems = [
+  // 定義選單數據
+  const topMenuItems = [
     { key: View.DASHBOARD, label: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
-    { key: View.SHOP_LIST, label: 'Shop List', icon: <Package />, path: '/shop-list' },
-    { key: View.CALENDAR, label: 'Calendar', icon: <CalendarIcon />, path: '/calendar' },
+    { key: View.SHOP_LIST, label: 'Master List', icon: <Package />, path: '/shop-list' },
+    { key: View.CALENDAR, label: 'Schedules', icon: <CalendarIcon />, path: '/calendar' },
     { key: View.GENERATOR, label: 'Generator', icon: <ShieldAlert />, path: '/generator' },
-    { key: View.LOCATIONS, label: 'Locations', icon: <MapPin />, path: '/locations' },
+    { key: View.LOCATIONS, label: 'Map View', icon: <MapPin />, path: '/locations' },
+  ];
+
+  const bottomMenuItems = [
     { key: View.INVENTORY, label: 'Inventory', icon: <FileWarning />, path: '/inventory' },
+    { key: View.SETTINGS, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];
 
   return (
-    <div className="flex h-screen w-full bg-[#f2f5f7] overflow-hidden">
+    <div className="flex w-full bg-[#f2f5f7]">
       
-      {/* ✅ 懸浮式導航 (基於你的 HTML 結構) */}
-      <aside className="uiverse-nav-wrapper">
-        <div className="nav-brand-logo">ST</div>
+      {/* ✅ 側邊導航容器 */}
+      <aside className="side-nav-container">
+        <div className="nav-st-logo">ST</div>
         
         <ul className="uiverse-nav-ul">
-          {menuItems.map((item) => (
+          {/* 上半部分選單 */}
+          {topMenuItems.map((item) => (
             <li key={item.key}>
               <a 
                 onClick={() => navigate(item.path)}
@@ -51,19 +57,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
               </a>
             </li>
           ))}
-          
-          {/* ✅ 分隔線後的 Settings 與 Profile/Logout */}
-          <li className="nav-li-separator">
-            <a 
-              onClick={() => navigate('/settings')}
-              className={location.pathname === '/settings' ? 'active' : ''}
-            >
-              <i><SettingsIcon /></i>
-              <span>Settings</span>
-            </a>
-          </li>
+
+          {/* ✅ 下半部分選單 (從第 6 項開始，加上分隔線) */}
+          {bottomMenuItems.map((item, index) => (
+            <li key={item.key} className={index === 0 ? 'nav-item-separator' : ''}>
+              <a 
+                onClick={() => navigate(item.path)}
+                className={location.pathname === item.path ? 'active' : ''}
+              >
+                <i>{item.icon}</i>
+                <span>{item.label}</span>
+              </a>
+            </li>
+          ))}
+
+          {/* Profile & Logout */}
           <li>
-            <a className="profile-nav-item">
+            <a className="profile-link">
               <i><User /></i>
               <span>{user?.Name || 'Profile'}</span>
             </a>
@@ -77,8 +87,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
         </ul>
       </aside>
 
-      {/* ✅ 主內容區域：加上左邊距 ml-[110px] 給側邊欄留位置 */}
-      <main className="flex-1 overflow-y-auto p-8 ml-[110px]">
+      {/* 主內容區 */}
+      <main className="main-content-layout">
         {children}
       </main>
     </div>

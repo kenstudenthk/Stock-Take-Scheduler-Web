@@ -116,11 +116,11 @@ const handleModeSwitch = (e: React.MouseEvent, targetMode: 'set' | 'change') => 
           className="status-circle" 
           style={{ backgroundColor: isConnected ? '#4caf50' : '#f44336' }}
         />
-        {!isConnected && (
+        {!isConnected && 
           <span className="status-error-text animate-fade-in">
             Please go Setting update Token
           </span>
-        )}
+        }
       </div>
 
       <div className="main-login-container">

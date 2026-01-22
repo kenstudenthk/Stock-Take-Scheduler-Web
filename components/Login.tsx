@@ -37,8 +37,8 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
     setConfirmPassword('');
   };
 
-  // ✅ 新增切換模式函數，確保狀態順序正確
-  const triggerMode = (newMode: 'set' | 'change') => {
+  // ✅ 核心修正：統一處理翻轉與模式設定，避免狀態競爭
+  const switchMode = (newMode: 'set' | 'change') => {
     setMode(newMode);
     setIsFlipped(true);
     resetFields();
@@ -59,44 +59,47 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
         } else { message.error("密碼不正確"); }
       } else if (user && !user.PasswordHash) {
         message.info("此帳號尚未設定密碼，請先設定。");
-        triggerMode('set');
+        switchMode('set');
       } else { message.error("搵唔到帳號"); }
     } catch (err) { message.error("連線失敗"); }
     finally { setLoading(false); }
   };
 
-  const handleConfirmUpdatePassword = async (e: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSecurityAction = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!aliasemail || !password || !confirmPassword) return message.warning("請填寫所有欄位");
     if (mode === 'change' && !oldPassword) return message.warning("請輸入舊密碼");
-    if (password !== confirmPassword) return message.error("新密碼不一致");
+    if (password !== confirmPassword) return message.error("兩次輸入的新密碼不符");
 
     setLoading(true);
-    const hide = message.loading("正在安全更新至 SharePoint...", 0);
+    const hide = message.loading("正在加密並同步至 SharePoint...", 0);
 
     try {
-      // 1. 獲取用戶資料
+      // 1. 先獲取最新的用戶 Hash
       const user = await sharePointService.getUserByAliasEmail(aliasemail);
-      if (!user) throw new Error("用戶不存在");
+      if (!user) throw new Error("用戶不存在，請聯絡管理員");
 
-      // 2. 如果是 Change 模式，驗證舊密碼
+      // 2. 如果是 Change 模式，需比對舊密碼
       if (mode === 'change') {
-        const isOldMatch = bcrypt.compareSync(oldPassword, user.PasswordHash);
-        if (!isOldMatch) throw new Error("舊密碼驗證失敗");
+        const isOldValid = bcrypt.compareSync(oldPassword, user.PasswordHash);
+        if (!isOldValid) throw new Error("舊密碼驗證失敗");
       }
 
-      // 3. ✅ 加密新密碼並 PATCH 回 SPO
+      // 3. ✅ 生成新加密字串 (Patch Back to SPO)
       const salt = bcrypt.genSaltSync(10);
-      const hash = bcrypt.hashSync(password, salt);
-      const success = await sharePointService.updatePasswordByEmail(aliasemail, hash);
+      const newHash = bcrypt.hashSync(password, salt);
+      
+      const success = await sharePointService.updatePasswordByEmail(aliasemail, newHash);
 
       if (success) {
-        message.success(mode === 'set' ? "密碼設定成功！" : "密碼已更新！");
-        resetFields();
+        message.success(mode === 'set' ? "密碼設定成功！" : "密碼更改成功！");
         setIsFlipped(false);
-      } else { throw new Error("SPO 更新失敗"); }
+        resetFields();
+      } else {
+        throw new Error("SharePoint 寫入失敗");
+      }
     } catch (err: any) {
-      message.error(err.message || "發生系統錯誤");
+      message.error(err.message || "發生錯誤");
     } finally {
       hide();
       setLoading(false);
@@ -108,7 +111,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
       <div className="status-indicator">
         <div className="custom-tooltip">
           <div className="icon" style={{ backgroundColor: isConnected ? '#4caf50' : '#f44336' }}>i</div>
-          <div className="tooltiptext">{isConnected ? "SPO: OK" : "Token Error"}</div>
+          <div className="tooltiptext">{isConnected ? "SPO Connection: OK" : "Connection Error"}</div>
         </div>
       </div>
 
@@ -118,12 +121,12 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
             <input 
               type="checkbox" 
               className="hidden-toggle" 
-              style={{ display: 'none' }}
               checked={isFlipped} 
               onChange={(e) => { 
-                setIsFlipped(e.target.checked); 
-                if (!e.target.checked) setMode('set'); // 翻回正面時重置模式
-                resetFields(); 
+                setIsFlipped(e.target.checked);
+                // ✅ 關鍵：翻回正面時重置為 set，但翻轉動作由按鈕主導
+                if(!e.target.checked) setMode('set');
+                resetFields();
               }} 
             />
             <span className="slider-base"></span>
@@ -139,23 +142,23 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                   </div>
                   <div className="field-group">
                     <label className="field-label">Alias Email</label>
-                    <input type="text" placeholder="k.ab.chan@pccw.com" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
+                    <input type="text" placeholder="Alias Email" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
                   </div>
                   <div className="field-group">
                     <label className="field-label">Password</label>
                     <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
                   </div>
-                  <button className="main-submit-btn" type="submit" disabled={loading}>Log in</button>
+                  <button className="main-submit-btn" type="submit" disabled={loading}>LOG IN</button>
                   <div className="flex flex-col gap-2 mt-4">
-                    <span className="bottom-link" onClick={() => triggerMode('set')}>First time? <a>Set Password</a></span>
-                    <span className="bottom-link" onClick={() => triggerMode('change')}>Forgot? <a>Change Password</a></span>
+                    <span className="bottom-link" onClick={() => switchMode('set')}>First time? <a>Set Password</a></span>
+                    <span className="bottom-link" onClick={() => switchMode('change')}>Forgot? <a>Change Password</a></span>
                   </div>
                 </form>
               </div>
 
               {/* 背面 */}
               <div className="flip-card-back-side">
-                <form className="inner-form" onSubmit={handleConfirmUpdatePassword}>
+                <form className="inner-form" onSubmit={handleSecurityAction}>
                   <div className="text-center">
                     <h2 className="brand-title" style={{ color: mode === 'change' ? '#3b82f6' : '#44d8a4' }}>
                       {mode === 'change' ? 'Change Password' : 'Set Password'}
@@ -181,8 +184,8 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
                     <label className="field-label">Confirm New Password</label>
                     <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                   </div>
-                  <button className={`main-submit-btn ${mode === 'change' ? 'change-btn' : 'confirm-mode'}`} type="submit" disabled={loading}>
-                    {mode === 'change' ? 'UPDATE NOW' : 'SAVE PASSWORD'}
+                  <button className={`main-submit-btn ${mode === 'change' ? 'change-mode-btn' : ''}`} type="submit" disabled={loading}>
+                    {mode === 'change' ? 'UPDATE NOW' : 'SAVE CREDENTIALS'}
                   </button>
                   <span className="bottom-link" onClick={() => setIsFlipped(false)}>Back to <a>Log in</a></span>
                 </form>

@@ -1,15 +1,15 @@
 import React from 'react';
 import { 
-  LayoutDashboard, 
-  MapPin, 
-  Package, 
-  Calendar as CalendarIcon, 
-  FileWarning, 
-  Settings as SettingsIcon,
-  LogOut,
-  User,
-  ShieldAlert
-} from 'lucide-react';
+  HomeOutlined, 
+  EnvironmentOutlined, 
+  DatabaseOutlined, 
+  CalendarOutlined, 
+  WarningOutlined, 
+  SettingOutlined, 
+  LogoutOutlined, 
+  UserOutlined, 
+  SafetyCertificateOutlined 
+} from '@ant-design/icons';
 import { View } from '../types';
 
 interface LayoutProps {
@@ -30,16 +30,16 @@ export const Layout: React.FC<LayoutProps> = ({
   onReportError
 }) => {
   
-  const menuItems = [
-    { key: View.DASHBOARD, label: 'Dashboard', icon: <LayoutDashboard /> },
-    { key: View.SHOP_LIST, label: 'Master List', icon: <Package /> },
-    { key: View.CALENDAR, label: 'Schedules', icon: <CalendarIcon /> },
-    { key: View.GENERATOR, label: 'Generator', icon: <ShieldAlert /> },
-    { key: View.LOCATIONS, label: 'Map View', icon: <MapPin /> },
-    { key: View.INVENTORY, label: 'Inventory', icon: <FileWarning /> },
+const menuItems = [
+    { key: View.DASHBOARD, label: 'Dashboard', icon: <HomeOutlined /> },
+    { key: View.SHOP_LIST, label: 'Master List', icon: <DatabaseOutlined /> },
+    { key: View.CALENDAR, label: 'Schedules', icon: <CalendarOutlined /> },
+    { key: View.GENERATOR, label: 'Generator', icon: <SafetyCertificateOutlined /> },
+    { key: View.LOCATIONS, label: 'Map View', icon: <EnvironmentOutlined /> },
+    { key: View.INVENTORY, label: 'Inventory', icon: <WarningOutlined /> },
   ];
 
-  return (
+return (
     <div className="flex h-screen w-full bg-[#f2f5f7] overflow-hidden">
       {/* 懸浮側邊欄 */}
       <aside className="uiverse-sidebar-wrapper">
@@ -63,28 +63,28 @@ export const Layout: React.FC<LayoutProps> = ({
               onClick={() => onViewChange(View.SETTINGS)}
               className={currentView === View.SETTINGS ? 'active' : ''}
             >
-              <i><SettingsIcon /></i>
+              <i><SettingOutlined /></i>
               <span>Settings</span>
             </a>
           </li>
           
-          <li>
-            <a className="report-link" onClick={onReportError} style={{ cursor: 'pointer' }}>
-              <i className="text-red-400"><FileWarning /></i>
+          <li onClick={onReportError}>
+            <a className="report-link">
+              <i className="text-red-400"><WarningOutlined /></i>
               <span className="text-red-400">Report Error</span>
             </a>
           </li>
 
           <li>
             <a className="profile-nav-btn">
-              <i><User /></i>
+              <i><UserOutlined /></i>
               <span>{user?.Name || 'Profile'}</span>
             </a>
           </li>
           
           <li>
             <a onClick={onLogout} className="logout-nav-btn">
-              <i><LogOut /></i>
+              <i><LogoutOutlined /></i>
               <span>Logout</span>
             </a>
           </li>

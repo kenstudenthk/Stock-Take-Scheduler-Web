@@ -101,9 +101,10 @@ background-color: var(--bg-header) !important;
 }
 
 /* ============================================================
-   3. UI VERSE TOOLTIP SIDEBAR (完全替換原本的 CURVED SIDEBAR)
+   3. UI VERSE TOOLTIP SIDEBAR (Final Fixed Version)
    ============================================================ */
-/* ✅ 1. 強制隱藏所有 Ant Design 原始導航元素 */
+
+/* ✅ 強制隱藏 Ant Design 原始導航元素 */
 .ant-layout-header, 
 .ant-btn-icon-only, 
 .hamburger-icon,
@@ -111,74 +112,50 @@ background-color: var(--bg-header) !important;
     display: none !important;
 }
 
-/* ✅ 2. 佈局容器 */
-.custom-app-layout {
-    display: flex;
-    width: 100%;
-    min-height: 100vh;
-    background-color: #f2f5f7;
-}
-
-.custom-main-content {
-    flex: 1;
-    margin-left: 120px; /* 給懸浮選單留空間 */
-    padding: 30px;
-    height: 100vh;
-    overflow-y: auto;
-}
-
-/* ✅ 3. 懸浮選單主體 (UI Verse 風格) */
+/* ✅ 側邊欄總容器 */
 .uiverse-sidebar-wrapper {
-  position: fixed;
-  left: 1rem;       /* 這裡可以微調整個側邊欄的左邊距 */
-  top: 0;
-  height: 100vh;
-  width: 5rem;      /* 固定寬度，方便 Logo 置中 */
-  z-index: 2000;
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* ✅ 讓選單內容 (ul) 垂直置中 */
-  align-items: center;
+    position: fixed;
+    left: 0.5rem;      /* 側邊欄整體靠左一點 */
+    top: 0;
+    height: 100vh;
+    width: 70px;       /* 縮小寬度容器 */
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* 讓選單 (ul) 垂直置中 */
+    align-items: center;
+    pointer-events: none;
 }
 
 .nav-brand-logo, .uiverse-nav-ul {
-  pointer-events: auto;
+    pointer-events: auto;
 }
 
-/* ✅ 修正 ST Logo：對齊 Header 並稍微往左移 */
+/* ✅ 修正 ST Logo：對齊 Header 並處理位置 */
 .nav-brand-logo {
-  position: absolute;  /* ✅ 使用絕對定位，脫離 Flex 佈局的自動分配 */
-  top: 1.25rem;        /* ✅ 這裡調整上下位置，與您的 Header 內容對齊 */
-  left: 0.5rem;        /* ✅ 這裡調整左右位置，增加或減少值來往左/往右移 */
-  
-  color: #05043e;
-  font-weight: 900;
-  font-size: 1.6rem;
-  letter-spacing: -1px;
-  text-align: center;
-  width: 100%;        /* 配合容器寬度 */
+    position: absolute;
+    top: 1.5rem;       /* 與 Header 同高 */
+    left: 1.2rem;      /* 直接指定左邊距，讓它往左移 */
+    
+    color: #05043e;
+    font-weight: 900;
+    font-size: 1.6rem;
+    letter-spacing: -1px;
+    text-align: left;
+    width: auto;
+    z-index: 2001;
 }
 
+/* ✅ 選單列表 */
 .uiverse-nav-ul {
-pointer-events: auto;
-  list-style: none;
-  margin: 0;   /* margin: auto 會自動推擠上下空間達到置中 */
-  padding: 0.75rem;
-  background-color: #05043e;
-  display: flex;
-  flex-direction: column;
-  border-radius: 12px;
-  box-shadow: 0 10px 50px 0 rgba(5, 4, 62, 0.3);
-}
-
-.nav-li-separator {
-    margin-top: 3rem !important;
-    padding-top: 1.25rem;
-    border-top: 1px solid #363664;
-}
-
-.uiverse-nav-ul li + li {
-    margin-top: 0.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0.75rem;
+    background-color: #05043e;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(5, 4, 62, 0.4);
 }
 
 .uiverse-nav-ul a {
@@ -186,38 +163,40 @@ pointer-events: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 3rem;
-    height: 3rem;
-    border-radius: 8px;
+    width: 3.2rem;
+    height: 3.2rem;
+    border-radius: 10px;
     position: relative;
     cursor: pointer;
-    transition: .2s;
+    transition: 0.2s;
 }
 
 .uiverse-nav-ul a:hover, .uiverse-nav-ul a.active {
     background-color: #30305a;
 }
 
-/* ✅ 4. Tooltip 動畫 */
+/* ✅ Tooltip 標籤：解決重疊問題 */
 .uiverse-nav-ul a span {
-position: absolute;
-  background-color: #30305a;
-  color: #fff;
-  white-space: nowrap;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  left: calc(100% + 1.5rem);
-  transform-origin: center left;
-  transform: scale(0);
-  opacity: 0;
-  transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
-  font-size: 13px;
-  font-weight: 600;
-  z-index: 9999; /* ✅ 提高層級 */
-  box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
+    position: absolute;
+    background-color: #30305a;
+    color: #fff;
+    white-space: nowrap;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    /* 增加 left 距離，確保不會蓋到 Logo 的垂直線 */
+    left: calc(100% + 1.8rem); 
+    transform-origin: center left;
+    transform: scale(0);
+    opacity: 0;
+    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 9999; /* 最高層級 */
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.3);
 }
 
+/* Tooltip 三角形 */
 .uiverse-nav-ul a span:before {
     content: "";
     display: block;
@@ -236,13 +215,17 @@ position: absolute;
 }
 
 /* 分隔線 */
-.nav-item-sep {
-  margin-top: 2rem !important;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+.nav-item-sep, .nav-li-separator {
+    margin-top: 1.5rem !important;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.logout-item:hover { background-color: #ef4444 !important; }
+.uiverse-nav-ul li + li {
+    margin-top: 0.5rem;
+}
+
+.logout-nav-btn:hover { background-color: #ef4444 !important; }
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)
    ============================================================ */

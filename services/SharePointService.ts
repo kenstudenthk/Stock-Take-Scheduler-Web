@@ -106,6 +106,47 @@ class SharePointService {
     }
   }
 
+  // 在你的 sharePointService 內增加：
+// sharePointService.ts
+
+async updatePasswordByEmail(email: string, hash: string) {
+  try {
+    // 1. 透過 AliasEmail 搜尋該用戶的 Item ID
+    // 假設你的 API 篩選語法如下
+    const searchUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.listId}/items?expand=fields&filter=fields/AliasEmail eq '${email}'`;
+    
+    const searchRes = await fetch(searchUrl, {
+      headers: { 'Authorization': `Bearer ${this.graphToken}` }
+    });
+    const searchData = await searchRes.json();
+
+    if (!searchData.value || searchData.value.length === 0) {
+      console.error("User not found with email:", email);
+      return false;
+    }
+
+    const itemId = searchData.value[0].id; // 取得該項目的 SharePoint 唯一 ID
+
+    // 2. 執行 PATCH 更新 PasswordHash 欄位
+    const updateUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.listId}/items/${itemId}/fields`;
+    
+    const updateRes = await fetch(updateUrl, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${this.graphToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        PasswordHash: hash // ✅ 寫入加密後的密碼
+      })
+    });
+
+    return updateRes.ok;
+  } catch (error) {
+    console.error("SPO Update Error:", error);
+    return false;
+  }
+}
   // ... 之後保留你原本嘅 updateShopScheduleStatus, batchUpdateSchedules 等方法 ...
   
   async updateShopScheduleStatus(itemId: string, scheduleStatus: string, scheduledDate?: string, groupId?: number): Promise<void> {

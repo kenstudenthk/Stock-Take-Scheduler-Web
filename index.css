@@ -103,48 +103,28 @@ background-color: var(--bg-header) !important;
 /* ============================================================
    3. CURVED SIDEBAR NAVIGATION (圓弧缺口側邊欄)
    ============================================================ */
-我已經詳細審查了你提供的 HTML 與 CSS 結構，並準備好將這套 懸浮式 Tooltip 導航選單 完整整合進你的專案中。
-
-這次改動將會：
-
-移除 舊有的 Ant Design 側邊欄（Sider）和 漢堡選單。
-
-新增 漂浮在左側的 ST Logo 與垂直圖標選單。
-
-實作 滑鼠懸停時從右側彈出的氣泡式文字（Tooltips）。
-
-清理 index.css，將舊的圓弧導航樣式（CURVED SIDEBAR）替換為這套現代化樣式。
-
-以下是雙重確認後的實作腳本：
-
-1. 更新 index.css (替換原有側邊欄樣式)
-請找到 index.css 中的第 3 部分，將其替換為以下內容。我保留了你原始 CSS 的所有邏輯，包括 05043e 深藍色調和 Tooltip 三角形效果。
-
-CSS
-/* ✅ 替換原本的 3. CURVED SIDEBAR NAVIGATION */
-
-/* 側邊欄容器：垂直居中懸浮 */
-.uiverse-nav-wrapper {
+.side-nav-container {
   position: fixed;
-  left: 1.5rem;
+  left: 20px; /* 距離左側距離 */
   top: 50%;
   transform: translateY(-50%);
-  z-index: 1000;
+  z-index: 2000;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* 頂部 ST Logo */
-.nav-brand-logo {
+/* 頂部 ST Logo 樣式 */
+.nav-st-logo {
   color: #05043e;
   font-weight: 900;
   font-size: 1.5rem;
   margin-bottom: 1.25rem;
   letter-spacing: -1px;
+  cursor: default;
 }
 
-/* 導航 UL 列表 */
+/* 核心導航選單 (還原你提供的顏色與陰影) */
 .uiverse-nav-ul {
   list-style: none;
   margin: 0;
@@ -152,13 +132,14 @@ CSS
   background-color: #05043e;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   border-radius: 10px;
   box-shadow: 0 10px 50px 0 rgba(5, 4, 62, 0.25);
 }
 
-/* 分隔線 (設定在第 6 個元素，通常是 Settings 前) */
-.nav-li-separator {
-  margin-top: 3rem !important;
+/* 還原 li:nth-child(6) 的分隔線效果 */
+.nav-item-separator {
+  margin-top: 3rem !important; 
   padding-top: 1.25rem;
   border-top: 1px solid #363664;
 }
@@ -167,6 +148,7 @@ CSS
   margin-top: 0.75rem;
 }
 
+/* 連結與圖標樣式 */
 .uiverse-nav-ul a {
   color: #FFF;
   text-decoration: none;
@@ -181,20 +163,29 @@ CSS
   transition: all 0.2s ease;
 }
 
-/* 懸停與啟動狀態 */
-.uiverse-nav-ul a:hover, 
+/* 懸停效果：背景變色 + 顯示 Tooltip */
+.uiverse-nav-ul a:hover,
+.uiverse-nav-ul a:focus,
 .uiverse-nav-ul a.active {
   background-color: #30305a;
   outline: 0;
 }
 
-/* Lucide 圖標縮放 */
-.uiverse-nav-ul a i svg {
-  width: 1.375rem;
-  height: 1.375rem;
+/* 當 a 被 hover 時，內部的 span (Tooltip) 彈出 */
+.uiverse-nav-ul a:hover span,
+.uiverse-nav-ul a:focus span {
+  transform: scale(1);
+  opacity: 1;
 }
 
-/* ✅ Tooltip Span 樣式 (你的原始邏輯) */
+.uiverse-nav-ul a i {
+  font-size: 1.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ✅ Tooltip 氣泡樣式 - 完全還原你的 CSS 邏輯 */
 .uiverse-nav-ul a span {
   position: absolute;
   background-color: #30305a;
@@ -202,17 +193,18 @@ CSS
   white-space: nowrap;
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  left: calc(100% + 1.5rem);
+  left: calc(100% + 1.5rem); /* 向右移動 */
   transform-origin: center left;
-  transform: scale(0);
+  transform: scale(0); /* 初始縮小為 0 */
   opacity: 0;
   transition: .15s ease;
   pointer-events: none;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 2001;
 }
 
-/* Tooltip 三角形箭頭 (你的原始邏輯) */
+/* Tooltip 的三角形箭頭 */
 .uiverse-nav-ul a span:before {
   content: "";
   display: block;
@@ -226,15 +218,17 @@ CSS
   border-radius: 3px;
 }
 
-/* 觸發動畫 */
-.uiverse-nav-ul a:hover span {
-  transform: scale(1);
-  opacity: 1;
-}
-
-/* 特殊按鈕：登出懸停變紅 */
+/* 登出按鈕專用顏色 */
 .logout-nav-item:hover {
   background-color: #ef4444 !important;
+}
+
+/* 主內容區域適配 - 確保不會被側邊欄擋住 */
+.main-content-layout {
+  flex: 1;
+  margin-left: 110px; /* 根據側邊欄寬度調整 */
+  padding: 40px;
+  min-height: 100vh;
 }
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

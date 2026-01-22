@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// ✅ Ensure ConfigProvider is included here
+// ✅ 修正匯入：確保 ConfigProvider 存在，並移除多餘的 Layout 匯入 (避免與自定義 Layout 衝突)
 import { message, Button, Tag, Avatar, Space, Typography, ConfigProvider } from 'antd'; 
 import { 
   SyncOutlined, 
-  WarningFilled 
+  WarningFilled,
+  BugOutlined 
 } from '@ant-design/icons';
-// ✅ Use your custom Layout instead of Ant Design's Layout
+
+// ✅ 使用你的自定義 Layout (Tooltip 樣式)
 import { Layout } from './components/Layout';
 import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
@@ -16,13 +18,13 @@ import { Shop, View } from './types';
 import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
-import { ThemeToggle } from './components/ThemeToggle';
 import { ErrorReport } from './components/ErrorReport'; 
 import { Login } from './components/Login';
 import SharePointService from './services/SharePointService';
 import './index.css';
 
-//const { Content, Header, Sider } = Layout;
+// ❗ 注意：這裡不要再寫 const { Content, Header, Sider } = Layout; 
+// 因為這會覆蓋掉上面 import 進來的自定義 Layout 組件
 const { Text } = Typography;
 
 // 權限檢查工具
@@ -169,7 +171,7 @@ function App() {
       );
     }
 
-    if (!currentUser) return null; // Logic handled in return block
+    if (!currentUser) return null;
     
     switch (selectedMenuKey) {
       case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} />;
@@ -191,7 +193,6 @@ function App() {
         },
       }}
     >
-      {/* 1. Login Logic: Only show Login if no user and not on Settings page */}
       {!currentUser && selectedMenuKey !== View.SETTINGS ? (
         <Login 
           sharePointService={sharePointService} 
@@ -201,8 +202,6 @@ function App() {
           }} 
         />
       ) : (
-        /* 2. Main Application: Wrapped in the new Tooltip Sidebar Layout */
-        /* ✅ Passing the setSelectedMenuKey allows the sidebar to change views */
         <Layout 
           onLogout={handleLogout} 
           user={currentUser} 
@@ -210,13 +209,9 @@ function App() {
           currentView={selectedMenuKey}
           onReportError={() => setReportModalVisible(true)}
         >
-          
-          {/* Top Toolbar: Refactored Header content */}
           <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center gap-4">
-              {/* Truck Alert for Token Errors */}
               {!isInitialLoading && hasTokenError && !loading && <TruckFlagNotice />}
-              
               <Button 
                 icon={<SyncOutlined spin={loading} />} 
                 onClick={() => fetchAllData(graphToken)}
@@ -244,8 +239,6 @@ function App() {
               )}
             </div>
           </div>
-
-          {/* Render the selected component */}
           {renderContent()}
         </Layout>
       )}
@@ -260,4 +253,3 @@ function App() {
 }
 
 export default App;
-

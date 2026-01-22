@@ -111,15 +111,19 @@ class SharePointService {
 
 // SharePointService.ts 內的修復版本
 
+// SharePointService.ts
+
 async updatePasswordByEmail(email: string, hash: string) {
   try {
-    // 1. 搜尋用戶：注意這裡使用 $filter，且欄位名直接寫 AliasEmail (不加 fields/)
-    const searchUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items?$expand=fields&$filter=AliasEmail eq '${email}'`;
+    // ✅ 修正 1：確保搜尋的是成員清單 (memberListId) 而不是店舖清單 (listId)
+    // ✅ 修正 2：使用正確的 $filter 語法，並加入 ConsistencyLevel
+    const searchUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items?$filter=fields/AliasEmail eq '${email}'&$expand=fields`;
     
     const searchRes = await fetch(searchUrl, {
       headers: { 
         'Authorization': `Bearer ${this.graphToken}`,
-        'Prefer': 'HonorNonIndexedQueriesWarningMayFail' 
+        'Prefer': 'HonorNonIndexedQueriesWarningMayFail',
+        'ConsistencyLevel': 'eventual'
       }
     });
 
@@ -131,14 +135,14 @@ async updatePasswordByEmail(email: string, hash: string) {
 
     const searchData = await searchRes.json();
     if (!searchData.value || searchData.value.length === 0) {
-      console.warn("⚠️ 找不到對應 AliasEmail 的用戶");
+      console.warn(`⚠️ 找不到成員: ${email}`);
       return false;
     }
 
+    // 取得該成員的項目 ID
     const itemId = searchData.value[0].id; 
 
-    // 2. 執行 PATCH 更新
-    // ⚠️ 關鍵：發送到 /fields 結尾時，Payload 不需要包裹 fields 鍵名
+    // ✅ 修正 3：PATCH 請求的路徑必須指向 memberListId
     const updateUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items/${itemId}/fields`;
     
     const updateRes = await fetch(updateUrl, {
@@ -148,21 +152,22 @@ async updatePasswordByEmail(email: string, hash: string) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        PasswordHash: hash // ✅ 直接傳送欄位鍵值對
+        // ⚠️ 這裡直接寫 Internal Name，不加 fields 前綴
+        PasswordHash: hash 
       })
     });
 
-    if (!updateRes.ok) {
+    if (updateRes.ok) {
+      console.log(`✅ ${email} 的密碼已成功寫回 SharePoint`);
+      return true;
+    } else {
       const errorDetail = await updateRes.json();
-      console.error("❌ PATCH 失敗詳細原因:", errorDetail.error?.message);
+      console.error("❌ PATCH 寫入失敗:", errorDetail.error?.message);
       return false;
     }
 
-    console.log("✅ SharePoint 密碼更新成功");
-    return true;
-
   } catch (error) {
-    console.error("❌ SharePoint 嚴重連線錯誤:", error);
+    console.error("❌ SharePoint 連線嚴重錯誤:", error);
     return false;
   }
 }

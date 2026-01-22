@@ -23,7 +23,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 定義選單
   const menuItems = [
     { key: View.DASHBOARD, label: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
     { key: View.SHOP_LIST, label: 'Master List', icon: <Package />, path: '/shop-list' },
@@ -33,24 +32,39 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
     { key: View.INVENTORY, label: 'Inventory', icon: <FileWarning />, path: '/inventory' },
   ];
 
- return (
-    <div className="flex w-full bg-[#f2f5f7]">
-      {/* 側邊導航 */}
+  return (
+    <div className="flex h-screen w-full bg-[#f2f5f7] overflow-hidden">
+      
+      {/* ✅ 這是你指定的懸浮 Tooltip 導航列 */}
       <aside className="uiverse-sidebar-wrapper">
-        <div className="nav-st-logo">ST</div>
+        <div className="nav-brand-logo">ST</div>
         <ul className="uiverse-nav-ul">
           {menuItems.map((item) => (
             <li key={item.key}>
-              <a onClick={() => navigate(item.path)} className={location.pathname === item.path ? 'active' : ''}>
+              <a 
+                onClick={() => navigate(item.path)}
+                className={location.pathname === item.path ? 'active' : ''}
+              >
                 <i>{item.icon}</i>
                 <span>{item.label}</span>
               </a>
             </li>
           ))}
+
+          {/* ✅ 第 6 項之後的分隔線與功能 */}
           <li className="nav-item-sep">
-            <a onClick={() => navigate('/settings')} className={location.pathname === '/settings' ? 'active' : ''}>
+            <a 
+              onClick={() => navigate('/settings')}
+              className={location.pathname === '/settings' ? 'active' : ''}
+            >
               <i><SettingsIcon /></i>
               <span>Settings</span>
+            </a>
+          </li>
+          <li>
+            <a className="profile-nav-btn">
+              <i><User /></i>
+              <span>{user?.Name || 'Profile'}</span>
             </a>
           </li>
           <li>
@@ -62,9 +76,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
         </ul>
       </aside>
 
-      {/* 主內容區：ml-[110px] 給左邊側邊欄留位置 */}
-      <main className="flex-1 p-8 ml-[110px] min-h-screen overflow-auto">
+      {/* ✅ 主內容區：ml-[110px] 確保不會被側邊欄擋住 */}
+      <main className="flex-1 overflow-y-auto p-8 ml-[110px]">
         {children}
       </main>
     </div>
-);
+  );
+};

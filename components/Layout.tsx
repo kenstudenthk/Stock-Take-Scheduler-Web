@@ -1,15 +1,8 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  MapPin, 
-  Package, 
-  Calendar as CalendarIcon, 
-  FileWarning, 
-  Settings as SettingsIcon,
-  LogOut,
-  User,
-  ShieldAlert
+  LayoutDashboard, MapPin, Package, Calendar as CalendarIcon, 
+  FileWarning, Settings as SettingsIcon, LogOut, User, ShieldAlert 
 } from 'lucide-react';
 import { View } from '../types';
 
@@ -33,10 +26,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
   ];
 
   return (
-    <div className="flex h-screen w-full bg-[#f2f5f7] overflow-hidden">
-      
-      {/* ✅ 這是你指定的懸浮 Tooltip 導航列 */}
-      <aside className="uiverse-sidebar-wrapper">
+    <div className="custom-app-layout">
+      {/* ✅ 這是懸浮導航，獨立於內容之外 */}
+      <aside className="uiverse-nav-wrapper">
         <div className="nav-brand-logo">ST</div>
         <ul className="uiverse-nav-ul">
           {menuItems.map((item) => (
@@ -50,25 +42,20 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
               </a>
             </li>
           ))}
-
-          {/* ✅ 第 6 項之後的分隔線與功能 */}
-          <li className="nav-item-sep">
-            <a 
-              onClick={() => navigate('/settings')}
-              className={location.pathname === '/settings' ? 'active' : ''}
-            >
+          <li className="nav-li-separator">
+            <a onClick={() => navigate('/settings')} className={location.pathname === '/settings' ? 'active' : ''}>
               <i><SettingsIcon /></i>
               <span>Settings</span>
             </a>
           </li>
           <li>
-            <a className="profile-nav-btn">
+            <a className="profile-item">
               <i><User /></i>
-              <span>{user?.Name || 'Profile'}</span>
+              <span>{user?.Name || 'User'}</span>
             </a>
           </li>
           <li>
-            <a onClick={onLogout} className="logout-nav-btn">
+            <a onClick={onLogout} className="logout-item">
               <i><LogOut /></i>
               <span>Logout</span>
             </a>
@@ -76,8 +63,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {
         </ul>
       </aside>
 
-      {/* ✅ 主內容區：ml-[110px] 確保不會被側邊欄擋住 */}
-      <main className="flex-1 overflow-y-auto p-8 ml-[110px]">
+      {/* ✅ 主內容區域 */}
+      <main className="custom-main-content">
         {children}
       </main>
     </div>

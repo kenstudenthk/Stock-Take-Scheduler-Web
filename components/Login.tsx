@@ -37,9 +37,9 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
     setConfirmPassword('');
   };
 
-  // ✅ 核心修正：統一處理翻轉與模式設定，避免狀態競爭
-  const switchMode = (newMode: 'set' | 'change') => {
-    setMode(newMode);
+  // ✅ 切換模式並翻轉
+  const handleModeSwitch = (targetMode: 'set' | 'change') => {
+    setMode(targetMode);
     setIsFlipped(true);
     resetFields();
   };
@@ -58,48 +58,46 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
           onLoginSuccess(user);
         } else { message.error("密碼不正確"); }
       } else if (user && !user.PasswordHash) {
-        message.info("此帳號尚未設定密碼，請先設定。");
-        switchMode('set');
-      } else { message.error("搵唔到帳號"); }
+        message.info("此帳號尚未設定密碼，請點擊下方 Set Password。");
+        handleModeSwitch('set');
+      } else { message.error("找不到此 Alias Email 帳號"); }
     } catch (err) { message.error("連線失敗"); }
     finally { setLoading(false); }
   };
 
-  const handleSecurityAction = async (e: React.FormEvent) => {
+  const handleConfirmSecurityAction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aliasemail || !password || !confirmPassword) return message.warning("請填寫所有欄位");
-    if (mode === 'change' && !oldPassword) return message.warning("請輸入舊密碼");
-    if (password !== confirmPassword) return message.error("兩次輸入的新密碼不符");
+    if (mode === 'change' && !oldPassword) return message.warning("請輸入舊密碼以驗證");
+    if (password !== confirmPassword) return message.error("新密碼輸入不一致");
 
     setLoading(true);
-    const hide = message.loading("正在加密並同步至 SharePoint...", 0);
+    const hide = message.loading("正在安全加密並同步至 SharePoint...", 0);
 
     try {
-      // 1. 先獲取最新的用戶 Hash
+      // 1. 抓取用戶
       const user = await sharePointService.getUserByAliasEmail(aliasemail);
-      if (!user) throw new Error("用戶不存在，請聯絡管理員");
+      if (!user) throw new Error("找不到該 Email 帳號");
 
-      // 2. 如果是 Change 模式，需比對舊密碼
+      // 2. 驗證舊密碼 (僅 Change 模式)
       if (mode === 'change') {
-        const isOldValid = bcrypt.compareSync(oldPassword, user.PasswordHash);
-        if (!isOldValid) throw new Error("舊密碼驗證失敗");
+        if (!user.PasswordHash) throw new Error("此帳號未設定過密碼，請選 Set Password");
+        const isOldMatch = bcrypt.compareSync(oldPassword, user.PasswordHash);
+        if (!isOldMatch) throw new Error("舊密碼驗證失敗");
       }
 
-      // 3. ✅ 生成新加密字串 (Patch Back to SPO)
+      // 3. ✅ 加密並 Patch
       const salt = bcrypt.genSaltSync(10);
       const newHash = bcrypt.hashSync(password, salt);
-      
       const success = await sharePointService.updatePasswordByEmail(aliasemail, newHash);
 
       if (success) {
-        message.success(mode === 'set' ? "密碼設定成功！" : "密碼更改成功！");
+        message.success(mode === 'set' ? "密碼設定成功！" : "密碼已更新！");
         setIsFlipped(false);
         resetFields();
-      } else {
-        throw new Error("SharePoint 寫入失敗");
-      }
+      } else { throw new Error("SharePoint 寫入失敗"); }
     } catch (err: any) {
-      message.error(err.message || "發生錯誤");
+      message.error(err.message || "發生系統錯誤");
     } finally {
       hide();
       setLoading(false);
@@ -111,7 +109,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
       <div className="status-indicator">
         <div className="custom-tooltip">
           <div className="icon" style={{ backgroundColor: isConnected ? '#4caf50' : '#f44336' }}>i</div>
-          <div className="tooltiptext">{isConnected ? "SPO Connection: OK" : "Connection Error"}</div>
+          <div className="tooltiptext">{isConnected ? "SPO: OK" : "Token Error"}</div>
         </div>
       </div>
 
@@ -124,8 +122,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
               checked={isFlipped} 
               onChange={(e) => { 
                 setIsFlipped(e.target.checked);
-                // ✅ 關鍵：翻回正面時重置為 set，但翻轉動作由按鈕主導
-                if(!e.target.checked) setMode('set');
+                if (!e.target.checked) setMode('set'); // 翻回正面時重置
                 resetFields();
               }} 
             />
@@ -133,58 +130,59 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
             <span className="side-labels"></span>
 
             <div className="flip-card-container">
-              {/* 正面 */}
+              {/* --- 正面：Log In --- */}
               <div className="flip-card-front-side">
                 <form className="inner-form" onSubmit={handleLogin}>
-                  <div className="text-center">
+                  <div className="text-center mb-1">
                     <h2 className="brand-title">Team Login</h2>
-                    <Text type="secondary" style={{ fontSize: '11px' }}>Inventory Management</Text>
+                    <Text type="secondary" style={{ fontSize: '11px' }}>Stock Take Scheduler</Text>
                   </div>
                   <div className="field-group">
                     <label className="field-label">Alias Email</label>
-                    <input type="text" placeholder="Alias Email" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
+                    <input type="text" placeholder="e.g. kilson.km.li@pccw.com" value={aliasemail} onChange={e => setAliasemail(e.target.value)} />
                   </div>
                   <div className="field-group">
                     <label className="field-label">Password</label>
-                    <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
                   </div>
                   <button className="main-submit-btn" type="submit" disabled={loading}>LOG IN</button>
                   <div className="flex flex-col gap-2 mt-4">
-                    <span className="bottom-link" onClick={() => switchMode('set')}>First time? <a>Set Password</a></span>
-                    <span className="bottom-link" onClick={() => switchMode('change')}>Forgot? <a>Change Password</a></span>
+                    <span className="bottom-link" onClick={() => handleModeSwitch('set')}>First time? <a>Set Password</a></span>
+                    <span className="bottom-link" onClick={() => handleModeSwitch('change')}>Forgot? <a>Change Password</a></span>
                   </div>
                 </form>
               </div>
 
-              {/* 背面 */}
+              {/* --- 背面：Security (Set/Change) --- */}
               <div className="flip-card-back-side">
-                <form className="inner-form" onSubmit={handleSecurityAction}>
-                  <div className="text-center">
+                <form className="inner-form" onSubmit={handleConfirmSecurityAction}>
+                  <div className="text-center mb-1">
                     <h2 className="brand-title" style={{ color: mode === 'change' ? '#3b82f6' : '#44d8a4' }}>
                       {mode === 'change' ? 'Change Password' : 'Set Password'}
                     </h2>
                   </div>
                   <div className="field-group">
                     <label className="field-label">Alias Email</label>
-                    <input type="text" value={aliasemail} onChange={(e) => setAliasemail(e.target.value)} />
+                    <input type="text" value={aliasemail} onChange={e => setAliasemail(e.target.value)} />
                   </div>
 
+                  {/* ✅ 精確顯示 Old Password 欄位 */}
                   {mode === 'change' && (
                     <div className="field-group animate-fade-in">
                       <label className="field-label" style={{ color: '#3b82f6' }}>Old Password</label>
-                      <input type="password" placeholder="Verify Old Password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} style={{ border: '2px solid #3b82f6' }} />
+                      <input type="password" placeholder="Current Password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} style={{ border: '2px solid #3b82f6' }} />
                     </div>
                   )}
 
                   <div className="field-group">
                     <label className="field-label">New Password</label>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
                   </div>
                   <div className="field-group">
-                    <label className="field-label">Confirm New Password</label>
-                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                    <label className="field-label">Confirm Password</label>
+                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
                   </div>
-                  <button className={`main-submit-btn ${mode === 'change' ? 'change-mode-btn' : ''}`} type="submit" disabled={loading}>
+                  <button className={`main-submit-btn ${mode === 'change' ? 'is-change-mode' : ''}`} type="submit" disabled={loading}>
                     {mode === 'change' ? 'UPDATE NOW' : 'SAVE CREDENTIALS'}
                   </button>
                   <span className="bottom-link" onClick={() => setIsFlipped(false)}>Back to <a>Log in</a></span>

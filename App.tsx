@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Layout, Button, Space, Tag, Avatar, message, Typography } from 'antd';
+// ✅ Ensure ConfigProvider is included here
+import { message, Button, Tag, Avatar, Space, Typography, ConfigProvider } from 'antd'; 
 import { 
-  HomeOutlined, ShopOutlined, ToolOutlined, CalendarOutlined, 
-  SettingOutlined, SyncOutlined, UnorderedListOutlined,
-  WarningFilled, BugOutlined 
+  SyncOutlined, 
+  WarningFilled 
 } from '@ant-design/icons';
+// ✅ Use your custom Layout instead of Ant Design's Layout
+import { Layout } from './components/Layout';
 import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
 import { Calendar } from './components/Calendar';
@@ -21,7 +23,7 @@ import SharePointService from './services/SharePointService';
 import './index.css';
 
 const { Content, Header, Sider } = Layout;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 // 權限檢查工具
 const hasAdminAccess = (user: any) => {
@@ -57,7 +59,6 @@ const TruckFlagNotice: React.FC = () => (
 
 function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
-  const [collapsed, setCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(localStorage.getItem('theme') === 'dark');
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
   const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
@@ -66,14 +67,10 @@ function App() {
   const [hasTokenError, setHasTokenError] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
-
-  // 初始化用戶狀態
   const [currentUser, setCurrentUser] = useState<any>(JSON.parse(sessionStorage.getItem('currentUser') || 'null'));
 
-  // 實例化 SharePointService
   const sharePointService = useMemo(() => new SharePointService(graphToken), [graphToken]);
 
-  // 獲取數據函數
   const fetchAllData = useCallback(async (token: string) => {
     if (!token) {
       setHasTokenError(true);
@@ -109,10 +106,9 @@ function App() {
               latitude: parseFloat(f[SP_FIELDS.LATITUDE] || '0'),
               longitude: parseFloat(f[SP_FIELDS.LONGITUDE] || '0'),
               businessUnit: f[SP_FIELDS.BUSINESS_UNIT] || '',
-          
-    brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
-              phone: f[SP_FIELDS.PHONE] || '', // ✅ 加入這行，將 field_37 映射到 record.phone
-    contactName: f[SP_FIELDS.CONTACT] || '', // ✅ 順便映射聯絡人 (field_38)
+              brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
+              phone: f[SP_FIELDS.PHONE] || '',
+              contactName: f[SP_FIELDS.CONTACT] || '',
             };
           });
           setAllShops(mapped);
@@ -127,13 +123,12 @@ function App() {
     }
   }, []);
 
-  // ✅ 更新 Token 同時觸發數據刷新
   const updateGraphToken = (token: string) => {
     setGraphToken(token);
     localStorage.setItem('stockTakeToken', token);
     if (token) {
       setHasTokenError(false);
-      fetchAllData(token); // <--- 即時刷新！
+      fetchAllData(token);
     }
   };
 
@@ -159,11 +154,10 @@ function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     sessionStorage.removeItem('currentUser');
-    message.info("已登出系統");
+    message.info("Logged out successfully");
   };
 
   const renderContent = () => {
-    // 1. Settings 頁面：開放給 Guest 更新 Token
     if (selectedMenuKey === View.SETTINGS) {
       return (
         <Settings 
@@ -175,20 +169,8 @@ function App() {
       );
     }
 
-    // 2. 其他頁面：未登入則顯示 Login
-    if (!currentUser) {
-      return (
-        <Login 
-          sharePointService={sharePointService} 
-          onLoginSuccess={(user) => {
-            setCurrentUser(user);
-            sessionStorage.setItem('currentUser', JSON.stringify(user));
-          }} 
-        />
-      );
-    }
+    if (!currentUser) return null; // Logic handled in return block
     
-    // 3. 已登入功能
     switch (selectedMenuKey) {
       case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} />;
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
@@ -200,68 +182,83 @@ function App() {
     }
   };
 
-  // ✅ 最終渲染結構：完全捨棄 Ant Design Layout 標籤
-// App.tsx 結尾的渲染邏輯
-return (
-  <ConfigProvider
-    theme={{
-      token: {
-        colorPrimary: '#05043e',
-        borderRadius: 8,
-      },
-    }}
-  >
-    {/* 如果未登入且不是 Settings，顯示 Login */}
-    {!currentUser && selectedMenuKey !== View.SETTINGS ? (
-      <Login 
-        sharePointService={sharePointService} 
-        onLoginSuccess={(user) => {
-          setCurrentUser(user);
-          sessionStorage.setItem('currentUser', JSON.stringify(user));
-        }} 
+  return (
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#05043e',
+          borderRadius: 8,
+        },
+      }}
+    >
+      {/* 1. Login Logic: Only show Login if no user and not on Settings page */}
+      {!currentUser && selectedMenuKey !== View.SETTINGS ? (
+        <Login 
+          sharePointService={sharePointService} 
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            sessionStorage.setItem('currentUser', JSON.stringify(user));
+          }} 
+        />
+      ) : (
+        /* 2. Main Application: Wrapped in the new Tooltip Sidebar Layout */
+        /* ✅ Passing the setSelectedMenuKey allows the sidebar to change views */
+        <Layout 
+          onLogout={handleLogout} 
+          user={currentUser} 
+          onViewChange={(key: View) => setSelectedMenuKey(key)}
+          currentView={selectedMenuKey}
+          onReportError={() => setReportModalVisible(true)}
+        >
+          
+          {/* Top Toolbar: Refactored Header content */}
+          <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4">
+              {/* Truck Alert for Token Errors */}
+              {!isInitialLoading && hasTokenError && !loading && <TruckFlagNotice />}
+              
+              <Button 
+                icon={<SyncOutlined spin={loading} />} 
+                onClick={() => fetchAllData(graphToken)}
+                className="hover:border-[#05043e] hover:text-[#05043e]"
+              >
+                Refresh Data
+              </Button>
+              <Tag color="cyan" className="font-bold">POOL: {allShops.length}</Tag>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {currentUser ? (
+                <>
+                  <div className="text-right hidden sm:block">
+                    <div className="text-[12px] font-bold text-[#05043e]">{currentUser.Name}</div>
+                    <div className="text-[10px] text-gray-400 uppercase">{currentUser.UserRole}</div>
+                  </div>
+                  <Avatar 
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.Name}`} 
+                    className="border border-gray-200"
+                  />
+                </>
+              ) : (
+                <Tag color="orange">GUEST (SETUP MODE)</Tag>
+              )}
+            </div>
+          </div>
+
+          {/* Render the selected component */}
+          {renderContent()}
+        </Layout>
+      )}
+
+      <ErrorReport 
+        visible={reportModalVisible} 
+        onCancel={() => setReportModalVisible(false)} 
+        token={graphToken} 
       />
-    ) : (
-      /* ✅ 使用我們新寫的自定義 Layout (在 components/Layout.tsx) */
-      <Layout onLogout={handleLogout} user={currentUser}>
-        
-        {/* 頂部控制列：原本 Header 的內容 */}
-        <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center gap-4">
-            <Button 
-              icon={<SyncOutlined spin={loading} />} 
-              onClick={() => fetchAllData(graphToken)}
-            >
-              Refresh Data
-            </Button>
-            <Tag color="cyan">POOL: {allShops.length}</Tag>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {currentUser && (
-              <>
-                <div className="text-right">
-                  <div className="text-[12px] font-bold">{currentUser.Name}</div>
-                  <div className="text-[10px] text-gray-400">{currentUser.UserRole}</div>
-                </div>
-                <Avatar src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.Name}`} />
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* 頁面內容 */}
-        {renderContent()}
-      </Layout>
-    )}
-
-    {/* 錯誤回報彈窗 */}
-    <ErrorReport 
-      visible={reportModalVisible} 
-      onCancel={() => setReportModalVisible(false)} 
-      token={graphToken} 
-    />
-  </ConfigProvider>
-);
+    </ConfigProvider>
+  );
 }
+
+export default App;
 
 export default App;

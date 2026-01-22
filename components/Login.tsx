@@ -204,7 +204,7 @@ const handleModeSwitch = (e: React.MouseEvent, targetMode: 'set' | 'change') => 
                   </button>
                   <div className="bottom-link">
                     <span className="bottom-link" onClick={() => setIsFlipped(false)}>Back to <a>Log in</a></span>
-                  
+                   </div>
                 </form>
               </div>
             </div>

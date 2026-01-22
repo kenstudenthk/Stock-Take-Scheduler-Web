@@ -109,39 +109,37 @@ class SharePointService {
   // 在你的 sharePointService 內增加：
 // sharePointService.ts
 
+// SharePointService.ts 內的修復版本
+
 async updatePasswordByEmail(email: string, hash: string) {
   try {
-    // 1. 搜尋用戶
-    // ⚠️ 注意：Graph API 的 filter 語法對欄位名稱非常敏感
-    // 確保這裡使用的是 SharePoint 的 Internal Name (通常是 AliasEmail)
-    const searchUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.listId}/items?expand=fields&$filter=fields/AliasEmail eq '${email}'`;
+    // 1. 搜尋用戶：注意這裡使用 $filter，且欄位名直接寫 AliasEmail (不加 fields/)
+    const searchUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items?$expand=fields&$filter=AliasEmail eq '${email}'`;
     
     const searchRes = await fetch(searchUrl, {
       headers: { 
         'Authorization': `Bearer ${this.graphToken}`,
-        'Prefer': 'HonorNonIndexedQueriesWarningMayFail' // 避免欄位未索引導致的 400 錯誤
+        'Prefer': 'HonorNonIndexedQueriesWarningMayFail' 
       }
     });
 
     if (!searchRes.ok) {
       const errorData = await searchRes.json();
-      console.error("Graph API Search Error:", errorData);
+      console.error("❌ 搜尋用戶失敗:", errorData.error?.message);
       return false;
     }
 
     const searchData = await searchRes.json();
-
     if (!searchData.value || searchData.value.length === 0) {
-      console.warn(`User with AliasEmail '${email}' not found in SPO List.`);
+      console.warn("⚠️ 找不到對應 AliasEmail 的用戶");
       return false;
     }
 
-    // 取得 SharePoint Item ID (注意是項目 ID，不是 Fields 內的 ID)
     const itemId = searchData.value[0].id; 
 
     // 2. 執行 PATCH 更新
-    // ⚠️ 更新路徑必須指向 /fields 結尾
-    const updateUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.listId}/items/${itemId}/fields`;
+    // ⚠️ 關鍵：發送到 /fields 結尾時，Payload 不需要包裹 fields 鍵名
+    const updateUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items/${itemId}/fields`;
     
     const updateRes = await fetch(updateUrl, {
       method: 'PATCH',
@@ -150,22 +148,21 @@ async updatePasswordByEmail(email: string, hash: string) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        // 這裡必須對應你的 SharePoint 欄位內部名稱
-        PasswordHash: hash 
+        PasswordHash: hash // ✅ 直接傳送欄位鍵值對
       })
     });
 
-    if (updateRes.ok) {
-      console.log(`Successfully updated PasswordHash for ${email}`);
-      return true;
-    } else {
+    if (!updateRes.ok) {
       const errorDetail = await updateRes.json();
-      console.error("PATCH failed:", errorDetail);
+      console.error("❌ PATCH 失敗詳細原因:", errorDetail.error?.message);
       return false;
     }
 
+    console.log("✅ SharePoint 密碼更新成功");
+    return true;
+
   } catch (error) {
-    console.error("Critical error in updatePasswordByEmail:", error);
+    console.error("❌ SharePoint 嚴重連線錯誤:", error);
     return false;
   }
 }

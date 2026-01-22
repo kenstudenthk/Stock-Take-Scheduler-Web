@@ -49,18 +49,39 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
     }
   };
 
-  const handleConfirmSetPassword = async (e: React.FormEvent) => {
+const handleConfirmSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aliasemail || !password || !confirmPassword) return message.warning("請填寫所有欄位");
     if (password !== confirmPassword) return message.error("兩次輸入的密碼不符");
 
     setLoading(true);
-    message.loading("正在更新密碼...");
-    setTimeout(() => {
-      message.success("密碼設定成功！");
-      setIsFlipped(false);
+    const hide = message.loading("正在加密並更新密碼...", 0); // 0 表示不自動消失
+
+    try {
+      // ✅ 1. 生成加密文字 (Hash)
+      // 使用 10 作為 salt rounds
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(password, salt);
+
+      // ✅ 2. 調用 SharePoint Service 進行更新
+      // 假設您的 sharePointService 有 updatePassword 方法
+      const success = await sharePointService.updatePasswordByEmail(aliasemail, hash);
+
+      if (success) {
+        message.success("密碼設定成功，請重新登入！");
+        setIsFlipped(false);
+        setPassword(''); // 清空密碼欄位
+        setConfirmPassword('');
+      } else {
+        message.error("更新失敗：找不到帳號或連線中斷");
+      }
+    } catch (err) {
+      console.error(err);
+      message.error("發生錯誤，請稍後再試");
+    } finally {
+      hide(); // 隱藏 Loading
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (

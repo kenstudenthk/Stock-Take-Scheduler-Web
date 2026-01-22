@@ -68,8 +68,8 @@ export const Layout: React.FC<LayoutProps> = ({
             </a>
           </li>
           
-          <li onClick={onReportError}>
-            <a className="report-link">
+          <li>
+            <a className="report-link" onClick={onReportError} style={{ cursor: 'pointer' }}>
               <i className="text-red-400"><FileWarning /></i>
               <span className="text-red-400">Report Error</span>
             </a>

@@ -248,6 +248,22 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
       </div>
 
       <style>{`
+        @keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* 確保背面卡片能容納所有欄位 */
+.flip-card-back-side {
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
         .login-viewport-wrapper { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; padding-top: 5vh; background-color: transparent; }
         .main-login-container { position: relative; display: flex; flex-direction: column; align-items: center; width: 400px; z-index: 10; }
         .hidden-toggle { display: none; }

@@ -185,41 +185,44 @@ function App() {
     }
   };
 
-  return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#05043e',
-          borderRadius: 8,
-        },
-      }}
+  // App.tsx 核心結構修正
+return (
+  <ConfigProvider
+    theme={{
+      token: {
+        colorPrimary: '#05043e',
+        borderRadius: 8,
+      },
+    }}
+  >
+    {/* ✅ 1. Layout 永遠作為父組件，確保側邊欄固定顯示 */}
+    <Layout 
+      onLogout={handleLogout} 
+      user={currentUser} 
+      onViewChange={(key: View) => setSelectedMenuKey(key)}
+      currentView={selectedMenuKey}
+      onReportError={() => setReportModalVisible(true)}
     >
-      {/* 1. Login Logic: Only show Login if no user and not on Settings page */}
+      
+      {/* ✅ 2. 判斷顯示 Login 還是 主內容 */}
       {!currentUser && selectedMenuKey !== View.SETTINGS ? (
+        /* 未登入且不是在設定頁：顯示 Login */
         <Login 
           sharePointService={sharePointService} 
           onLoginSuccess={(user) => {
             setCurrentUser(user);
             sessionStorage.setItem('currentUser', JSON.stringify(user));
-          }} 
+          }}
+          // ✅ 傳入跳轉功能，讓 Login 內部的錯誤訊息可以點擊
+          onNavigateToSettings={() => setSelectedMenuKey(View.SETTINGS)}
         />
       ) : (
-        /* 2. Main Application: Wrapped in the new Tooltip Sidebar Layout */
-        /* ✅ Passing the setSelectedMenuKey allows the sidebar to change views */
-        <Layout 
-          onLogout={handleLogout} 
-          user={currentUser} 
-          onViewChange={(key: View) => setSelectedMenuKey(key)}
-          currentView={selectedMenuKey}
-          onReportError={() => setReportModalVisible(true)}
-        >
-          
-          {/* Top Toolbar: Refactored Header content */}
+        /* 已登入 或 正在設定頁：顯示頂部工具列與內容 */
+        <>
+          {/* Top Toolbar (Refresh, User Info) */}
           <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center gap-4">
-              {/* Truck Alert for Token Errors */}
               {!isInitialLoading && hasTokenError && !loading && <TruckFlagNotice />}
-              
               <Button 
                 icon={<SyncOutlined spin={loading} />} 
                 onClick={() => fetchAllData(graphToken)}
@@ -248,18 +251,19 @@ function App() {
             </div>
           </div>
 
-          {/* Render the selected component */}
+          {/* 渲染具體分頁組件 */}
           {renderContent()}
-        </Layout>
+        </>
       )}
+    </Layout>
 
-      <ErrorReport 
-        visible={reportModalVisible} 
-        onCancel={() => setReportModalVisible(false)} 
-        token={graphToken} 
-      />
-    </ConfigProvider>
-  );
+    <ErrorReport 
+      visible={reportModalVisible} 
+      onCancel={() => setReportModalVisible(false)} 
+      token={graphToken} 
+    />
+  </ConfigProvider>
+);
 }
 
 export default App;

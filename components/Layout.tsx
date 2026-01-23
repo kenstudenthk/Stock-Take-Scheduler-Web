@@ -17,16 +17,18 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
   ];
 
 return (
-    <div className="custom-app-layout flex">
-      {/* 側邊導航 */}
-      <aside className="uiverse-sidebar-wrapper">
-        
-        {/* ✅ 頂部 Logo 區塊 */}
+  <div className="custom-app-layout flex">
+    {/* 側邊導航 */}
+    <aside className="uiverse-sidebar-wrapper">
+      
+      {/* ✅ 1. 獨立的 Logo 區塊：負責對齊 Header */}
+      <div className="nav-logo-slot">
         <div className="nav-brand-logo">ST</div>
-        
-        {/* ✅ 中間選單區塊：負責垂直置中 */}
-       
-          <ul className="uiverse-nav-ul">
+      </div>
+      
+      {/* ✅ 2. 獨立的選單區塊：負責在剩餘空間垂直置中 */}
+      <div className="nav-menu-slot">
+        <ul className="uiverse-nav-ul">
             {menuItems.map((item) => (
               <li key={item.key}>
                 <a 
@@ -67,8 +69,9 @@ return (
               </a>
             </li>
           </ul>
-        
-      </aside>
+        </div>
+
+    </aside>
 
       {/* 主內容區 */}
       <main className="custom-main-content">

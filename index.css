@@ -105,44 +105,45 @@ background-color: var(--bg-header) !important;
 }
 
 /* ============================================================
-   3. UI VERSE SIDEBAR - LOGO COLUMN SOLUTION (100% 修正版)
+   3. UI VERSE TOOLTIP SIDEBAR (Logo Column 獨立槽位版)
    ============================================================ */
 
-/* 側邊欄總容器：佔滿全高，垂直排列內部區塊 */
+/* 側邊欄外層：控制垂直排列方向 */
 .uiverse-sidebar-wrapper {
     position: fixed;
     left: 0;
     top: 0;
     height: 100vh;
-    width: 100px;
+    width: 90px;
     z-index: 5000;
     display: flex;
-    flex-direction: column;
-    pointer-events: none; /* 透明區域可穿透點擊 */
+    flex-direction: column; /* ❗ 改為垂直排列，頂部放 Logo，中間放選單 */
+    pointer-events: none;
 }
 
-/* ✅ 修正 1：Logo 獨立欄位 - 高度設為 64px 以對齊 Header */
+/* ✅ 修正 1：Logo 槽位 - 高度設為 64px 以精確對齊 Header */
 .nav-logo-slot {
-    height: 64px;          /* ❗ 精確對齊您 App.tsx 中 Header 的高度 */
+    height: 64px;          /* ❗ 這是您 App.tsx 中 Header 的高度 */
     display: flex;
-    align-items: center;   /* 垂直置中文字 */
-    justify-content: flex-start; 
-    padding-left: 18px;    /* ❗ 調整此值將 Logo 定位於紅圈中心 */
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 20px;    /* ❗ 將 Logo 橫向移至紅圈中心 */
     pointer-events: auto;
 }
 
 .nav-brand-logo {
     color: #05043e !important;
     font-weight: 900;
-    font-size: 1.8rem;
+    font-size: 1.7rem;
     letter-spacing: -1.5px;
+    display: block !important;
 }
 
-/* ✅ 修正 2：選單獨立欄位 - 佔滿剩下空間並將 ul 推至正中間 */
+/* ✅ 修正 2：選單槽位 - 佔據剩下空間並垂直居中 */
 .nav-menu-slot {
-    flex: 1;               /* 佔據 Logo 以外的所有高度 */
+    flex: 1;               /* ❗ 佔據除頂部 64px 以外的所有螢幕高度 */
     display: flex;
-    align-items: center;   /* 關鍵：讓內部的 ul 在這個槽位內垂直置中 */
+    align-items: center;   /* ❗ 讓內部的 ul 在這個區域內垂直置中 */
     justify-content: center;
 }
 
@@ -158,20 +159,50 @@ background-color: var(--bg-header) !important;
     pointer-events: auto;
 }
 
-/* 確保 Dashboard 等標籤彈出時在最上層 */
+/* 強制圖標顯示 */
+.uiverse-nav-ul a i, 
+.uiverse-nav-ul a .anticon {
+    font-size: 1.4rem !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.uiverse-nav-ul a {
+    color: #FFF !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.2rem;
+    height: 3.2rem;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.uiverse-nav-ul a:hover, 
+.uiverse-nav-ul a.active {
+    background-color: #30305a;
+}
+
+/* Tooltip 名稱標籤：向右偏移避免碰撞 */
 .uiverse-nav-ul a span {
     position: absolute;
     background-color: #30305a;
     color: #fff;
     white-space: nowrap;
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
     left: calc(100% + 1.5rem); 
-    z-index: 9999;
-    font-weight: 800;
+    transform-origin: center left;
     transform: scale(0);
     opacity: 0;
     transition: 0.15s ease;
+    z-index: 6000;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
 }
 
 .uiverse-nav-ul a:hover span {
@@ -179,7 +210,7 @@ background-color: var(--bg-header) !important;
     opacity: 1;
 }
 
-/* 修正主內容邊距，防止被選單遮擋 */
+/* 內容區塊防重疊 */
 .custom-main-content {
     flex: 1;
     margin-left: 110px !important; 
@@ -187,11 +218,7 @@ background-color: var(--bg-header) !important;
     min-height: 100vh;
 }
 
-/* 其他圖標與間距設置保持不變... */
-.uiverse-nav-ul a i, .uiverse-nav-ul a .anticon { font-size: 1.4rem !important; display: flex !important; }
-.uiverse-nav-ul a { display: flex; align-items: center; justify-content: center; width: 3.2rem; height: 3.2rem; cursor: pointer; color: #FFF; position: relative; border-radius: 10px; }
-.uiverse-nav-ul a:hover, .uiverse-nav-ul a.active { background-color: #30305a; }
-.nav-item-sep { margin-top: 1.5rem !important; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); }
+.nav-item-sep { margin-top: 1.5rem !important; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1); }
 .uiverse-nav-ul li + li { margin-top: 0.75rem; }
 /* 登出紅色效果 .logout-nav-btn:hover { background-color: #ef4444 !important; }*/
 /* ============================================================

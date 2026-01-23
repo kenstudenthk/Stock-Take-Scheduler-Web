@@ -105,22 +105,20 @@ background-color: var(--bg-header) !important;
 }
 
 /* ============================================================
-   3. UI VERSE TOOLTIP SIDEBAR (完全修正對齊與重疊)
+   3. UI VERSE TOOLTIP SIDEBAR (完全修正對齊、重疊與可見度)
    ============================================================ */
 
-/* 側邊欄總容器：佔滿全高，但不阻擋內容點擊 */
+/* 側邊欄總容器：固定在左側，不阻擋後方內容點擊 */
 .uiverse-sidebar-wrapper {
     position: fixed;
     left: 0;
     top: 0;
     height: 100vh;
-    width: 90px;
+    width: 100px;        /* 固定寬度，確保 ST Logo 空間 */
     z-index: 5000;
     display: flex;
     flex-direction: column;
-    /* ✅ 移除原有的 justify-content: center，改用分段佈局 */
-    align-items: center;
-    pointer-events: none;
+    pointer-events: none; /* 穿透透明區域 */
 }
 
 /* 恢復內部元素的點擊功能 */
@@ -128,14 +126,14 @@ background-color: var(--bg-header) !important;
     pointer-events: auto;
 }
 
-/* ✅ 修正 1：ST Logo - 100% 定位於「紅圈」位置 (對齊 Header) */
+/* ✅ 修正 1：ST Logo - 從紅框移到「紅圈」位置 (對齊 Header) */
 .nav-brand-logo {
-    position: absolute;   /* ❗ 絕對定位，釘在頂部 */
+    position: absolute;   /* ❗ 徹底脫離選單流，解決垂直位置錯誤 */
     
-    /* ❗ 垂直位置：與右側內容區的 Toolbar 完美對齊 */
-    top: 26px;            
+    /* ❗ 垂直對齊：對齊右側 Header 的文字位置 (28px 通常最理想) */
+    top: 28px;            
     
-    /* ❗ 水平位置：往左移出 Icons 垂直線。數值越小，越靠近左邊邊緣 */
+    /* ❗ 水平對齊：移動到紅圈處。數值越小越靠左 */
     left: 18px;           
     
     color: #05043e !important;
@@ -143,15 +141,19 @@ background-color: var(--bg-header) !important;
     font-size: 1.7rem;
     letter-spacing: -1.5px;
     z-index: 5001;
-    width: auto;          /* 確保不會佔滿寬度而導致水平居中 */
-    text-align: left;
+    display: block !important; /* ❗ 強制渲染防止消失 */
+    white-space: nowrap;
 }
 
-/* ✅ 修正 2：選單列表 - 利用 margin: auto 達成獨立垂直置中 */
+/* ✅ 修正 2：選單列表 (深藍色條) - 獨立在畫面中心垂直置中 */
 .uiverse-nav-ul {
+    position: absolute;   /* ❗ 關鍵：使用絕對定位達成真正的垂直居中 */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* ❗ 解決 Logo 與選單重疊的終極方案 */
+    
     list-style: none;
-    /* ❗ 關鍵：margin-top: auto 搭配 margin-bottom: auto 會將選單推到螢幕正中心 */
-    margin: auto 0;       
+    margin: 0;
     padding: .75rem;
     background-color: #05043e;
     display: flex;
@@ -160,10 +162,10 @@ background-color: var(--bg-header) !important;
     box-shadow: 0 10px 50px 0 rgba(5, 4, 62, 0.3);
 }
 
-/* 修正 Ant Design 圖標顯示權重 */
+/* 修正 Ant Design 圖標顯示 */
 .uiverse-nav-ul a i, 
 .uiverse-nav-ul a .anticon {
-    font-size: 1.45rem !important;
+    font-size: 1.4rem !important;
     display: flex !important;
     align-items: center;
     justify-content: center;
@@ -187,7 +189,7 @@ background-color: var(--bg-header) !important;
     background-color: #30305a;
 }
 
-/* ✅ 修正 3：Tooltip 標籤 - 確保彈出時不與 Logo 衝突 */
+/* ✅ 修正 3：Tooltip 標籤 - 名稱向右彈出，不遮擋左上角的 Logo */
 .uiverse-nav-ul a span {
     position: absolute;
     background-color: #30305a;
@@ -195,45 +197,34 @@ background-color: var(--bg-header) !important;
     white-space: nowrap;
     padding: 0.6rem 1.2rem;
     border-radius: 8px;
-    /* ❗ 向右彈出：避開左上角的 Logo */
     left: calc(100% + 1.5rem); 
     transform-origin: center left;
     transform: scale(0);
     opacity: 0;
     transition: 0.15s ease;
-    z-index: 6000;         /* ❗ 高於 Logo 的 5001 */
+    z-index: 6000;         /* 權重最高 */
     font-weight: 800;
     font-size: 13px;
     box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
 }
 
-/* 小三角形 */
+/* 氣泡小三角形 (依範本) */
 .uiverse-nav-ul a span:before {
-    content: "";
-    position: absolute;
-    background-color: #30305a;
-    width: 10px;
-    height: 10px;
-    left: -4px;
-    top: 50%;
+    content: ""; position: absolute; background-color: #30305a;
+    width: 10px; height: 10px; left: -4px; top: 50%;
     transform: translateY(-50%) rotate(45deg);
 }
 
-.uiverse-nav-ul a:hover span {
-    transform: scale(1);
-    opacity: 1;
-}
+.uiverse-nav-ul a:hover span { transform: scale(1); opacity: 1; }
 
-/* ✅ 修正 4：解決「內容與選單重疊」 */
+/* ✅ 修正 4：防止右側內容區域遮擋 Logo 或 Menu */
 .custom-main-content {
     flex: 1;
-    /* ❗ margin-left 必須設定，讓主內容從側邊欄右側開始 */
-    margin-left: 110px !important; 
+    margin-left: 110px !important; /* ❗ 必須大於側邊欄寬度 */
     padding: 30px;
     min-height: 100vh;
 }
 
-/* 分隔線 (Settings 之前) */
 .nav-item-sep {
     margin-top: 1.5rem !important;
     padding-top: 1rem;

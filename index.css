@@ -130,10 +130,10 @@ background-color: var(--bg-header) !important;
 .nav-brand-logo {
     position: absolute;   /* ❗ 徹底脫離選單流，解決垂直位置錯誤 */
     
-    /* ❗ 垂直對齊：對齊右側 Header 的文字位置 (28px 通常最理想) */
+    /* ❗ 垂直對齊：對齊右側 Header 的文字位置 (28px 通常與您 Header 同高) */
     top: 28px;            
     
-    /* ❗ 水平對齊：移動到紅圈處。數值越小越靠左 */
+    /* ❗ 水平對齊：移動到紅圈處。5px ~ 10px 會讓它非常靠左 */
     left: 5px;           
     
     color: #05043e !important;
@@ -147,10 +147,10 @@ background-color: var(--bg-header) !important;
 
 /* ✅ 修正 2：選單列表 (深藍色條) - 獨立在畫面中心垂直置中 */
 .uiverse-nav-ul {
-    position: absolute;   /* ❗ 關鍵：使用絕對定位達成真正的垂直居中 */
+    position: absolute;   /* ❗ 使用絕對定位達成真正的垂直居中，不被 Logo 影響 */
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%); /* ❗ 解決 Logo 與選單重疊的終極方案 */
+    transform: translate(-50%, -50%); 
     
     list-style: none;
     margin: 0;
@@ -162,7 +162,7 @@ background-color: var(--bg-header) !important;
     box-shadow: 0 10px 50px 0 rgba(5, 4, 62, 0.3);
 }
 
-/* 修正 Ant Design 圖標顯示 */
+/* 修正 Ant Design 圖標顯示權重 */
 .uiverse-nav-ul a i, 
 .uiverse-nav-ul a .anticon {
     font-size: 1.4rem !important;
@@ -202,7 +202,7 @@ background-color: var(--bg-header) !important;
     transform: scale(0);
     opacity: 0;
     transition: 0.15s ease;
-    z-index: 6000;         /* 權重最高 */
+    z-index: 6000;         /* 權重最高，確保 Dashboard 等文字在 Logo 之上 */
     font-weight: 800;
     font-size: 13px;
     box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
@@ -220,11 +220,12 @@ background-color: var(--bg-header) !important;
 /* ✅ 修正 4：防止右側內容區域遮擋 Logo 或 Menu */
 .custom-main-content {
     flex: 1;
-    margin-left: 110px !important; /* ❗ 必須大於側邊欄寬度 */
+    margin-left: 110px !important; /* ❗ 必須大於側邊欄寬度 (100px) */
     padding: 30px;
     min-height: 100vh;
 }
 
+/* 分隔線與細節間距 */
 .nav-item-sep {
     margin-top: 1.5rem !important;
     padding-top: 1rem;

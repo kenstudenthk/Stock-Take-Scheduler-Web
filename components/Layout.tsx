@@ -8,55 +8,68 @@ import { View } from '../types';
 
 export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, currentView, onReportError }) => {
   const menuItems = [
-    { key: View.DASHBOARD, label: 'Home', icon: <HomeOutlined /> },
+    { key: View.DASHBOARD, label: 'Dashboard', icon: <HomeOutlined /> },
     { key: View.SHOP_LIST, label: 'Master List', icon: <DatabaseOutlined /> },
     { key: View.CALENDAR, label: 'Schedules', icon: <CalendarOutlined /> },
     { key: View.GENERATOR, label: 'Generator', icon: <SafetyCertificateOutlined /> },
     { key: View.LOCATIONS, label: 'Map View', icon: <EnvironmentOutlined /> },
     { key: View.INVENTORY, label: 'Inventory', icon: <DatabaseOutlined /> },
-    { key: View.SETTINGS, label: 'Settings', icon: <SettingOutlined /> },
   ];
 
-return (
-    <div className="custom-app-layout">
+  return (
+    <div className="custom-app-layout flex">
+      {/* 側邊導航容器 */}
       <aside className="uiverse-sidebar-wrapper">
         
-        {/* ✅ 槽位 1：頂部 Logo 區塊 - 釘在紅圈位置 */}
+        {/* ✅ 1. 獨立 Logo 區塊：釘在頂部紅圈位置，對齊 Header */}
         <div className="nav-logo-slot">
           <div className="nav-brand-logo">ST</div>
         </div>
         
-        {/* ✅ 槽位 2：選單區塊 - 在剩餘高度內垂直置中 */}
+        {/* ✅ 2. 獨立選單區塊：負責在剩餘空間垂直置中，避免與 Logo 重疊 */}
         <div className="nav-menu-slot">
           <ul className="uiverse-nav-ul">
             {menuItems.map((item) => (
-              <li key={item.key} className="navbar__item">
+              <li key={item.key}>
                 <a 
                   onClick={() => onViewChange(item.key)}
-                  className={`navbar__link ${currentView === item.key ? 'active' : ''}`}
+                  className={currentView === item.key ? 'active' : ''}
                 >
-                  <i className="anticon-wrapper">{item.icon}</i>
+                  <i>{item.icon}</i>
                   <span>{item.label}</span>
                 </a>
               </li>
             ))}
+
+            <li className="nav-item-sep">
+              <a onClick={() => onViewChange(View.SETTINGS)} className={currentView === View.SETTINGS ? 'active' : ''}>
+                <i><SettingOutlined /></i>
+                <span>Settings</span>
+              </a>
+            </li>
             
-            <li className="navbar__item" onClick={onReportError}>
-              <a className="navbar__link">
-                <i className="anticon-wrapper text-red-500"><BugOutlined /></i>
-                <span className="text-red-500">Report Error</span>
+            <li onClick={onReportError}>
+              <a className="report-link">
+                <i className="text-red-400"><BugOutlined /></i>
+                <span className="text-red-400">Report Error</span>
               </a>
             </li>
 
-            <li className="navbar__item">
-              <a onClick={onLogout} className="navbar__link">
-                <i className="anticon-wrapper"><LogoutOutlined /></i>
+            <li>
+              <a className="profile-nav-btn">
+                <i><UserOutlined /></i>
+                <span>{user?.Name || 'Profile'}</span>
+              </a>
+            </li>
+            
+            <li>
+              <a onClick={onLogout} className="logout-nav-btn">
+                <i><LogoutOutlined /></i>
                 <span>Logout</span>
               </a>
             </li>
           </ul>
         </div>
-
       </aside>
 
       {/* 主內容區 */}

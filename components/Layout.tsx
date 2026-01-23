@@ -16,17 +16,15 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
     { key: View.INVENTORY, label: 'Inventory', icon: <DatabaseOutlined /> },
   ];
 
-  return (
-    <div className="custom-app-layout">
+return (
+    <div className="custom-app-layout flex">
       {/* 側邊導航 */}
       <aside className="uiverse-sidebar-wrapper">
         
-        {/* ✅ 獨立 Logo 區塊：高度與 Header 對齊 */}
-        <div className="nav-logo-section">
-          <div className="nav-brand-logo">ST</div>
-        </div>
+        {/* ✅ 頂部 Logo 區塊 */}
+        <div className="nav-brand-logo">ST</div>
         
-        {/* ✅ 選單區塊：負責在剩餘空間垂直置中 */}
+        {/* ✅ 中間選單區塊：負責垂直置中 */}
         <div className="nav-menu-container">
           <ul className="uiverse-nav-ul">
             {menuItems.map((item) => (

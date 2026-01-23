@@ -8,7 +8,7 @@ import { View } from '../types';
 
 export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, currentView, onReportError }) => {
   const menuItems = [
-    { key: View.DASHBOARD, label: 'Dashboard', icon: <HomeOutlined /> },
+    { key: View.DASHBOARD, label: 'Home', icon: <HomeOutlined /> },
     { key: View.SHOP_LIST, label: 'Master List', icon: <DatabaseOutlined /> },
     { key: View.CALENDAR, label: 'Schedules', icon: <CalendarOutlined /> },
     { key: View.GENERATOR, label: 'Generator', icon: <SafetyCertificateOutlined /> },
@@ -19,13 +19,13 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
 
   return (
     <div className="custom-app-layout">
-      {/* 側邊導航容器 */}
+      {/* 側邊導航總容器 */}
       <aside className="uiverse-sidebar-wrapper">
         
-        {/* ✅ Logo 固定在左上角 (紅圈位置) */}
+        {/* ✅ Logo：獨立在頂部，CSS 會將其固定在左上角紅圈處 */}
         <div className="nav-brand-logo">ST</div>
 
-        {/* ✅ 新的 Gooey Navbar 結構 */}
+        {/* ✅ Gooey 選單條：CSS 會將這塊條狀物獨立垂直置中 */}
         <nav className="navbar">
           <ul className="navbar__menu">
             {menuItems.map((item) => (
@@ -39,18 +39,11 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
                 </a>
               </li>
             ))}
-
+            
             <li className="navbar__item" onClick={onReportError}>
               <a className="navbar__link">
                 <i className="anticon-wrapper text-red-500"><BugOutlined /></i>
                 <span className="text-red-500">Report Error</span>
-              </a>
-            </li>
-
-            <li className="navbar__item">
-              <a className="navbar__link">
-                <i className="anticon-wrapper"><UserOutlined /></i>
-                <span>{user?.Name || 'Profile'}</span>
               </a>
             </li>
 

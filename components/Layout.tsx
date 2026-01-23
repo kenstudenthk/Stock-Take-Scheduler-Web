@@ -18,54 +18,58 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
 
   return (
     <div className="custom-app-layout">
-      {/* 側邊導航容器 */}
+      {/* 側邊導航 */}
       <aside className="uiverse-sidebar-wrapper">
         
-        {/* ✅ Logo：獨立在頂部，CSS 會將它移動到左上角對齊 Header */}
-        <div className="nav-brand-logo">ST</div>
+        {/* ✅ 獨立 Logo 區塊：高度與 Header 對齊 */}
+        <div className="nav-logo-section">
+          <div className="nav-brand-logo">ST</div>
+        </div>
         
-        {/* ✅ 選單：在螢幕垂直置中 */}
-        <ul className="uiverse-nav-ul">
-          {menuItems.map((item) => (
-            <li key={item.key}>
-              <a 
-                onClick={() => onViewChange(item.key)}
-                className={currentView === item.key ? 'active' : ''}
-              >
-                <i>{item.icon}</i>
-                <span>{item.label}</span>
+        {/* ✅ 選單區塊：負責在剩餘空間垂直置中 */}
+        <div className="nav-menu-container">
+          <ul className="uiverse-nav-ul">
+            {menuItems.map((item) => (
+              <li key={item.key}>
+                <a 
+                  onClick={() => onViewChange(item.key)}
+                  className={currentView === item.key ? 'active' : ''}
+                >
+                  <i>{item.icon}</i>
+                  <span>{item.label}</span>
+                </a>
+              </li>
+            ))}
+
+            <li className="nav-item-sep">
+              <a onClick={() => onViewChange(View.SETTINGS)} className={currentView === View.SETTINGS ? 'active' : ''}>
+                <i><SettingOutlined /></i>
+                <span>Settings</span>
               </a>
             </li>
-          ))}
+            
+            <li onClick={onReportError}>
+              <a className="report-link">
+                <i className="text-red-400"><BugOutlined /></i>
+                <span className="text-red-400">Report Error</span>
+              </a>
+            </li>
 
-          <li className="nav-item-sep">
-            <a onClick={() => onViewChange(View.SETTINGS)} className={currentView === View.SETTINGS ? 'active' : ''}>
-              <i><SettingOutlined /></i>
-              <span>Settings</span>
-            </a>
-          </li>
-          
-          <li onClick={onReportError}>
-            <a className="report-link">
-              <i className="text-red-400"><BugOutlined /></i>
-              <span className="text-red-400">Report Error</span>
-            </a>
-          </li>
-
-          <li>
-            <a className="profile-nav-btn">
-              <i><UserOutlined /></i>
-              <span>{user?.Name || 'Profile'}</span>
-            </a>
-          </li>
-          
-          <li>
-            <a onClick={onLogout} className="logout-nav-btn">
-              <i><LogoutOutlined /></i>
-              <span>Logout</span>
-            </a>
-          </li>
-        </ul>
+            <li>
+              <a className="profile-nav-btn">
+                <i><UserOutlined /></i>
+                <span>{user?.Name || 'Profile'}</span>
+              </a>
+            </li>
+            
+            <li>
+              <a onClick={onLogout} className="logout-nav-btn">
+                <i><LogoutOutlined /></i>
+                <span>Logout</span>
+              </a>
+            </li>
+          </ul>
+        </div>
       </aside>
 
       {/* 主內容區 */}

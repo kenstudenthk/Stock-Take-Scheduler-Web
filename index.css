@@ -149,6 +149,24 @@ background-color: var(--bg-header) !important;
     pointer-events: auto;
 }
 
+.nav-item-sep {
+    margin-top: 1.5rem !important;
+    padding-top: 1rem;
+    /* 使用稍亮的白色透明度，確保在深藍色背景上清晰可見 */
+    border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* ✅ 修正 2：恢復 Logout 按鈕的紅色 Hover 效果 */
+.logout-nav-btn:hover { 
+    background-color: #ef4444 !important; 
+    transition: background-color 0.3s ease;
+}
+
+/* 確保圖標在紅色背景下依然清晰 */
+.logout-nav-btn:hover .nav-icon-slot {
+    color: #fff !important;
+}
+
 /* ✅ 解決「紅圈」位置圖標不見的問題 */
 .nav-icon-slot {
     font-size: 1.4rem !important;

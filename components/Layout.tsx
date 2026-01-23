@@ -16,63 +16,59 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
     { key: View.INVENTORY, label: 'Inventory', icon: <DatabaseOutlined /> },
   ];
 
-  return (
-    <div className="custom-app-layout flex">
-      {/* 側邊導航容器 */}
+return (
+    <div className="custom-app-layout">
       <aside className="uiverse-sidebar-wrapper">
         
-        {/* ✅ 1. 獨立 Logo 區塊：釘在頂部紅圈位置，對齊 Header */}
-        <div className="nav-logo-slot">
-          <div className="nav-brand-logo">ST</div>
-        </div>
+        {/* ✅ 1. 品牌標誌：固定在紅圈位置 (對齊 Header) */}
+        <div className="nav-brand-logo">ST</div>
         
-        {/* ✅ 2. 獨立選單區塊：負責在剩餘空間垂直置中，避免與 Logo 重疊 */}
-        <div className="nav-menu-slot">
-          <ul className="uiverse-nav-ul">
-            {menuItems.map((item) => (
-              <li key={item.key}>
+        {/* ✅ 2. 獨立選單條：負責垂直置中 */}
+        <ul className="uiverse-nav-ul">
+          {menuItems.map((item) => (
+            <li key={item.key}>
                 <a 
                   onClick={() => onViewChange(item.key)}
                   className={currentView === item.key ? 'active' : ''}
                 >
-                  <i>{item.icon}</i>
-                  <span>{item.label}</span>
+                  {/* ❗ 這裡就是紅圈位置 (圖標) */}
+                <i className="nav-icon-slot">{item.icon}</i>
+                {/* ❗ 這裡就是紅框位置 (文字)，CSS 會將其移至右側避免重疊 */}
+                <span className="nav-label-tooltip">{item.label}</span>
                 </a>
               </li>
             ))}
 
-            <li className="nav-item-sep">
-              <a onClick={() => onViewChange(View.SETTINGS)} className={currentView === View.SETTINGS ? 'active' : ''}>
-                <i><SettingOutlined /></i>
-                <span>Settings</span>
-              </a>
-            </li>
-            
-            <li onClick={onReportError}>
-              <a className="report-link">
-                <i className="text-red-400"><BugOutlined /></i>
-                <span className="text-red-400">Report Error</span>
-              </a>
-            </li>
+           <li className="nav-item-sep">
+            <a onClick={() => onViewChange(View.SETTINGS)} className={currentView === View.SETTINGS ? 'active' : ''}>
+              <i className="nav-icon-slot"><SettingOutlined /></i>
+              <span className="nav-label-tooltip">Settings</span>
+            </a>
+          </li>
+          
+          <li onClick={onReportError}>
+            <a className="report-link">
+              <i className="nav-icon-slot text-red-400"><BugOutlined /></i>
+              <span className="nav-label-tooltip text-red-400">Report Error</span>
+            </a>
+          </li>
 
-            <li>
-              <a className="profile-nav-btn">
-                <i><UserOutlined /></i>
-                <span>{user?.Name || 'Profile'}</span>
-              </a>
-            </li>
-            
-            <li>
-              <a onClick={onLogout} className="logout-nav-btn">
-                <i><LogoutOutlined /></i>
-                <span>Logout</span>
-              </a>
-            </li>
-          </ul>
-        </div>
+          <li>
+            <a className="profile-nav-btn">
+              <i className="nav-icon-slot"><UserOutlined /></i>
+              <span className="nav-label-tooltip">{user?.Name || 'Profile'}</span>
+            </a>
+          </li>
+          
+          <li>
+            <a onClick={onLogout} className="logout-nav-btn">
+              <i className="nav-icon-slot"><LogoutOutlined /></i>
+              <span className="nav-label-tooltip">Logout</span>
+            </a>
+          </li>
+        </ul>
       </aside>
 
-      {/* 主內容區 */}
       <main className="custom-main-content">
         {children}
       </main>

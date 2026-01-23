@@ -18,11 +18,13 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
 
   return (
     <div className="custom-app-layout">
+      {/* 側邊導航容器 */}
       <aside className="uiverse-sidebar-wrapper">
-        {/* ✅ Logo 獨立定位在左上角 */}
+        
+        {/* ✅ Logo：獨立在頂部，CSS 會將它移動到左上角對齊 Header */}
         <div className="nav-brand-logo">ST</div>
         
-        {/* ✅ 選單在剩下的螢幕空間中垂直居中 */}
+        {/* ✅ 選單：在螢幕垂直置中 */}
         <ul className="uiverse-nav-ul">
           {menuItems.map((item) => (
             <li key={item.key}>
@@ -66,6 +68,7 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
         </ul>
       </aside>
 
+      {/* 主內容區 */}
       <main className="custom-main-content">
         {children}
       </main>

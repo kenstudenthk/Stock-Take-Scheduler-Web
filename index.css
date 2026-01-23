@@ -101,126 +101,117 @@ background-color: var(--bg-header) !important;
 }
 
 /* ============================================================
-   3. UI VERSE TOOLTIP SIDEBAR (完全依照 SCSS 範本與對齊修正)
+   3. UI VERSE TOOLTIP SIDEBAR (完全修正對齊、位置與圖標顯示)
    ============================================================ */
 
-/* 隱藏 AntD 原始導航元素 */
+/* 1. 隱藏 AntD 原始元素 */
 .ant-layout-header, .ant-layout-sider {
     display: none !important;
 }
 
-/* 側邊欄總容器：透明、佔滿全高 */
+/* 2. 側邊欄容器：負責控制整體定位與垂直置中 */
 .uiverse-sidebar-wrapper {
     position: fixed;
     left: 0;
     top: 0;
     height: 100vh;
-    width: 90px;
+    width: 80px;        /* 縮小寬度，讓 Logo 看起來更靠左 */
     z-index: 5000;
     display: flex;
     flex-direction: column;
-    align-items: center; /* 選單水平置中 */
-    pointer-events: none; /* 穿透點擊 */
+    justify-content: center; /* ✅ 讓 ul 選單在整個畫面垂直置中 */
+    align-items: center;
+    pointer-events: none;    /* 防止透明遮罩擋住內容點擊 */
 }
 
-/* 恢復點擊 */
+/* 恢復 Logo 和選單的點擊功能 */
 .nav-brand-logo, .uiverse-nav-ul {
     pointer-events: auto;
 }
 
-/* ✅ 修正 1：ST Logo 精確對齊 Header 並往左移動 */
+/* 3. ✅ 修正 ST Logo：對齊 Header 並往左移動 */
 .nav-brand-logo {
-    position: absolute;
-    /* 這裡的 32px 是配合右側 padding: 30px 的對齊 */
-    top: 32px;            
-    /* ❗ 這裡調整 left 值。數值越小，Logo 越往左邊貼 */
-    left: 14px;           
+    position: absolute;      /* 脫離 Flex 佈局 */
+    top: 30px;               /* ❗ 這個值對齊右側 Header 的文字高度 */
+    left: 15px;              /* ❗ 往左移的位置，您可以根據紅圈微調此數值 */
     
     color: #05043e !important;
     font-weight: 900;
-    font-size: 1.7rem;
-    letter-spacing: -1.5px;
+    font-size: 1.8rem;
+    letter-spacing: -2px;
     z-index: 5001;
     display: block !important;
 }
 
-/* ✅ 修正 2：選單列表獨立垂直置中 */
+/* 4. ✅ 選單列表：深藍色長條 */
 .uiverse-nav-ul {
     list-style: none;
-    margin: auto 0;       /* 利用 margin auto 自動在剩餘空間居中 */
-    padding: .75rem;
+    margin: 0;
+    padding: 0.75rem;
     background-color: #05043e;
     display: flex;
     flex-direction: column;
-    border-radius: 10px;
-    box-shadow: 0 10px 50px 0 rgba(5, 4, 62, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(5, 4, 62, 0.4);
 }
 
-/* 選單項間距 (依範本) */
-.uiverse-nav-ul li + li {
-    margin-top: .75rem;
-}
-
-/* ✅ 修正 3：強制顯示圖標 (解決截圖中不見的問題) */
-.uiverse-nav-ul a i {
-    font-size: 1.4rem;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-
+/* 5. ✅ 修正圖標不見的問題 (重要！) */
 .uiverse-nav-ul a {
-    color: #FFF;
+    color: #FFF !important;
     text-decoration: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 3rem;
-    height: 3rem;
-    border-radius: 8px;
+    width: 3.2rem;
+    height: 3.2rem;
+    border-radius: 10px;
     position: relative;
     cursor: pointer;
-    transition: .15s ease;
+    transition: 0.2s;
 }
 
-.uiverse-nav-ul a:hover, 
-.uiverse-nav-ul a:focus, 
-.uiverse-nav-ul a.active {
+/* 強制 AntD SVG 圖標顯示大小 */
+.uiverse-nav-ul a i, 
+.uiverse-nav-ul a .anticon {
+    font-size: 1.4rem !important;
+    display: flex !important;
+}
+
+.uiverse-nav-ul a:hover, .uiverse-nav-ul a.active {
     background-color: #30305a;
 }
 
-/* ✅ 修正 4：Tooltip 標籤樣式 (依範本) */
+/* 6. ✅ Tooltip 氣泡樣式 (依範本) */
 .uiverse-nav-ul a span {
     position: absolute;
     background-color: #30305a;
     color: #fff;
     white-space: nowrap;
-    padding: .5rem 1rem;
+    padding: 0.5rem 1rem;
     border-radius: 6px;
-    left: calc(100% + 1.5rem);
+    left: calc(100% + 1.5rem); 
     transform-origin: center left;
     transform: scale(0);
     opacity: 0;
-    transition: .15s ease;
-    z-index: 6000;
+    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
     font-size: 13px;
     font-weight: 700;
+    z-index: 9999;
 }
 
-/* Tooltip 三角形 (依範本) */
+/* Tooltip 三角形 */
 .uiverse-nav-ul a span:before {
     content: "";
     display: block;
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     position: absolute;
     background-color: #30305a;
-    left: -5px;
+    left: -4px;
     top: 50%;
     transform: translateY(-50%) rotate(45deg);
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
 .uiverse-nav-ul a:hover span {
@@ -228,14 +219,16 @@ background-color: var(--bg-header) !important;
     opacity: 1;
 }
 
-/* Settings 分隔線 */
+/* 7. 分隔線與細節間距 */
 .nav-item-sep {
     margin-top: 1.5rem !important;
     padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.logout-nav-btn:hover { background-color: #ef4444 !important; }
+.uiverse-nav-ul li + li {
+    margin-top: 0.6rem;
+}
 /* 登出紅色效果 .logout-nav-btn:hover { background-color: #ef4444 !important; }*/
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

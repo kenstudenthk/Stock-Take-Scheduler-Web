@@ -14,64 +14,55 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
     { key: View.GENERATOR, label: 'Generator', icon: <SafetyCertificateOutlined /> },
     { key: View.LOCATIONS, label: 'Map View', icon: <EnvironmentOutlined /> },
     { key: View.INVENTORY, label: 'Inventory', icon: <DatabaseOutlined /> },
+    { key: View.SETTINGS, label: 'Settings', icon: <SettingOutlined /> },
   ];
 
-return (
-  <div className="custom-app-layout flex">
-    {/* 側邊導航 */}
-    <aside className="uiverse-sidebar-wrapper">
-      
-      {/* ✅ 1. 獨立的 Logo 區塊：負責對齊 Header */}
-      <div className="nav-logo-slot">
+  return (
+    <div className="custom-app-layout">
+      {/* 側邊導航容器 */}
+      <aside className="uiverse-sidebar-wrapper">
+        
+        {/* ✅ Logo 固定在左上角 (紅圈位置) */}
         <div className="nav-brand-logo">ST</div>
-      </div>
-      
-      {/* ✅ 2. 獨立的選單區塊：負責在剩餘空間垂直置中 */}
-      <div className="nav-menu-slot">
-        <ul className="uiverse-nav-ul">
+
+        {/* ✅ 新的 Gooey Navbar 結構 */}
+        <nav className="navbar">
+          <ul className="navbar__menu">
             {menuItems.map((item) => (
-              <li key={item.key}>
+              <li key={item.key} className="navbar__item">
                 <a 
                   onClick={() => onViewChange(item.key)}
-                  className={currentView === item.key ? 'active' : ''}
+                  className={`navbar__link ${currentView === item.key ? 'active' : ''}`}
                 >
-                  <i>{item.icon}</i>
+                  <i className="anticon-wrapper">{item.icon}</i>
                   <span>{item.label}</span>
                 </a>
               </li>
             ))}
 
-            <li className="nav-item-sep">
-              <a onClick={() => onViewChange(View.SETTINGS)} className={currentView === View.SETTINGS ? 'active' : ''}>
-                <i><SettingOutlined /></i>
-                <span>Settings</span>
-              </a>
-            </li>
-            
-            <li onClick={onReportError}>
-              <a className="report-link">
-                <i className="text-red-400"><BugOutlined /></i>
-                <span className="text-red-400">Report Error</span>
+            <li className="navbar__item" onClick={onReportError}>
+              <a className="navbar__link">
+                <i className="anticon-wrapper text-red-500"><BugOutlined /></i>
+                <span className="text-red-500">Report Error</span>
               </a>
             </li>
 
-            <li>
-              <a className="profile-nav-btn">
-                <i><UserOutlined /></i>
+            <li className="navbar__item">
+              <a className="navbar__link">
+                <i className="anticon-wrapper"><UserOutlined /></i>
                 <span>{user?.Name || 'Profile'}</span>
               </a>
             </li>
-            
-            <li>
-              <a onClick={onLogout} className="logout-nav-btn">
-                <i><LogoutOutlined /></i>
+
+            <li className="navbar__item">
+              <a onClick={onLogout} className="navbar__link">
+                <i className="anticon-wrapper"><LogoutOutlined /></i>
                 <span>Logout</span>
               </a>
             </li>
           </ul>
-        </div>
-
-    </aside>
+        </nav>
+      </aside>
 
       {/* 主內容區 */}
       <main className="custom-main-content">

@@ -134,7 +134,7 @@ background-color: var(--bg-header) !important;
     top: 28px;            
     
     /* ❗ 水平對齊：移動到紅圈處。數值越小越靠左 */
-    left: 18px;           
+    left: 10px;           
     
     color: #05043e !important;
     font-weight: 900;

@@ -105,41 +105,43 @@ background-color: var(--bg-header) !important;
 }
 
 /* ============================================================
-   3. UI VERSE TOOLTIP SIDEBAR (Final Review & Fixed)
+   3. UI VERSE TOOLTIP SIDEBAR (精確位置與不重疊修正)
    ============================================================ */
 
-/* 側邊欄容器：佔滿全高，但不阻擋內容點擊 */
+/* 側邊欄容器：佔滿全高，不阻擋後方內容點擊 */
 .uiverse-sidebar-wrapper {
     position: fixed;
     left: 0;
     top: 0;
     height: 100vh;
-    width: 90px;
+    width: 100px;        /* 側邊欄固定寬度 */
     z-index: 5000;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* ✅ 選單 (ul) 螢幕垂直置中 */
+    justify-content: center; /* ✅ 讓選單 (ul) 在螢幕垂直置中 */
     align-items: center;
     pointer-events: none;
 }
 
 .nav-brand-logo, .uiverse-nav-ul {
-    pointer-events: auto; /* 恢復可點擊 */
+    pointer-events: auto; /* 恢復可點擊狀態 */
 }
 
-/* ✅ 修正 ST Logo：固定在左上角對齊 Header，並往左移動 */
+/* ✅ 修正 1：ST Logo 移動到紅圈位置 (對齊 Header 並往左移) */
 .nav-brand-logo {
-    position: absolute;
-    top: 26px;            /* ❗ 與 Header 文字平行 */
-    left: 20px;           /* ❗ 調整紅圈位置 */
+    position: absolute;   /* 脫離選單流，獨立定位 */
+    top: 26px;            /* ❗ 與右側內容區 Header 文字高度平行 */
+    left: 20px;           /* ❗ 調整此值將 Logo 往左移 (越小越靠左) */
+    
     color: #05043e !important;
     font-weight: 900;
-    font-size: 1.6rem;
+    font-size: 1.7rem;
     letter-spacing: -1.5px;
     z-index: 5001;
+    display: block !important;
 }
 
-/* ✅ 選單列表：深藍色長條 */
+/* ✅ 修正 2：選單列表（深藍色條）垂直置中 */
 .uiverse-nav-ul {
     list-style: none;
     margin: 0;
@@ -151,7 +153,7 @@ background-color: var(--bg-header) !important;
     box-shadow: 0 10px 50px 0 rgba(5, 4, 62, 0.3);
 }
 
-/* ✅ 修正圖標消失：強制 Ant Design 圖標顯示 */
+/* ✅ 修正 3：強制圖標 (Icons) 顯示權重 */
 .uiverse-nav-ul a i, 
 .uiverse-nav-ul a .anticon {
     font-size: 1.4rem !important;
@@ -177,7 +179,7 @@ background-color: var(--bg-header) !important;
     background-color: #30305a;
 }
 
-/* ✅ Tooltip 標籤 (解決重疊) */
+/* ✅ 修正 4：Tooltip 標籤層級，防止與 Logo 衝突 */
 .uiverse-nav-ul a span {
     position: absolute;
     background-color: #30305a;
@@ -189,10 +191,11 @@ background-color: var(--bg-header) !important;
     transform-origin: center left;
     transform: scale(0);
     opacity: 0;
-    transition: 0.2s;
-    z-index: 6000; /* 高於 Logo */
-    font-weight: 800;
+    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
     font-size: 13px;
+    font-weight: 800;
+    z-index: 9999;       /* 確保彈出的文字標籤在最上層 */
     box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
 }
 
@@ -204,15 +207,13 @@ background-color: var(--bg-header) !important;
 
 .uiverse-nav-ul a:hover span { transform: scale(1); opacity: 1; }
 
-/* ✅ 修正重疊：強制內容區塊右移 */
+/* ✅ 修正 5：防止內容區域被選單擋住 */
 .custom-main-content {
     flex: 1;
-    margin-left: 110px !important; /* ❗ 必須大於側邊欄寬度 */
+    margin-left: 110px !important; /* 必須大於側邊欄寬度 (100px) */
     padding: 30px;
     min-height: 100vh;
 }
-
-.nav-item-sep { margin-top: 1.5rem !important; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1); }
 /* 登出紅色效果 .logout-nav-btn:hover { background-color: #ef4444 !important; }*/
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

@@ -17,17 +17,18 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
     { key: View.SETTINGS, label: 'Settings', icon: <SettingOutlined /> },
   ];
 
-  return (
+return (
     <div className="custom-app-layout">
-      {/* 側邊導航總容器 */}
       <aside className="uiverse-sidebar-wrapper">
         
-        {/* ✅ Logo：獨立在頂部，CSS 會將其固定在左上角紅圈處 */}
-        <div className="nav-brand-logo">ST</div>
-
-        {/* ✅ Gooey 選單條：CSS 會將這塊條狀物獨立垂直置中 */}
-        <nav className="navbar">
-          <ul className="navbar__menu">
+        {/* ✅ 槽位 1：頂部 Logo 區塊 - 釘在紅圈位置 */}
+        <div className="nav-logo-slot">
+          <div className="nav-brand-logo">ST</div>
+        </div>
+        
+        {/* ✅ 槽位 2：選單區塊 - 在剩餘高度內垂直置中 */}
+        <div className="nav-menu-slot">
+          <ul className="uiverse-nav-ul">
             {menuItems.map((item) => (
               <li key={item.key} className="navbar__item">
                 <a 
@@ -54,7 +55,8 @@ export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, 
               </a>
             </li>
           </ul>
-        </nav>
+        </div>
+
       </aside>
 
       {/* 主內容區 */}

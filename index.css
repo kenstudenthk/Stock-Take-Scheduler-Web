@@ -105,47 +105,41 @@ background-color: var(--bg-header) !important;
 }
 
 /* ============================================================
-   3. UI VERSE TOOLTIP SIDEBAR (完全修正重疊與對齊)
+   3. UI VERSE TOOLTIP SIDEBAR (Final Review & Fixed)
    ============================================================ */
 
-/* 側邊欄容器：佔滿全高，但不阻擋點擊 */
+/* 側邊欄容器：佔滿全高，但不阻擋內容點擊 */
 .uiverse-sidebar-wrapper {
     position: fixed;
     left: 0;
     top: 0;
     height: 100vh;
-    width: 100px;        /* 側邊欄基礎寬度 */
+    width: 90px;
     z-index: 5000;
     display: flex;
     flex-direction: column;
+    justify-content: center; /* ✅ 選單 (ul) 螢幕垂直置中 */
+    align-items: center;
     pointer-events: none;
 }
 
 .nav-brand-logo, .uiverse-nav-ul {
-    pointer-events: auto; /* 恢復可點擊狀態 */
+    pointer-events: auto; /* 恢復可點擊 */
 }
 
-/* ✅ 修正 ST Logo：精確對齊內容區 Header 的高度 (通常為 64px-80px) */
+/* ✅ 修正 ST Logo：固定在左上角對齊 Header，並往左移動 */
 .nav-brand-logo {
-    height: 84px;        /* ❗ 調整此高度直到與您的 Header 文字完美對齊 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding-left: 0;
+    position: absolute;
+    top: 26px;            /* ❗ 與 Header 文字平行 */
+    left: 20px;           /* ❗ 調整紅圈位置 */
     color: #05043e !important;
     font-weight: 900;
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     letter-spacing: -1.5px;
+    z-index: 5001;
 }
 
-/* ✅ 選單列表：在 Logo 之後的空間中垂直居中 */
-.nav-menu-container {
-    flex: 1;             /* 佔據 Logo 以下的所有剩餘空間 */
-    display: flex;
-    align-items: center; /* 關鍵：讓內部的 ul 在剩餘空間垂直置中 */
-    justify-content: center;
-}
-
+/* ✅ 選單列表：深藍色長條 */
 .uiverse-nav-ul {
     list-style: none;
     margin: 0;
@@ -157,19 +151,68 @@ background-color: var(--bg-header) !important;
     box-shadow: 0 10px 50px 0 rgba(5, 4, 62, 0.3);
 }
 
-/* ✅ 主內容區域：增加邊距防止重疊 */
+/* ✅ 修正圖標消失：強制 Ant Design 圖標顯示 */
+.uiverse-nav-ul a i, 
+.uiverse-nav-ul a .anticon {
+    font-size: 1.4rem !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.uiverse-nav-ul a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.2rem;
+    height: 3.2rem;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.uiverse-nav-ul a:hover, .uiverse-nav-ul a.active {
+    background-color: #30305a;
+}
+
+/* ✅ Tooltip 標籤 (解決重疊) */
+.uiverse-nav-ul a span {
+    position: absolute;
+    background-color: #30305a;
+    color: #fff;
+    white-space: nowrap;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    left: calc(100% + 1.5rem); 
+    transform-origin: center left;
+    transform: scale(0);
+    opacity: 0;
+    transition: 0.2s;
+    z-index: 6000; /* 高於 Logo */
+    font-weight: 800;
+    font-size: 13px;
+    box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
+}
+
+.uiverse-nav-ul a span:before {
+    content: ""; position: absolute; background-color: #30305a;
+    width: 10px; height: 10px; left: -4px; top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.uiverse-nav-ul a:hover span { transform: scale(1); opacity: 1; }
+
+/* ✅ 修正重疊：強制內容區塊右移 */
 .custom-main-content {
     flex: 1;
-    margin-left: 110px;  /* ❗ 必須大於側邊欄寬度 (100px) 以防止重疊 */
-    padding: 32px;
+    margin-left: 110px !important; /* ❗ 必須大於側邊欄寬度 */
+    padding: 30px;
     min-height: 100vh;
 }
 
-/* 工具提示 (Tooltip) 修正：確保在最上層彈出 */
-.uiverse-nav-ul a span {
-    z-index: 6000;
-    left: calc(100% + 1.5rem);
-}
+.nav-item-sep { margin-top: 1.5rem !important; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1); }
 /* 登出紅色效果 .logout-nav-btn:hover { background-color: #ef4444 !important; }*/
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

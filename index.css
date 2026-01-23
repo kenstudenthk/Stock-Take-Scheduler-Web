@@ -105,10 +105,10 @@ background-color: var(--bg-header) !important;
 }
 
 /* ============================================================
-   3. GOOEY NAVBAR STYLE (依照新範本 + Logo 精確定位)
+   3. GOOEY NAVBAR & LOGO FIX (100% 精確對齊版)
    ============================================================ */
 
-/* 側邊欄容器：確保 Logo 在左上，選單在中間 */
+/* 側邊欄容器：移除 justify-content: center 是看到 Logo 的關鍵 */
 .uiverse-sidebar-wrapper {
     position: fixed;
     left: 0;
@@ -118,30 +118,30 @@ background-color: var(--bg-header) !important;
     z-index: 5000;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    pointer-events: none;
+    align-items: center; /* 選單水平居中 */
+    pointer-events: none; /* 穿透點擊 */
 }
 
-/* ✅ 修正 ST Logo：絕對定位到「紅圈」位置 */
+/* ✅ 修正 ST Logo：固定在左上角「紅圈」位置，對齊 Header */
 .nav-brand-logo {
-    position: absolute;
-    top: 28px;            /* ❗ 對齊 Header 文字 */
-    left: 20px;           /* ❗ 往左移動，避開選單 */
+    position: absolute;   /* ❗ 關鍵：絕對定位，不參與選單的置中計算 */
+    top: 26px;            /* ❗ 對齊右側內容區的 Refresh 按鈕高度 */
+    left: 15px;           /* ❗ 調整此值將 Logo 往左移出選單垂直線 */
+    
     color: #05043e !important;
     font-weight: 900;
     font-size: 1.8rem;
     letter-spacing: -1.5px;
-    z-index: 5001;        /* 確保在最前方 */
+    z-index: 5001;        /* 確保高於選單背景 */
     pointer-events: auto;
     display: block !important;
 }
 
-/* Navbar 本體：垂直置中 */
+/* ✅ 修正選單置中：Navbar 條狀物獨立在剩下的空間中尋找中心點 */
 .navbar {
-    position: relative;
-    margin: auto 0;       /* ❗ 關鍵：讓選單在剩下的空間垂直置中 */
+    margin: auto 0;       /* ❗ 核心：利用 margin auto 讓選單在 Logo 以外的高度內垂直居中 */
     background: #fff;
-    border-radius: 15px;
+    border-radius: 18px;
     padding: 1rem 0;
     box-shadow: 0 10px 40px rgba(0,0,0,0.08);
     pointer-events: auto;
@@ -154,28 +154,27 @@ background-color: var(--bg-header) !important;
     margin: 0;
 }
 
-/* 每個選項的樣式 */
 .navbar__link {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 3.5rem;       /* $linkHeight */
-    width: 5.5rem;        /* $spacer * 5.5 */
+    height: 3.5rem;       /* 範本 $linkHeight */
+    width: 5.5rem;        /* 範本寬度 */
     color: #6a778e;
     transition: 250ms ease all;
     cursor: pointer;
     text-decoration: none;
 }
 
+/* 修正 Ant Design 圖標 */
 .navbar__link .anticon-wrapper {
     font-size: 1.4rem;
     z-index: 2;
     display: flex;
-    transition: 250ms;
 }
 
-/* Tooltip 文字標籤樣式 */
+/* Tooltip 文字標籤 (向右彈出) */
 .navbar__link span {
     position: absolute;
     left: 100%;
@@ -188,19 +187,19 @@ background-color: var(--bg-header) !important;
     padding: 0.75rem 1.2rem;
     transition: 250ms ease all;
     border-radius: 15px;
-    font-weight: 700;
+    font-weight: 800;
     box-shadow: 10px 10px 30px rgba(0,0,0,0.1);
     white-space: nowrap;
+    z-index: 6000;
 }
 
-/* Hover 效果 */
 .navbar__link:hover { color: #fff; }
 .navbar__link:hover span {
     opacity: 1;
     transform: translate(0);
 }
 
-/* ✅ Gooey 動態背景 (滑動的小圓塊) */
+/* ✅ Gooey 動態背景：滑動的小圓塊 */
 .navbar__item:last-child:before {
     content: '';
     position: absolute;
@@ -210,17 +209,14 @@ background-color: var(--bg-header) !important;
     left: 1rem;
     width: 3.5rem;
     height: 3.5rem;
-    background: #406ff3; /* $primary */
+    background: #406ff3;
     border-radius: 18px;
     transition: 300ms cubic-bezier(1, 0.2, 0.1, 1.2) all;
 }
 
-/* 當滑過任一 Li 時，顯示最後一個 Li 的 before (即動態塊) */
-.navbar__menu:hover .navbar__item:last-child:before {
-    opacity: 1;
-}
+.navbar__menu:hover .navbar__item:last-child:before { opacity: 1; }
 
-/* 計算 10 個項目的滑動位置 (動態 top 值) */
+/* 根據項目數量計算滑動位置 (這裡假設有 9 個項目，包含 Logout 等) */
 .navbar__item:nth-child(1):hover ~ .navbar__item:last-child:before { top: 0; }
 .navbar__item:nth-child(2):hover ~ .navbar__item:last-child:before { top: 3.5rem; }
 .navbar__item:nth-child(3):hover ~ .navbar__item:last-child:before { top: 7rem; }
@@ -229,13 +225,14 @@ background-color: var(--bg-header) !important;
 .navbar__item:nth-child(6):hover ~ .navbar__item:last-child:before { top: 17.5rem; }
 .navbar__item:nth-child(7):hover ~ .navbar__item:last-child:before { top: 21rem; }
 .navbar__item:nth-child(8):hover ~ .navbar__item:last-child:before { top: 24.5rem; }
-.navbar__item:nth-child(9):hover ~ .navbar__item:last-child:before { top: 28rem; }
-.navbar__item:last-child:hover:before { top: 31.5rem; opacity: 1; }
+.navbar__item:last-child:hover:before { top: 28rem; opacity: 1; }
 
-/* 防止內容重疊 */
+/* 修正主內容邊距，防止重疊 */
 .custom-main-content {
-    margin-left: 110px !important;
+    flex: 1;
+    margin-left: 110px !important; 
     padding: 30px;
+    min-height: 100vh;
 }
 /* 登出紅色效果 .logout-nav-btn:hover { background-color: #ef4444 !important; }*/
 /* ============================================================

@@ -154,84 +154,34 @@ background-color: var(--bg-header) !important;
     box-shadow: 0 10px 40px rgba(5, 4, 62, 0.3);
 }
 
-/* 修正圖標消失問題 */
-.uiverse-nav-ul a i, 
-.uiverse-nav-ul a .anticon {
-    font-size: 1.4rem !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-}
-
-.uiverse-nav-ul a {
-    color: #FFF !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 3.2rem;
-    height: 3.2rem;
-    border-radius: 10px;
-    position: relative;
-    cursor: pointer;
-    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.uiverse-nav-ul a:hover, 
-.uiverse-nav-ul a.active {
-    background-color: #30305a;
-}
-
-/* ✅ Tooltip 氣泡：名稱向右彈出 */
 .uiverse-nav-ul a span {
-    position: absolute;
-    background-color: #30305a;
-    color: #fff;
-    white-space: nowrap;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    left: calc(100% + 1.5rem); /* 向右偏移彈出 */
-    transform-origin: center left;
-    transform: scale(0);
-    opacity: 0;
-    transition: 0.15s ease;
-    z-index: 6000;
-    font-size: 13px;
-    font-weight: 600;
+  position: absolute;
+  background-color: #30305a;
+  color: #fff;
+  white-space: nowrap;
+  padding: .5rem 1rem;
+  border-radius: 6px;
+  left: calc(100% + 1.5rem); /* 向右彈出，避開 Logo 垂直區域 */
+  transform-origin: center left;
+  transform: scale(0);
+  opacity: 0;
+  transition: .15s ease;
+  z-index: 6000;             /* 確保標籤在最上層 */
+  font-weight: 600;
+  box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
 }
 
-/* 氣泡小三角形 */
-.uiverse-nav-ul a span:before {
-    content: "";
-    display: block;
-    width: 10px;
-    height: 10px;
-    position: absolute;
-    background-color: #30305a;
-    left: -4px;
-    top: 50%;
-    transform: translateY(-50%) rotate(45deg);
-}
-
-/* 懸停時彈出標籤 */
+/* 懸停彈出動畫 */
 .uiverse-nav-ul a:hover span {
-    transform: scale(1);
-    opacity: 1;
+  transform: scale(1);
+  opacity: 1;
 }
 
-/* 分隔線與登出紅色效果 */
+/* 分隔線與登出按鈕 */
 .nav-item-sep {
-    margin-top: 1.5rem !important;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-.logout-nav-btn:hover { background-color: #ef4444 !important; }
-
-/* ✅ 修正重疊：強制內容區塊右移，騰出空間給 Tooltip */
-.custom-main-content {
-    flex: 1;
-    margin-left: 110px !important; 
-    padding: 30px;
-    min-height: 100vh;
+  margin-top: 2rem !important;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 /* 登出紅色效果 .logout-nav-btn:hover { background-color: #ef4444 !important; }*/
 /* ============================================================

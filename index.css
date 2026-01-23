@@ -105,33 +105,33 @@ background-color: var(--bg-header) !important;
 }
 
 /* ============================================================
-   3. UI VERSE TOOLTIP SIDEBAR (精確位置與不重疊修正)
+   3. UI VERSE TOOLTIP SIDEBAR (完全修正重疊與 Logo 位置)
    ============================================================ */
 
-/* 側邊欄容器：佔滿全高，不阻擋後方內容點擊 */
+/* ✅ 側邊欄總容器：移除 justify-content: center */
 .uiverse-sidebar-wrapper {
     position: fixed;
     left: 0;
     top: 0;
     height: 100vh;
-    width: 100px;        /* 側邊欄固定寬度 */
+    width: 90px;
     z-index: 5000;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* ✅ 讓選單 (ul) 在螢幕垂直置中 */
-    align-items: center;
-    pointer-events: none;
+    align-items: center;     /* 水平對齊選單 */
+    pointer-events: none;    /* 防止透明背景阻礙點擊 */
 }
 
+/* 恢復內部元素的點擊功能 */
 .nav-brand-logo, .uiverse-nav-ul {
-    pointer-events: auto; /* 恢復可點擊狀態 */
+    pointer-events: auto;
 }
 
-/* ✅ 修正 1：ST Logo 移動到紅圈位置 (對齊 Header 並往左移) */
+/* ✅ 修正 1：Logo 移動到紅圈位置 (對齊 Header 並往左移) */
 .nav-brand-logo {
-    position: absolute;   /* 脫離選單流，獨立定位 */
-    top: 26px;            /* ❗ 與右側內容區 Header 文字高度平行 */
-    left: 20px;           /* ❗ 調整此值將 Logo 往左移 (越小越靠左) */
+    position: absolute;      /* 絕對定位，不參與選單的置中計算 */
+    top: 28px;               /* ❗ 這個值會精確對齊您右側內容的 Header 文字 */
+    left: 12px;              /* ❗ 調整紅圈位置：縮小 left 值以將 Logo 往左移 */
     
     color: #05043e !important;
     font-weight: 900;
@@ -141,79 +141,62 @@ background-color: var(--bg-header) !important;
     display: block !important;
 }
 
-/* ✅ 修正 2：選單列表（深藍色條）垂直置中 */
+/* ✅ 修正 2：選單列表 (深藍色條) 垂直置中 */
 .uiverse-nav-ul {
     list-style: none;
-    margin: 0;
     padding: .75rem;
     background-color: #05043e;
     display: flex;
     flex-direction: column;
     border-radius: 12px;
     box-shadow: 0 10px 50px 0 rgba(5, 4, 62, 0.3);
+    
+    /* ❗ 核心修正：margin: auto 讓選單在 Logo 以外的剩餘高度內「獨立垂直置中」 */
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
-/* ✅ 修正 3：強制圖標 (Icons) 顯示權重 */
-.uiverse-nav-ul a i, 
-.uiverse-nav-ul a .anticon {
-    font-size: 1.4rem !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-}
-
-.uiverse-nav-ul a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 3.2rem;
-    height: 3.2rem;
-    border-radius: 10px;
-    position: relative;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.uiverse-nav-ul a:hover, .uiverse-nav-ul a.active {
-    background-color: #30305a;
-}
-
-/* ✅ 修正 4：Tooltip 標籤層級，防止與 Logo 衝突 */
+/* 修正 Tooltip：確保彈出時不被任何東西蓋住 */
 .uiverse-nav-ul a span {
     position: absolute;
     background-color: #30305a;
     color: #fff;
     white-space: nowrap;
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    left: calc(100% + 1.5rem); 
+    padding: .5rem 1rem;
+    border-radius: 6px;
+    left: calc(100% + 1.5rem);
     transform-origin: center left;
     transform: scale(0);
     opacity: 0;
-    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none;
-    font-size: 13px;
-    font-weight: 800;
-    z-index: 9999;       /* 確保彈出的文字標籤在最上層 */
-    box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
+    transition: .15s ease;
+    z-index: 9999;
+    font-weight: 700;
 }
 
-.uiverse-nav-ul a span:before {
-    content: ""; position: absolute; background-color: #30305a;
-    width: 10px; height: 10px; left: -4px; top: 50%;
-    transform: translateY(-50%) rotate(45deg);
+.uiverse-nav-ul a:hover span {
+    transform: scale(1);
+    opacity: 1;
 }
 
-.uiverse-nav-ul a:hover span { transform: scale(1); opacity: 1; }
-
-/* ✅ 修正 5：防止內容區域被選單擋住 */
-.custom-main-content {
-    flex: 1;
-    margin-left: 110px !important; /* 必須大於側邊欄寬度 (100px) */
-    padding: 30px;
-    min-height: 100vh;
+/* 選單項與圖標修正 */
+.uiverse-nav-ul a {
+    color: #FFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 8px;
+    position: relative;
+    cursor: pointer;
 }
+
+.uiverse-nav-ul a i, .uiverse-nav-ul a .anticon {
+    font-size: 1.4rem !important;
+    display: flex !important;
+}
+
+.uiverse-nav-ul li + li { margin-top: .75rem; }
 /* 登出紅色效果 .logout-nav-btn:hover { background-color: #ef4444 !important; }*/
 /* ============================================================
    4. DASHBOARD COMPONENTS (統計卡片與分組切換)

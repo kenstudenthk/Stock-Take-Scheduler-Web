@@ -4,12 +4,12 @@ import {
   EnvironmentOutlined, 
   DatabaseOutlined, 
   CalendarOutlined, 
+  WarningOutlined, 
   SettingOutlined, 
   LogoutOutlined, 
   UserOutlined, 
   SafetyCertificateOutlined,
-  BugOutlined,
-  WarningOutlined
+  BugOutlined
 } from '@ant-design/icons';
 import { View } from '../types';
 
@@ -41,14 +41,14 @@ export const Layout: React.FC<LayoutProps> = ({
   ];
 
   return (
-    <div className="flex h-screen w-full bg-[#f2f5f7] overflow-hidden">
-      {/* 側邊導航容器 */}
+    <div className="custom-app-layout">
+      {/* 側邊導航 */}
       <aside className="uiverse-sidebar-wrapper">
         
-        {/* ✅ ST Logo: 獨立於選單外，由 CSS 定位到頂部 */}
+        {/* ✅ Logo 獨立出來 */}
         <div className="nav-brand-logo">ST</div>
         
-        {/* ✅ 選單列表: 由 CSS 定位到垂直置中 */}
+        {/* ✅ 選單列表 */}
         <ul className="uiverse-nav-ul">
           {menuItems.map((item) => (
             <li key={item.key}>
@@ -62,12 +62,8 @@ export const Layout: React.FC<LayoutProps> = ({
             </li>
           ))}
 
-          {/* 分隔線區域 (對應範本 li:nth-child(6) 的邏輯，這裡直接寫類名控制) */}
           <li className="nav-item-sep">
-            <a 
-              onClick={() => onViewChange(View.SETTINGS)}
-              className={currentView === View.SETTINGS ? 'active' : ''}
-            >
+            <a onClick={() => onViewChange(View.SETTINGS)} className={currentView === View.SETTINGS ? 'active' : ''}>
               <i><SettingOutlined /></i>
               <span>Settings</span>
             </a>
@@ -97,7 +93,7 @@ export const Layout: React.FC<LayoutProps> = ({
       </aside>
 
       {/* 主內容區 */}
-      <main className="flex-1 overflow-y-auto p-8 ml-[100px]">
+      <main className="custom-main-content">
         {children}
       </main>
     </div>

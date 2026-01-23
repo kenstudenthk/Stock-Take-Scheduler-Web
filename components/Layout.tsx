@@ -4,12 +4,12 @@ import {
   EnvironmentOutlined, 
   DatabaseOutlined, 
   CalendarOutlined, 
-  WarningOutlined, 
   SettingOutlined, 
   LogoutOutlined, 
   UserOutlined, 
   SafetyCertificateOutlined,
-  BugOutlined
+  BugOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 import { View } from '../types';
 
@@ -22,14 +22,7 @@ interface LayoutProps {
   onReportError: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ 
-  children, 
-  onLogout, 
-  user, 
-  onViewChange, 
-  currentView,
-  onReportError
-}) => {
+export const Layout: React.FC<LayoutProps> = ({ children, onLogout, user, onViewChange, currentView, onReportError }) => {
   
   const menuItems = [
     { key: View.DASHBOARD, label: 'Dashboard', icon: <HomeOutlined /> },
@@ -41,14 +34,12 @@ export const Layout: React.FC<LayoutProps> = ({
   ];
 
   return (
-    <div className="custom-app-layout">
-      {/* 側邊導航 */}
+    <div className="custom-app-layout flex">
       <aside className="uiverse-sidebar-wrapper">
-        
-        {/* ✅ Logo 獨立出來 */}
+        {/* ✅ Logo 獨立在頂部，這會對齊內容區的 Header */}
         <div className="nav-brand-logo">ST</div>
         
-        {/* ✅ 選單列表 */}
+        {/* ✅ 選單列表在側邊欄中間垂直置中 */}
         <ul className="uiverse-nav-ul">
           {menuItems.map((item) => (
             <li key={item.key}>
@@ -62,6 +53,7 @@ export const Layout: React.FC<LayoutProps> = ({
             </li>
           ))}
 
+          {/* 分隔線效果 */}
           <li className="nav-item-sep">
             <a onClick={() => onViewChange(View.SETTINGS)} className={currentView === View.SETTINGS ? 'active' : ''}>
               <i><SettingOutlined /></i>
@@ -92,7 +84,6 @@ export const Layout: React.FC<LayoutProps> = ({
         </ul>
       </aside>
 
-      {/* 主內容區 */}
       <main className="custom-main-content">
         {children}
       </main>

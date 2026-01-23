@@ -25,7 +25,7 @@ return (
         <div className="nav-brand-logo">ST</div>
         
         {/* ✅ 中間選單區塊：負責垂直置中 */}
-        <div className="nav-menu-container">
+       
           <ul className="uiverse-nav-ul">
             {menuItems.map((item) => (
               <li key={item.key}>
@@ -67,7 +67,7 @@ return (
               </a>
             </li>
           </ul>
-        </div>
+        
       </aside>
 
       {/* 主內容區 */}

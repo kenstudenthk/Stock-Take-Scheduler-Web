@@ -105,10 +105,10 @@ background-color: var(--bg-header) !important;
 }
 
 /* ============================================================
-   3. UI VERSE TOOLTIP SIDEBAR (精確位置與防重疊最終修正)
+   3. UI VERSE TOOLTIP SIDEBAR (完全修正版：Logo 到紅圈)
    ============================================================ */
 
-/* 側邊欄總容器：佔滿全高，但不阻擋內容點擊 */
+/* 側邊欄總容器 */
 .uiverse-sidebar-wrapper {
     position: fixed;
     left: 0;
@@ -118,41 +118,41 @@ background-color: var(--bg-header) !important;
     z-index: 5000;
     display: flex;
     flex-direction: column;
-    /* 這裡負責讓內部的 ul 選單在剩下的空間垂直置中 */
+    /* ✅ 這裡維持 center，確保內部的 ul 選單在螢幕垂直正中心 */
     justify-content: center; 
     align-items: center;
     pointer-events: none;
 }
 
-/* 恢復內部 Logo 與選單的點擊功能 */
+/* 恢復 Logo 與選單的點擊功能 */
 .nav-brand-logo, .uiverse-nav-ul {
     pointer-events: auto;
 }
 
-/* ✅ 修正 ST Logo：從「紅框」移動到「紅圈」位置 */
+/* ✅ 修正 1：ST Logo - 100% 移至「紅圈」位置 */
 .nav-brand-logo {
-    position: absolute;   /* 脫離 Flex 佈局 */
+    position: absolute;   /* ❗ 關鍵：絕對定位，讓它不跟著選單一起居中 */
     
-    /* ❗ 垂直位置：24px ~ 30px 通常能完美對齊 Header 文字 */
+    /* ❗ 對齊 Header 的高度：24px - 28px 通常最完美 */
     top: 28px;            
     
-    /* ❗ 水平位置：往左移出選單範圍。數值越小，越靠近螢幕左邊邊緣 */
-    left: 15px;           
+    /* ❗ 往左邊移動：對齊紅圈。數值越小，越靠左邊 */
+    left: 14px;           
     
     color: #05043e !important;
     font-weight: 900;
     font-size: 1.7rem;
     letter-spacing: -1.5px;
-    z-index: 5001;        /* 確保在最上層 */
+    z-index: 5001;
     width: auto;
     text-align: left;
 }
 
-/* ✅ 選單列表：深藍色導航條 (保持在螢幕正中央) */
+/* ✅ 修正 2：選單列表 (深藍色長條) - 垂直置中且不重疊 */
 .uiverse-nav-ul {
     list-style: none;
     margin: 0;
-    padding: 0.75rem;
+    padding: .75rem;
     background-color: #05043e;
     display: flex;
     flex-direction: column;
@@ -160,17 +160,17 @@ background-color: var(--bg-header) !important;
     box-shadow: 0 10px 50px 0 rgba(5, 4, 62, 0.3);
 }
 
-/* 修正 Ant Design 圖標顯示 */
+/* 修正圖標消失問題 (Ant Design 權重) */
 .uiverse-nav-ul a i, 
 .uiverse-nav-ul a .anticon {
     font-size: 1.4rem !important;
     display: flex !important;
     align-items: center;
     justify-content: center;
+    color: #fff;
 }
 
 .uiverse-nav-ul a {
-    color: #FFF !important;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -187,27 +187,27 @@ background-color: var(--bg-header) !important;
     background-color: #30305a;
 }
 
-/* ✅ Tooltip 標籤 (Dashboard 等名稱) */
+/* ✅ 修正 3：Tooltip 標籤彈出位置 (完全參考範本邏輯) */
 .uiverse-nav-ul a span {
     position: absolute;
     background-color: #30305a;
     color: #fff;
     white-space: nowrap;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    /* 向右彈出，離圖標 1.5rem，這會避開位於左上角的 Logo */
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    /* ❗ 向右彈出：這會確保 Dashboard 等文字不會遮擋位於左上角的 Logo */
     left: calc(100% + 1.5rem); 
     transform-origin: center left;
     transform: scale(0);
     opacity: 0;
     transition: 0.15s ease;
     z-index: 6000;
+    font-weight: 800;
     font-size: 13px;
-    font-weight: 700;
     box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
 }
 
-/* Tooltip 三角形 (依範本) */
+/* 氣泡三角形 (依範本) */
 .uiverse-nav-ul a span:before {
     content: "";
     display: block;
@@ -225,7 +225,7 @@ background-color: var(--bg-header) !important;
     opacity: 1;
 }
 
-/* 分隔線邏輯 */
+/* 分隔線 (依範本) */
 .nav-item-sep {
     margin-top: 1.5rem !important;
     padding-top: 1rem;
@@ -236,11 +236,12 @@ background-color: var(--bg-header) !important;
     margin-top: 0.75rem;
 }
 
-/* 修正主內容邊距，防止被選單遮擋 */
+/* ✅ 修正 4：強制內容區塊右移 (避免被 Menu 擋住內容) */
 .custom-main-content {
     flex: 1;
     margin-left: 110px !important; 
     padding: 30px;
+    min-height: 100vh;
 }
 /* 登出紅色效果 .logout-nav-btn:hover { background-color: #ef4444 !important; }*/
 /* ============================================================

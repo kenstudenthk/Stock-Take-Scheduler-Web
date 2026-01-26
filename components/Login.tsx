@@ -9,6 +9,9 @@ interface LoginProps {
   sharePointService: any;
 }
 
+// 1. 更新 Mode 類型
+type Mode = 'set' | 'change' | 'register';
+
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [mode, setMode] = useState<'set' | 'change'>('set');
@@ -17,6 +20,9 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService 
   const [oldPassword, setOldPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [userEmailPrefix, setUserEmailPrefix] = useState(''); // 僅輸入字首
+  const [aliasEmailPrefix, setAliasEmailPrefix] = useState(''); // 僅輸入字首
 
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
@@ -45,6 +51,92 @@ const handleModeSwitch = (e: React.MouseEvent, targetMode: 'set' | 'change') => 
   setIsFlipped(true);
   resetFields();
 };
+
+  // 2. 註冊邏輯
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !userEmailPrefix || !aliasEmailPrefix || !password || !confirmPassword) {
+      return message.warning("Please fill in all fields");
+    }
+    if (password !== confirmPassword) {
+      return message.error("Passwords do not match");
+    }
+
+    setLoading(true);
+    const fullUserEmail = `${userEmailPrefix}@corpq.hk.pccw.com`;
+    const fullAliasEmail = `${aliasEmailPrefix}@pccw.com`;
+
+    try {
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(password, salt);
+
+      const success = await sharePointService.registerMember({
+        name,
+        userEmail: fullUserEmail,
+        aliasEmail: fullAliasEmail,
+        passwordHash: hash
+      });
+
+      if (success) {
+        message.success("Account created successfully! Please log in.");
+        setMode('set');
+        setIsFlipped(false);
+        resetFields();
+      } else {
+        message.error("Registration failed. Email might already exist.");
+      }
+    } catch (err) {
+      message.error("System error during registration");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 3. 修改 UI 渲染邏輯
+  const renderBackSideForm = () => {
+    if (mode === 'register') {
+      return (
+        <form className="inner-form" onSubmit={handleRegister}>
+          <div className="text-center">
+            <h2 className="brand-title" style={{ color: '#0d9488' }}>Create Account</h2>
+          </div>
+          <div className="form-content-area" style={{ gap: '8px' }}>
+            <div className="field-group">
+              <label className="field-label">Full Name</label>
+              <input type="text" placeholder="e.g. Kilson Li" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div className="field-group">
+              <label className="field-label">User Email (@corpq.hk.pccw.com)</label>
+              <div className="flex items-center gap-1">
+                <input style={{ flex: 1 }} type="text" placeholder="0200XXXX" value={userEmailPrefix} onChange={e => setUserEmailPrefix(e.target.value)} />
+                <span className="text-[10px] font-bold text-slate-400">@corpq...</span>
+              </div>
+            </div>
+            <div className="field-group">
+              <label className="field-label">Alias Email / Login ID (@pccw.com)</label>
+              <div className="flex items-center gap-1">
+                <input style={{ flex: 1 }} type="text" placeholder="kilson.km.li" value={aliasEmailPrefix} onChange={e => setAliasEmailPrefix(e.target.value)} />
+                <span className="text-[10px] font-bold text-slate-400">@pccw.com</span>
+              </div>
+            </div>
+            <div className="field-group">
+              <label className="field-label">Password</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
+            </div>
+            <div className="field-group">
+              <label className="field-label">Confirm Password</label>
+              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+            </div>
+          </div>
+          <button className="main-submit-btn" type="submit" disabled={loading} style={{ background: '#0d9488' }}>
+            CREATE ACCOUNT
+          </button>
+          <div className="bottom-link">
+            <span onClick={() => setIsFlipped(false)}>Already a member? <a>Log in</a></span>
+          </div>
+        </form>
+      );
+    }
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -164,18 +256,19 @@ const handleModeSwitch = (e: React.MouseEvent, targetMode: 'set' | 'change') => 
                   <div className="bottom-link-group">
                     <span className="bottom-link" onClick={(e) => handleModeSwitch(e, 'set')}>First time? <a>Set Password</a></span>
                     <span className="bottom-link" onClick={(e) => handleModeSwitch(e, 'change')}>Forgot? <a>Change Password</a></span>
+                    <div className="mt-2 pt-2 border-t border-slate-100 w-full text-center">
+                   <span className="bottom-link" onClick={(e) => handleModeSwitch(e, 'register')}>
+                     Not Bonnie's Team members? <a>Create Account</a>
+                   </span>
+                </div>
                   </div>
                 </form>
               </div>
 
               {/* --- 背面：Security --- */}
-              <div className="flip-card-back-side" onClick={(e) => e.stopPropagation()}>
-                <form className="inner-form" onSubmit={handleConfirmAction}>
-                  <div className="text-center">
-                    <h2 className="brand-title" style={{ color: mode === 'change' ? '#3b82f6' : '#44d8a4' }}>
-                      {mode === 'change' ? 'Change Password' : 'Set Password'}
-                    </h2>
-                  </div>
+            <div className="flip-card-back-side">
+            {renderBackSideForm()}
+          </div>
                   <div className="form-content-area">
                     <div className="field-group">
                       <label className="field-label">Alias Email</label>

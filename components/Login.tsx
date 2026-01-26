@@ -14,7 +14,7 @@ type Mode = 'set' | 'change' | 'register';
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService }) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  const [mode, setMode] = useState<'set' | 'change'>('set');
+  const [mode, setMode] = useState<Mode>('set');
 
   const [aliasemail, setAliasemail] = useState('');
   const [oldPassword, setOldPassword] = useState('');
@@ -301,9 +301,6 @@ const handleModeSwitch = (e: React.MouseEvent, targetMode: 'set' | 'change') => 
                 </form>
               </div>
             </div>
-          
-        </div>
-      </div>
    
   );
 };

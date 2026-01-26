@@ -159,6 +159,21 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     });
   };
 
+  // Generator.tsx 內部
+
+// ✅ 1. 判斷日期是否應該被禁用 (週末 + 公眾假期)
+const disabledDate = (current: dayjs.Dayjs) => {
+  if (!current) return false;
+  
+  // 檢查是否為週末 (0 = 週日, 6 = 週六)
+  const isWeekend = current.day() === 0 || current.day() === 6;
+  
+  // 檢查是否在公眾假期清單內
+  const isHoliday = HK_HOLIDAYS.includes(current.format('YYYY-MM-DD'));
+  
+  return isWeekend || isHoliday;
+};
+
   // ✅ 核心邏輯：自動跳過週末與假期
   const handleGenerate = () => {
     setIsCalculating(true);
@@ -285,18 +300,28 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
                 </Select>
               </Col>
               <Col span={8}>
-                <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">Start Date</Text>
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-slate-50 border border-slate-200 h-11 rounded-xl w-full px-4 font-bold text-slate-700" />
-              </Col>
-              <Col span={8}>
-                <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">Shops / Day</Text>
-                <InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 9)} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
-              </Col>
-              <Col span={8}>
-                <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">Groups / Day</Text>
-                <InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
-              </Col>
-            </Row>
+          <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Start Date</Text>
+          {/* ✅ 替換為 Ant Design DatePicker 並加入 disabledDate */}
+          <DatePicker 
+            value={startDate ? dayjs(startDate) : null} 
+            onChange={(date) => setStartDate(date ? date.format('YYYY-MM-DD') : '')}
+            disabledDate={disabledDate}
+            format="YYYY/MM/DD"
+            placeholder="Select Start Date"
+            className="bg-slate-50 border border-slate-200 h-11 rounded-xl w-full px-4 font-bold text-slate-700"
+            allowClear={false}
+          />
+       </Col>
+       
+       <Col span={8}>
+          <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Shops Per Day</Text>
+          <InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 9)} min={1} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
+       </Col>
+       <Col span={8}>
+          <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Groups Per Day</Text>
+          <InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} min={1} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
+       </Col>
+    </Row>
             
             <div className="flex justify-end mt-10">
               <button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}>

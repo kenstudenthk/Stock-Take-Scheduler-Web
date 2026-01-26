@@ -135,11 +135,30 @@ export const Calendar: React.FC<{ shops: Shop[] }> = ({ shops }) => {
                   <Space size="middle"><Badge color={group.color} /><Text strong className="text-lg text-slate-700">{group.name}</Text></Space>
                   <div className="flex items-center gap-4"><Tag className="rounded-full border-none bg-slate-100 text-slate-500 font-black px-3">{group.items.length} SHOPS</Tag><DownOutlined className={`transform transition-transform ${expandedGroupId === group.id ? 'rotate-180' : ''}`} /></div>
                 </div>
-                <div className="group-card-detail"><div className="flex flex-col gap-3 p-6 pt-2">
-                  {group.items.map(shop => (
-                    <div key={shop.id} className="flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-100 shadow-sm"><Avatar size={52} shape="square" icon={<ShopOutlined />} /><div className="flex-1 min-w-0"><div className="flex justify-between"><h4 className="font-bold text-slate-800 m-0 truncate">{shop.name}</h4><Text type="secondary" className="text-[10px]">ID: {shop.id}</Text></div><Text className="text-slate-400 text-[11px] block truncate">{shop.address}</Text></div></div>
-                  ))}
-                </div></div>
+                <div className="group-card-detail">
+  <div className="flex flex-col gap-3 p-6 pt-2">
+    {group.items.map(shop => (
+      <div key={shop.id} className="flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
+        {/* ✅ Updated Avatar: Uses shop.brandIcon as the source, falls back to ShopOutlined icon */}
+        <Avatar 
+          size={52} 
+          shape="square" 
+          src={shop.brandIcon} 
+          icon={<ShopOutlined />} 
+          className="bg-white p-1 border border-slate-50"
+          style={{ objectFit: 'contain' }}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between">
+            <h4 className="font-bold text-slate-800 m-0 truncate">{shop.name}</h4>
+            <Text type="secondary" className="text-[10px]">ID: {shop.id}</Text>
+          </div>
+          <Text className="text-slate-400 text-[11px] block truncate">{shop.address}</Text>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
               </div>
             ))}
           </div>

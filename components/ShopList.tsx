@@ -544,6 +544,7 @@ const renderFilterGroup = () => (
     letter-spacing: 0.5px;
   }
 
+/* ✅ 修正紅框空白問題：讓欄位更緊湊 */
 .contact-cell-compact {
   padding: 0 !important; /* ❗ 移除外層 Padding */
   display: flex;
@@ -551,6 +552,8 @@ const renderFilterGroup = () => (
   justify-content: flex-start;
   width: 100%;
 }
+
+/* 針對新的旋轉按鈕進行微調 */
 .tracking-log-btn {
   background: transparent;
   border: none;
@@ -578,10 +581,6 @@ const renderFilterGroup = () => (
 .contact-cell-compact .ant-typography {
   margin-bottom: 0 !important;
 }
-  .contact-cell-compact:hover {
-    background: #f0fdfa;
-    border-color: #0d9488;
-  }
 
   /* 分組標籤顏色 */
   .tag-group-1 { background-color: #e0f2fe !important; color: #0369a1 !important; }

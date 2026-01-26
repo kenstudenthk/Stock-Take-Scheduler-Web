@@ -289,6 +289,8 @@ const renderFilterGroup = () => (
   },
   // ShopList.tsx -> 找到 columns 陣列中的 'Contact & Tracking' 部分
 
+// ShopList.tsx -> 找到 columns 陣列中的 'Contact & Tracking' 部分
+
 {
   title: 'Contact & Tracking',
   key: 'contact',
@@ -360,27 +362,7 @@ const renderFilterGroup = () => (
       </div>
     );
   }
-}
-
-      return (
-        <div onClick={(e) => e.stopPropagation()}>
-          <Popover content={trackingContent} title={<b className="text-sm">Quick Tracking</b>} trigger="click" placement="topRight">
-            <div className="contact-cell-compact group cursor-pointer hover:bg-slate-50 transition-all">
-              <Text className="text-[13px] font-bold text-slate-700 block">
-                <PhoneOutlined className="mr-1 text-teal-500" /> {record.phone || '--'}
-              </Text>
-              <div className="flex items-center gap-2">
-                <Text type="secondary" className="text-[11px]"><UserOutlined /> {record.contactName || 'N/A'}</Text>
-                {record.callStatus && (
-                  <Badge status={record.callStatus === 'Called' ? 'success' : 'warning'} className="scale-90 origin-left" />
-                )}
-              </div>
-            </div>
-          </Popover>
-        </div>
-      );
-    }
-  },
+},
   {
     title: 'Schedule',
     key: 'schedule',

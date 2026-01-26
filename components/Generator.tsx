@@ -20,6 +20,16 @@ const { Text, Title } = Typography;
 const { confirm } = Modal;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+// 在 Generator 組件外部或頂部定義 (建議 2025/2026 清單)
+const HK_HOLIDAYS = [
+  '2025-01-01', '2025-01-29', '2025-01-30', '2025-01-31', // 元旦、年初一至三
+  '2025-04-04', '2025-04-18', '2025-04-19', '2025-04-21', // 清明、耶穌受難、復活節
+  '2025-05-01', '2025-05-05', // 勞動節、佛誕
+  '2025-05-31', '2025-07-01', // 端午節、特區紀念日
+  '2025-10-01', '2025-10-07', '2025-10-29', // 國慶、中秋後、重陽
+  '2025-12-25', '2025-12-26', // 聖誕節
+  // 您可以繼續添加 2026 年的日期...
+];
 
 // --- ✅ 1. Pac-man 重置動畫組件 ---
 const ResetChaseLoader = () => (
@@ -73,7 +83,7 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
 
 export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
   const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
-  const [shopsPerDay, setShopsPerDay] = useState<number>(20);
+  const [shopsPerDay, setShopsPerDay] = useState<number>(9);
   const [groupsPerDay, setGroupsPerDay] = useState<number>(3);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
@@ -152,8 +162,26 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     });
   };
 
-  const handleGenerate = () => {
+const handleGenerate = () => {
     setIsCalculating(true);
+
+    // --- ✅ 助手函數：判斷是否為工作日 (跳過週末與假期) ---
+    const isWorkingDay = (date: dayjs.Dayjs) => {
+      const day = date.day();
+      const isWeekend = (day === 0 || day === 6); // 0 是週日, 6 是週六
+      const isHoliday = HK_HOLIDAYS.includes(date.format('YYYY-MM-DD'));
+      return !isWeekend && !isHoliday;
+    };
+
+    // --- ✅ 助手函數：尋找下一個有效工作日 ---
+    const getNextWorkingDay = (date: dayjs.Dayjs) => {
+      let next = date;
+      while (!isWorkingDay(next)) {
+        next = next.add(1, 'day');
+      }
+      return next;
+    };
+
     let pool = activePool.filter(s => {
       const matchRegion = selectedRegions.length === 0 || selectedRegions.includes(s.region);
       const matchDistrict = selectedDistricts.length === 0 || selectedDistricts.includes(s.district);
@@ -161,21 +189,37 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       return s.status === 'Unplanned' && matchRegion && matchDistrict && matchMTR;
     });
     
-    if (pool.length === 0) { message.warning("No unplanned shops match filters."); setIsCalculating(false); return; }
+    if (pool.length === 0) { 
+      message.warning("No unplanned shops match filters."); 
+      setIsCalculating(false); 
+      return; 
+    }
     
-    // 按經緯度排序，使行程在地理上更集中
+    // 地理排序保持不變
     pool.sort((a, b) => (a.latitude + a.longitude) - (b.latitude + b.longitude));
     
     const results: any[] = [];
-    let currentDay = dayjs(startDate);
+    
+    // ✅ 初始日期也必須檢查是否為工作日
+    let currentDay = getNextWorkingDay(dayjs(startDate));
 
     pool.forEach((shop, index) => {
+      // 計算組別
       const groupInDay = (index % shopsPerDay) % groupsPerDay + 1;
-      results.push({ ...shop, scheduledDate: currentDay.format('YYYY-MM-DD'), groupId: groupInDay });
-      if ((index + 1) % shopsPerDay === 0) currentDay = currentDay.add(1, 'day');
+      
+      results.push({ 
+        ...shop, 
+        scheduledDate: currentDay.format('YYYY-MM-DD'), 
+        groupId: groupInDay 
+      });
+
+      // ✅ 當這一天的名額滿了，跳到下一個「工作日」
+      if ((index + 1) % shopsPerDay === 0) {
+        currentDay = getNextWorkingDay(currentDay.add(1, 'day'));
+      }
     });
 
-    // ✅ 新增排序邏輯：1.日期 2.組別 (Group A, B, C)
+    // 排序邏輯保持不變
     const sortedResults = results.sort((a, b) => {
       if (a.scheduledDate !== b.scheduledDate) return dayjs(a.scheduledDate).unix() - dayjs(b.scheduledDate).unix();
       return a.groupId - b.groupId;
@@ -259,7 +303,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
         <Row gutter={24}>
           <Col span={8}><Text strong className="text-slate-400 block mb-2 uppercase text-xs">Start Date</Text><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-slate-50 border-none h-12 rounded-xl w-full px-4" /></Col>
-          <Col span={8}><Text strong className="text-slate-400 block mb-2 uppercase text-xs">Shops / Day</Text><InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 20)} className="w-full h-12 bg-slate-50 border-none rounded-xl" /></Col>
+          <Col span={8}><Text strong className="text-slate-400 block mb-2 uppercase text-xs">Shops / Day</Text><InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 9)} className="w-full h-12 bg-slate-50 border-none rounded-xl" /></Col>
           <Col span={8}><Text strong className="text-slate-400 block mb-2 uppercase text-xs">Groups / Day</Text><InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} className="w-full h-12 bg-slate-50 border-none rounded-xl" /></Col>
         </Row>
         

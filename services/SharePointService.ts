@@ -74,37 +74,51 @@ class SharePointService {
   }
 
   /**
-   * 👤 建立新成員（Hash 密碼後儲存）
-   */
-  async createMember(name: string, aliasemail: string, plainPassword: string, role: string) {
-    try {
-      const salt = bcrypt.genSaltSync(10);
-      const hash = bcrypt.hashSync(plainPassword, salt);
+ * 🆕 註冊新成員
+ */
+async registerMember(data: {
+  name: string,
+  userEmail: string,
+  aliasEmail: string,
+  passwordHash: string
+}) {
+  try {
+    const payload = {
+      fields: {
+        Title: data.name, // SharePoint List 的主標題通常存 Name
+        Name: data.name,
+        UserEmail: data.userEmail,
+        AliasEmail: data.aliasEmail,
+        PasswordHash: data.passwordHash,
+        Role: "User", // Default Role
+        AccountStatus: "Active", // Default Status
+        AccountCreateDate: new Date().toISOString(), // Include time
+        // 針對 Person 欄位 "User"：在 Graph API 中通常需要使用電子郵件進行聲明
+        "User@Claims": `i:0#.f|membership|${data.aliasEmail}` 
+      }
+    };
 
-      const payload = {
-        fields: {
-          AliasEmail: aliasemail,
-          Name: name,
-          PasswordHash: hash,
-          Role: role
-        }
-      };
+    const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.graphToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
 
-      const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.graphToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      return response.ok;
-    } catch (error) {
-      console.error("建立成員失敗:", error);
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("SharePoint 註冊失敗:", err.error?.message);
       return false;
     }
+    return true;
+  } catch (error) {
+    console.error("註冊連線錯誤:", error);
+    return false;
   }
+}
 
   // 在你的 sharePointService 內增加：
 // sharePointService.ts

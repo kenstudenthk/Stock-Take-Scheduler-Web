@@ -1,18 +1,21 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  Card, Collapse, Row, Col, Space, Button, Typography, Switch, Select, 
-  InputNumber, Table, Tag, message, Modal, DatePicker, Divider 
+import React, { useState, useMemo, useCallback } from 'react';
+import {
+  Card, Row, Col, Space, Button, Typography, Switch, Select,
+  InputNumber, Table, Tag, message, Modal, DatePicker, Progress
 } from 'antd';
-import { 
-  ControlOutlined, CheckCircleOutlined, SaveOutlined, 
-  ShopOutlined, CloseCircleOutlined, HourglassOutlined,
-  EnvironmentOutlined, ExclamationCircleOutlined, DeleteOutlined,
-  CalendarOutlined, SyncOutlined, HistoryOutlined
+import {
+  ControlOutlined, CheckCircleOutlined, SaveOutlined,
+  ShopOutlined, HourglassOutlined, DeleteOutlined,
+  CalendarOutlined, SyncOutlined, HistoryOutlined, ReloadOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { Shop } from '../types';
 import { SP_FIELDS } from '../constants';
+import { isHoliday, getAllHolidays } from '../constants/holidays';
+import { API_URLS } from '../constants/config';
+import { GENERATOR_DEFAULTS, BATCH_CONFIG } from '../constants/config';
+import { executeBatch, BatchResult, formatBatchResult } from '../utils/batchOperations';
 
 dayjs.extend(isBetween);
 
@@ -21,13 +24,8 @@ const { confirm } = Modal;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
-// ✅ 1. 香港公眾假期清單 (用於自動跳過)
-const HK_HOLIDAYS = [
-  '2025-01-01', '2025-01-29', '2025-01-30', '2025-01-31',
-  '2025-04-04', '2025-04-18', '2025-04-19', '2025-04-21',
-  '2025-05-01', '2025-05-05', '2025-05-31', '2025-07-01',
-  '2025-10-01', '2025-10-07', '2025-10-29', '2025-12-25', '2025-12-26',
-];
+// Get all holidays for validation
+const ALL_HOLIDAYS = getAllHolidays();
 
 // --- 動態動畫組件 (保留原設計) ---
 const ResetChaseLoader = () => (
@@ -48,7 +46,7 @@ const ResetChaseLoader = () => (
   </div>
 );
 
-const SyncGeometricLoader = ({ text = "Syncing to SharePoint..." }) => (
+const SyncGeometricLoader = ({ text = "Syncing to SharePoint...", progress }: { text?: string; progress?: { current: number; total: number } | null }) => (
   <div className="sync-overlay">
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
       <div className="loader"><svg viewBox="0 0 80 80"><circle r="32" cy="40" cx="40"></circle></svg></div>
@@ -56,6 +54,15 @@ const SyncGeometricLoader = ({ text = "Syncing to SharePoint..." }) => (
       <div className="loader"><svg viewBox="0 0 80 80"><rect height="64" width="64" y="8" x="8"></rect></svg></div>
     </div>
     <Title level={4} style={{ color: '#0d9488', marginTop: '20px' }}>{text}</Title>
+    {progress && (
+      <div style={{ width: '200px', marginTop: '16px' }}>
+        <Progress
+          percent={Math.round((progress.current / progress.total) * 100)}
+          size="small"
+          format={() => `${progress.current}/${progress.total}`}
+        />
+      </div>
+    )}
   </div>
 );
 
@@ -80,8 +87,8 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
 
 export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
   const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
-  const [shopsPerDay, setShopsPerDay] = useState<number>(9);
-  const [groupsPerDay, setGroupsPerDay] = useState<number>(3);
+  const [shopsPerDay, setShopsPerDay] = useState<number>(GENERATOR_DEFAULTS.shopsPerDay);
+  const [groupsPerDay, setGroupsPerDay] = useState<number>(GENERATOR_DEFAULTS.groupsPerDay);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [includeMTR, setIncludeMTR] = useState(true);
@@ -91,6 +98,11 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [loadingType, setLoadingType] = useState<'reset' | 'sync'>('sync');
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resetRange, setResetRange] = useState<any>(null);
+
+  // Batch operation state
+  const [saveProgress, setSaveProgress] = useState<{ current: number; total: number } | null>(null);
+  const [lastBatchResult, setLastBatchResult] = useState<BatchResult<any> | null>(null);
+  const [showRetryModal, setShowRetryModal] = useState(false);
 
   const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed' && s.status !== 'Closed'), [shops]);
 
@@ -123,17 +135,39 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     confirm({
       title: 'Reset Period?',
       onOk: async () => {
-        setLoadingType('reset'); setIsSaving(true);
+        setLoadingType('reset');
+        setIsSaving(true);
+        setSaveProgress({ current: 0, total: targets.length });
         try {
-          for (const shop of targets) {
-            await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
-              method: 'PATCH',
-              headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ [SP_FIELDS.SCHEDULE_DATE]: null, [SP_FIELDS.SCHEDULE_GROUP]: "0", [SP_FIELDS.STATUS]: 'Unplanned' })
-            });
-          }
-          setResetModalVisible(false); setResetRange(null); onRefresh(); message.success("Period Reset Complete!");
-        } finally { setIsSaving(false); }
+          const result = await executeBatch(
+            targets,
+            async (shop) => {
+              const response = await fetch(
+                `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
+                {
+                  method: 'PATCH',
+                  headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    [SP_FIELDS.SCHEDULE_DATE]: null,
+                    [SP_FIELDS.SCHEDULE_GROUP]: "0",
+                    [SP_FIELDS.STATUS]: 'Unplanned'
+                  })
+                }
+              );
+              if (!response.ok) throw new Error('Reset failed');
+            },
+            {
+              onProgress: (processed, total) => setSaveProgress({ current: processed, total }),
+            }
+          );
+          setResetModalVisible(false);
+          setResetRange(null);
+          onRefresh();
+          message.success(formatBatchResult(result));
+        } finally {
+          setIsSaving(false);
+          setSaveProgress(null);
+        }
       }
     });
   };
@@ -144,45 +178,65 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     confirm({
       title: 'RESET ALL?',
       onOk: async () => {
-        setLoadingType('reset'); setIsSaving(true);
+        setLoadingType('reset');
+        setIsSaving(true);
+        setSaveProgress({ current: 0, total: plannedShops.length });
         try {
-          for (const shop of plannedShops) {
-            await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
-              method: 'PATCH',
-              headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ [SP_FIELDS.SCHEDULE_DATE]: null, [SP_FIELDS.SCHEDULE_GROUP]: "0", [SP_FIELDS.STATUS]: 'Unplanned' })
-            });
-          }
-          onRefresh(); message.success("All Schedules Reset!");
-        } finally { setIsSaving(false); }
+          const result = await executeBatch(
+            plannedShops,
+            async (shop) => {
+              const response = await fetch(
+                `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
+                {
+                  method: 'PATCH',
+                  headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    [SP_FIELDS.SCHEDULE_DATE]: null,
+                    [SP_FIELDS.SCHEDULE_GROUP]: "0",
+                    [SP_FIELDS.STATUS]: 'Unplanned'
+                  })
+                }
+              );
+              if (!response.ok) throw new Error('Reset failed');
+            },
+            {
+              onProgress: (processed, total) => setSaveProgress({ current: processed, total }),
+            }
+          );
+          onRefresh();
+          message.success(formatBatchResult(result));
+        } finally {
+          setIsSaving(false);
+          setSaveProgress(null);
+        }
       }
     });
   };
 
-  // Generator.tsx 內部
+  // Check if date should be disabled (weekends + public holidays)
+  const disabledDate = useCallback((current: dayjs.Dayjs) => {
+    if (!current) return false;
 
-// ✅ 1. 判斷日期是否應該被禁用 (週末 + 公眾假期)
-const disabledDate = (current: dayjs.Dayjs) => {
-  if (!current) return false;
-  
-  // 檢查是否為週末 (0 = 週日, 6 = 週六)
-  const isWeekend = current.day() === 0 || current.day() === 6;
-  
-  // 檢查是否在公眾假期清單內
-  const isHoliday = HK_HOLIDAYS.includes(current.format('YYYY-MM-DD'));
-  
-  return isWeekend || isHoliday;
-};
+    // Check if weekend (0 = Sunday, 6 = Saturday)
+    const isWeekend = current.day() === 0 || current.day() === 6;
 
-  // ✅ 核心邏輯：自動跳過週末與假期
-  const handleGenerate = () => {
+    // Check if public holiday using multi-year holiday system
+    const dateStr = current.format('YYYY-MM-DD');
+    const isPublicHoliday = isHoliday(dateStr);
+
+    return isWeekend || isPublicHoliday;
+  }, []);
+
+  // Core logic: auto-skip weekends and holidays
+  const handleGenerate = useCallback(() => {
     setIsCalculating(true);
 
     const isWorkingDay = (date: dayjs.Dayjs) => {
       const day = date.day();
       const isWeekend = (day === 0 || day === 6);
-      const isHoliday = HK_HOLIDAYS.includes(date.format('YYYY-MM-DD'));
-      return !isWeekend && !isHoliday;
+      const dateStr = date.format('YYYY-MM-DD');
+      const isPublicHoliday = isHoliday(dateStr);
+      return !isWeekend && !isPublicHoliday;
     };
 
     const getNextWorkingDay = (date: dayjs.Dayjs) => {
@@ -220,25 +274,137 @@ const disabledDate = (current: dayjs.Dayjs) => {
 
     setGeneratedResult(sortedResults);
     setIsCalculating(false);
-  };
+  }, [activePool, selectedRegions, selectedDistricts, includeMTR, startDate, shopsPerDay, groupsPerDay]);
 
   const saveToSharePoint = async () => {
-    setLoadingType('sync'); setIsSaving(true);
+    setLoadingType('sync');
+    setIsSaving(true);
+    setSaveProgress({ current: 0, total: generatedResult.length });
+    setLastBatchResult(null);
+
     try {
-      for (const shop of generatedResult) {
-        await fetch(`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`, {
-          method: 'PATCH',
-          headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ [SP_FIELDS.SCHEDULE_DATE]: shop.scheduledDate, [SP_FIELDS.SCHEDULE_GROUP]: shop.groupId.toString(), [SP_FIELDS.STATUS]: 'Planned' })
-        });
+      const result = await executeBatch(
+        generatedResult,
+        async (shop) => {
+          const response = await fetch(
+            `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${graphToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                [SP_FIELDS.SCHEDULE_DATE]: shop.scheduledDate,
+                [SP_FIELDS.SCHEDULE_GROUP]: shop.groupId.toString(),
+                [SP_FIELDS.STATUS]: 'Planned'
+              })
+            }
+          );
+          if (!response.ok) {
+            throw new Error(`Failed to update shop ${shop.name}`);
+          }
+        },
+        {
+          concurrentRequests: BATCH_CONFIG.concurrentRequests,
+          onProgress: (processed, total) => {
+            setSaveProgress({ current: processed, total });
+          },
+          getItemName: (shop) => shop.name,
+        }
+      );
+
+      setLastBatchResult(result);
+
+      if (result.failureCount === 0) {
+        message.success(`Successfully synced ${result.successCount} shops!`);
+        setGeneratedResult([]);
+        onRefresh();
+      } else if (result.successCount > 0) {
+        message.warning(`Synced ${result.successCount} shops. ${result.failureCount} failed.`);
+        setShowRetryModal(true);
+      } else {
+        message.error(`Failed to sync all ${result.failureCount} shops.`);
+        setShowRetryModal(true);
       }
-      onRefresh(); setGeneratedResult([]); message.success("Sync Complete!");
-    } finally { setIsSaving(false); }
+    } catch (error) {
+      message.error('Sync failed. Please try again.');
+    } finally {
+      setIsSaving(false);
+      setSaveProgress(null);
+    }
+  };
+
+  const handleRetryFailed = async () => {
+    if (!lastBatchResult || lastBatchResult.failureCount === 0) return;
+
+    const failedShops = lastBatchResult.failed.map(f => f.item);
+    setGeneratedResult(failedShops);
+    setShowRetryModal(false);
+    // Trigger save again with only failed items
+    setTimeout(() => saveToSharePoint(), 100);
   };
 
   return (
     <div className="w-full flex flex-col gap-8 pb-20">
-      {isSaving && (loadingType === 'reset' ? <ResetChaseLoader /> : <SyncGeometricLoader />)}
+      {isSaving && (loadingType === 'reset' ? <ResetChaseLoader /> : <SyncGeometricLoader progress={saveProgress} />)}
+
+      {/* Retry Failed Modal */}
+      <Modal
+        title="Partial Sync Failure"
+        open={showRetryModal}
+        onCancel={() => {
+          setShowRetryModal(false);
+          setGeneratedResult([]);
+          onRefresh();
+        }}
+        footer={[
+          <Button key="skip" onClick={() => {
+            setShowRetryModal(false);
+            setGeneratedResult([]);
+            onRefresh();
+          }}>
+            Skip Failed Items
+          </Button>,
+          <Button
+            key="retry"
+            type="primary"
+            icon={<ReloadOutlined />}
+            onClick={handleRetryFailed}
+          >
+            Retry Failed ({lastBatchResult?.failureCount || 0})
+          </Button>,
+        ]}
+      >
+        {lastBatchResult && (
+          <div className="py-4">
+            <p className="mb-4">
+              <CheckCircleOutlined className="text-green-500 mr-2" />
+              Successfully saved: <strong>{lastBatchResult.successCount}</strong> shops
+            </p>
+            <p className="mb-4 text-red-500">
+              Failed to save: <strong>{lastBatchResult.failureCount}</strong> shops
+            </p>
+            {lastBatchResult.failed.length > 0 && (
+              <div className="max-h-40 overflow-auto bg-gray-50 p-3 rounded">
+                <Text type="secondary" className="text-xs">Failed items:</Text>
+                <ul className="list-disc list-inside mt-2">
+                  {lastBatchResult.failed.slice(0, 10).map((f, i) => (
+                    <li key={i} className="text-sm text-red-600">
+                      {f.item.name}: {f.error}
+                    </li>
+                  ))}
+                  {lastBatchResult.failed.length > 10 && (
+                    <li className="text-sm text-gray-500">
+                      ... and {lastBatchResult.failed.length - 10} more
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
 
       <div className="flex justify-between items-center">
         <Title level={2} className="m-0 text-slate-800">Schedule Generator</Title>
@@ -315,11 +481,11 @@ const disabledDate = (current: dayjs.Dayjs) => {
        
        <Col span={8}>
           <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Shops Per Day</Text>
-          <InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 9)} min={1} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
+          <InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || GENERATOR_DEFAULTS.shopsPerDay)} min={1} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
        </Col>
        <Col span={8}>
           <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Groups Per Day</Text>
-          <InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || 3)} min={1} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
+          <InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || GENERATOR_DEFAULTS.groupsPerDay)} min={1} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
        </Col>
     </Row>
             
@@ -364,3 +530,6 @@ const disabledDate = (current: dayjs.Dayjs) => {
     </div>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+export const MemoizedGenerator = React.memo(Generator);

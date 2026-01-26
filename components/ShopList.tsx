@@ -245,7 +245,7 @@ const renderFilterGroup = () => (
   {
     title: 'Shop & Brand',
     key: 'shopInfo',
-    width: '34%', // ✅ 再次加寬：給予店名最充足的空間
+    width: '31%', // ✅ 再次加寬：給予店名最充足的空間
     render: (record: Shop) => (
       <Space align="center" size={12}>
         {record.brandIcon && (
@@ -273,7 +273,7 @@ const renderFilterGroup = () => (
   {
     title: 'Address',
     key: 'address',
-    width: '22%', 
+    width: '25%', 
     render: (record: Shop) => (
       <div className={`flex items-start gap-1.5 ${record.status?.toLowerCase() === 'closed' ? 'opacity-40' : ''}`}>
         <EnvironmentOutlined className="text-teal-600 mt-1 text-[13px]" />
@@ -287,37 +287,80 @@ const renderFilterGroup = () => (
       </div>
     ),
   },
-  {
-    title: 'Contact & Tracking',
-    key: 'contact',
-    width: '18%',
-    render: (record: Shop) => {
-      const trackingContent = (
-        <div className="p-2 w-[260px]" onClick={(e) => e.stopPropagation()}>
-          <Text strong className="text-[11px] uppercase text-slate-400 block mb-2">Tracking Log</Text>
-          <Space direction="vertical" className="w-full" size={8}>
-            <Select 
-              size="small"
-              placeholder="Set Status"
-              className="w-full"
-              value={record.callStatus || undefined}
-              onChange={(val) => handleCallUpdate(record, 'status', val)}
-            >
-              <Option value="Called">Called</Option>
-              <Option value="No One Pick Up">No One Pick Up</Option>
-              <Option value="No Contact / Wrong No.">No Contact / Wrong No.</Option>
-            </Select>
-            <Input.TextArea 
-              size="small"
-              placeholder="Call remark..."
-              rows={2}
-              defaultValue={record.callRemark}
-              onBlur={(e) => handleCallUpdate(record, 'remark', e.target.value)}
-              className="text-[12px] rounded-md"
-            />
-          </Space>
+  // ShopList.tsx -> 找到 columns 陣列中的 'Contact & Tracking' 部分
+
+{
+  title: 'Contact & Tracking',
+  key: 'contact',
+  width: '18%',
+  render: (record: Shop) => {
+    const trackingContent = (
+      <div className="p-2 w-[260px]" onClick={(e) => e.stopPropagation()}>
+        <Text strong className="text-[10px] uppercase text-slate-400 block mb-2">Tracking Log</Text>
+        <Space direction="vertical" className="w-full" size={8}>
+          <Select 
+            size="small"
+            placeholder="Set Status"
+            className="w-full"
+            value={record.callStatus || undefined}
+            onChange={(val) => handleCallUpdate(record, 'status', val)}
+          >
+            <Option value="Called">Called</Option>
+            <Option value="No One Pick Up">No One Pick Up</Option>
+            <Option value="No Contact / Wrong No.">No Contact / Wrong No.</Option>
+          </Select>
+          <Input.TextArea 
+            size="small"
+            placeholder="Call remark..."
+            rows={2}
+            defaultValue={record.callRemark}
+            onBlur={(e) => handleCallUpdate(record, 'remark', e.target.value)}
+            className="text-[12px] rounded-md"
+          />
+        </Space>
+      </div>
+    );
+
+    return (
+      <div className="flex items-center justify-between gap-1" onClick={(e) => e.stopPropagation()}>
+        {/* ✅ 左側顯示聯繫資訊，縮減空白 */}
+        <div className="flex flex-col min-w-0">
+          <Text className="text-[12px] font-bold text-slate-700 block truncate">
+            <PhoneOutlined className="mr-1 text-teal-500" /> {record.phone || '--'}
+          </Text>
+          <div className="flex items-center gap-1">
+            <Text type="secondary" className="text-[10px] truncate"><UserOutlined /> {record.contactName || 'N/A'}</Text>
+            {record.callStatus && (
+              <Badge status={record.callStatus === 'Called' ? 'success' : 'warning'} className="scale-75 origin-left" />
+            )}
+          </div>
         </div>
-      );
+
+        {/* ✅ 右側加入您提供的 Uiverse 旋轉按鈕 (紅圈位置) */}
+        <Popover content={trackingContent} title={<b className="text-xs">Quick Tracking</b>} trigger="click" placement="topRight">
+          <button
+            className="tracking-log-btn group cursor-pointer outline-none transition-all duration-300"
+            title="Log Call"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="32"
+              height="32"
+              viewBox="0 0 256 256"
+              className="group-hover:rotate-180 transition-transform duration-500"
+            >
+              <g fill="#0d9488" fillRule="nonzero">
+                <g transform="scale(4,4)">
+                  <path d="M12,4c-2.20703,0 -4,1.79297 -4,4v48c0,2.20703 1.79297,4 4,4h35c1.65234,0 3,-1.34766 3,-3v-3.18359c1.16016,-0.41406 2,-1.51562 2,-2.81641v-6.38281l2.89453,-1.44531c0.67969,-0.33984 1.10547,-1.02734 1.10547,-1.78906v-29.38281c0,-1.10156 -0.89844,-2 -2,-2h-2v-3c0,-1.65234 -1.34766,-3 -3,-3zM12,6h37c0.55078,0 1,0.44922 1,1v44c0,0.55078 -0.44922,1 -1,1h-29v-35c0,-0.55078 -0.44531,-1 -1,-1c-0.55469,0 -1,0.44922 -1,1v35h-6c-0.61719,0 -1.33984,0.22266 -2,0.63281v-44.63281c0,-1.10156 0.89844,-2 2,-2zM13,8c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM19,8c-0.55469,0 -1,0.44922 -1,1v4c0,0.55078 0.44531,1 1,1c0.55469,0 1,-0.44922 1,-1v-4c0,-0.55078 -0.44531,-1 -1,-1zM52,12h2v9.38281l-2,1zM13,13c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM13,18c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM35,18c-2.75781,0 -5,2.24219 -5,5v2c0,0.96094 0.28516,1.85156 0.76172,2.61328c-2.63281,1.01953 -4.71094,3.23828 -5.46484,6.08203c-0.14062,0.53516 0.17969,1.08203 0.71484,1.22266c0.53125,0.14063 1.07813,-0.17969 1.22266,-0.71484c0.66406,-2.51172 2.66406,-4.38281 5.11328,-4.98047c0.76953,0.48438 1.67578,0.77734 2.65234,0.77734c0.97656,0 1.88281,-0.29297 2.65234,-0.78125c2.44922,0.60156 4.45313,2.47266 5.11719,4.98828c0.11719,0.44922 0.52344,0.74609 0.96484,0.74609c0.08594,0 0.17188,-0.01172 0.25391,-0.03516c0.53516,-0.14062 0.85547,-0.6875 0.71484,-1.22266c-0.75391,-2.84766 -2.82812,-5.0625 -5.46094,-6.08203c0.47266,-0.76172 0.75781,-1.65234 0.75781,-2.61328v-2c0,-2.75781 -2.24219,-5 -5,-5zM35,19.83203c1.72266,0 3.125,1.40234 3.125,3.125v2.08594c0,1.72266 -1.40234,3.125 -3.125,3.125c-1.72266,0 -3.125,-1.40234 -3.125,-3.125v-2.08594c0,-1.72266 1.40234,-3.125 3.125,-3.125zM13,23c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM54,23.61719v7.76563l-2,1v-7.76562zM13,28c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM13,33c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM54,33.61719v7.76563l-2,1v-7.76562zM13,38c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM31,38c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h8c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM29,42c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h4c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM37,42c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h4c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM13,43c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM13,48c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM12,54h36v3c0,0.55078 -0.44922,1 -1,1h-35c-1.10156,0 -2,-0.89844 -2,-2c0,-1.24609 1.39063,-2 2,-2z" />
+                </g>
+              </g>
+            </svg>
+          </button>
+        </Popover>
+      </div>
+    );
+  }
+}
 
       return (
         <div onClick={(e) => e.stopPropagation()}>

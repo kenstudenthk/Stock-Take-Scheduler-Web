@@ -80,7 +80,7 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
 
 export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
   const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
-  const [shopsPerDay, setShopsPerDay] = useState<number>(20);
+  const [shopsPerDay, setShopsPerDay] = useState<number>(9);
   const [groupsPerDay, setGroupsPerDay] = useState<number>(3);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
@@ -290,7 +290,7 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
               </Col>
               <Col span={8}>
                 <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">Shops / Day</Text>
-                <InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 20)} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
+                <InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || 9)} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
               </Col>
               <Col span={8}>
                 <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">Groups / Day</Text>

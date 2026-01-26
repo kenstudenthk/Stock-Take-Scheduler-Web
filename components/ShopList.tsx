@@ -562,12 +562,40 @@ const renderFilterGroup = () => (
     letter-spacing: 0.5px;
   }
 
-  /* 聯繫人卡片緊湊化 */
-  .contact-cell-compact {
-    padding: 2px 6px;
-    border-radius: 4px;
-    border: 1px solid transparent;
-  }
+.contact-cell-compact {
+  padding: 0 !important; /* ❗ 移除外層 Padding */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+}
+.tracking-log-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.tracking-log-btn:hover {
+  background: rgba(13, 148, 136, 0.08); /* 輕微背景回饋 */
+}
+
+/* 確保 SVG 圖標在按鈕內縮放正確 */
+.tracking-log-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* 強化字體與排版，減少垂直佔位 */
+.contact-cell-compact .ant-typography {
+  margin-bottom: 0 !important;
+}
   .contact-cell-compact:hover {
     background: #f0fdfa;
     border-color: #0d9488;

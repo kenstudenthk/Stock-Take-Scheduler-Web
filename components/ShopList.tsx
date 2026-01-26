@@ -324,9 +324,8 @@ const renderFilterGroup = () => (
     );
 
     return (
-      <div className="flex items-center justify-between gap-1" onClick={(e) => e.stopPropagation()}>
-        {/* ✅ 左側顯示聯繫資訊，縮減空白 */}
-        <div className="flex flex-col min-w-0">
+      <div className="flex items-center justify-between w-full pr-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-col min-w-0 flex-1">
           <Text className="text-[12px] font-bold text-slate-700 block truncate">
             <PhoneOutlined className="mr-1 text-teal-500" /> {record.phone || '--'}
           </Text>
@@ -433,7 +432,7 @@ const renderFilterGroup = () => (
   }
 ];
   return (
-    <div className="flex flex-col gap-6 pb-10">
+    <div className="flex flex-col gap-4 pb-10">
       <div className="flex justify-between items-end mb-2">
         <div>
           <Title level={2} className="m-0 text-slate-800">Shop Master List</Title>
@@ -454,7 +453,7 @@ const renderFilterGroup = () => (
       </div>
 
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white">
-        <div className="p-8">
+        <div className="p-5">
           <div className="flex justify-between items-center mb-8">
             <button className="Btn new-btn-styled" onClick={() => { setTargetShop(null); setFormOpen(true); }}>
               <div className="sign"><PlusOutlined style={{ color: 'white', fontSize: '18px' }} /></div>
@@ -549,36 +548,36 @@ const renderFilterGroup = () => (
   padding: 0 !important; /* ❗ 移除外層 Padding */
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   width: 100%;
 }
 
 /* 針對新的旋轉按鈕進行微調 */
 .tracking-log-btn {
-  background: transparent;
-  border: none;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px !important;  /* ❗ 強制寬度 */
+    height: 32px !important; /* ❗ 強制高度 */
+    border-radius: 8px;
+    flex-shrink: 0;          /* ❗ 防止被左側文字擠壓消失 */
+    cursor: pointer;
     transition: all 0.2s ease;
-}
+  }
 
 .tracking-log-btn:hover {
   background: rgba(13, 148, 136, 0.08); /* 輕微背景回饋 */
 }
 
-/* 確保 SVG 圖標在按鈕內縮放正確 */
-.tracking-log-btn svg {
-  width: 24px;
-  height: 24px;
-  display: block;
-}
+
+  .tracking-log-btn svg {
+    width: 22px !important;
+    height: 22px !important;
+    display: block;
+  }
 
 /* 強化字體與排版，減少垂直佔位 */
 .contact-cell-compact .ant-typography {
@@ -610,7 +609,7 @@ const renderFilterGroup = () => (
     border: 1px solid #f1f5f9 !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     /* ✅ 加深陰影 (Darker Shadow) */
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08) !important; 
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.12) !important; 
     margin-bottom: 0px !important; /* ❗ 移除間隙，解決紅線問題 */
     position: relative;
     z-index: 2; /* 確保 Header 蓋在 Content 上方 */
@@ -632,7 +631,7 @@ const renderFilterGroup = () => (
     /* 給內容加上下方圓角與同樣的深陰影 */
     border-bottom-left-radius: 20px !important;
     border-bottom-right-radius: 20px !important;
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.08) !important;
     overflow: hidden;
   }
 

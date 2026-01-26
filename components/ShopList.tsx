@@ -565,6 +565,8 @@ const renderFilterGroup = () => (
   height: 36px;
   border-radius: 8px;
   flex-shrink: 0;
+  cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .tracking-log-btn:hover {
@@ -575,6 +577,7 @@ const renderFilterGroup = () => (
 .tracking-log-btn svg {
   width: 24px;
   height: 24px;
+  display: block;
 }
 
 /* 強化字體與排版，減少垂直佔位 */

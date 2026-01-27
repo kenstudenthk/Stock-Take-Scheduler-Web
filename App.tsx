@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { message, Button, Tag, Avatar, Space, Typography, ConfigProvider, Alert } from 'antd';
-import {
-  SyncOutlined,
+import { message, Button, Tag, Avatar, Space, Typography, ConfigProvider } from 'antd'; 
+import { 
+  SyncOutlined, 
   WarningFilled,
-  ClockCircleOutlined
+  KeyOutlined 
 } from '@ant-design/icons';
 
 import { Layout } from './components/Layout';
@@ -11,44 +11,23 @@ import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
 import { Calendar } from './components/Calendar';
 import { Locations } from './components/Locations';
-import { Settings } from './components/Settings';
-import { Shop, View, User, hasAdminAccess } from './types';
+import { Settings } from './components/Settings'; 
+import { Shop, View, User, hasAdminAccess } from './types'; // ✅ 我確認你的 types.ts 有這些，請放心使用
 import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
 import { ThemeToggle } from './components/ThemeToggle';
-import { ErrorReport } from './components/ErrorReport';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorReport } from './components/ErrorReport'; 
 import { Login } from './components/Login';
 import SharePointService from './services/SharePointService';
-import { API_URLS, TOKEN_CONFIG } from './constants/config';
+
+// ✅ 使用你的 config.ts，避免硬編碼 URL
+import { API_URLS, TOKEN_CONFIG } from './constants/config'; 
 import './index.css';
 
 const { Text } = Typography;
 
-// Token expiry warning component
-const TokenExpiryWarning: React.FC<{ onNavigateToSettings: () => void }> = ({ onNavigateToSettings }) => (
-  <Alert
-    message={
-      <span className="flex items-center gap-2">
-        <ClockCircleOutlined />
-        Token may expire soon. Consider refreshing your token.
-      </span>
-    }
-    type="warning"
-    showIcon={false}
-    banner
-    closable
-    action={
-      <Button size="small" type="link" onClick={onNavigateToSettings}>
-        Go to Settings
-      </Button>
-    }
-    className="mb-4"
-  />
-);
-
-// Token expired notification component
+// 貨車通知組件 (保留你原始的設計)
 const TruckFlagNotice: React.FC = () => (
   <div className="truck-header-container">
     <div className="truck-flag-walker">
@@ -76,24 +55,23 @@ const TruckFlagNotice: React.FC = () => (
 function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(localStorage.getItem('theme') === 'dark');
+  
+  // ✅ 修正：統一使用 config.ts 中的 Storage Keys
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken) || '');
   const [invToken, setInvToken] = useState<string>(localStorage.getItem(TOKEN_CONFIG.storageKeys.invToken) || '');
-  const [tokenTimestamp, setTokenTimestamp] = useState<number>(
-    parseInt(localStorage.getItem(TOKEN_CONFIG.storageKeys.tokenTimestamp) || '0', 10)
-  );
+  
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasTokenError, setHasTokenError] = useState(false);
-  const [showTokenWarning, setShowTokenWarning] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = sessionStorage.getItem('currentUser');
-    return saved ? JSON.parse(saved) : null;
-  });
+  
+  // ✅ 使用 User 型別
+  const [currentUser, setCurrentUser] = useState<User | null>(JSON.parse(sessionStorage.getItem('currentUser') || 'null'));
 
   const sharePointService = useMemo(() => new SharePointService(graphToken), [graphToken]);
 
+  // 核心抓取資料函式
   const fetchAllData = useCallback(async (token: string) => {
     if (!token) {
       setHasTokenError(true);
@@ -102,11 +80,20 @@ function App() {
     }
     setLoading(true);
     try {
+      // ✅ 使用 API_URLS
       const url = `${API_URLS.shopList}/items?$expand=fields($select=*)&$top=999`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(url, { 
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Prefer': 'HonorNonIndexedQueriesWarningMayFail' 
+        } 
+      });
 
       if (res.status === 401) {
         setHasTokenError(true);
+        message.error("Session expired. Please update Token in Settings.");
+      } else if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       } else {
         const data = await res.json();
         if (data.value) {
@@ -132,74 +119,58 @@ function App() {
               brandIcon: f[SP_FIELDS.BRAND_ICON] || '',
               phone: f[SP_FIELDS.PHONE] || '',
               contactName: f[SP_FIELDS.CONTACT] || '',
-            };
+            } as Shop;
           });
           setAllShops(mapped);
-          setHasTokenError(false);
+          setHasTokenError(false); // ✅ 成功後務必清除錯誤狀態
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error("Fetch Error:", err);
+      setHasTokenError(true);
     } finally {
       setLoading(false);
       setIsInitialLoading(false);
     }
   }, []);
 
+  // ✅ 核心修正：更新 Token 後「立即」使用傳入的值呼叫 fetch
   const updateGraphToken = (token: string) => {
-    setGraphToken(token);
-    localStorage.setItem(TOKEN_CONFIG.storageKeys.graphToken, token);
-    if (token) {
-      // Track when token was set for expiry warning
-      const now = Date.now();
-      setTokenTimestamp(now);
-      localStorage.setItem(TOKEN_CONFIG.storageKeys.tokenTimestamp, now.toString());
-      setHasTokenError(false);
-      setShowTokenWarning(false);
-      fetchAllData(token);
+    const trimmedToken = token.trim();
+    setGraphToken(trimmedToken);
+    localStorage.setItem(TOKEN_CONFIG.storageKeys.graphToken, trimmedToken);
+    
+    if (trimmedToken) {
+      setHasTokenError(false); // ✅ 先隱藏卡車警告
+      fetchAllData(trimmedToken); // ✅ 立即刷新
+      message.success("Token updated. Refreshing data...");
+    } else {
+      setHasTokenError(true);
+      setAllShops([]);
     }
   };
 
   const updateInvToken = (token: string) => {
-    setInvToken(token);
-    localStorage.setItem(TOKEN_CONFIG.storageKeys.invToken, token);
+    const trimmedToken = token.trim();
+    setInvToken(trimmedToken);
+    localStorage.setItem(TOKEN_CONFIG.storageKeys.invToken, trimmedToken);
+    message.success("Inventory Token updated.");
   };
-
-  // Check token expiry and show warning
-  useEffect(() => {
-    if (!tokenTimestamp || !graphToken) return;
-
-    const checkTokenExpiry = () => {
-      const elapsed = Date.now() - tokenTimestamp;
-      const elapsedMinutes = elapsed / (1000 * 60);
-
-      if (elapsedMinutes >= TOKEN_CONFIG.warningThresholdMinutes) {
-        setShowTokenWarning(true);
-      }
-    };
-
-    // Check immediately
-    checkTokenExpiry();
-
-    // Check every 5 minutes
-    const interval = setInterval(checkTokenExpiry, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [tokenTimestamp, graphToken]);
 
   useEffect(() => {
     document.body.classList.toggle('dark', isDarkMode);
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  useEffect(() => {
-    const savedToken = localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken);
-    if (savedToken) fetchAllData(savedToken);
-    else {
+  // 初次載入與 currentUser 變更時刷新
+  useEffect(() => { 
+    if (graphToken) {
+      fetchAllData(graphToken); 
+    } else {
       setHasTokenError(true);
       setIsInitialLoading(false);
     }
-  }, [fetchAllData]);
+  }, [fetchAllData, graphToken]); // ✅ 加入 graphToken 作為依賴
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -209,17 +180,10 @@ function App() {
 
   const renderContent = () => {
     if (selectedMenuKey === View.SETTINGS) {
-      return (
-        <Settings 
-          token={graphToken} 
-          onUpdateToken={updateGraphToken} 
-          invToken={invToken} 
-          onUpdateInvToken={updateInvToken} 
-        />
-      );
+      return <Settings token={graphToken} onUpdateToken={updateGraphToken} invToken={invToken} onUpdateInvToken={updateInvToken} />;
     }
 
-    if (!currentUser) return null; // Logic handled in return block
+    if (!currentUser) return null;
 
     switch (selectedMenuKey) {
       case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} />;
@@ -232,17 +196,8 @@ function App() {
     }
   };
 
- // App.tsx 核心結構修正
 return (
-  <ConfigProvider
-    theme={{
-      token: {
-        colorPrimary: '#05043e',
-        borderRadius: 8,
-      },
-    }}
-  >
-    {/* ✅ 1. Layout 永遠作為父組件，確保側邊欄固定顯示 */}
+  <ConfigProvider theme={{ token: { colorPrimary: '#05043e', borderRadius: 8 } }}>
     <Layout 
       onLogout={handleLogout} 
       user={currentUser} 
@@ -250,28 +205,19 @@ return (
       currentView={selectedMenuKey}
       onReportError={() => setReportModalVisible(true)}
     >
-      
-      {/* ✅ 2. 判斷顯示 Login 還是 主內容 */}
       {!currentUser && selectedMenuKey !== View.SETTINGS ? (
-        /* 未登入且不是在設定頁：顯示 Login */
         <Login 
           sharePointService={sharePointService} 
           onLoginSuccess={(user) => {
             setCurrentUser(user);
             sessionStorage.setItem('currentUser', JSON.stringify(user));
+            // ✅ 登入成功後再次檢查資料
+            if (graphToken) fetchAllData(graphToken);
           }}
-          // ✅ 傳入跳轉功能，讓 Login 內部的錯誤訊息可以點擊
           onNavigateToSettings={() => setSelectedMenuKey(View.SETTINGS)}
         />
       ) : (
-        /* 已登入 或 正在設定頁：顯示頂部工具列與內容 */
         <>
-          {/* Token expiry warning */}
-          {showTokenWarning && !hasTokenError && (
-            <TokenExpiryWarning onNavigateToSettings={() => setSelectedMenuKey(View.SETTINGS)} />
-          )}
-
-          {/* Top Toolbar (Refresh, User Info) */}
           <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center gap-4">
               {!isInitialLoading && hasTokenError && !loading && <TruckFlagNotice />}
@@ -279,6 +225,7 @@ return (
                 icon={<SyncOutlined spin={loading} />} 
                 onClick={() => fetchAllData(graphToken)}
                 className="hover:border-[#05043e] hover:text-[#05043e]"
+                loading={loading}
               >
                 Refresh Data
               </Button>
@@ -286,36 +233,25 @@ return (
             </div>
 
             <div className="flex items-center gap-3">
+              <ThemeToggle isDark={isDarkMode} onToggle={setIsDarkMode} />
               {currentUser ? (
-                <>
+                <Space>
                   <div className="text-right hidden sm:block">
                     <div className="text-[12px] font-bold text-[#05043e]">{currentUser.Name}</div>
                     <div className="text-[10px] text-gray-400 uppercase">{currentUser.UserRole}</div>
                   </div>
-                  <Avatar 
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.Name}`} 
-                    className="border border-gray-200"
-                  />
-                </>
+                  <Avatar src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.Name}`} />
+                </Space>
               ) : (
                 <Tag color="orange">GUEST (SETUP MODE)</Tag>
               )}
             </div>
           </div>
-
-          {/* 渲染具體分頁組件 with Error Boundary */}
-          <ErrorBoundary>
-            {renderContent()}
-          </ErrorBoundary>
+          {renderContent()}
         </>
       )}
     </Layout>
-
-    <ErrorReport 
-      visible={reportModalVisible} 
-      onCancel={() => setReportModalVisible(false)} 
-      token={graphToken} 
-    />
+    <ErrorReport visible={reportModalVisible} onCancel={() => setReportModalVisible(false)} token={graphToken} />
   </ConfigProvider>
 );
 }

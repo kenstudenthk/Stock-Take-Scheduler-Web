@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Card, Row, Col, Space, Button, Typography, Switch, Select,
   InputNumber, Table, Tag, message, Modal, DatePicker, Progress
@@ -16,6 +16,7 @@ import { isHoliday, getAllHolidays } from '../constants/holidays';
 import { API_URLS } from '../constants/config';
 import { GENERATOR_DEFAULTS, BATCH_CONFIG } from '../constants/config';
 import { executeBatch, BatchResult, formatBatchResult } from '../utils/batchOperations';
+import { SchedulingWizardProgressBar, WizardStep } from './SchedulingWizardProgressBar';
 
 dayjs.extend(isBetween);
 
@@ -104,6 +105,10 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [lastBatchResult, setLastBatchResult] = useState<BatchResult<any> | null>(null);
   const [showRetryModal, setShowRetryModal] = useState(false);
 
+  // Wizard progress state
+  const [wizardStep, setWizardStep] = useState<WizardStep>('configure');
+  const [syncCompleted, setSyncCompleted] = useState(false);
+
   const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed' && s.status !== 'Closed'), [shops]);
 
   const stats = useMemo(() => ({
@@ -126,6 +131,37 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     const filtered = selectedRegions.length > 0 ? activePool.filter(s => selectedRegions.includes(s.region)) : activePool;
     return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
   }, [activePool, selectedRegions]);
+
+  // Calculate configured filters count for wizard feedback
+  const configuredFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedRegions.length > 0) count++;
+    if (selectedDistricts.length > 0) count++;
+    if (!includeMTR) count++;
+    if (shopsPerDay !== GENERATOR_DEFAULTS.shopsPerDay) count++;
+    if (groupsPerDay !== GENERATOR_DEFAULTS.groupsPerDay) count++;
+    return count;
+  }, [selectedRegions, selectedDistricts, includeMTR, shopsPerDay, groupsPerDay]);
+
+  // Update wizard step based on state changes
+  useEffect(() => {
+    if (syncCompleted) {
+      setWizardStep('complete');
+    } else if (isSaving) {
+      setWizardStep('sync');
+    } else if (generatedResult.length > 0) {
+      setWizardStep('generate');
+    } else {
+      setWizardStep('configure');
+    }
+  }, [isSaving, generatedResult.length, syncCompleted]);
+
+  // Reset syncCompleted when starting fresh
+  useEffect(() => {
+    if (generatedResult.length === 0 && !isSaving) {
+      setSyncCompleted(false);
+    }
+  }, [generatedResult.length, isSaving]);
 
   const handleResetByPeriod = async () => {
     if (!resetRange) { message.error("Please select a date range!"); return; }
@@ -318,8 +354,11 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
       if (result.failureCount === 0) {
         message.success(`Successfully synced ${result.successCount} shops!`);
-        setGeneratedResult([]);
-        onRefresh();
+        setSyncCompleted(true);
+        setTimeout(() => {
+          setGeneratedResult([]);
+          onRefresh();
+        }, 2000); // Brief delay to show completion state
       } else if (result.successCount > 0) {
         message.warning(`Synced ${result.successCount} shops. ${result.failureCount} failed.`);
         setShowRetryModal(true);
@@ -348,6 +387,15 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   return (
     <div className="w-full flex flex-col gap-8 pb-20">
       {isSaving && (loadingType === 'reset' ? <ResetChaseLoader /> : <SyncGeometricLoader progress={saveProgress} />)}
+
+      {/* Intelligent Scheduling Wizard Progress Bar */}
+      <SchedulingWizardProgressBar
+        currentStep={wizardStep}
+        configuredFilters={configuredFiltersCount}
+        generatedCount={generatedResult.length}
+        syncProgress={saveProgress}
+        isProcessing={isCalculating || isSaving}
+      />
 
       {/* Retry Failed Modal */}
       <Modal

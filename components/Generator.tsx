@@ -6,7 +6,8 @@ import {
 import {
   ControlOutlined, CheckCircleOutlined, SaveOutlined,
   ShopOutlined, HourglassOutlined, DeleteOutlined,
-  CalendarOutlined, SyncOutlined, HistoryOutlined, ReloadOutlined
+  CalendarOutlined, SyncOutlined, HistoryOutlined, ReloadOutlined,
+  ThunderboltOutlined, RocketOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
@@ -16,6 +17,7 @@ import { isHoliday, getAllHolidays } from '../constants/holidays';
 import { API_URLS } from '../constants/config';
 import { GENERATOR_DEFAULTS, BATCH_CONFIG } from '../constants/config';
 import { executeBatch, BatchResult, formatBatchResult } from '../utils/batchOperations';
+import { SchedulingWizard } from './SchedulingWizard';
 
 dayjs.extend(isBetween);
 
@@ -86,6 +88,9 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
 };
 
 export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
+  // Wizard mode state
+  const [showWizard, setShowWizard] = useState(false);
+
   const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [shopsPerDay, setShopsPerDay] = useState<number>(GENERATOR_DEFAULTS.shopsPerDay);
   const [groupsPerDay, setGroupsPerDay] = useState<number>(GENERATOR_DEFAULTS.groupsPerDay);
@@ -345,6 +350,38 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     setTimeout(() => saveToSharePoint(), 100);
   };
 
+  // Render wizard mode
+  if (showWizard) {
+    return (
+      <div className="w-full flex flex-col gap-6 pb-20">
+        {/* Wizard Header */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Button
+              icon={<RocketOutlined />}
+              onClick={() => setShowWizard(false)}
+              className="rounded-lg border-slate-200"
+            >
+              Exit Wizard
+            </Button>
+            <Title level={2} className="m-0 text-slate-800">
+              <ThunderboltOutlined className="text-orange-500 mr-2" />
+              Scheduling Wizard
+            </Title>
+          </div>
+        </div>
+
+        {/* Wizard Component */}
+        <SchedulingWizard
+          shops={shops}
+          graphToken={graphToken}
+          onRefresh={onRefresh}
+          onClose={() => setShowWizard(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col gap-8 pb-20">
       {isSaving && (loadingType === 'reset' ? <ResetChaseLoader /> : <SyncGeometricLoader progress={saveProgress} />)}
@@ -409,6 +446,20 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       <div className="flex justify-between items-center">
         <Title level={2} className="m-0 text-slate-800">Schedule Generator</Title>
         <Space>
+          {/* Wizard Launch Button */}
+          <Button
+            type="primary"
+            icon={<ThunderboltOutlined />}
+            onClick={() => setShowWizard(true)}
+            className="rounded-lg font-bold h-10 px-6"
+            style={{
+              background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(249, 115, 22, 0.35)',
+            }}
+          >
+            Start Wizard
+          </Button>
           <Button icon={<HistoryOutlined />} onClick={() => setResetModalVisible(true)} className="rounded-lg border-red-200 text-red-500 font-bold hover:bg-red-50">Reset by Period</Button>
           <Button danger type="primary" icon={<DeleteOutlined />} onClick={handleResetAll} className="rounded-lg font-bold">Reset All</Button>
         </Space>

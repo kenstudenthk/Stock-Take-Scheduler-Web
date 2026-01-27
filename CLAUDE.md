@@ -80,7 +80,7 @@ const response = await fetch(url, {
   headers: {
     'Authorization': `Bearer ${this.graphToken}`,
     'Content-Type': 'application/json',
-    'Prefer': 'HonorNonIndexedQueriesWarningMayFailRandomly',
+    'Prefer': 'HonorNonIndexedQueriesWarningMayFailOverTime',
     'ConsistencyLevel': 'eventual'
   }
 });

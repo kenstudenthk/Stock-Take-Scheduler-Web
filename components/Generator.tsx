@@ -18,7 +18,7 @@ import { isHoliday, getAllHolidays } from '../constants/holidays';
 import { API_URLS } from '../constants/config';
 import { GENERATOR_DEFAULTS, BATCH_CONFIG } from '../constants/config';
 import { executeBatch, BatchResult, formatBatchResult } from '../utils/batchOperations';
-import { SchedulingWizard } from './SchedulingWizard';
+import { SchedulingWizardProgressBar, WizardStep } from './SchedulingWizardProgressBar';
 
 dayjs.extend(isBetween);
 
@@ -454,53 +454,9 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
   const [lastBatchResult, setLastBatchResult] = useState<BatchResult<any> | null>(null);
   const [showRetryModal, setShowRetryModal] = useState(false);
 
-  // Wizard state management
-  const [currentWizardStep, setCurrentWizardStep] = useState<WizardStep>('configure');
-  const [completedWizardSteps, setCompletedWizardSteps] = useState<WizardStep[]>([]);
-
-  // Update wizard step based on workflow state
-  useEffect(() => {
-    if (generatedResult.length > 0 && !isSaving) {
-      // Schedule generated, ready to sync
-      setCurrentWizardStep('sync');
-      if (!completedWizardSteps.includes('configure')) {
-        setCompletedWizardSteps(prev => [...prev, 'configure']);
-      }
-      if (!completedWizardSteps.includes('generate')) {
-        setCompletedWizardSteps(prev => [...prev, 'generate']);
-      }
-    } else if (isCalculating) {
-      // Currently generating
-      setCurrentWizardStep('generate');
-      if (!completedWizardSteps.includes('configure')) {
-        setCompletedWizardSteps(prev => [...prev, 'configure']);
-      }
-    } else if (isSaving && loadingType === 'sync') {
-      // Currently syncing
-      setCurrentWizardStep('sync');
-    } else if (generatedResult.length === 0) {
-      // Initial state - configure
-      setCurrentWizardStep('configure');
-    }
-  }, [generatedResult.length, isCalculating, isSaving, loadingType]);
-
-  // Reset wizard when sync completes successfully
-  const resetWizard = useCallback(() => {
-    setCurrentWizardStep('configure');
-    setCompletedWizardSteps([]);
-  }, []);
-
-  // Handle wizard step click navigation
-  const handleWizardStepClick = useCallback((step: WizardStep) => {
-    if (step === 'configure') {
-      // Allow going back to configure if not currently processing
-      if (!isCalculating && !isSaving) {
-        setGeneratedResult([]);
-        setCurrentWizardStep('configure');
-        setCompletedWizardSteps([]);
-      }
-    }
-  }, [isCalculating, isSaving]);
+  // Wizard progress state
+  const [wizardStep, setWizardStep] = useState<WizardStep>('configure');
+  const [syncCompleted, setSyncCompleted] = useState(false);
 
   const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed' && s.status !== 'Closed'), [shops]);
 
@@ -524,6 +480,37 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     const filtered = selectedRegions.length > 0 ? activePool.filter(s => selectedRegions.includes(s.region)) : activePool;
     return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
   }, [activePool, selectedRegions]);
+
+  // Calculate configured filters count for wizard feedback
+  const configuredFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedRegions.length > 0) count++;
+    if (selectedDistricts.length > 0) count++;
+    if (!includeMTR) count++;
+    if (shopsPerDay !== GENERATOR_DEFAULTS.shopsPerDay) count++;
+    if (groupsPerDay !== GENERATOR_DEFAULTS.groupsPerDay) count++;
+    return count;
+  }, [selectedRegions, selectedDistricts, includeMTR, shopsPerDay, groupsPerDay]);
+
+  // Update wizard step based on state changes
+  useEffect(() => {
+    if (syncCompleted) {
+      setWizardStep('complete');
+    } else if (isSaving) {
+      setWizardStep('sync');
+    } else if (generatedResult.length > 0) {
+      setWizardStep('generate');
+    } else {
+      setWizardStep('configure');
+    }
+  }, [isSaving, generatedResult.length, syncCompleted]);
+
+  // Reset syncCompleted when starting fresh
+  useEffect(() => {
+    if (generatedResult.length === 0 && !isSaving) {
+      setSyncCompleted(false);
+    }
+  }, [generatedResult.length, isSaving]);
 
   const handleResetByPeriod = async () => {
     if (!resetRange) { message.error("Please select a date range!"); return; }
@@ -716,13 +703,11 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
 
       if (result.failureCount === 0) {
         message.success(`Successfully synced ${result.successCount} shops!`);
-        setGeneratedResult([]);
-        setCompletedWizardSteps(['configure', 'generate', 'sync']);
-        // Brief delay to show completed state before reset
+        setSyncCompleted(true);
         setTimeout(() => {
-          resetWizard();
+          setGeneratedResult([]);
           onRefresh();
-        }, 1500);
+        }, 2000); // Brief delay to show completion state
       } else if (result.successCount > 0) {
         message.warning(`Synced ${result.successCount} shops. ${result.failureCount} failed.`);
         setShowRetryModal(true);
@@ -784,13 +769,13 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     <div className="w-full flex flex-col gap-8 pb-20">
       {isSaving && (loadingType === 'reset' ? <ResetChaseLoader /> : <SyncGeometricLoader progress={saveProgress} />)}
 
-      {/* Wizard Progress Bar */}
-      <WizardProgressBar
-        currentStep={currentWizardStep}
-        completedSteps={completedWizardSteps}
-        onStepClick={handleWizardStepClick}
-        isProcessing={isCalculating || (isSaving && loadingType === 'sync')}
-        processProgress={isSaving ? saveProgress : null}
+      {/* Intelligent Scheduling Wizard Progress Bar */}
+      <SchedulingWizardProgressBar
+        currentStep={wizardStep}
+        configuredFilters={configuredFiltersCount}
+        generatedCount={generatedResult.length}
+        syncProgress={saveProgress}
+        isProcessing={isCalculating || isSaving}
       />
 
       {/* Retry Failed Modal */}

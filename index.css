@@ -2065,3 +2065,256 @@ background-color: var(--bg-header) !important;
 
 .animate-fade-in { animation: loginFadeIn 0.4s ease-out forwards; }
 @keyframes loginFadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ============================================================
+   SCHEDULING WIZARD PROGRESS BAR
+   Design System: Progress teal + achievement orange
+   Pattern: 3-Step Funnel (Configure → Generate → Sync)
+   ============================================================ */
+
+.wizard-progress-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #f0fdfa 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 24px 32px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle grid pattern overlay */
+.wizard-progress-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(13, 148, 136, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13, 148, 136, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+/* Main progress track */
+.wizard-progress-track {
+  position: relative;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+
+.wizard-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 12px rgba(13, 148, 136, 0.4);
+}
+
+/* Step container */
+.wizard-steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+/* Individual step */
+.wizard-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+/* Connector line between steps */
+.wizard-connector {
+  position: absolute;
+  top: 18px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  z-index: -1;
+  transition: background-color 300ms ease;
+}
+
+.wizard-connector--pending {
+  background: #e2e8f0;
+}
+
+.wizard-connector--active {
+  background: linear-gradient(90deg, #10b981 0%, #0d9488 100%);
+}
+
+/* Step circle */
+.wizard-step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 250ms ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 2;
+}
+
+.wizard-step--active .wizard-step-circle {
+  box-shadow:
+    0 0 0 4px rgba(13, 148, 136, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: wizardPulse 2s ease-in-out infinite;
+}
+
+.wizard-step--completed .wizard-step-circle {
+  transform: scale(1.05);
+}
+
+.wizard-step--processing .wizard-step-circle {
+  animation: wizardProcessing 1.5s ease-in-out infinite;
+}
+
+/* Step content */
+.wizard-step-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.wizard-step-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: color 200ms ease;
+}
+
+.wizard-step-feedback {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+  transition: all 200ms ease;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.wizard-step--active .wizard-step-feedback {
+  background: rgba(13, 148, 136, 0.1);
+}
+
+.wizard-step--completed .wizard-step-feedback {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* Icon pulse animation */
+.wizard-icon-pulse {
+  animation: iconPulse 1s ease-in-out infinite;
+}
+
+/* Completion badge */
+.wizard-complete-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #047857;
+  animation: badgeFadeIn 400ms ease-out;
+}
+
+/* Animations */
+@keyframes wizardPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 4px rgba(13, 148, 136, 0.15),
+      0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 8px rgba(13, 148, 136, 0.08),
+      0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes wizardProcessing {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes iconPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes badgeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .wizard-progress-container {
+    padding: 20px 16px;
+  }
+
+  .wizard-step-circle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .wizard-step-circle .anticon {
+    font-size: 14px !important;
+  }
+
+  .wizard-step-label {
+    font-size: 11px;
+  }
+
+  .wizard-step-feedback {
+    font-size: 10px;
+  }
+
+  .wizard-connector {
+    top: 14px;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .wizard-progress-fill,
+  .wizard-step-circle,
+  .wizard-step--active .wizard-step-circle,
+  .wizard-step--processing .wizard-step-circle,
+  .wizard-icon-pulse {
+    animation: none;
+    transition: none;
+  }
+}

@@ -1,12 +1,12 @@
-// ShopList.tsx
+// ShopList.tsx - Bento Grid Design
 
-import React, { useState, useMemo } from 'react';
-// 1. ✅ 補全 antd 組件導入
-import { Table, Input, Card, Typography, Space, Tag, DatePicker, message, Modal, Select, Row, Col, Divider, Badge, Button, Collapse, Avatar, Popover } from 'antd';
-import { 
+import React, { useState, useMemo, memo } from 'react';
+import { Table, Input, Card, Typography, Space, Tag, DatePicker, message, Modal, Select, Row, Col, Badge, Button, Popover } from 'antd';
+import {
   SearchOutlined, EnvironmentOutlined, ExclamationCircleOutlined, FilterOutlined,
-  PhoneOutlined, UserOutlined, PlusOutlined, MessageOutlined, ClockCircleOutlined,
-  ClearOutlined, ShopOutlined, GlobalOutlined, DeploymentUnitOutlined
+  PhoneOutlined, UserOutlined, PlusOutlined, ClearOutlined, ShopOutlined,
+  CheckCircleOutlined, ClockCircleOutlined, CalendarOutlined, AppstoreOutlined,
+  BankOutlined, CompassOutlined, TeamOutlined, ThunderboltOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shop, View } from '../types';
@@ -16,7 +16,54 @@ import { SP_FIELDS } from '../constants';
 const { Title, Text } = Typography;
 const { confirm } = Modal;
 const { Option } = Select;
-const { Panel } = Collapse; // 2. ✅ 必須定義 Panel
+
+// Bento Card Component for Statistics
+const BentoStatCard = memo(({
+  title, value, subtitle, icon, color, size = 'normal'
+}: {
+  title: string;
+  value: number | string;
+  subtitle?: string;
+  icon: React.ReactNode;
+  color: string;
+  size?: 'normal' | 'large';
+}) => (
+  <div className={`bento-stat-card bento-${size}`} style={{ '--accent-color': color } as React.CSSProperties}>
+    <div className="bento-stat-icon">{icon}</div>
+    <div className="bento-stat-content">
+      <span className="bento-stat-value">{value}</span>
+      <span className="bento-stat-title">{title}</span>
+      {subtitle && <span className="bento-stat-subtitle">{subtitle}</span>}
+    </div>
+  </div>
+));
+
+// Bento Filter Card Component
+const BentoFilterCard = memo(({
+  label, value, options, onChange, icon
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+  icon: React.ReactNode;
+}) => (
+  <div className="bento-filter-card">
+    <div className="bento-filter-header">
+      <span className="bento-filter-icon">{icon}</span>
+      <span className="bento-filter-label">{label}</span>
+    </div>
+    <Select
+      showSearch
+      className="bento-filter-select"
+      value={value}
+      onChange={onChange}
+      popupClassName="bento-filter-dropdown"
+    >
+      {options.map(opt => <Option key={opt} value={opt}>{opt}</Option>)}
+    </Select>
+  </div>
+));
 
 export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
   // ... 你的狀態設定 (searchText, filters 等) ...
@@ -162,82 +209,157 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
     });
   };
 
-  // ShopList.tsx - Part 2: Advanced Filter UI
-// (此部分放置在 Card 內部的 p-8 開頭處)
+  // Statistics calculations
+  const stats = useMemo(() => {
+    const active = shops.filter(s => s.masterStatus !== 'Closed');
+    return {
+      total: active.length,
+      planned: active.filter(s => s.status === 'Planned').length,
+      unplanned: active.filter(s => s.status === 'Unplanned').length,
+      done: active.filter(s => s.status === 'Done').length,
+      mtr: active.filter(s => s.is_mtr).length,
+      regions: new Set(active.map(s => s.region)).size,
+    };
+  }, [shops]);
 
-const renderFilterGroup = () => (
-    <div className="accordion-filter-wrapper mb-8">
-      <Collapse ghost expandIconPosition="end" className="custom-accordion" defaultActiveKey={['1']}>
-        <Panel 
-          key="1" 
-          header={
-            <div className="flex items-center gap-4 py-2">
-              <Avatar style={{ backgroundColor: '#f0fdfa', color: '#0d9488' }} icon={<FilterOutlined />} size={48} />
-              <div className="flex flex-col text-left">
-                <Text strong className="text-[16px] text-slate-800">Advanced Shop Filters</Text>
-                <Text className="text-[12px] text-slate-400">
-                  Currently showing <Badge status="processing" color="#0d9488" text={<b className="text-teal-600">{filteredData.length}</b>} /> stores
-                </Text>
-              </div>
-            </div>
-          }
-        >
-        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
-          <Row gutter={[16, 20]}>
-            {[
-              { label: 'Region', key: 'region', opts: options.regions },
-              { label: 'District', key: 'district', opts: options.districts },
-              { label: 'Area', key: 'area', opts: options.areas },
-              { label: 'Brand', key: 'brand', opts: options.brands },
-              { label: 'Business Unit', key: 'bu', opts: options.bus },
-              { label: 'Schedule Status', key: 'status', opts: options.statuses },
-            ].map(f => (
-              <Col span={4} key={f.key}>
-                <Text className="filter-label">{f.label}</Text>
-                <Select 
-                  showSearch
-                  className="w-full custom-list-select" 
-                  value={filters[f.key as keyof typeof filters]} 
-                  onChange={v => setFilters({...filters, [f.key]: v})}
-                >
-                  {f.opts.map(opt => <Option key={opt} value={opt}>{opt}</Option>)}
-                </Select>
-              </Col>
-            ))}
+  // Bento Statistics Grid
+  const renderBentoStats = () => (
+    <div className="bento-stats-grid">
+      <BentoStatCard
+        title="Total Shops"
+        value={stats.total}
+        subtitle="Active locations"
+        icon={<ShopOutlined />}
+        color="#0d9488"
+        size="large"
+      />
+      <BentoStatCard
+        title="Planned"
+        value={stats.planned}
+        icon={<CalendarOutlined />}
+        color="#6366f1"
+      />
+      <BentoStatCard
+        title="Unplanned"
+        value={stats.unplanned}
+        icon={<ClockCircleOutlined />}
+        color="#f59e0b"
+      />
+      <BentoStatCard
+        title="Completed"
+        value={stats.done}
+        icon={<CheckCircleOutlined />}
+        color="#22c55e"
+      />
+      <BentoStatCard
+        title="MTR Shops"
+        value={stats.mtr}
+        icon={<ThunderboltOutlined />}
+        color="#8b5cf6"
+      />
+      <BentoStatCard
+        title="Regions"
+        value={stats.regions}
+        icon={<CompassOutlined />}
+        color="#ec4899"
+      />
+    </div>
+  );
 
-            <Col span={6}>
-              <Text className="filter-label">Call Status Tracking</Text>
-              <Select className="w-full custom-list-select" value={filters.callStatus} onChange={v => setFilters({...filters, callStatus: v})}>
-                {options.callStatuses.map(opt => <Option key={opt} value={opt}>{opt}</Option>)}
-              </Select>
-            </Col>
-            <Col span={6}>
-              <Text className="filter-label">Stationed In MTR?</Text>
-              <Select className="w-full custom-list-select" value={filters.mtr} onChange={v => setFilters({...filters, mtr: v})}>
-                {options.mtrs.map(opt => <Option key={opt} value={opt}>{opt}</Option>)}
-              </Select>
-            </Col>
-            <Col span={6}>
-              <Text className="filter-label">Schedule Group</Text>
-              <Select className="w-full custom-list-select" value={filters.group} onChange={v => setFilters({...filters, group: v})}>
-                {options.groups.map(opt => <Option key={opt} value={opt}>{opt === 'All' ? 'All Groups' : `Group ${String.fromCharCode(64 + parseInt(opt))}`}</Option>)}
-              </Select>
-            </Col>
-            <Col span={6} className="flex items-end justify-end">
-              <Button 
-                type="text" 
-                danger 
-                icon={<ClearOutlined />} 
-                onClick={resetAllFilters}
-                className="font-bold tracking-tight hover:bg-red-50 h-10 rounded-lg"
-              >
-                RESET ALL FILTERS
-              </Button>
-            </Col>
-</Row>
+  // Bento Filter Grid
+  const renderBentoFilters = () => (
+    <div className="bento-filters-section">
+      <div className="bento-filters-header">
+        <div className="flex items-center gap-3">
+          <div className="bento-filters-icon-wrapper">
+            <FilterOutlined />
           </div>
-        </Panel>
-      </Collapse>
+          <div>
+            <Text strong className="text-lg text-slate-800 block">Advanced Filters</Text>
+            <Text className="text-xs text-slate-400">
+              Showing <span className="text-teal-600 font-bold">{filteredData.length}</span> of {shops.length} shops
+            </Text>
+          </div>
+        </div>
+        <Button
+          type="text"
+          danger
+          icon={<ClearOutlined />}
+          onClick={resetAllFilters}
+          className="font-bold hover:bg-red-50 rounded-xl px-4"
+        >
+          Reset All
+        </Button>
+      </div>
+
+      <div className="bento-filters-grid">
+        <BentoFilterCard
+          label="Region"
+          value={filters.region}
+          options={options.regions}
+          onChange={v => setFilters({...filters, region: v})}
+          icon={<CompassOutlined />}
+        />
+        <BentoFilterCard
+          label="District"
+          value={filters.district}
+          options={options.districts}
+          onChange={v => setFilters({...filters, district: v})}
+          icon={<EnvironmentOutlined />}
+        />
+        <BentoFilterCard
+          label="Area"
+          value={filters.area}
+          options={options.areas}
+          onChange={v => setFilters({...filters, area: v})}
+          icon={<AppstoreOutlined />}
+        />
+        <BentoFilterCard
+          label="Brand"
+          value={filters.brand}
+          options={options.brands}
+          onChange={v => setFilters({...filters, brand: v})}
+          icon={<BankOutlined />}
+        />
+        <BentoFilterCard
+          label="Business Unit"
+          value={filters.bu}
+          options={options.bus}
+          onChange={v => setFilters({...filters, bu: v})}
+          icon={<TeamOutlined />}
+        />
+        <BentoFilterCard
+          label="Status"
+          value={filters.status}
+          options={options.statuses}
+          onChange={v => setFilters({...filters, status: v})}
+          icon={<CheckCircleOutlined />}
+        />
+        <BentoFilterCard
+          label="Call Status"
+          value={filters.callStatus}
+          options={options.callStatuses}
+          onChange={v => setFilters({...filters, callStatus: v})}
+          icon={<PhoneOutlined />}
+        />
+        <BentoFilterCard
+          label="MTR Shop"
+          value={filters.mtr}
+          options={options.mtrs}
+          onChange={v => setFilters({...filters, mtr: v})}
+          icon={<ThunderboltOutlined />}
+        />
+        <BentoFilterCard
+          label="Group"
+          value={filters.group}
+          options={options.groups.map(g => g === 'All' ? 'All' : `Group ${String.fromCharCode(64 + parseInt(g))}`)}
+          onChange={v => {
+            const val = v.startsWith('Group') ? v.split(' ')[1].charCodeAt(0) - 64 + '' : 'All';
+            setFilters({...filters, group: val});
+          }}
+          icon={<AppstoreOutlined />}
+        />
+      </div>
     </div>
   );
 
@@ -432,48 +554,52 @@ const renderFilterGroup = () => (
   }
 ];
   return (
-    <div className="flex flex-col gap-4 pb-10">
-      <div className="flex justify-between items-end mb-2">
+    <div className="shop-list-container">
+      {/* Header Section */}
+      <div className="shop-list-header">
         <div>
           <Title level={2} className="m-0 text-slate-800">Shop Master List</Title>
-          <Text className="text-slate-400 font-medium">Comprehensive store management and multi-criteria filtering.</Text>
+          <Text className="text-slate-400 font-medium">Comprehensive store management with advanced filtering</Text>
         </div>
-        {/* 您原有的搜尋框移至此處更省空間 */}
-        <div className="input-group">
-            <input 
-              required 
-              type="text" 
-              autoComplete="off" 
-              className="custom-search-input" 
-              value={searchText} 
-              onChange={e => setSearchText(e.target.value)} 
+        <div className="flex items-center gap-4">
+          <div className="input-group">
+            <input
+              required
+              type="text"
+              autoComplete="off"
+              className="custom-search-input"
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
             />
-            <label className="user-label">Quick search by name or code...</label>
+            <label className="user-label">Search by name or code...</label>
+          </div>
+          <button className="Btn new-btn-styled" onClick={() => { setTargetShop(null); setFormOpen(true); }}>
+            <div className="sign"><PlusOutlined style={{ color: 'white', fontSize: '18px' }} /></div>
+            <div className="btn-text">New Shop</div>
+          </button>
         </div>
       </div>
 
-      <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white">
-        <div className="p-5">
-          <div className="flex justify-between items-center mb-8">
-            <button className="Btn new-btn-styled" onClick={() => { setTargetShop(null); setFormOpen(true); }}>
-              <div className="sign"><PlusOutlined style={{ color: 'white', fontSize: '18px' }} /></div>
-              <div className="btn-text">New Shop</div>
-            </button>
-            
-            <Space size="large" align="center">
-              <Space direction="vertical" size={0}>
-                <Text className="text-[10px] font-bold text-slate-400 uppercase ml-1">Plan Date</Text>
-                <DatePicker 
-                    onChange={d => setFilterDate(d?.format('YYYY-MM-DD') || null)} 
-                    className="h-11 rounded-xl font-bold border-slate-200 w-44" 
-                    placeholder="Filter by Date" 
-                />
-              </Space>
-            </Space>
-          </div>
+      {/* Bento Statistics Grid */}
+      {renderBentoStats()}
 
-          {/* ✅ 插入新增的過濾器面板 */}
-          {renderFilterGroup()}
+      {/* Bento Filters Section */}
+      {renderBentoFilters()}
+
+      {/* Date Filter & Table */}
+      <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white mt-6">
+        <div className="p-5">
+          <div className="flex justify-between items-center mb-6">
+            <Text strong className="text-slate-600">
+              <CalendarOutlined className="mr-2" />
+              Filter by Scheduled Date
+            </Text>
+            <DatePicker
+              onChange={d => setFilterDate(d?.format('YYYY-MM-DD') || null)}
+              className="h-11 rounded-xl font-bold border-slate-200 w-48"
+              placeholder="Select Date"
+            />
+          </div>
 
           <div className="st-master-table">
             <Table 
@@ -504,8 +630,218 @@ const renderFilterGroup = () => (
         shops={shops} 
       />
 
-      {/* 為下拉選單添加微調樣式 */}
+      {/* Bento Grid Styles */}
 <style>{`
+/* ============================================
+   BENTO GRID DESIGN SYSTEM
+   ============================================ */
+
+.shop-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 40px;
+}
+
+.shop-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+/* Bento Statistics Grid */
+.bento-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+.bento-stat-card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.bento-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent-color);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.bento-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.bento-stat-card:hover::before {
+  opacity: 1;
+}
+
+.bento-large {
+  grid-column: span 1;
+}
+
+.bento-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-color) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: white;
+  opacity: 0.9;
+}
+
+.bento-stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.bento-stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.bento-stat-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.bento-stat-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* Bento Filters Section */
+.bento-filters-section {
+  background: white;
+  border-radius: 24px;
+  padding: 24px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.bento-filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.bento-filters-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: white;
+}
+
+.bento-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.bento-filter-card {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.bento-filter-card:hover {
+  border-color: #0d9488;
+  background: #f0fdfa;
+}
+
+.bento-filter-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.bento-filter-icon {
+  width: 28px;
+  height: 28px;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #0d9488;
+  border: 1px solid #e2e8f0;
+}
+
+.bento-filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bento-filter-select.ant-select {
+  width: 100%;
+}
+
+.bento-filter-select .ant-select-selector {
+  height: 40px !important;
+  border-radius: 10px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: white !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.bento-filter-select .ant-select-selection-item {
+  line-height: 38px !important;
+}
+
+.bento-filter-select:hover .ant-select-selector {
+  border-color: #0d9488 !important;
+}
+
+.bento-filter-select.ant-select-focused .ant-select-selector {
+  border-color: #0d9488 !important;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.1) !important;
+}
+
+/* ============================================
+   ORIGINAL STYLES (PRESERVED)
+   ============================================ */
+
 .brand-logo-wrapper {
     width: 38px;
     height: 38px;

@@ -6,7 +6,9 @@ import {
 import {
   ControlOutlined, CheckCircleOutlined, SaveOutlined,
   ShopOutlined, HourglassOutlined, DeleteOutlined,
-  CalendarOutlined, SyncOutlined, HistoryOutlined, ReloadOutlined
+  CalendarOutlined, SyncOutlined, HistoryOutlined, ReloadOutlined,
+  SettingOutlined, ThunderboltOutlined, CloudUploadOutlined,
+  ArrowRightOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
@@ -19,6 +21,350 @@ import { executeBatch, BatchResult, formatBatchResult } from '../utils/batchOper
 import { SchedulingWizardProgressBar, WizardStep } from './SchedulingWizardProgressBar';
 
 dayjs.extend(isBetween);
+
+// --- Wizard Step Types and Configuration ---
+type WizardStep = 'configure' | 'generate' | 'sync';
+
+interface StepConfig {
+  key: WizardStep;
+  number: number;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  color: string;
+  activeColor: string;
+  completedColor: string;
+}
+
+const WIZARD_STEPS: StepConfig[] = [
+  {
+    key: 'configure',
+    number: 1,
+    title: 'Configure',
+    description: 'Set filters & parameters',
+    icon: <SettingOutlined />,
+    color: '#ef4444',       // Red - Problem/Setup
+    activeColor: '#dc2626',
+    completedColor: '#22c55e'
+  },
+  {
+    key: 'generate',
+    number: 2,
+    title: 'Generate',
+    description: 'Create schedule',
+    icon: <ThunderboltOutlined />,
+    color: '#f97316',       // Orange - Process
+    activeColor: '#ea580c',
+    completedColor: '#22c55e'
+  },
+  {
+    key: 'sync',
+    number: 3,
+    title: 'Sync',
+    description: 'Save to SharePoint',
+    icon: <CloudUploadOutlined />,
+    color: '#22c55e',       // Green - Solution
+    activeColor: '#16a34a',
+    completedColor: '#22c55e'
+  }
+];
+
+// --- Wizard Progress Bar Component ---
+interface WizardProgressBarProps {
+  currentStep: WizardStep;
+  completedSteps: WizardStep[];
+  onStepClick?: (step: WizardStep) => void;
+  isProcessing?: boolean;
+  processProgress?: { current: number; total: number } | null;
+}
+
+const WizardProgressBar: React.FC<WizardProgressBarProps> = ({
+  currentStep,
+  completedSteps,
+  onStepClick,
+  isProcessing = false,
+  processProgress = null
+}) => {
+  const currentStepIndex = WIZARD_STEPS.findIndex(s => s.key === currentStep);
+
+  const getStepStatus = (step: StepConfig): 'completed' | 'active' | 'pending' => {
+    if (completedSteps.includes(step.key)) return 'completed';
+    if (step.key === currentStep) return 'active';
+    return 'pending';
+  };
+
+  const getStepColor = (step: StepConfig, status: 'completed' | 'active' | 'pending') => {
+    if (status === 'completed') return step.completedColor;
+    if (status === 'active') return step.activeColor;
+    return '#cbd5e1'; // slate-300
+  };
+
+  const getConnectorProgress = (stepIndex: number) => {
+    if (stepIndex >= currentStepIndex) return 0;
+    if (completedSteps.includes(WIZARD_STEPS[stepIndex + 1]?.key)) return 100;
+    if (WIZARD_STEPS[stepIndex + 1]?.key === currentStep) {
+      if (isProcessing && processProgress) {
+        return Math.round((processProgress.current / processProgress.total) * 100);
+      }
+      return 50;
+    }
+    return 0;
+  };
+
+  return (
+    <div className="wizard-progress-container">
+      <div className="wizard-progress-bar">
+        {WIZARD_STEPS.map((step, index) => {
+          const status = getStepStatus(step);
+          const stepColor = getStepColor(step, status);
+          const isClickable = completedSteps.includes(step.key) || step.key === currentStep;
+
+          return (
+            <React.Fragment key={step.key}>
+              {/* Step Node */}
+              <div
+                className={`wizard-step ${status} ${isClickable ? 'clickable' : ''}`}
+                onClick={() => isClickable && onStepClick?.(step.key)}
+                style={{ '--step-color': stepColor } as React.CSSProperties}
+              >
+                <div className="wizard-step-circle">
+                  {status === 'completed' ? (
+                    <CheckCircleOutlined className="wizard-step-icon completed-icon" />
+                  ) : (
+                    <span className="wizard-step-icon">{step.icon}</span>
+                  )}
+                  {status === 'active' && isProcessing && (
+                    <div className="wizard-step-pulse" />
+                  )}
+                </div>
+                <div className="wizard-step-label">
+                  <span className="wizard-step-number">Step {step.number}</span>
+                  <span className="wizard-step-title">{step.title}</span>
+                  <span className="wizard-step-description">{step.description}</span>
+                </div>
+              </div>
+
+              {/* Connector Line */}
+              {index < WIZARD_STEPS.length - 1 && (
+                <div className="wizard-connector">
+                  <div className="wizard-connector-track" />
+                  <div
+                    className="wizard-connector-fill"
+                    style={{
+                      width: `${getConnectorProgress(index)}%`,
+                      backgroundColor: status === 'completed' ? '#22c55e' : step.color
+                    }}
+                  />
+                  {status === 'active' && isProcessing && (
+                    <ArrowRightOutlined className="wizard-connector-arrow" />
+                  )}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      {/* Progress Detail for Active Step */}
+      {isProcessing && processProgress && (
+        <div className="wizard-progress-detail">
+          <Progress
+            percent={Math.round((processProgress.current / processProgress.total) * 100)}
+            strokeColor={WIZARD_STEPS[currentStepIndex]?.color || '#0d9488'}
+            trailColor="#e2e8f0"
+            format={() => `${processProgress.current} / ${processProgress.total}`}
+            size="small"
+          />
+        </div>
+      )}
+
+      <style>{`
+        .wizard-progress-container {
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          border-radius: 24px;
+          padding: 24px 32px;
+          margin-bottom: 24px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .wizard-progress-bar {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          position: relative;
+        }
+
+        .wizard-step {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+          z-index: 2;
+          transition: all 0.3s ease;
+          flex: 0 0 auto;
+          min-width: 120px;
+        }
+
+        .wizard-step.clickable {
+          cursor: pointer;
+        }
+
+        .wizard-step.clickable:hover .wizard-step-circle {
+          transform: scale(1.1);
+          box-shadow: 0 8px 25px -5px var(--step-color);
+        }
+
+        .wizard-step-circle {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          background: var(--step-color);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px -2px var(--step-color);
+        }
+
+        .wizard-step.pending .wizard-step-circle {
+          background: #e2e8f0;
+          box-shadow: none;
+        }
+
+        .wizard-step-icon {
+          color: white;
+          font-size: 22px;
+        }
+
+        .wizard-step-icon.completed-icon {
+          font-size: 26px;
+        }
+
+        .wizard-step.pending .wizard-step-icon {
+          color: #94a3b8;
+        }
+
+        .wizard-step-pulse {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          border: 3px solid var(--step-color);
+          animation: pulse-ring 1.5s ease-out infinite;
+        }
+
+        @keyframes pulse-ring {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+        }
+
+        .wizard-step-label {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-top: 12px;
+          text-align: center;
+        }
+
+        .wizard-step-number {
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #94a3b8;
+        }
+
+        .wizard-step.active .wizard-step-number,
+        .wizard-step.completed .wizard-step-number {
+          color: var(--step-color);
+        }
+
+        .wizard-step-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: #334155;
+          margin-top: 2px;
+        }
+
+        .wizard-step.pending .wizard-step-title {
+          color: #94a3b8;
+        }
+
+        .wizard-step-description {
+          font-size: 11px;
+          color: #64748b;
+          margin-top: 2px;
+        }
+
+        .wizard-step.pending .wizard-step-description {
+          color: #cbd5e1;
+        }
+
+        .wizard-connector {
+          flex: 1;
+          height: 4px;
+          position: relative;
+          margin: 28px 12px 0;
+          display: flex;
+          align-items: center;
+        }
+
+        .wizard-connector-track {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          background: #e2e8f0;
+          border-radius: 2px;
+        }
+
+        .wizard-connector-fill {
+          position: absolute;
+          height: 100%;
+          border-radius: 2px;
+          transition: width 0.5s ease;
+        }
+
+        .wizard-connector-arrow {
+          position: absolute;
+          right: -8px;
+          color: #0d9488;
+          font-size: 16px;
+          animation: arrow-move 1s ease-in-out infinite;
+        }
+
+        @keyframes arrow-move {
+          0%, 100% {
+            transform: translateX(0);
+            opacity: 0.5;
+          }
+          50% {
+            transform: translateX(5px);
+            opacity: 1;
+          }
+        }
+
+        .wizard-progress-detail {
+          margin-top: 20px;
+          padding-top: 16px;
+          border-top: 1px solid #e2e8f0;
+        }
+
+        .wizard-progress-detail .ant-progress-text {
+          font-weight: 600;
+          color: #475569;
+        }
+      `}</style>
+    </div>
+  );
+};
 
 const { Text, Title } = Typography;
 const { confirm } = Modal;
@@ -87,6 +433,9 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
 };
 
 export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
+  // Wizard mode state
+  const [showWizard, setShowWizard] = useState(false);
+
   const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [shopsPerDay, setShopsPerDay] = useState<number>(GENERATOR_DEFAULTS.shopsPerDay);
   const [groupsPerDay, setGroupsPerDay] = useState<number>(GENERATOR_DEFAULTS.groupsPerDay);
@@ -384,6 +733,38 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     setTimeout(() => saveToSharePoint(), 100);
   };
 
+  // Render wizard mode
+  if (showWizard) {
+    return (
+      <div className="w-full flex flex-col gap-6 pb-20">
+        {/* Wizard Header */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Button
+              icon={<RocketOutlined />}
+              onClick={() => setShowWizard(false)}
+              className="rounded-lg border-slate-200"
+            >
+              Exit Wizard
+            </Button>
+            <Title level={2} className="m-0 text-slate-800">
+              <ThunderboltOutlined className="text-orange-500 mr-2" />
+              Scheduling Wizard
+            </Title>
+          </div>
+        </div>
+
+        {/* Wizard Component */}
+        <SchedulingWizard
+          shops={shops}
+          graphToken={graphToken}
+          onRefresh={onRefresh}
+          onClose={() => setShowWizard(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col gap-8 pb-20">
       {isSaving && (loadingType === 'reset' ? <ResetChaseLoader /> : <SyncGeometricLoader progress={saveProgress} />)}
@@ -457,6 +838,20 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
       <div className="flex justify-between items-center">
         <Title level={2} className="m-0 text-slate-800">Schedule Generator</Title>
         <Space>
+          {/* Wizard Launch Button */}
+          <Button
+            type="primary"
+            icon={<ThunderboltOutlined />}
+            onClick={() => setShowWizard(true)}
+            className="rounded-lg font-bold h-10 px-6"
+            style={{
+              background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(249, 115, 22, 0.35)',
+            }}
+          >
+            Start Wizard
+          </Button>
           <Button icon={<HistoryOutlined />} onClick={() => setResetModalVisible(true)} className="rounded-lg border-red-200 text-red-500 font-bold hover:bg-red-50">Reset by Period</Button>
           <Button danger type="primary" icon={<DeleteOutlined />} onClick={handleResetAll} className="rounded-lg font-bold">Reset All</Button>
         </Space>

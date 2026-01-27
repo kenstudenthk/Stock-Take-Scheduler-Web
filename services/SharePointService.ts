@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { SHAREPOINT_CONFIG, API_URLS } from '../constants/config';
 
 interface SaveSchedulePayload {
   shopId: string;
@@ -21,30 +22,41 @@ interface BatchUpdatePayload {
 
 class SharePointService {
   private graphToken: string;
-  // ✅ 修正 1：確保 Site ID 格式正確 (hostname:/path:)
-  private siteId = 'pccw0.sharepoint.com:/sites/BonniesTeam:'; 
-  private listId = 'ce3a752e-7609-4468-81f8-8babaf503ad8';
-  private memberListId = 'c01997f9-3589-45ff-bccc-d9b0f16d6770';
+  private siteId: string;
+  private listId: string;
+  private memberListId: string;
 
   constructor(token: string) {
     this.graphToken = token;
+    // Use config with fallbacks
+    this.siteId = SHAREPOINT_CONFIG.siteId;
+    this.listId = SHAREPOINT_CONFIG.shopListId;
+    this.memberListId = SHAREPOINT_CONFIG.memberListId;
   }
+  /**
+   * Sanitize values for OData filter queries to prevent injection
+   */
+  private sanitizeFilterValue(value: string): string {
+    // Escape single quotes by doubling them (OData standard)
+    return value.replace(/'/g, "''").trim();
+  }
+
   async checkMemberListConnection(): Promise<boolean> {
-  try {
-    const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}`;
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${this.graphToken}` }
-    });
-    return response.ok;
-  } catch (error) {
-    return false;
+    try {
+      const url = API_URLS.memberList;
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${this.graphToken}` }
+      });
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
   }
-}
   async getUserByAliasEmail(aliasemail: string): Promise<any> {
     try {
-      // ✅ 修正 2：對 email 進行編碼，防止特殊字元 (@, .) 引起 URL 錯誤
-      const encodedEmail = encodeURIComponent(aliasemail);
-      const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items?$filter=fields/AliasEmail eq '${aliasemail}'&$expand=fields`;
+      // Sanitize email input to prevent OData injection
+      const sanitizedEmail = this.sanitizeFilterValue(aliasemail);
+      const url = `${API_URLS.memberList}/items?$filter=fields/AliasEmail eq '${sanitizedEmail}'&$expand=fields`;
 
       const response = await fetch(url, {
         headers: { 
@@ -98,7 +110,7 @@ async registerMember(data: {
       }
     };
 
-    const url = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items`;
+    const url = `${API_URLS.memberList}/items`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -129,9 +141,9 @@ async registerMember(data: {
 
 async updatePasswordByEmail(email: string, hash: string) {
   try {
-    // ✅ 修正 1：確保搜尋的是成員清單 (memberListId) 而不是店舖清單 (listId)
-    // ✅ 修正 2：使用正確的 $filter 語法，並加入 ConsistencyLevel
-    const searchUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items?$filter=fields/AliasEmail eq '${email}'&$expand=fields`;
+    // Sanitize email input
+    const sanitizedEmail = this.sanitizeFilterValue(email);
+    const searchUrl = `${API_URLS.memberList}/items?$filter=fields/AliasEmail eq '${sanitizedEmail}'&$expand=fields`;
     
     const searchRes = await fetch(searchUrl, {
       headers: { 
@@ -156,8 +168,7 @@ async updatePasswordByEmail(email: string, hash: string) {
     // 取得該成員的項目 ID
     const itemId = searchData.value[0].id; 
 
-    // ✅ 修正 3：PATCH 請求的路徑必須指向 memberListId
-    const updateUrl = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.memberListId}/items/${itemId}/fields`;
+    const updateUrl = `${API_URLS.memberList}/items/${itemId}/fields`;
     
     const updateRes = await fetch(updateUrl, {
       method: 'PATCH',
@@ -193,7 +204,7 @@ async updatePasswordByEmail(email: string, hash: string) {
     if (groupId) fields['GroupId'] = groupId;
 
     const response = await fetch(
-      `https://graph.microsoft.com/v1.0/sites/${this.siteId}/lists/${this.listId}/items/${itemId}`,
+      `${API_URLS.shopList}/items/${itemId}`,
       {
         method: 'PATCH',
         headers: {
@@ -206,9 +217,51 @@ async updatePasswordByEmail(email: string, hash: string) {
     if (!response.ok) throw new Error(`Update failed`);
   }
 
+  /**
+   * Batch update multiple shop schedules with progress tracking
+   */
+  async batchUpdateShopSchedules(
+    updates: Array<{
+      itemId: string;
+      scheduledDate: string;
+      groupId: number;
+      status: string;
+    }>,
+    onProgress?: (processed: number, total: number) => void
+  ): Promise<{ success: number; failed: Array<{ itemId: string; error: string }> }> {
+    const results = {
+      success: 0,
+      failed: [] as Array<{ itemId: string; error: string }>,
+    };
+
+    for (let i = 0; i < updates.length; i++) {
+      const update = updates[i];
+      try {
+        await this.updateShopScheduleStatus(
+          update.itemId,
+          update.status,
+          update.scheduledDate,
+          update.groupId
+        );
+        results.success++;
+      } catch (error) {
+        results.failed.push({
+          itemId: update.itemId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+
+      if (onProgress) {
+        onProgress(i + 1, updates.length);
+      }
+    }
+
+    return results;
+  }
+
   async validateConnection(): Promise<boolean> {
     try {
-      const response = await fetch(`https://graph.microsoft.com/v1.0/sites/${this.siteId}`, {
+      const response = await fetch(API_URLS.sites, {
         headers: { 'Authorization': `Bearer ${this.graphToken}` }
       });
       return response.ok;

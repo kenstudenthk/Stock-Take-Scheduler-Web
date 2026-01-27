@@ -3,11 +3,38 @@ export enum View {
   CALENDAR = 'schedules',
   GENERATOR = 'generator',
   LOCATIONS = 'shop-locations',
-  SHOP_LIST = 'shop-list', // ✅ 新增：解決 ts(2339) 報錯
+  SHOP_LIST = 'shop-list',
   REPORTS = 'reports',
   SETTINGS = 'settings',
   INVENTORY = 'inventory'
 }
+
+/**
+ * User roles for access control
+ */
+export type UserRole = 'Admin' | 'App Owner' | 'User';
+
+/**
+ * User interface for authentication and authorization
+ */
+export interface User {
+  id?: string;
+  Name: string;
+  UserEmail: string;
+  AliasEmail: string;
+  PasswordHash?: string;
+  UserRole?: UserRole;
+  AccountStatus?: 'Active' | 'Inactive';
+  AccountCreateDate?: string;
+}
+
+/**
+ * Check if user has admin access
+ */
+export const hasAdminAccess = (user: User | null): boolean => {
+  if (!user) return false;
+  return user.UserRole === 'Admin' || user.UserRole === 'App Owner';
+};
 
 export interface Shop {
   id: string;

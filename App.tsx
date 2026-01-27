@@ -1,41 +1,54 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// ✅ Ensure ConfigProvider is included here
-import { message, Button, Tag, Avatar, Space, Typography, ConfigProvider } from 'antd'; 
-import { 
-  SyncOutlined, 
+import { message, Button, Tag, Avatar, Space, Typography, ConfigProvider, Alert } from 'antd';
+import {
+  SyncOutlined,
   WarningFilled,
-  BugOutlined 
+  ClockCircleOutlined
 } from '@ant-design/icons';
-// ✅ Use your custom Layout instead of Ant Design's Layout
 
 import { Layout } from './components/Layout';
 import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
 import { Calendar } from './components/Calendar';
 import { Locations } from './components/Locations';
-import { Settings } from './components/Settings'; 
-import { Shop, View } from './types';
+import { Settings } from './components/Settings';
+import { Shop, View, User, hasAdminAccess } from './types';
 import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
 import { ThemeToggle } from './components/ThemeToggle';
-import { ErrorReport } from './components/ErrorReport'; 
+import { ErrorReport } from './components/ErrorReport';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Login } from './components/Login';
 import SharePointService from './services/SharePointService';
+import { API_URLS, TOKEN_CONFIG } from './constants/config';
 import './index.css';
-
-//const { Content, Header, Sider } = Layout;
 
 const { Text } = Typography;
 
-// 權限檢查工具
-const hasAdminAccess = (user: any) => {
-  if (!user) return false;
-  const role = user.UserRole;
-  return role === 'Admin' || role === 'App Owner';
-};
+// Token expiry warning component
+const TokenExpiryWarning: React.FC<{ onNavigateToSettings: () => void }> = ({ onNavigateToSettings }) => (
+  <Alert
+    message={
+      <span className="flex items-center gap-2">
+        <ClockCircleOutlined />
+        Token may expire soon. Consider refreshing your token.
+      </span>
+    }
+    type="warning"
+    showIcon={false}
+    banner
+    closable
+    action={
+      <Button size="small" type="link" onClick={onNavigateToSettings}>
+        Go to Settings
+      </Button>
+    }
+    className="mb-4"
+  />
+);
 
-// 貨車通知組件
+// Token expired notification component
 const TruckFlagNotice: React.FC = () => (
   <div className="truck-header-container">
     <div className="truck-flag-walker">
@@ -63,14 +76,21 @@ const TruckFlagNotice: React.FC = () => (
 function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(localStorage.getItem('theme') === 'dark');
-  const [graphToken, setGraphToken] = useState<string>(localStorage.getItem('stockTakeToken') || '');
-  const [invToken, setInvToken] = useState<string>(localStorage.getItem('stockTakeInvToken') || '');
+  const [graphToken, setGraphToken] = useState<string>(localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken) || '');
+  const [invToken, setInvToken] = useState<string>(localStorage.getItem(TOKEN_CONFIG.storageKeys.invToken) || '');
+  const [tokenTimestamp, setTokenTimestamp] = useState<number>(
+    parseInt(localStorage.getItem(TOKEN_CONFIG.storageKeys.tokenTimestamp) || '0', 10)
+  );
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasTokenError, setHasTokenError] = useState(false);
+  const [showTokenWarning, setShowTokenWarning] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(JSON.parse(sessionStorage.getItem('currentUser') || 'null'));
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = sessionStorage.getItem('currentUser');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const sharePointService = useMemo(() => new SharePointService(graphToken), [graphToken]);
 
@@ -82,7 +102,7 @@ function App() {
     }
     setLoading(true);
     try {
-      const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items?$expand=fields($select=*)&$top=999`;
+      const url = `${API_URLS.shopList}/items?$expand=fields($select=*)&$top=999`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
 
       if (res.status === 401) {
@@ -128,26 +148,53 @@ function App() {
 
   const updateGraphToken = (token: string) => {
     setGraphToken(token);
-    localStorage.setItem('stockTakeToken', token);
+    localStorage.setItem(TOKEN_CONFIG.storageKeys.graphToken, token);
     if (token) {
+      // Track when token was set for expiry warning
+      const now = Date.now();
+      setTokenTimestamp(now);
+      localStorage.setItem(TOKEN_CONFIG.storageKeys.tokenTimestamp, now.toString());
       setHasTokenError(false);
+      setShowTokenWarning(false);
       fetchAllData(token);
     }
   };
 
   const updateInvToken = (token: string) => {
     setInvToken(token);
-    localStorage.setItem('stockTakeInvToken', token);
+    localStorage.setItem(TOKEN_CONFIG.storageKeys.invToken, token);
   };
+
+  // Check token expiry and show warning
+  useEffect(() => {
+    if (!tokenTimestamp || !graphToken) return;
+
+    const checkTokenExpiry = () => {
+      const elapsed = Date.now() - tokenTimestamp;
+      const elapsedMinutes = elapsed / (1000 * 60);
+
+      if (elapsedMinutes >= TOKEN_CONFIG.warningThresholdMinutes) {
+        setShowTokenWarning(true);
+      }
+    };
+
+    // Check immediately
+    checkTokenExpiry();
+
+    // Check every 5 minutes
+    const interval = setInterval(checkTokenExpiry, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [tokenTimestamp, graphToken]);
 
   useEffect(() => {
     document.body.classList.toggle('dark', isDarkMode);
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  useEffect(() => { 
-    const savedToken = localStorage.getItem('stockTakeToken');
-    if (savedToken) fetchAllData(savedToken); 
+  useEffect(() => {
+    const savedToken = localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken);
+    if (savedToken) fetchAllData(savedToken);
     else {
       setHasTokenError(true);
       setIsInitialLoading(false);
@@ -219,6 +266,11 @@ return (
       ) : (
         /* 已登入 或 正在設定頁：顯示頂部工具列與內容 */
         <>
+          {/* Token expiry warning */}
+          {showTokenWarning && !hasTokenError && (
+            <TokenExpiryWarning onNavigateToSettings={() => setSelectedMenuKey(View.SETTINGS)} />
+          )}
+
           {/* Top Toolbar (Refresh, User Info) */}
           <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center gap-4">
@@ -251,8 +303,10 @@ return (
             </div>
           </div>
 
-          {/* 渲染具體分頁組件 */}
-          {renderContent()}
+          {/* 渲染具體分頁組件 with Error Boundary */}
+          <ErrorBoundary>
+            {renderContent()}
+          </ErrorBoundary>
         </>
       )}
     </Layout>

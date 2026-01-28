@@ -558,8 +558,8 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
       {/* Header Section */}
       <div className="shop-list-header">
         <div>
-          <Title level={2} className="m-0 text-slate-800">Shop Master List</Title>
-          <Text className="text-slate-400 font-medium">Comprehensive store management with advanced filtering</Text>
+          <Title level={2} className="m-0" style={{ fontFamily: "'Fira Code', monospace", color: 'var(--color-text)' }}>Shop Master List</Title>
+          <Text style={{ fontFamily: "'Fira Sans', sans-serif", color: '#64748b' }}>Comprehensive store management with advanced filtering</Text>
         </div>
         <div className="flex items-center gap-4">
           <div className="input-group">
@@ -587,7 +587,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
       {renderBentoFilters()}
 
       {/* Date Filter & Table */}
-      <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white mt-6">
+      <Card className="rounded-[16px] border border-slate-200 shadow-md overflow-hidden bg-white mt-6" style={{ boxShadow: 'var(--shadow-md)' }}>
         <div className="p-5">
           <div className="flex justify-between items-center mb-6">
             <Text strong className="text-slate-600">
@@ -621,17 +621,53 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
         </div>
       </Card>
 
-      <ShopFormModal 
-        visible={formOpen} 
-        shop={targetShop} 
-        onCancel={() => setFormOpen(false)} 
-        onSuccess={() => { setFormOpen(false); onRefresh(); }} 
-        graphToken={graphToken} 
-        shops={shops} 
+      <ShopFormModal
+        visible={formOpen}
+        shop={targetShop}
+        onCancel={() => setFormOpen(false)}
+        onSuccess={() => { setFormOpen(false); onRefresh(); }}
+        graphToken={graphToken}
+        shops={shops}
       />
+
+      {/* Floating Sticky CTA */}
+      <div className="floating-cta">
+        <button
+          className="floating-cta-btn"
+          onClick={() => { setTargetShop(null); setFormOpen(true); }}
+          aria-label="Add new shop"
+        >
+          <PlusOutlined style={{ fontSize: '16px' }} />
+          <span>Add Shop</span>
+        </button>
+      </div>
 
       {/* Bento Grid Styles */}
 <style>{`
+/* ============================================
+   DESIGN SYSTEM - Fira Code + Fira Sans
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
+/* CSS Variables from MASTER.md */
+:root {
+  --color-primary: #1E40AF;
+  --color-secondary: #3B82F6;
+  --color-cta: #F59E0B;
+  --color-background: #F8FAFC;
+  --color-text: #1E3A8A;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+  --shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
+}
+
 /* ============================================
    BENTO GRID DESIGN SYSTEM
    ============================================ */
@@ -639,35 +675,124 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
 .shop-list-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-lg);
   padding-bottom: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .shop-list-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: var(--space-md);
 }
 
-/* Bento Statistics Grid */
+/* Search Input Styling */
+.input-group {
+  position: relative;
+}
+
+.custom-search-input {
+  font-family: 'Fira Sans', sans-serif;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 280px;
+  transition: all 200ms ease;
+  background: white;
+}
+
+.custom-search-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+.custom-search-input:focus + .user-label,
+.custom-search-input:valid + .user-label {
+  top: -8px;
+  font-size: 11px;
+  color: var(--color-primary);
+  background: white;
+  padding: 0 4px;
+}
+
+.user-label {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+  transition: all 200ms ease;
+}
+
+/* New Shop Button Styling */
+.new-btn-styled {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 12px 20px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.new-btn-styled:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  opacity: 0.9;
+}
+
+.new-btn-styled:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.new-btn-styled .sign {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.new-btn-styled .btn-text {
+  white-space: nowrap;
+}
+
+/* Bento Statistics Grid - 12-column layout with varied spans */
 .bento-stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-md);
 }
 
 .bento-stat-card {
   background: white;
-  border-radius: 20px;
-  padding: 20px;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border-radius: 16px;
+  padding: var(--space-lg);
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  transition: all 0.3s ease;
+  gap: var(--space-sm);
+  transition: all 200ms ease;
   position: relative;
   overflow: hidden;
+  cursor: pointer;
+  grid-column: span 2;
 }
 
 .bento-stat-card::before {
@@ -677,35 +802,44 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--accent-color);
+  background: var(--accent-color, var(--color-cta));
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 200ms ease;
 }
 
 .bento-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-lg);
 }
 
 .bento-stat-card:hover::before {
   opacity: 1;
 }
 
+.bento-stat-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .bento-large {
-  grid-column: span 1;
+  grid-column: span 3;
 }
 
 .bento-stat-icon {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-color) 100%);
+  background: linear-gradient(135deg, var(--accent-color, var(--color-primary)) 0%, var(--accent-color, var(--color-secondary)) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   color: white;
-  opacity: 0.9;
+  transition: transform 200ms ease;
+}
+
+.bento-stat-card:hover .bento-stat-icon {
+  transform: scale(1.1);
 }
 
 .bento-stat-content {
@@ -714,22 +848,25 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
 }
 
 .bento-stat-value {
+  font-family: 'Fira Code', monospace;
   font-size: 28px;
-  font-weight: 800;
-  color: #1e293b;
+  font-weight: 700;
+  color: var(--color-text);
   line-height: 1;
 }
 
 .bento-stat-title {
+  font-family: 'Fira Sans', sans-serif;
   font-size: 12px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-top: 4px;
+  margin-top: var(--space-xs);
 }
 
 .bento-stat-subtitle {
+  font-family: 'Fira Sans', sans-serif;
   font-size: 11px;
   color: #94a3b8;
   margin-top: 2px;
@@ -738,57 +875,70 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
 /* Bento Filters Section */
 .bento-filters-section {
   background: white;
-  border-radius: 24px;
-  padding: 24px;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border-radius: 16px;
+  padding: var(--space-lg);
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow-sm);
 }
 
 .bento-filters-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .bento-filters-icon-wrapper {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   color: white;
+  transition: transform 200ms ease;
 }
 
+.bento-filters-icon-wrapper:hover {
+  transform: scale(1.05);
+}
+
+/* 12-column grid for filters with varied spans */
 .bento-filters-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-sm);
 }
 
 .bento-filter-card {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 14px;
+  background: var(--color-background);
+  border-radius: 12px;
+  padding: var(--space-md);
   border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
+  transition: all 200ms ease;
+  grid-column: span 4;
 }
 
 .bento-filter-card:hover {
-  border-color: #0d9488;
-  background: #f0fdfa;
+  border-color: var(--color-primary);
+  background: #eff6ff;
+  transform: scale(1.02);
+}
+
+.bento-filter-card:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
 }
 
 .bento-filter-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .bento-filter-icon {
@@ -800,11 +950,18 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: #0d9488;
+  color: var(--color-primary);
   border: 1px solid #e2e8f0;
+  transition: all 200ms ease;
+}
+
+.bento-filter-card:hover .bento-filter-icon {
+  background: var(--color-primary);
+  color: white;
 }
 
 .bento-filter-label {
+  font-family: 'Fira Sans', sans-serif;
   font-size: 11px;
   font-weight: 700;
   color: #64748b;
@@ -818,11 +975,14 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
 
 .bento-filter-select .ant-select-selector {
   height: 40px !important;
-  border-radius: 10px !important;
+  border-radius: 8px !important;
   border: 1px solid #e2e8f0 !important;
   background: white !important;
+  font-family: 'Fira Sans', sans-serif !important;
   font-weight: 600 !important;
   font-size: 13px !important;
+  cursor: pointer !important;
+  transition: all 200ms ease !important;
 }
 
 .bento-filter-select .ant-select-selection-item {
@@ -830,12 +990,12 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
 }
 
 .bento-filter-select:hover .ant-select-selector {
-  border-color: #0d9488 !important;
+  border-color: var(--color-primary) !important;
 }
 
 .bento-filter-select.ant-select-focused .ant-select-selector {
-  border-color: #0d9488 !important;
-  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.1) !important;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1) !important;
 }
 
 /* ============================================
@@ -921,13 +1081,76 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
 }
 
   /* 分組標籤顏色 */
-  .tag-group-1 { background-color: #e0f2fe !important; color: #0369a1 !important; }
-  .tag-group-2 { background-color: #f3e8ff !important; color: #7e22ce !important; }
-  .tag-group-3 { background-color: #ffedd5 !important; color: #c2410c !important; }
+  .tag-group-1 { background-color: #dbeafe !important; color: var(--color-primary) !important; }
+  .tag-group-2 { background-color: #fef3c7 !important; color: #92400e !important; }
+  .tag-group-3 { background-color: #dcfce7 !important; color: #166534 !important; }
 
   /* 選取行的背景色 */
   .selected-row {
-    background-color: #f0fdfa !important;
+    background-color: #eff6ff !important;
+  }
+
+  /* Action Buttons Styling */
+  .close-btn-styled,
+  .edit-btn-styled {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Fira Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 200ms ease;
+  }
+
+  .close-btn-styled {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .close-btn-styled:hover:not(:disabled) {
+    background: #fecaca;
+    transform: translateY(-1px);
+  }
+
+  .edit-btn-styled {
+    background: #dbeafe;
+    color: var(--color-primary);
+  }
+
+  .edit-btn-styled:hover:not(:disabled) {
+    background: #bfdbfe;
+    transform: translateY(-1px);
+  }
+
+  .close-btn-styled:disabled,
+  .edit-btn-styled:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .close-btn-styled .sign,
+  .edit-btn-styled .sign {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .close-btn-styled .sign svg,
+  .edit-btn-styled .sign svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .close-btn-styled .sign svg path {
+    fill: #dc2626;
+  }
+
+  .edit-btn-styled .sign svg path {
+    fill: var(--color-primary);
   }
 
   /* --- 1. Accordion (Collapse) 整體容器 --- */
@@ -1016,7 +1239,117 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
 
   /* 表格選取行樣式 */
   .selected-row {
-    background-color: #f0fdfa !important;
+    background-color: #eff6ff !important;
+  }
+
+  /* ============================================
+     FLOATING STICKY CTA
+     ============================================ */
+  .floating-cta {
+    position: fixed;
+    bottom: var(--space-xl);
+    right: var(--space-xl);
+    z-index: 1000;
+  }
+
+  .floating-cta-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    background: linear-gradient(135deg, var(--color-cta) 0%, #d97706 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Fira Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg), 0 0 20px rgba(245, 158, 11, 0.3);
+    transition: all 200ms ease;
+  }
+
+  .floating-cta-btn:hover {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: var(--shadow-xl), 0 0 30px rgba(245, 158, 11, 0.4);
+  }
+
+  .floating-cta-btn:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+  }
+
+  /* ============================================
+     ACCESSIBILITY & REDUCED MOTION
+     ============================================ */
+  @media (prefers-reduced-motion: reduce) {
+    .bento-stat-card,
+    .bento-stat-card::before,
+    .bento-stat-icon,
+    .bento-filter-card,
+    .bento-filter-icon,
+    .bento-filters-icon-wrapper,
+    .tracking-log-btn,
+    .tracking-log-btn svg,
+    .floating-cta-btn {
+      transition: none !important;
+      transform: none !important;
+    }
+
+    .bento-stat-card:hover,
+    .bento-filter-card:hover,
+    .floating-cta-btn:hover {
+      transform: none !important;
+    }
+  }
+
+  /* Focus states for keyboard navigation */
+  button:focus-visible,
+  .ant-btn:focus-visible,
+  .ant-select:focus-visible .ant-select-selector {
+    outline: 2px solid var(--color-primary) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* All clickable elements must have cursor:pointer */
+  .ant-table-tbody > tr,
+  .bento-stat-card,
+  .bento-filter-card,
+  button,
+  .ant-btn,
+  .ant-select-selector,
+  .ant-pagination-item,
+  .tracking-log-btn {
+    cursor: pointer !important;
+  }
+
+  /* ============================================
+     TABLE DESIGN SYSTEM ALIGNMENT
+     ============================================ */
+  .st-master-table .ant-table {
+    font-family: 'Fira Sans', sans-serif !important;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .st-master-table .ant-table-thead > tr > th {
+    background: var(--color-background) !important;
+    font-family: 'Fira Sans', sans-serif !important;
+    font-weight: 700 !important;
+    color: var(--color-text) !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+  }
+
+  .st-master-table .ant-table-tbody > tr:hover > td {
+    background: #eff6ff !important;
+  }
+
+  .st-master-table .ant-pagination-item-active {
+    border-color: var(--color-primary) !important;
+  }
+
+  .st-master-table .ant-pagination-item-active a {
+    color: var(--color-primary) !important;
   }
 `}</style>
 </div>

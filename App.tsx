@@ -187,8 +187,8 @@ function App() {
     if (!currentUser) return null;
 
     switch (selectedMenuKey) {
-      case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} />;
-      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
+      case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} currentUser={currentUser} />;
+      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
       case View.CALENDAR: return (
         <Calendar
           shops={allShops}
@@ -196,9 +196,10 @@ function App() {
           onRefresh={() => fetchAllData(graphToken)}
         />
       );
-      case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
+      case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory invToken={invToken} shops={allShops} />;
+      case View.PERMISSION: return <Permission graphToken={graphToken} currentUser={currentUser} />;
       default: return null;
     }
   };

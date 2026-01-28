@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
-import { Shop } from '../types';
+import { Shop, User, hasPermission } from '../types';
 import { SP_FIELDS } from '../constants';
 import { isHoliday, getAllHolidays } from '../constants/holidays';
 import { API_URLS } from '../constants/config';
@@ -432,7 +432,7 @@ const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg
   'MO': { label: 'Macau', social: 'mo', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 9V21H20V9L12 3Z" stroke="currentColor" strokeWidth="2"/><path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2"/></svg> }
 };
 
-export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
+export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void, currentUser: User | null }> = ({ shops, graphToken, onRefresh, currentUser }) => {
   // Wizard mode state
   const [showWizard, setShowWizard] = useState(false);
 
@@ -852,8 +852,13 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
           >
             Start Wizard
           </Button>
+          {/* Reset buttons - only visible for Admin/App Owner */}
+          {hasPermission(currentUser, 'reset_schedule') && (
+          <>
           <Button icon={<HistoryOutlined />} onClick={() => setResetModalVisible(true)} className="rounded-lg border-red-200 text-red-500 font-bold hover:bg-red-50">Reset by Period</Button>
           <Button danger type="primary" icon={<DeleteOutlined />} onClick={handleResetAll} className="rounded-lg font-bold">Reset All</Button>
+          </>
+          )}
         </Space>
       </div>
 
@@ -951,7 +956,10 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
             { title: 'District', dataIndex: 'district', key: 'district' },
           ]} />
           <div className="flex justify-end p-8 border-t bg-slate-50">
+             {/* Confirm & Sync button - only visible for Admin/App Owner */}
+             {hasPermission(currentUser, 'generate_schedule') && (
              <Button type="primary" icon={<SaveOutlined />} onClick={saveToSharePoint} className="bg-emerald-600 h-12 rounded-xl px-16 font-black shadow-lg">Confirm & Sync to SharePoint</Button>
+             )}
           </div>
         </Card>
       )}

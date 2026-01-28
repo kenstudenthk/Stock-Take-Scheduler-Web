@@ -11,13 +11,14 @@ import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
 import { Calendar } from './components/Calendar';
 import { Locations } from './components/Locations';
-import { Settings } from './components/Settings'; 
-import { Shop, View, User, hasAdminAccess } from './types'; // ✅ 我確認你的 types.ts 有這些，請放心使用
+import { Settings } from './components/Settings';
+import { Shop, View, User, hasAdminAccess } from './types';
 import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
+import { Permission } from './components/Permission';
 import { ThemeToggle } from './components/ThemeToggle';
-import { ErrorReport } from './components/ErrorReport'; 
+import { ErrorReport } from './components/ErrorReport';
 import { Login } from './components/Login';
 import SharePointService from './services/SharePointService';
 
@@ -186,12 +187,19 @@ function App() {
     if (!currentUser) return null;
 
     switch (selectedMenuKey) {
-      case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} />;
-      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
-      case View.CALENDAR: return <Calendar shops={allShops} />;
-      case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
+      case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} currentUser={currentUser} />;
+      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
+      case View.CALENDAR: return (
+        <Calendar
+          shops={allShops}
+          graphToken={graphToken}
+          onRefresh={() => fetchAllData(graphToken)}
+        />
+      );
+      case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory invToken={invToken} shops={allShops} />;
+      case View.PERMISSION: return <Permission graphToken={graphToken} currentUser={currentUser} />;
       default: return null;
     }
   };

@@ -9,7 +9,7 @@ import {
   BankOutlined, CompassOutlined, TeamOutlined, ThunderboltOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { Shop, View } from '../types';
+import { Shop, View, User, hasPermission } from '../types';
 import { ShopFormModal } from './ShopFormModal';
 import { SP_FIELDS } from '../constants';
 
@@ -65,7 +65,7 @@ const BentoFilterCard = memo(({
   </div>
 ));
 
-export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
+export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void, currentUser: User | null }> = ({ shops, graphToken, onRefresh, currentUser }) => {
   // ... 你的狀態設定 (searchText, filters 等) ...
   const [searchText, setSearchText] = useState('');
   const [filterDate, setFilterDate] = useState<string | null>(null);
@@ -520,15 +520,16 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
     title: 'Actions',
     key: 'actions',
     align: 'left' as const,
-    width: '12%', // ✅ 稍微加寬以容納自定義按鈕
+    width: '12%',
     render: (_: any, record: Shop) => (
-      /* ❗ 只有當 selectedRowId 等於目前行的 id 時才會顯示 (即點擊後顯示) */
-      selectedRowId === record.id && (
+      /* Only show when row is selected and user has any permission */
+      selectedRowId === record.id && (hasPermission(currentUser, 'close_shop') || hasPermission(currentUser, 'edit_shop')) && (
         <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-          {/* ✅ 恢復您原有的 Close 按鈕樣式 */}
-          <button 
-            className="Btn close-btn-styled scale-75 origin-right" 
-            disabled={record.status?.toLowerCase() === 'closed'} 
+          {/* Close button - only visible for Admin/App Owner */}
+          {hasPermission(currentUser, 'close_shop') && (
+          <button
+            className="Btn close-btn-styled scale-75 origin-right"
+            disabled={record.status?.toLowerCase() === 'closed'}
             onClick={(e) => { e.stopPropagation(); handleCloseAction(record); }}
           >
             <div className="sign">
@@ -536,11 +537,13 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
             </div>
             <div className="btn-text text-[12px]">Close</div>
           </button>
+          )}
 
-          {/* ✅ 恢復您原有的 Edit 按鈕樣式 */}
-          <button 
-            className="Btn edit-btn-styled scale-75 origin-right" 
-            disabled={record.status?.toLowerCase() === 'closed'} 
+          {/* Edit button - only visible for Admin/App Owner */}
+          {hasPermission(currentUser, 'edit_shop') && (
+          <button
+            className="Btn edit-btn-styled scale-75 origin-right"
+            disabled={record.status?.toLowerCase() === 'closed'}
             onClick={(e) => { e.stopPropagation(); setTargetShop(record); setFormOpen(true); }}
           >
             <div className="sign">
@@ -548,6 +551,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
             </div>
             <div className="btn-text text-[12px]">Edit</div>
           </button>
+          )}
         </div>
       )
     ),
@@ -573,10 +577,12 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
             />
             <label className="user-label">Search by name or code...</label>
           </div>
+          {hasPermission(currentUser, 'edit_shop') && (
           <button className="Btn new-btn-styled" onClick={() => { setTargetShop(null); setFormOpen(true); }}>
             <div className="sign"><PlusOutlined style={{ color: 'white', fontSize: '18px' }} /></div>
             <div className="btn-text">New Shop</div>
           </button>
+          )}
         </div>
       </div>
 
@@ -630,7 +636,8 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
         shops={shops}
       />
 
-      {/* Floating Sticky CTA */}
+      {/* Floating Sticky CTA - only visible for Admin/App Owner */}
+      {hasPermission(currentUser, 'edit_shop') && (
       <div className="floating-cta">
         <button
           className="floating-cta-btn"
@@ -641,6 +648,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
           <span>Add Shop</span>
         </button>
       </div>
+      )}
 
       {/* Bento Grid Styles */}
 <style>{`

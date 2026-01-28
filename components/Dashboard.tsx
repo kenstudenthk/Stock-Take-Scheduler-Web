@@ -6,7 +6,7 @@ import {
   CloseCircleOutlined, ExclamationCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { Shop } from '../types';
+import { Shop, User, hasPermission } from '../types';
 import { SP_FIELDS } from '../constants';
 
 const { Text, Title } = Typography;
@@ -63,11 +63,12 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
 );
 
 export const Dashboard: React.FC<{
-  shops: Shop[], 
-  onUpdateShop: any, 
-  graphToken: string, 
-  onRefresh: () => void 
-}> = ({ shops, onUpdateShop, graphToken, onRefresh }) => {
+  shops: Shop[],
+  onUpdateShop: any,
+  graphToken: string,
+  onRefresh: () => void,
+  currentUser: User | null
+}> = ({ shops, onUpdateShop, graphToken, onRefresh, currentUser }) => {
   
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [groupFilter, setGroupFilter] = useState<number | 'all'>('all');
@@ -293,14 +294,18 @@ export const Dashboard: React.FC<{
   </Tag>
 </div>
                 <div style={{ width: 180 }} className="flex justify-end gap-3 pr-2">
-                  {/* ✅ 更新後的 Re-Schedule 按鈕 (帶 SVG) */}
+                  {/* Re-Schedule button - only visible for Admin/App Owner */}
+                  {hasPermission(currentUser, 'reschedule_shop') && (
                   <button className="resched-button" disabled={isClosed} onClick={() => { setTargetShop(shop); setReschedDate(null); setIsReschedOpen(true); }}>
                     <svg className="resched-svgIcon" viewBox="-2.4 -2.4 28.80 28.80" fill="none"><path d="M10 21H6.2C5.0799 21 4.51984 21 4.09202 20.782C3.71569 20.5903 3.40973 20.2843 3.21799 19.908C3 19.4802 3 18.9201 3 17.8V8.2C3 7.0799 3 6.51984 3.21799 6.09202C3.40973 5.71569 3.71569 5.40973 4.09202 5.21799C4.51984 5 5.0799 5 6.2 5H17.8C18.9201 5 19.4802 5 19.908 5.21799C20.2843 5.40973 20.5903 5.71569 20.782 6.09202C21 6.51984 21 7.0799 21 8.2V10M7 3V5M17 3V5M3 9H21M13.5 13.0001L7 13M10 17.0001L7 17M14 21L16.025 20.595C16.2015 20.5597 16.2898 20.542 16.3721 20.5097C16.4452 20.4811 16.5147 20.4439 16.579 20.399C16.6516 20.3484 16.7152 20.2848 16.8426 20.1574L21 16C21.5523 15.4477 21.5523 14.5523 21 14C20.4477 13.4477 19.5523 13.4477 19 14L14.8426 18.1574C14.7152 18.2848 14.6516 18.3484 14.601 18.421C14.5561 18.4853 14.5189 18.5548 14.4903 18.6279C14.458 18.7102 14.4403 18.7985 14.4403 18.7985 14.405 18.975L14 21Z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
                   </button>
-                  {/* Close 按鈕 */}
+                  )}
+                  {/* Close button - only visible for Admin/App Owner */}
+                  {hasPermission(currentUser, 'close_shop') && (
                   <button className="bin-button" disabled={isClosed} onClick={() => handleCloseShop(shop)}>
                     <svg viewBox="0 0 448 512" className="bin-svgIcon"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path></svg>
                   </button>
+                  )}
                 </div>
               </div>
             );

@@ -1,7 +1,7 @@
 # Scheduled Page Overrides
 
 > **PROJECT:** Stock Take Scheduler
-> **Generated:** 2026-01-27 08:33:38
+> **Generated:** 2026-01-28 18:19:08
 > **Page Type:** General
 
 > ⚠️ **IMPORTANT:** Rules in this file **override** the Master file (`design-system/MASTER.md`).
@@ -15,7 +15,7 @@
 
 - **Max Width:** 1200px (standard)
 - **Layout:** Full-width sections, centered content
-- **Sections:** 1. Hero, 2. Step 1 (problem), 3. Step 2 (solution), 4. Step 3 (action), 5. CTA progression
+- **Sections:** 1. Hero (date/location/countdown), 2. Speakers grid, 3. Agenda/schedule, 4. Sponsors, 5. Register CTA
 
 ### Spacing Overrides
 
@@ -27,13 +27,13 @@
 
 ### Color Overrides
 
-- **Strategy:** Step colors: 1 (Red/Problem), 2 (Orange/Process), 3 (Green/Solution). CTA: Brand color
+- **Strategy:** Urgency colors (countdown). Event branding. Speaker cards professional. Sponsor logos neutral.
 
 ### Component Overrides
 
 - Avoid: No indication of progress
-- Avoid: Static output only
-- Avoid: Overuse vibration feedback
+- Avoid: Fixed width images overflow
+- Avoid: Override system gestures
 
 ---
 
@@ -45,8 +45,8 @@
 
 ## Recommendations
 
-- Effects: Small hover (50-100ms), loading spinners, success/error state anim, gesture-triggered (swipe/pinch), haptic
+- Effects: Drag-to-rotate, pinch-to-zoom, spin animation, AR placement, material switching, smooth orbit controls
 - Feedback: Step indicators or progress bar
-- AI Interaction: Thumps up/down or 'Regenerate'
-- Touch: Use for confirmations and important actions
-- CTA Placement: Each step: mini-CTA. Final: main CTA
+- Responsive: Use max-width: 100% on images
+- Touch: Avoid horizontal swipe on main content
+- CTA Placement: Register CTA sticky + After speakers + Bottom

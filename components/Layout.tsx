@@ -46,14 +46,12 @@ return (
               </li>
             ))}
 
-           {isAdmin && (
-          <li className="nav-item-sep">
+           <li className="nav-item-sep">
             <a onClick={() => onViewChange(View.SETTINGS)} className={currentView === View.SETTINGS ? 'active' : ''}>
               <i className="nav-icon-slot"><SettingOutlined /></i>
               <span className="nav-label-tooltip">Settings</span>
             </a>
           </li>
-          )}
           
           <li onClick={onReportError}>
             <a className="report-link">

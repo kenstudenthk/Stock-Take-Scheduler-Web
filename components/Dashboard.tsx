@@ -20,9 +20,31 @@ const HK_HOLIDAYS_2026 = [
   "2026-12-25", "2026-12-26"
 ];
 
-const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
-  <div className="summary-card-item">
-    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>
+interface SummaryCardProps {
+  label: string;
+  value: number;
+  subtext: string;
+  type: 'total' | 'completed' | 'closed' | 'remain';
+  icon: React.ReactNode;
+  isPulsing?: boolean;
+}
+
+const SummaryCard: React.FC<SummaryCardProps> = ({
+  label,
+  value,
+  subtext,
+  type,
+  icon,
+  isPulsing = false
+}) => (
+  <div
+    className={`summary-card-item ${isPulsing ? 'status-pulse status-pulse--danger' : ''}`}
+    data-type={type}
+    tabIndex={0}
+    role="button"
+    aria-label={`${label}: ${value} ${subtext}`}
+  >
+    <div className="summary-card-icon-area">
       {icon}
     </div>
     <div className="summary-card-body">
@@ -163,33 +185,61 @@ export const Dashboard: React.FC<{
   return (
     <div className="flex flex-col gap-8 pb-10">
       <div className="flex justify-between items-center">
-        <div><Title level={2} className="m-0 text-slate-800">Hello Admin,</Title><Text className="text-slate-400 font-medium">Manage daily schedule (Active Shops Only).</Text></div>
-        <Button icon={<PrinterOutlined />} className="rounded-xl font-bold h-11 bg-slate-900 text-white border-none px-6" onClick={() => window.print()}>Generate Report</Button>
+        <div>
+          <Title level={2} className="m-0 text-slate-800 dark:text-slate-100" style={{ fontFamily: "'Fira Code', monospace" }}>
+            Hello Admin,
+          </Title>
+          <Text className="text-slate-400 font-medium" style={{ fontFamily: "'Fira Sans', sans-serif" }}>
+            Manage daily schedule (Active Shops Only).
+          </Text>
+        </div>
+        <Button
+          icon={<PrinterOutlined />}
+          className="rounded-xl font-bold h-11 bg-slate-900 text-white border-none px-6 hover:bg-slate-800 transition-all duration-200"
+          style={{ fontFamily: "'Fira Sans', sans-serif" }}
+          onClick={() => window.print()}
+        >
+          Generate Report
+        </Button>
       </div>
 
       <Row gutter={[24, 24]}>
   <Col span={6}>
-    <SummaryCard 
-      label="Total Shop" value={stats.total} subtext="Active Master List" bgColor="hsl(195, 74%, 62%)" 
-      icon={<ShopOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+    <SummaryCard
+      label="Total Shop"
+      value={stats.total}
+      subtext="Active Master List"
+      type="total"
+      icon={<ShopOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.85)' }} />}
     />
   </Col>
   <Col span={6}>
-    <SummaryCard 
-      label="Completed" value={stats.completed} subtext="Done this year" bgColor="hsl(145, 58%, 55%)" 
-      icon={<CheckCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+    <SummaryCard
+      label="Completed"
+      value={stats.completed}
+      subtext="Done this year"
+      type="completed"
+      icon={<CheckCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.85)' }} />}
     />
   </Col>
   <Col span={6}>
-    <SummaryCard 
-      label="Closed" value={stats.closed} subtext="Closed this year" bgColor="#ff4545" 
-      icon={<CloseCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+    <SummaryCard
+      label="Closed"
+      value={stats.closed}
+      subtext="Closed this year"
+      type="closed"
+      isPulsing={stats.closed > 0}
+      icon={<CloseCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.85)' }} />}
     />
   </Col>
   <Col span={6}>
-    <SummaryCard 
-      label="Remain" value={stats.remain} subtext="Pending action" bgColor="#f1c40f" 
-      icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.7)', marginTop: '5px' }} />} 
+    <SummaryCard
+      label="Remain"
+      value={stats.remain}
+      subtext="Pending action"
+      type="remain"
+      isPulsing={stats.remain > 10}
+      icon={<HourglassOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.85)' }} />}
     />
   </Col>
 </Row>

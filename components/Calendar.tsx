@@ -15,7 +15,6 @@ import { HK_HOLIDAYS, isHoliday } from '../constants/holidays';
 // FullCalendar imports
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { EventDropArg, EventClickArg, DayCellContentArg, EventInput } from '@fullcalendar/core';
 
@@ -231,19 +230,25 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
 
   // Render custom event content
   const renderEventContent = (eventInfo: { event: { title: string; extendedProps: Record<string, any> }; timeText: string }) => {
-    const { event, timeText } = eventInfo;
+    const { event } = eventInfo;
     const brandIcon = event.extendedProps.brandIcon;
+    const address = event.extendedProps.address;
 
     return (
-      <div className="fc-event-content flex items-center gap-2 px-1 py-0.5 overflow-hidden">
-        {brandIcon && (
-          <Avatar
-            size={18}
-            src={brandIcon}
-            className="flex-shrink-0 bg-white"
-          />
+      <div className="fc-event-content flex flex-col px-1 py-0.5 overflow-hidden">
+        <div className="flex items-center gap-1">
+          {brandIcon && (
+            <Avatar
+              size={16}
+              src={brandIcon}
+              className="flex-shrink-0 bg-white"
+            />
+          )}
+          <span className="truncate font-semibold text-xs">{event.title}</span>
+        </div>
+        {address && (
+          <span className="truncate text-[10px] opacity-70">{address}</span>
         )}
-        <span className="truncate font-semibold text-xs">{event.title}</span>
       </div>
     );
   };
@@ -356,18 +361,17 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
           <div className="fc-wrapper">
             <FullCalendar
               ref={calendarRef}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              plugins={[dayGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               headerToolbar={{
                 left: 'prev,next today',
                 center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                right: 'dayGridMonth,dayGridWeek'
               }}
               buttonText={{
                 today: 'Today',
                 month: 'Month',
-                week: 'Week',
-                day: 'Day'
+                week: 'Week'
               }}
               events={allEvents}
               editable={true}

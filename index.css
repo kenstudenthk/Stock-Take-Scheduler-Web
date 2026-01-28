@@ -2819,16 +2819,25 @@ background-color: var(--bg-header) !important;
   --color-group-c-border: #fdba74;
 }
 
-/* FullCalendar Base Theme */
+/* FullCalendar Light Mode (default) */
 .fc {
-  --fc-border-color: var(--border-color);
+  --fc-page-bg-color: #ffffff;
+  --fc-neutral-bg-color: #f8fafc;
+  --fc-border-color: #e2e8f0;
   --fc-button-bg-color: var(--color-primary);
   --fc-button-hover-bg-color: var(--color-secondary);
   --fc-button-active-bg-color: #1e3a8a;
   --fc-today-bg-color: rgba(13, 148, 136, 0.08);
   --fc-event-border-radius: 8px;
-  --fc-page-bg-color: transparent;
   font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.fc .fc-scrollgrid {
+  background-color: #ffffff;
+}
+
+.fc .fc-daygrid-day {
+  background-color: #ffffff;
 }
 
 /* Toolbar Buttons */
@@ -2860,13 +2869,13 @@ background-color: var(--bg-header) !important;
 .fc .fc-toolbar-title {
   font-size: 1.25rem !important;
   font-weight: 700 !important;
-  color: var(--text-main);
+  color: #1e293b;
 }
 
 /* Day Headers */
 .fc .fc-col-header-cell {
   background-color: #f8fafc;
-  border-color: var(--border-color) !important;
+  border-color: #e2e8f0 !important;
 }
 
 .fc .fc-col-header-cell-cushion {
@@ -2880,7 +2889,7 @@ background-color: var(--bg-header) !important;
 
 /* Day Cells */
 .fc .fc-daygrid-day {
-  border-color: var(--border-color) !important;
+  border-color: #e2e8f0 !important;
   transition: background-color 0.2s ease;
 }
 
@@ -2891,7 +2900,7 @@ background-color: var(--bg-header) !important;
 .fc .fc-daygrid-day-number {
   font-weight: 600 !important;
   font-size: 13px !important;
-  color: var(--text-main);
+  color: #1e293b;
   padding: 8px 12px !important;
 }
 
@@ -2907,13 +2916,14 @@ background-color: var(--bg-header) !important;
 
 /* Events */
 .fc .fc-event {
-  padding: 4px 8px !important;
+  padding: 6px 8px !important;
   border-radius: 8px !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
   cursor: grab !important;
   border-width: 2px !important;
   border-style: solid !important;
   font-size: 12px !important;
+  min-height: 40px;
   transition: transform 0.15s ease, box-shadow 0.15s ease !important;
 }
 
@@ -2933,10 +2943,19 @@ background-color: var(--bg-header) !important;
 /* Event Content */
 .fc-event-content {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 2px;
   padding: 2px 4px;
   overflow: hidden;
+}
+
+/* Day Grid Week specific */
+.fc-dayGridWeek-view .fc-daygrid-day {
+  min-height: 150px;
+}
+
+.fc-dayGridWeek-view .fc-event {
+  margin-bottom: 4px;
 }
 
 /* More Link */
@@ -2984,38 +3003,13 @@ background-color: var(--bg-header) !important;
   letter-spacing: 0.5px;
 }
 
-/* Time Grid (Week/Day Views) */
-.fc .fc-timegrid-slot {
-  height: 48px !important;
-}
-
-.fc .fc-timegrid-slot-label {
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  color: #94a3b8 !important;
-}
-
-.fc .fc-timegrid-axis {
-  background-color: #f8fafc;
-}
-
-/* Now Indicator */
-.fc .fc-timegrid-now-indicator-line {
-  border-color: #ef4444 !important;
-  border-width: 2px !important;
-}
-
-.fc .fc-timegrid-now-indicator-arrow {
-  border-color: #ef4444 !important;
-  border-top-color: transparent !important;
-  border-bottom-color: transparent !important;
-}
 
 /* Popover (for +N more) */
 .fc .fc-popover {
   border-radius: 16px !important;
   box-shadow: 0 20px 40px rgba(0,0,0,0.15) !important;
-  border: 1px solid var(--border-color) !important;
+  border: 1px solid #e2e8f0 !important;
+  background-color: #ffffff;
   overflow: hidden;
 }
 
@@ -3051,9 +3045,13 @@ background-color: var(--bg-header) !important;
 /* Dark Mode FullCalendar */
 body.dark .fc {
   --fc-border-color: #334155;
-  --fc-page-bg-color: transparent;
+  --fc-page-bg-color: #0f172a;
   --fc-neutral-bg-color: #1e293b;
   --fc-today-bg-color: rgba(13, 148, 136, 0.15);
+}
+
+body.dark .fc .fc-scrollgrid {
+  background-color: #0f172a;
 }
 
 body.dark .fc .fc-toolbar-title {
@@ -3078,6 +3076,7 @@ body.dark .fc .fc-day-today .fc-daygrid-day-number {
 }
 
 body.dark .fc .fc-daygrid-day {
+  background-color: #0f172a;
   border-color: #334155 !important;
 }
 
@@ -3102,14 +3101,6 @@ body.dark .fc .fc-popover {
 body.dark .fc .fc-popover-header {
   background: #0f172a !important;
   color: #f8fafc !important;
-}
-
-body.dark .fc .fc-timegrid-axis {
-  background-color: #1e293b;
-}
-
-body.dark .fc .fc-timegrid-slot-label {
-  color: #64748b !important;
 }
 
 body.dark .fc-scroller::-webkit-scrollbar-thumb {

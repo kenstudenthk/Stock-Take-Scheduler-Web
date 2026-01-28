@@ -149,14 +149,15 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
       const service = new SharePointService(graphToken);
       await service.updateShopScheduleStatus(
         itemId,
-        'Scheduled',
+        'Planned',
         newDate,
         event.extendedProps.groupId
       );
       message.success(`Moved to ${newDate}`);
       onRefresh();
     } catch (error) {
-      message.error('Update failed');
+      console.error('Drag drop error:', error);
+      message.error(error instanceof Error ? error.message : 'Update failed');
       revert();
     } finally {
       setIsUpdating(false);
@@ -208,7 +209,7 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
           const service = new SharePointService(graphToken);
           await service.updateShopScheduleStatus(
             itemId,
-            'Scheduled',
+            'Planned',
             info.event.startStr,
             newGroupId
           );

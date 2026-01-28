@@ -208,7 +208,9 @@ async updatePasswordByEmail(email: string, hash: string) {
   async updateShopScheduleStatus(itemId: string, scheduleStatus: string, scheduledDate?: string, groupId?: number): Promise<void> {
     const fields: Record<string, any> = { [SP_FIELDS.STATUS]: scheduleStatus };
     if (scheduledDate) fields[SP_FIELDS.SCHEDULE_DATE] = scheduledDate;
-    if (groupId !== undefined) fields[SP_FIELDS.SCHEDULE_GROUP] = groupId;
+    if (groupId !== undefined) fields[SP_FIELDS.SCHEDULE_GROUP] = groupId.toString();
+
+    console.log('🔄 Updating shop schedule:', { itemId, fields });
 
     const response = await fetch(
       `${API_URLS.shopList}/items/${itemId}`,
@@ -221,7 +223,14 @@ async updatePasswordByEmail(email: string, hash: string) {
         body: JSON.stringify({ fields }),
       }
     );
-    if (!response.ok) throw new Error(`Update failed`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Update failed:', response.status, errorData);
+      throw new Error(errorData?.error?.message || `Update failed: ${response.status}`);
+    }
+
+    console.log('✅ Update successful');
   }
 
   /**

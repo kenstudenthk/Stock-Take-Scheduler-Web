@@ -1,6 +1,8 @@
 /* ============================================================
    1. GLOBAL THEME & BASE (基礎設定與主題變數)
    ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,6 +15,38 @@
   --text-main: #1e293b;
   --text-secondary: #64748b;
   --border-color: #f1f5f9;
+
+  /* Design System Colors */
+  --color-primary: #1E40AF;
+  --color-secondary: #3B82F6;
+  --color-cta: #F59E0B;
+  --color-background: #F8FAFC;
+  --color-text: #1E3A8A;
+
+  /* Dashboard Card Accent Colors */
+  --card-total: #1E40AF;
+  --card-completed: #10B981;
+  --card-closed: #EF4444;
+  --card-remain: #F59E0B;
+  --card-bg: #1C204B;
+  --card-text-secondary: #BBC0FF;
+
+  /* Spacing Tokens */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Shadow Depths */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+  --shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
+
+  /* Focus Ring */
+  --focus-ring: 0 0 0 3px rgba(30, 64, 175, 0.3);
 }
 
   /* 主題色 - Light Mode (淺色) */
@@ -25,27 +59,32 @@ body.light{
   --card-bg: #ffffff;
 }
 
-/* Dark Mode (深色模式) 變數覆寫 */
+/* Dark Mode (深色模式) 變數覆寫 - OLED Optimized */
 body.dark {
-  --bg-main: #0f172a;    /* 極深藍背景 */
-  --bg-header: #1e293b;  /* 稍微淺一點的深藍 Header */
-  --text-main: #f8fafc;  /* 白色主文字 */
-  --text-secondary: #94a3b8;
-  --border-color: #334155;
-  --card-bg: #1e293b;
-  
-  /* 深色模式下的統計卡片背景微調 */
-  --stat-card-dark: #1e293b; 
+  --bg-main: #000000;    /* OLED 純黑背景 */
+  --bg-header: #0A0A0F;  /* 接近純黑 */
+  --text-main: #F8FAFC;  /* 白色主文字 */
+  --text-secondary: #94A3B8;
+  --border-color: #1E293B;
+  --card-bg: #0F172A;    /* 午夜藍 */
+
+  /* 深色模式下的 Dashboard 卡片顏色（更亮以便對比） */
+  --card-total: #3B82F6;
+  --card-completed: #22C55E;
+  --card-closed: #F87171;
+  --card-remain: #FBBF24;
+  --card-text-secondary: #94A3B8;
+
+  /* Focus ring for dark mode */
+  --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.4);
 }
 
 body {
   margin: 0;
-   padding: 0;
-    display: block; /* ✅ 移除範本的 flex 置中，恢復標準佈局 */
-    
-    overflow-x: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  padding: 0;
+  display: block; /* ✅ 移除範本的 flex 置中，恢復標準佈局 */
+  overflow-x: hidden;
+  font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-header);
@@ -61,6 +100,37 @@ body {
   .bin-button, .wrapper, .ant-btn, .navigation, .app-header, .new-shop-btn {
     display: none !important;
   }
+}
+
+/* ============================================================
+   Accessibility - Focus States (Design System)
+   ============================================================ */
+/* Global focus-visible for keyboard navigation */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Ensure all clickable elements have pointer cursor */
+button,
+[role="button"],
+.customCheckBox,
+.summary-card-item,
+.resched-button,
+.bin-button,
+a[href],
+input[type="checkbox"],
+input[type="radio"],
+.ant-picker {
+  cursor: pointer;
+}
+
+/* Disabled state cursor */
+button:disabled,
+[role="button"][aria-disabled="true"],
+.resched-button:disabled,
+.bin-button:disabled {
+  cursor: not-allowed;
 }
 
 /* ============================================================
@@ -933,35 +1003,36 @@ background-color: var(--bg-header) !important;
   overflow: hidden;
   cursor: pointer;
   user-select: none;
-  padding: 2px 12px;
-  background-color: rgba(0, 0, 0, 0.16);
+  padding: var(--space-xs) var(--space-md);
+  background-color: rgba(30, 64, 175, 0.1);
   border-radius: 0px;
-  color: rgba(255, 255, 255, 0.7);
-  transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
-  transition-duration: 300ms;
-  transition-property: color, background-color, box-shadow;
+  color: var(--color-primary);
+  transition: all 250ms ease;
   display: flex;
   height: 36px;
   align-items: center;
-  box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 1px 0px inset, rgba(255, 255, 255, 0.17) 0px 1px 1px 0px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 1px 0px inset;
   outline: none;
   justify-content: center;
   min-width: 70px;
 }
 
 .customCheckBox:hover {
-  background-color: #34723f;
+  background-color: var(--color-primary);
   color: white;
-  box-shadow: rgba(0, 0, 0, 0.23) 0px -4px 1px 0px inset, rgba(255, 255, 255, 0.17) 0px -1px 1px 0px, rgba(0, 0, 0, 0.17) 0px 2px 4px 1px;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px -4px 1px 0px inset;
+}
+
+.customCheckBox:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 .customCheckBox .inner {
-  font-size: 14px; /* 調整為適合 Dashboard 的大小 */
-  font-weight: 900;
+  font-family: 'Fira Code', monospace;
+  font-size: 14px;
+  font-weight: 700;
   pointer-events: none;
-  transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
-  transition-duration: 300ms;
-  transition-property: transform;
+  transition: transform 250ms ease;
   transform: translateY(0px);
 }
 
@@ -985,11 +1056,11 @@ background-color: var(--bg-header) !important;
   display: none;
 }
 
-/* 選中狀態的顏色 - 這裡設為深灰色以契合你的主題 */
+/* 選中狀態的顏色 - Design System Primary Blue */
 .customCheckBoxInput:checked + .customCheckBoxWrapper .customCheckBox {
-  background-color: #2d6737; 
+  background-color: var(--color-primary);
   color: white;
-  box-shadow: rgba(0, 0, 0, 0.23) 0px -4px 1px 0px inset, rgba(255, 255, 255, 0.17) 0px -1px 1px 0px, rgba(0, 0, 0, 0.17) 0px 2px 4px 1px;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px -4px 1px 0px inset;
 }
 
 .customCheckBoxInput:checked + .customCheckBoxWrapper .customCheckBox .inner {
@@ -1006,7 +1077,7 @@ background-color: var(--bg-header) !important;
   border-radius: 50%;
   border: none;
   cursor: pointer;
-  transition-duration: .3s;
+  transition: all 250ms ease;
   overflow: hidden;
   position: relative;
   display: flex;
@@ -1014,21 +1085,27 @@ background-color: var(--bg-header) !important;
   justify-content: center;
 }
 
-/* Re-Schedule (藍色系) */
+.resched-button:focus-visible,
+.bin-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Re-Schedule (Design System Blue) */
 .resched-button {
-  background-color: #e0e7ff;
+  background-color: #DBEAFE;
 }
 .resched-svgIcon {
   width: 18px;
-  transition-duration: .3s;
+  transition: all 250ms ease;
 }
 .resched-svgIcon path {
-  stroke: #4f46e5;
+  stroke: var(--color-primary);
 }
 .resched-button:hover {
   width: 130px;
   border-radius: 50px;
-  background-color: #4f46e5;
+  background-color: var(--color-primary);
 }
 .resched-button:hover .resched-svgIcon {
   width: 40px;
@@ -1051,21 +1128,21 @@ background-color: var(--bg-header) !important;
   transform: translateY(32px);
 }
 
-/* Close/Bin (紅色系) */
+/* Close/Bin (Design System Red) */
 .bin-button {
-  background-color: #fee2e2;
+  background-color: #FEE2E2;
 }
 .bin-svgIcon {
   width: 14px;
-  transition-duration: .3s;
+  transition: all 250ms ease;
 }
 .bin-svgIcon path {
-  fill: #ef4444;
+  fill: var(--card-closed);
 }
 .bin-button:hover {
   width: 100px;
   border-radius: 50px;
-  background-color: #ef4444;
+  background-color: var(--card-closed);
 }
 .bin-button:hover .bin-svgIcon {
   width: 40px;
@@ -1095,48 +1172,63 @@ background-color: var(--bg-header) !important;
   pointer-events: none;
 }
 
+/* Dark mode action buttons */
+.dark .resched-button {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+.dark .bin-button {
+  background-color: rgba(248, 113, 113, 0.2);
+}
+
 /* ============================================================
    14.Dashboard Action Buttons (Re-Schedule & Close) 
    ============================================================ */
 /* ============================================================
-   Unified Dashboard & Generator Summary Cards
+   Unified Dashboard & Generator Summary Cards - Design System
    ============================================================ */
 .summary-card-item {
-  --primary-clr: #1C204B;
-  --dot-clr: #BBC0FF;
+  --card-accent: var(--card-total);
   width: 100%;
   height: 160px;
-  border-radius: 15px;
+  border-radius: 12px;
   color: #fff;
   display: grid;
   cursor: pointer;
-  grid-template-rows: 40px 1fr; /* Fixed height for the icon section */
+  grid-template-rows: 45px 1fr;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 250ms ease;
   border: none !important;
+  box-shadow: var(--shadow-md);
 }
 
 .summary-card-item:hover {
-  transform: translateY(-5px);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.summary-card-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring), var(--shadow-lg);
 }
 
 .summary-card-icon-area {
-  transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
+  transition: all 250ms ease;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
   display: flex;
   justify-content: flex-end;
-  padding-right: 20px;
+  padding-right: var(--space-lg);
+  background-color: var(--card-accent);
 }
 
 .summary-card-body {
-  border-radius: 15px;
-  padding: 15px 20px;
+  border-radius: 12px;
+  padding: var(--space-md) var(--space-lg);
   position: relative;
-  top: -10px; /* Overlap effect */
+  top: -10px;
   display: flex;
   flex-direction: column;
-  background: var(--primary-clr);
+  background: var(--card-bg);
   z-index: 2;
 }
 
@@ -1145,15 +1237,16 @@ background-color: var(--bg-header) !important;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  margin-bottom: 5px;
+  margin-bottom: var(--space-xs);
 }
 
 .summary-card-title {
-  font-size: 0.85em;
-  font-weight: 500;
-  color: var(--dot-clr);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--card-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
 }
 
 .summary-card-menu {
@@ -1165,21 +1258,95 @@ background-color: var(--bg-header) !important;
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--dot-clr);
+  background: var(--card-text-secondary);
 }
 
 .summary-card-value {
-  font-size: 2em;
+  font-family: 'Fira Code', monospace;
+  font-size: 2.25rem;
   font-weight: 700;
   line-height: 1;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-xs);
 }
 
 .summary-card-subtext {
-  font-size: 0.75em;
-  color: var(--dot-clr);
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 0.75rem;
+  color: var(--card-text-secondary);
   opacity: 0.7;
   margin: 0;
+}
+
+/* Card-specific accent colors via data-type attribute */
+.summary-card-item[data-type="total"] { --card-accent: var(--card-total); }
+.summary-card-item[data-type="completed"] { --card-accent: var(--card-completed); }
+.summary-card-item[data-type="closed"] { --card-accent: var(--card-closed); }
+.summary-card-item[data-type="remain"] { --card-accent: var(--card-remain); }
+
+/* Dark mode card enhancements */
+.dark .summary-card-item:hover {
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+.dark .summary-card-value {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================================
+   Status Indicator Animations (Design System)
+   ============================================================ */
+@keyframes statusPulse {
+  0%, 100% {
+    box-shadow: var(--shadow-md), 0 0 0 0 rgba(var(--pulse-color-rgb), 0.4);
+  }
+  50% {
+    box-shadow: var(--shadow-md), 0 0 0 8px rgba(var(--pulse-color-rgb), 0);
+  }
+}
+
+@keyframes statusGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(var(--glow-color-rgb), 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(var(--glow-color-rgb), 0.8));
+  }
+}
+
+@keyframes statusBlink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0.6; }
+}
+
+.status-pulse {
+  --pulse-color-rgb: 16, 185, 129; /* green default */
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.status-pulse--warning {
+  --pulse-color-rgb: 245, 158, 11; /* amber */
+}
+
+.status-pulse--danger {
+  --pulse-color-rgb: 239, 68, 68; /* red */
+}
+
+.status-glow {
+  --glow-color-rgb: 59, 130, 246; /* blue */
+  animation: statusGlow 2s ease-in-out infinite;
+}
+
+.status-blink {
+  animation: statusBlink 1.5s ease-in-out infinite;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .status-pulse,
+  .status-glow,
+  .status-blink {
+    animation: none;
+  }
 }
 
 /* ============================================================

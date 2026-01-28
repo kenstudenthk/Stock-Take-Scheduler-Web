@@ -77,7 +77,12 @@ class SharePointService {
 
       const data = await response.json();
       if (data.value && data.value.length > 0) {
-        return data.value[0].fields; 
+        const fields = data.value[0].fields;
+        // Map SharePoint field 'Role' to 'UserRole' expected by the app
+        return {
+          ...fields,
+          UserRole: fields.Role || 'User'
+        };
       }
       return null;
     } catch (error) {

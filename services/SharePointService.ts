@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { SHAREPOINT_CONFIG, API_URLS } from '../constants/config';
+import { SP_FIELDS } from '../constants';
 import { User, UserRole } from '../types';
 
 interface SaveSchedulePayload {
@@ -205,9 +206,9 @@ async updatePasswordByEmail(email: string, hash: string) {
   // ... 之後保留你原本嘅 updateShopScheduleStatus, batchUpdateSchedules 等方法 ...
   
   async updateShopScheduleStatus(itemId: string, scheduleStatus: string, scheduledDate?: string, groupId?: number): Promise<void> {
-    const fields: Record<string, any> = { ScheduleStatus: scheduleStatus };
-    if (scheduledDate) fields['ScheduledDate'] = scheduledDate;
-    if (groupId) fields['GroupId'] = groupId;
+    const fields: Record<string, any> = { [SP_FIELDS.STATUS]: scheduleStatus };
+    if (scheduledDate) fields[SP_FIELDS.SCHEDULE_DATE] = scheduledDate;
+    if (groupId !== undefined) fields[SP_FIELDS.SCHEDULE_GROUP] = groupId;
 
     const response = await fetch(
       `${API_URLS.shopList}/items/${itemId}`,

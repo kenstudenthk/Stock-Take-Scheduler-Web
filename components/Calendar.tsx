@@ -435,21 +435,21 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
                     <div className="group-card-detail">
                       <div className="flex flex-col gap-3 p-6 pt-2">
                         {group.items.map(shop => (
-                          <div key={shop.id} className="flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-600">
+                          <div key={shop.id} className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-600">
                             <Avatar
-                              size={52}
+                              size={32}
                               shape="square"
                               src={shop.brandIcon}
                               icon={<ShopOutlined />}
-                              className="bg-white p-1 border border-slate-50 dark:bg-slate-700 dark:border-slate-600"
+                              className="bg-white border border-slate-100 flex-shrink-0 dark:bg-slate-700 dark:border-slate-600"
                               style={{ objectFit: 'contain' }}
                             />
                             <div className="flex-1 min-w-0">
-                              <div className="flex justify-between">
-                                <h4 className="font-bold text-slate-800 m-0 truncate dark:text-white">{shop.name}</h4>
-                                <Text type="secondary" className="text-[10px]">ID: {shop.id}</Text>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-slate-800 m-0 text-sm leading-tight dark:text-white">{shop.name}</h4>
                               </div>
-                              <Text className="text-slate-400 text-[11px] block truncate">{shop.address}</Text>
+                              <Text type="secondary" className="text-[10px] block mt-0.5">{shop.id}</Text>
+                              <Text className="text-slate-400 text-[10px] block mt-1 leading-tight">{shop.address}</Text>
                             </div>
                           </div>
                         ))}

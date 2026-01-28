@@ -212,15 +212,9 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         const [lng, lat] = offsetCoords.get(shop.id) || wgs84ToGcj02(shop.longitude, shop.latitude);
         const markerColor = getMarkerColor(shop);
 
-        // Create marker with pulse animation
         const marker = new window.AMap.Marker({
           position: [lng, lat],
-          content: `
-            <div class="map-marker">
-              <div class="map-marker-pulse" style="background: ${markerColor};"></div>
-              <div class="map-marker-dot" style="background: ${markerColor};"></div>
-            </div>
-          `
+          content: `<div class="map-marker-dot" style="background: ${markerColor};"></div>`
         });
 
         marker.on('click', () => {

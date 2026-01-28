@@ -2643,50 +2643,14 @@ background-color: var(--bg-header) !important;
   overflow: hidden;
 }
 
-/* Map Marker Pulse Animation */
-@keyframes markerPulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(2.5);
-    opacity: 0;
-  }
-}
-
-.map-marker {
-  position: relative;
-  cursor: pointer;
-}
-
+/* Map Marker Dot */
 .map-marker-dot {
   width: 18px;
   height: 18px;
   border-radius: 50%;
   border: 2.5px solid white;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-  position: relative;
-  z-index: 2;
-}
-
-.map-marker-pulse {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  animation: markerPulse 2s ease-out infinite;
-  z-index: 1;
-}
-
-/* Reduced motion support for marker pulse */
-@media (prefers-reduced-motion: reduce) {
-  .map-marker-pulse {
-    animation: none;
-  }
+  cursor: pointer;
 }
 
 /* Filter Section Label */

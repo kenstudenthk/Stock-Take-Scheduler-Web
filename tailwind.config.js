@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class', // Enable class-based dark mode (responds to body.dark)
   content: [
     "./index.html",
     "./*.{js,ts,jsx,tsx}",        // 掃描根目錄下的 App.tsx, main.tsx 等

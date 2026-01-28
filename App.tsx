@@ -188,7 +188,13 @@ function App() {
     switch (selectedMenuKey) {
       case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} />;
       case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
-      case View.CALENDAR: return <Calendar shops={allShops} />;
+      case View.CALENDAR: return (
+        <Calendar
+          shops={allShops}
+          graphToken={graphToken}
+          onRefresh={() => fetchAllData(graphToken)}
+        />
+      );
       case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory invToken={invToken} shops={allShops} />;

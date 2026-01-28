@@ -199,6 +199,7 @@ function App() {
       case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory invToken={invToken} shops={allShops} />;
+      case View.PERMISSION: return <Permission graphToken={graphToken} currentUser={currentUser} />;
       default: return null;
     }
   };

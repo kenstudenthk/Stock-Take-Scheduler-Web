@@ -11,13 +11,14 @@ import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
 import { Calendar } from './components/Calendar';
 import { Locations } from './components/Locations';
-import { Settings } from './components/Settings'; 
-import { Shop, View, User, hasAdminAccess } from './types'; // ✅ 我確認你的 types.ts 有這些，請放心使用
+import { Settings } from './components/Settings';
+import { Shop, View, User, hasAdminAccess } from './types';
 import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
+import { Permission } from './components/Permission';
 import { ThemeToggle } from './components/ThemeToggle';
-import { ErrorReport } from './components/ErrorReport'; 
+import { ErrorReport } from './components/ErrorReport';
 import { Login } from './components/Login';
 import SharePointService from './services/SharePointService';
 

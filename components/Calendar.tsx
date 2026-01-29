@@ -65,6 +65,30 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
   const [expandedGroupId, setExpandedGroupId] = useState<number | null>(1);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Helper function to check if a date can be edited
+  const isDateEditable = (date: dayjs.Dayjs | Date | string): boolean => {
+    const today = dayjs().startOf('day');
+    const targetDate = dayjs(date).startOf('day');
+    
+    // Cannot edit today or past dates
+    if (targetDate.isBefore(today) || targetDate.isSame(today, 'day')) {
+      return false;
+    }
+    
+    // Calculate next week (the week after current week)
+    // Current week ends on Sunday
+    const currentWeekEnd = today.endOf('week'); // Sunday of current week
+    const nextWeekStart = currentWeekEnd.add(1, 'day'); // Monday of next week
+    const nextWeekEnd = nextWeekStart.endOf('week'); // Sunday of next week
+    
+    // Cannot edit dates in next week
+    if (targetDate.isAfter(currentWeekEnd) && targetDate.isBefore(nextWeekEnd.add(1, 'day'))) {
+      return false;
+    }
+    
+    return true;
+  };
+
   // Export modal state
   const [exportModalVisible, setExportModalVisible] = useState(false);
   const [exportDateRange, setExportDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
@@ -77,22 +101,30 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
   const shopEvents = useMemo(() => {
     return shops
       .filter(shop => shop.scheduledDate)
-      .map(shop => ({
-        id: shop.sharePointItemId || shop.id,
-        title: shop.name,
-        start: shop.scheduledDate,
-        extendedProps: {
-          shopId: shop.id,
-          sharePointItemId: shop.sharePointItemId,
-          groupId: shop.groupId,
-          brand: shop.brand,
-          address: shop.address,
-          brandIcon: shop.brandIcon,
-        },
-        backgroundColor: GROUP_COLORS[shop.groupId]?.bg || '#e2e8f0',
-        borderColor: GROUP_COLORS[shop.groupId]?.border || '#cbd5e1',
-        textColor: GROUP_COLORS[shop.groupId]?.text || '#475569',
-      }));
+      .map(shop => {
+        const editable = isDateEditable(shop.scheduledDate!);
+        const groupColor = GROUP_COLORS[shop.groupId];
+        
+        return {
+          id: shop.sharePointItemId || shop.id,
+          title: shop.name,
+          start: shop.scheduledDate,
+          editable: editable, // Make non-editable dates non-draggable
+          extendedProps: {
+            shopId: shop.id,
+            sharePointItemId: shop.sharePointItemId,
+            groupId: shop.groupId,
+            brand: shop.brand,
+            address: shop.address,
+            brandIcon: shop.brandIcon,
+            isEditable: editable,
+          },
+          backgroundColor: editable ? groupColor?.bg : '#f1f5f9',
+          borderColor: editable ? groupColor?.border : '#cbd5e1',
+          textColor: editable ? groupColor?.text : '#94a3b8',
+          classNames: editable ? [] : ['fc-event-non-editable'],
+        };
+      });
   }, [shops]);
 
   // Holiday background events
@@ -144,6 +176,13 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
       return;
     }
 
+    // Check if target date is editable
+    if (!isDateEditable(event.start!)) {
+      message.error('Cannot modify shifts for today, past dates, or next week');
+      revert();
+      return;
+    }
+
     try {
       setIsUpdating(true);
       const service = new SharePointService(graphToken);
@@ -172,6 +211,12 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
 
     if (!itemId) {
       message.error('Cannot update: Missing SharePoint ID');
+      return;
+    }
+
+    // Check if event date is editable
+    if (!isDateEditable(info.event.start!)) {
+      message.error('Cannot modify shifts for today, past dates, or next week');
       return;
     }
 
@@ -510,6 +555,15 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
       </div>
 
       <style>{`
+        /* Non-editable events styling */
+        .fc-event-non-editable {
+          opacity: 0.6;
+          cursor: not-allowed !important;
+        }
+        .fc-event-non-editable:hover {
+          opacity: 0.6 !important;
+        }
+        
         /* Group expand card animations */
         .group-expand-card {
           background: #f8fafc;

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Card, Typography, Space, Tag, message, Select, Switch, Input, Row, Col, Avatar, Badge } from 'antd';
+import { Table, Card, Typography, Space, Tag, message, Select, Switch, Input, Row, Col, Avatar, Badge, Tooltip } from 'antd';
 import {
   TeamOutlined, SearchOutlined, UserOutlined, MailOutlined,
   CrownOutlined, SafetyCertificateOutlined, CheckCircleOutlined,
-  CloseCircleOutlined, CalendarOutlined
+  CloseCircleOutlined, CalendarOutlined, InfoCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { User, UserRole } from '../types';
@@ -11,6 +11,147 @@ import SharePointService from '../services/SharePointService';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+// Role Permission Descriptions
+const rolePermissions = {
+  Admin: {
+    title: "Administrator",
+    description: "Full system access with all privileges",
+    can: [
+      "Manage all users and permissions",
+      "Create, edit, and delete all content",
+      "Access and modify system settings",
+      "View all reports and analytics",
+      "Configure security settings",
+      "Manage billing and subscriptions"
+    ],
+    cannot: [
+      "Cannot be deleted if only admin exists",
+      "All actions are logged for audit"
+    ],
+    color: "#ef4444"
+  },
+  "App Owner": {
+    title: "App Owner",
+    description: "Application management with elevated permissions",
+    can: [
+      "Manage application content",
+      "Configure app settings",
+      "View analytics and reports",
+      "Manage user roles (except Admin)",
+      "Access app-specific features",
+      "Upload and manage media"
+    ],
+    cannot: [
+      "Cannot modify system settings",
+      "Cannot create or delete Admin users",
+      "Cannot access billing information",
+      "Cannot configure security settings"
+    ],
+    color: "#a855f7"
+  },
+  User: {
+    title: "User",
+    description: "Standard access for regular users",
+    can: [
+      "View assigned content",
+      "Edit own profile",
+      "Comment on posts",
+      "Download available resources",
+      "Submit requests"
+    ],
+    cannot: [
+      "Cannot create or delete users",
+      "Cannot modify any settings",
+      "Cannot access admin areas",
+      "Cannot change permissions",
+      "Cannot view other users' data",
+      "Cannot access analytics"
+    ],
+    color: "#3b82f6"
+  }
+};
+
+// Tooltip Component for Role Permissions
+const RolePermissionTooltip = ({ role }: { role: UserRole }) => {
+  const info = rolePermissions[role];
+  
+  return (
+    <div style={{ maxWidth: '320px', fontFamily: "'Fira Sans', sans-serif" }}>
+      <div style={{
+        borderLeft: `4px solid ${info.color}`,
+        paddingLeft: '12px',
+        marginBottom: '12px'
+      }}>
+        <div style={{ 
+          fontWeight: 700, 
+          fontSize: '14px', 
+          color: '#1e293b',
+          marginBottom: '4px'
+        }}>
+          {info.title}
+        </div>
+        <div style={{ 
+          fontSize: '12px', 
+          color: '#64748b',
+          lineHeight: '1.4'
+        }}>
+          {info.description}
+        </div>
+      </div>
+      
+      <div style={{ marginBottom: '12px' }}>
+        <div style={{
+          fontSize: '11px',
+          fontWeight: 700,
+          color: '#16a34a',
+          marginBottom: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px'
+        }}>
+          <CheckCircleOutlined /> CAN DO
+        </div>
+        <ul style={{
+          margin: 0,
+          paddingLeft: '20px',
+          fontSize: '11px',
+          color: '#475569',
+          lineHeight: '1.6'
+        }}>
+          {info.can.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))}
+        </ul>
+      </div>
+      
+      <div>
+        <div style={{
+          fontSize: '11px',
+          fontWeight: 700,
+          color: '#dc2626',
+          marginBottom: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px'
+        }}>
+          <CloseCircleOutlined /> CANNOT DO
+        </div>
+        <ul style={{
+          margin: 0,
+          paddingLeft: '20px',
+          fontSize: '11px',
+          color: '#475569',
+          lineHeight: '1.6'
+        }}>
+          {info.cannot.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
 
 // Bento Card Component for Statistics (matching ShopList style)
 const BentoStatCard = ({
@@ -147,9 +288,15 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
           <div className="flex flex-col">
             <Text strong className="text-[14px] text-slate-800">{record.Name}</Text>
             <div className="flex items-center gap-1">
-              <Tag color={getRoleColor(record.UserRole)} className="m-0 text-[10px] font-bold border-none">
-                {getRoleIcon(record.UserRole)} {record.UserRole}
-              </Tag>
+              <Tooltip 
+                title={<RolePermissionTooltip role={record.UserRole || 'User'} />}
+                placement="right"
+                overlayClassName="role-tooltip"
+              >
+                <Tag color={getRoleColor(record.UserRole)} className="m-0 text-[10px] font-bold border-none cursor-help">
+                  {getRoleIcon(record.UserRole)} {record.UserRole} <InfoCircleOutlined style={{ fontSize: '10px', marginLeft: '2px' }} />
+                </Tag>
+              </Tooltip>
             </div>
           </div>
         </Space>
@@ -171,7 +318,22 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
       ),
     },
     {
-      title: 'Role',
+      title: () => (
+        <Space>
+          Role
+          <Tooltip 
+            title={
+              <div style={{ fontFamily: "'Fira Sans', sans-serif", fontSize: '12px' }}>
+                <div style={{ fontWeight: 700, marginBottom: '8px' }}>Role Permissions Guide</div>
+                <div style={{ marginBottom: '6px' }}>Hover over any role tag to see detailed permissions.</div>
+                <div style={{ color: '#94a3b8', fontSize: '11px' }}>You cannot change your own role.</div>
+              </div>
+            }
+          >
+            <InfoCircleOutlined style={{ color: '#94a3b8', cursor: 'help' }} />
+          </Tooltip>
+        </Space>
+      ),
       key: 'role',
       width: '18%',
       render: (record: User) => (
@@ -183,13 +345,40 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
           disabled={updatingId === record.id || record.id === currentUser?.id}
         >
           <Option value="Admin">
-            <Space><CrownOutlined className="text-red-500" /> Admin</Space>
+            <Tooltip 
+              title={<RolePermissionTooltip role="Admin" />}
+              placement="right"
+              overlayClassName="role-tooltip"
+            >
+              <Space>
+                <CrownOutlined className="text-red-500" /> Admin
+                <InfoCircleOutlined style={{ fontSize: '11px', color: '#94a3b8' }} />
+              </Space>
+            </Tooltip>
           </Option>
           <Option value="App Owner">
-            <Space><SafetyCertificateOutlined className="text-purple-500" /> App Owner</Space>
+            <Tooltip 
+              title={<RolePermissionTooltip role="App Owner" />}
+              placement="right"
+              overlayClassName="role-tooltip"
+            >
+              <Space>
+                <SafetyCertificateOutlined className="text-purple-500" /> App Owner
+                <InfoCircleOutlined style={{ fontSize: '11px', color: '#94a3b8' }} />
+              </Space>
+            </Tooltip>
           </Option>
           <Option value="User">
-            <Space><UserOutlined className="text-blue-500" /> User</Space>
+            <Tooltip 
+              title={<RolePermissionTooltip role="User" />}
+              placement="right"
+              overlayClassName="role-tooltip"
+            >
+              <Space>
+                <UserOutlined className="text-blue-500" /> User
+                <InfoCircleOutlined style={{ fontSize: '11px', color: '#94a3b8' }} />
+              </Space>
+            </Tooltip>
           </Option>
         </Select>
       ),
@@ -270,7 +459,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
           title="App Owners"
           value={stats.appOwners}
           icon={<SafetyCertificateOutlined />}
-          color="#8b5cf6"
+          color="#a855f7"
         />
         <BentoStatCard
           title="Users"
@@ -284,13 +473,15 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
       <div className="permission-filters">
         <div className="flex items-center gap-3">
           <div className="permission-filters-icon-wrapper">
-            <TeamOutlined />
+            <SearchOutlined />
           </div>
           <div>
-            <Text strong className="text-lg text-slate-800 block">User Directory</Text>
-            <Text className="text-xs text-slate-400">
-              Showing <span className="text-teal-600 font-bold">{filteredMembers.length}</span> of {members.length} users
-            </Text>
+            <div className="text-[14px] font-bold text-slate-800" style={{ fontFamily: "'Fira Sans', sans-serif" }}>
+              Filter Users
+            </div>
+            <div className="text-[11px] text-slate-500" style={{ fontFamily: "'Fira Sans', sans-serif" }}>
+              Search and filter by role
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -312,9 +503,15 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
             placeholder="Filter by Role"
           >
             <Option value="All">All Roles</Option>
-            <Option value="Admin">Admin</Option>
-            <Option value="App Owner">App Owner</Option>
-            <Option value="User">User</Option>
+            <Option value="Admin">
+              <Space><CrownOutlined className="text-red-500" /> Admin</Space>
+            </Option>
+            <Option value="App Owner">
+              <Space><SafetyCertificateOutlined className="text-purple-500" /> App Owner</Space>
+            </Option>
+            <Option value="User">
+              <Space><UserOutlined className="text-blue-500" /> User</Space>
+            </Option>
           </Select>
         </div>
       </div>
@@ -550,6 +747,21 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
 
         .role-select .ant-select-selection-item {
           line-height: 34px !important;
+        }
+
+        /* Custom Tooltip Styles */
+        .role-tooltip .ant-tooltip-inner {
+          background: white !important;
+          color: #1e293b !important;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+          padding: 12px !important;
+          border-radius: 8px !important;
+          border: 1px solid #e2e8f0 !important;
+        }
+
+        .role-tooltip .ant-tooltip-arrow-content {
+          background: white !important;
+          border: 1px solid #e2e8f0 !important;
         }
       `}</style>
     </div>

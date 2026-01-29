@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   HomeOutlined, EnvironmentOutlined, DatabaseOutlined,
   CalendarOutlined, SettingOutlined, LogoutOutlined,
@@ -9,6 +9,15 @@ import { View, User, hasAdminAccess } from '../types';
 
 export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, currentView, onReportError }) => {
   const isAdmin = hasAdminAccess(user as User | null);
+
+  // Mobile detection for responsive bottom nav
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 640);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const allMenuItems = [
     { key: View.DASHBOARD, label: 'Dashboard', icon: <HomeOutlined />, requiresAdmin: false },
@@ -79,6 +88,20 @@ return (
       <main className="custom-main-content">
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation - Hidden by default via CSS, shown only on mobile */}
+      <nav className="mobile-bottom-nav">
+        {menuItems.slice(0, 5).map((item) => (
+          <button
+            key={item.key}
+            className={`mobile-nav-item ${currentView === item.key ? 'active' : ''}`}
+            onClick={() => onViewChange(item.key)}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 };

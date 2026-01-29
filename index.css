@@ -3352,3 +3352,66 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
     font-size: 20px !important;
   }
 }
+
+/* ============================================
+   ACCORDION STYLES FOR ADVANCED FILTERS
+   Add these styles to your existing CSS file (e.g., index.css or ShopList.css)
+   ============================================ */
+
+/* Accordion wrapper styling */
+.advanced-filter-accordion .ant-collapse-header {
+  padding: 20px 24px !important;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  border-radius: 16px !important;
+}
+
+.advanced-filter-accordion .ant-collapse-content-box {
+  padding: 24px !important;
+}
+
+.advanced-filter-accordion .ant-collapse-item {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+  margin-bottom: 24px !important;
+  background: white;
+}
+
+.advanced-filter-accordion .ant-collapse-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Make sure the accordion arrow is visible */
+.advanced-filter-accordion .ant-collapse-arrow {
+  font-size: 12px !important;
+  color: #64748b !important;
+}
+
+/* Smooth transition when opening/closing */
+.advanced-filter-accordion .ant-collapse-content {
+  transition: all 0.3s ease !important;
+}
+
+/* Ensure the header doesn't have border when expanded */
+.advanced-filter-accordion .ant-collapse-item-active .ant-collapse-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-radius: 16px 16px 0 0 !important;
+}
+
+/* Bento filters section updates */
+.bento-filters-section {
+  margin-bottom: 24px;
+}
+
+/* Override the existing icon wrapper for consistency */
+.advanced-filter-accordion .bento-filters-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  border-radius: 12px;
+  color: white;
+  font-size: 18px;
+}

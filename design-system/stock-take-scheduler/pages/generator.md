@@ -1,8 +1,8 @@
 # Generator Page Overrides
 
 > **PROJECT:** Stock Take Scheduler
-> **Generated:** 2026-01-27 08:33:03
-> **Page Type:** General
+> **Generated:** 2026-01-29 09:47:08
+> **Page Type:** Landing / Marketing
 
 > ⚠️ **IMPORTANT:** Rules in this file **override** the Master file (`design-system/MASTER.md`).
 > Only deviations from the Master are documented here. For all other rules, refer to the Master.
@@ -45,7 +45,7 @@
 
 ## Recommendations
 
-- Effects: Small hover (50-100ms), loading spinners, success/error state anim, gesture-triggered (swipe/pinch), haptic
+- Effects: Product animation playback, step progression animations, hover reveal effects, smooth zoom on interaction
 - Feedback: Step indicators or progress bar
 - AI Interaction: Thumps up/down or 'Regenerate'
 - Touch: Use for confirmations and important actions

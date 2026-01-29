@@ -608,21 +608,24 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
           </div>
 
           <div className="st-master-table">
-            <Table 
-              columns={columns} 
-              dataSource={filteredData} // ✅ 使用過濾後的數據
-              rowKey="id" 
-              pagination={{ 
-                pageSize: 10, 
-                showSizeChanger: true, 
-                pageSizeOptions: ['10', '20', '50'],
-                showTotal: (total) => `Total ${total} shops`
-              }} 
-              onRow={(record) => ({ 
-                onClick: () => setSelectedRowId(record.id === selectedRowId ? null : record.id) 
-              })} 
-              rowClassName={(record) => record.id === selectedRowId ? 'selected-row cursor-pointer' : 'cursor-pointer'} 
-            />
+            <div className="table-scroll-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <Table
+                columns={columns}
+                dataSource={filteredData} // ✅ 使用過濾後的數據
+                rowKey="id"
+                scroll={{ x: 1200 }}
+                pagination={{
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50'],
+                  showTotal: (total) => `Total ${total} shops`
+                }}
+                onRow={(record) => ({
+                  onClick: () => setSelectedRowId(record.id === selectedRowId ? null : record.id)
+                })}
+                rowClassName={(record) => record.id === selectedRowId ? 'selected-row cursor-pointer' : 'cursor-pointer'}
+              />
+            </div>
           </div>
         </div>
       </Card>

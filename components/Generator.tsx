@@ -308,8 +308,16 @@ export const Generator: React.FC<{
   const regionRemainStats = useMemo(() => {
     const unplannedPool = activePool.filter(s => s.status === 'Unplanned');
     const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
+    const totalCounts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
+    
+    // Count unplanned shops per region
     unplannedPool.forEach(s => { 
       if (counts.hasOwnProperty(s.region)) counts[s.region]++; 
+    });
+    
+    // Count total shops per region
+    activePool.forEach(s => {
+      if (totalCounts.hasOwnProperty(s.region)) totalCounts[s.region]++;
     });
     
     return Object.keys(counts).map(key => {
@@ -317,6 +325,7 @@ export const Generator: React.FC<{
       return { 
         key, 
         count: counts[key], 
+        totalShops: totalCounts[key],
         displayName: config.label, 
         socialKey: config.social, 
         icon: config.svg 
@@ -870,41 +879,67 @@ export const Generator: React.FC<{
             </div>
             
             <ul className="example-2 unplanned-pool-layout w-full list-none p-0 m-0">
-              {regionRemainStats.map(reg => (
-                <li key={reg.key} className="icon-content flex justify-center w-full">
-                  <a 
-                    href="#" 
-                    data-social={reg.socialKey}
-                    style={{ 
-                      width: '100%', 
-                      height: '100px', 
-                      borderRadius: '20px', 
-                      flexDirection: 'column', 
-                      gap: '4px', 
-                      margin: '0 auto' 
-                    }}
-                  >
-                    <div className="filled"></div>
-                    <div style={{ position: 'relative', zIndex: 10 }}>{reg.icon}</div>
-                    <span style={{ 
-                      position: 'relative', 
-                      zIndex: 10, 
-                      fontSize: '10px', 
-                      fontWeight: 900, 
-                      textAlign: 'center', 
-                      textTransform: 'uppercase' 
-                    }}>
-                      {reg.displayName}
-                    </span>
-                    <div 
-                      className="font-black text-lg" 
-                      style={{ position: 'relative', zIndex: 10 }}
+              {regionRemainStats.map(reg => {
+                // Calculate the unplanned percentage for this region
+                // If totalShops = 10, unplanned = 3, then fillPercentage = 30%
+                // If totalShops = 10, unplanned = 10, then fillPercentage = 100% (fully filled with color)
+                const fillPercentage = reg.totalShops > 0 ? (reg.count / reg.totalShops) * 100 : 0;
+                
+                return (
+                  <li key={reg.key} className="icon-content flex justify-center w-full">
+                    <a 
+                      href="#" 
+                      data-social={reg.socialKey}
+                      style={{ 
+                        width: '100%', 
+                        height: '100px', 
+                        borderRadius: '20px', 
+                        flexDirection: 'column', 
+                        gap: '4px', 
+                        margin: '0 auto',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
                     >
-                      {reg.count}
-                    </div>
-                  </a>
-                </li>
-              ))}
+                      <div 
+                        className="filled"
+                        style={{
+                          height: `${fillPercentage}%`,
+                          transition: 'height 0.3s ease'
+                        }}
+                      ></div>
+                      <div style={{ 
+                        position: 'relative', 
+                        zIndex: 10,
+                        color: fillPercentage > 50 ? 'white' : 'inherit'
+                      }}>
+                        {reg.icon}
+                      </div>
+                      <span style={{ 
+                        position: 'relative', 
+                        zIndex: 10, 
+                        fontSize: '10px', 
+                        fontWeight: 900, 
+                        textAlign: 'center', 
+                        textTransform: 'uppercase',
+                        color: fillPercentage > 50 ? 'white' : 'inherit'
+                      }}>
+                        {reg.displayName}
+                      </span>
+                      <div 
+                        className="font-black text-lg" 
+                        style={{ 
+                          position: 'relative', 
+                          zIndex: 10,
+                          color: fillPercentage > 50 ? 'white' : 'inherit'
+                        }}
+                      >
+                        {reg.count}
+                      </div>
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </Col>

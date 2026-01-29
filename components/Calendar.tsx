@@ -104,12 +104,13 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
       .map(shop => {
         const editable = isDateEditable(shop.scheduledDate!);
         const groupColor = GROUP_COLORS[shop.groupId];
+        const groupName = shop.groupId === 1 ? 'Group A' : shop.groupId === 2 ? 'Group B' : 'Group C';
         
         return {
           id: shop.sharePointItemId || shop.id,
           title: shop.name,
           start: shop.scheduledDate,
-          editable: editable, // Make non-editable dates non-draggable
+          editable: editable, // Disable drag for non-editable dates
           extendedProps: {
             shopId: shop.id,
             sharePointItemId: shop.sharePointItemId,
@@ -118,11 +119,13 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
             address: shop.address,
             brandIcon: shop.brandIcon,
             isEditable: editable,
+            groupName: groupName,
+            tooltip: `${shop.name}\n${shop.id}\nBrand: ${shop.brand}\nGroup: ${groupName}\nAddress: ${shop.address}`,
           },
-          backgroundColor: editable ? groupColor?.bg : '#f1f5f9',
-          borderColor: editable ? groupColor?.border : '#cbd5e1',
-          textColor: editable ? groupColor?.text : '#94a3b8',
-          classNames: editable ? [] : ['fc-event-non-editable'],
+          backgroundColor: groupColor?.bg || '#e2e8f0',
+          borderColor: groupColor?.border || '#cbd5e1',
+          textColor: groupColor?.text || '#475569',
+          classNames: editable ? [] : ['fc-event-locked'],
         };
       });
   }, [shops]);
@@ -214,9 +217,9 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
       return;
     }
 
-    // Check if event date is editable
-    if (!isDateEditable(info.event.start!)) {
-      message.error('Cannot modify shifts for today, past dates, or next week');
+    // Check if event is locked (not editable)
+    if (!shop.isEditable) {
+      message.warning('Cannot edit shops for today, past dates, or next week');
       return;
     }
 
@@ -427,6 +430,12 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
               dateClick={handleDateClick}
               eventContent={renderEventContent}
               dayCellContent={renderDayCellContent}
+              eventDidMount={(info) => {
+                // Add tooltip to event
+                if (info.event.extendedProps.tooltip) {
+                  info.el.setAttribute('title', info.event.extendedProps.tooltip);
+                }
+              }}
               height="auto"
               aspectRatio={1.8}
               locale="en"
@@ -555,13 +564,16 @@ export const Calendar: React.FC<CalendarProps> = ({ shops, graphToken, onRefresh
       </div>
 
       <style>{`
-        /* Non-editable events styling */
-        .fc-event-non-editable {
-          opacity: 0.6;
+        /* Locked events styling - prevent drag/edit but allow tooltips */
+        .fc-event-locked {
+          cursor: not-allowed !important;
+          opacity: 0.85;
+        }
+        .fc-event-locked .fc-event-main {
           cursor: not-allowed !important;
         }
-        .fc-event-non-editable:hover {
-          opacity: 0.6 !important;
+        .fc-event-locked:hover {
+          opacity: 0.95;
         }
         
         /* Group expand card animations */

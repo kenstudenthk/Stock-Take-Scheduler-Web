@@ -1,3 +1,9 @@
+import React, { useEffect, useRef, useState, useMemo, useCallback, memo } from 'react';
+import { Select, Input, Typography, Empty, DatePicker, Switch, message, Card } from 'antd';
+import {
+  MapPin, Search, Store, CheckCircle, Calendar, XCircle,
+  Filter, Info, Tags
+} from 'lucide-react';
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Select, Input, Typography, Tag, Space, Row, Col, Empty, DatePicker, Switch, message } from 'antd';
 import { Search, Store, CheckCircle2, Calendar, XCircle, Filter, Info, Tags } from 'lucide-react';
@@ -7,6 +13,58 @@ import { wgs84ToGcj02 } from '../utils/coordTransform';
 
 const { Title, Text } = Typography;
 
+// --- Legend category helper ---
+const getShopCategory = (shop: Shop): string => {
+  if (shop.status === 'Done') return 'completed';
+  if (shop.status === 'Closed') return 'closed';
+  if (shop.groupId === 1) return 'group-a';
+  if (shop.groupId === 2) return 'group-b';
+  if (shop.groupId === 3) return 'group-c';
+  return 'other';
+};
+
+// --- Marker color from category ---
+const CATEGORY_COLORS: Record<string, string> = {
+  'group-a': '#3B82F6',
+  'group-b': '#A855F7',
+  'group-c': '#F59E0B',
+  'completed': '#22C55E',
+  'closed': '#EF4444',
+  'other': '#94A3B8',
+};
+
+const getMarkerColor = (shop: Shop): string => {
+  return CATEGORY_COLORS[getShopCategory(shop)] ?? '#94A3B8';
+};
+
+// --- Legend items config ---
+const LEGEND_ITEMS = [
+  { key: 'group-a', label: 'Group A', color: '#3B82F6' },
+  { key: 'group-b', label: 'Group B', color: '#A855F7' },
+  { key: 'group-c', label: 'Group C', color: '#F59E0B' },
+  { key: '__divider__', label: '', color: '' },
+  { key: 'completed', label: 'Completed', color: '#22C55E' },
+  { key: 'closed', label: 'Closed', color: '#EF4444' },
+];
+
+// --- BentoStatCard (consistent with ShopList) ---
+const BentoStatCard = memo(({
+  title, value, icon, color, size = 'normal'
+}: {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  color: string;
+  size?: 'normal' | 'large';
+}) => (
+  <div
+    className={`bento-stat-card bento-${size}`}
+    style={{ '--accent-color': color } as React.CSSProperties}
+  >
+    <div className="bento-stat-icon">{icon}</div>
+    <div className="bento-stat-content">
+      <span className="bento-stat-value">{value}</span>
+      <span className="bento-stat-title">{title}</span>
 // --- Marker Color Constants ---
 const MARKER_COLORS = {
   GROUP_A: '#3B82F6',
@@ -38,27 +96,65 @@ const SummaryCard = ({ label, value, bgColor, icon }: any) => (
       <div className="summary-card-value">{value}</div>
     </div>
   </div>
-);
+));
 
+// --- ShopBentoCard ---
+const ShopBentoCard = memo(({
+  shop, onClick, isActive
+}: {
+  shop: Shop;
+  onClick: () => void;
+  isActive: boolean;
+}) => {
+  const groupColor = getMarkerColor(shop);
+  const groupLetter = shop.groupId ? String.fromCharCode(64 + shop.groupId) : '-';
+
+  return (
+    <button
+      onClick={onClick}
+      className={`shop-bento-card ${isActive ? 'shop-bento-card--active' : ''}`}
+      style={{ '--card-accent': groupColor } as React.CSSProperties}
+      aria-label={`View ${shop.name} on map. Status: ${shop.status}, Group ${groupLetter}`}
+    >
+      <div className="shop-bento-header">
+        <span className="shop-bento-name">{shop.name}</span>
+        <span className="shop-bento-status" data-status={shop.status?.toLowerCase()}>
+          {shop.status}
+        </span>
+      </div>
+      <div className="shop-bento-meta">
+        <span className="shop-bento-group" style={{ backgroundColor: groupColor }}>
+          Group {groupLetter}
+        </span>
+        <span className="shop-bento-id">{shop.id}</span>
+      </div>
+      <p className="shop-bento-address">
+        <MapPin className="w-3 h-3" strokeWidth={2} />
+        {shop.address}
+      </p>
+    </button>
+  );
+});
+
+// --- Main component ---
 export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const mapRef = useRef<any>(null);
   const infoWindowRef = useRef<any>(null);
   const markersRef = useRef<{ [key: string]: any }>({});
-  const offsetCoordsRef = useRef<Map<string, [number, number]>>(new Map());
 
   const [search, setSearch] = useState('');
   const [regionFilter, setRegionFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState<dayjs.Dayjs | null>(null);
   const [includeMasterClosed, setIncludeMasterClosed] = useState(false);
+  const [activeShopId, setActiveShopId] = useState<string | null>(null);
+  const [legendFilters, setLegendFilters] = useState<Set<string>>(new Set());
 
-  // 1. 核心過濾邏輯
+  // 1. Core filter (search / region / date / masterClosed)
   const filteredShops = useMemo(() => {
     return shops.filter(s => {
       const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
-                          s.address.toLowerCase().includes(search.toLowerCase());
+        s.address.toLowerCase().includes(search.toLowerCase());
       const matchRegion = !regionFilter || s.region === regionFilter;
-      const matchStatus = statusFilter.length === 0 || statusFilter.includes(s.status);
       const matchDate = !dateFilter || (
         s.scheduledDate &&
         dayjs(s.scheduledDate).format('YYYY-MM-DD') === dateFilter.format('YYYY-MM-DD')
@@ -67,15 +163,59 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
       return matchSearch && matchRegion && matchStatus && matchDate && matchMasterClosed;
     });
-  }, [shops, search, regionFilter, statusFilter, dateFilter, includeMasterClosed]);
+  }, [shops, search, regionFilter, dateFilter, includeMasterClosed]);
 
+  // 2. Legend counts (always based on filteredShops)
+  const legendCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      'group-a': 0, 'group-b': 0, 'group-c': 0, 'completed': 0, 'closed': 0
+    };
+    filteredShops.forEach(shop => {
+      const cat = getShopCategory(shop);
+      if (cat in counts) counts[cat]++;
+    });
+    return counts;
+  }, [filteredShops]);
+
+  // 3. Apply legend filter on top → displayedShops
+  const displayedShops = useMemo(() => {
+    if (legendFilters.size === 0) return filteredShops;
+    return filteredShops.filter(shop => legendFilters.has(getShopCategory(shop)));
+  }, [filteredShops, legendFilters]);
+
+  // Stats from displayedShops (what's actually on the map)
   const stats = useMemo(() => ({
-    total: filteredShops.length,
-    completed: filteredShops.filter(s => s.status === 'Done').length,
-    scheduled: filteredShops.filter(s => ['Planned', 'Rescheduled'].includes(s.status)).length,
-    closed: filteredShops.filter(s => s.status === 'Closed').length
-  }), [filteredShops]);
+    total: displayedShops.length,
+    completed: displayedShops.filter(s => s.status === 'Done').length,
+    scheduled: displayedShops.filter(s => ['Planned', 'Rescheduled'].includes(s.status)).length,
+    closed: displayedShops.filter(s => s.status === 'Closed').length
+  }), [displayedShops]);
 
+  // Region options
+  const regionOptions = useMemo(() =>
+    Array.from(new Set(shops.map(s => s.region))).filter(Boolean).map(r => ({ label: r, value: r })),
+    [shops]
+  );
+
+  // Legend toggle handler
+  const toggleLegend = useCallback((key: string) => {
+    setLegendFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  // --- Map init ---
+  useEffect(() => {
+    if (!window.AMap || mapRef.current) return;
+
+    mapRef.current = new window.AMap.Map('map-container', {
+      center: [114.177216, 22.303719],
+      zoom: 11,
+      viewMode: '3D',
+      pitch: 45
   // Helper function to get marker color
   const getMarkerColor = useCallback((shop: Shop): string => {
     if (shop.status === 'Done') return MARKER_COLORS.DONE;
@@ -142,121 +282,92 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       pitch: 45 // 初始傾斜角度
     });
 
-    // 加載控制項插件
     window.AMap.plugin(['AMap.ToolBar', 'AMap.MapType', 'AMap.Scale', 'AMap.ControlBar'], () => {
-      // 1. 縮放工具欄 (右下角)
-      mapRef.current.addControl(new window.AMap.ToolBar({
-        position: 'RB',
-        offset: new window.AMap.Pixel(20, 40)
-      }));
-
-      // 2. 地圖類型切換 (右上角 - 衛星圖/普通圖)
-      mapRef.current.addControl(new window.AMap.MapType({
-        defaultType: 0, // 0: 2D, 1: 衛星圖
-        position: 'RT'
-      }));
-
-      // 3. 比例尺 (左下角)
+      mapRef.current.addControl(new window.AMap.ToolBar({ position: 'RB', offset: new window.AMap.Pixel(20, 40) }));
+      mapRef.current.addControl(new window.AMap.MapType({ defaultType: 0, position: 'RT' }));
       mapRef.current.addControl(new window.AMap.Scale());
-
-      // 4. 3D 控制盤 (左上角 - 控制旋轉和俯仰)
-      mapRef.current.addControl(new window.AMap.ControlBar({
-        position: {
-          top: '20px',
-          left: '20px'
-        }
-      }));
+      mapRef.current.addControl(new window.AMap.ControlBar({ position: { top: '20px', left: '20px' } }));
     });
 
-    infoWindowRef.current = new window.AMap.InfoWindow({
-      offset: new window.AMap.Pixel(0, -20)
-    });
+    infoWindowRef.current = new window.AMap.InfoWindow({ offset: new window.AMap.Pixel(0, -20) });
   }, []);
 
-  // 3. 地圖聯動：列表點擊處理函數
+  // --- Shop click → smooth pan ---
   const handleShopClick = useCallback((shop: Shop) => {
     const marker = markersRef.current[shop.id];
-    if (marker && mapRef.current) {
-      // Use offset coordinates if available, otherwise fallback to original
-      const [lng, lat] = offsetCoordsRef.current.get(shop.id) || wgs84ToGcj02(shop.longitude, shop.latitude);
-      mapRef.current.setZoomAndCenter(17, [lng, lat], false, 600);
-      marker.emit('click', { target: marker });
-      message.success(`Focusing on: ${shop.name}`, 1);
-    } else {
-      message.warning("Marker not found on map.");
+    if (!marker || !mapRef.current) {
+      message.warning('Marker not found on map.');
+      return;
     }
+    setActiveShopId(shop.id);
+    const [lng, lat] = wgs84ToGcj02(shop.longitude, shop.latitude);
+    mapRef.current.setZoomAndCenter(17, [lng, lat], false, 800);
+    setTimeout(() => {
+      marker.emit('click', { target: marker });
+    }, 400);
+    message.success(`Viewing: ${shop.name}`, 1.5);
   }, []);
 
-  // 4. 更新 Marker with batch rendering for performance
+  // --- Create InfoWindow content (accessible) ---
+  const createInfoContent = useCallback((shop: Shop, color: string) => {
+    const groupLetter = shop.groupId ? String.fromCharCode(64 + shop.groupId) : 'N/A';
+    return `
+      <div class="info-window" role="dialog" aria-label="Shop details for ${shop.name}">
+        <h3 class="info-window-title">${shop.name}</h3>
+        <p class="info-window-address">${shop.address}</p>
+        <div class="info-window-tags">
+          <span class="info-window-tag info-window-tag--group" style="background-color:${color};">Group ${groupLetter}</span>
+          <span class="info-window-tag info-window-tag--status" data-status="${shop.status?.toLowerCase()}">${shop.status}</span>
+        </div>
+      </div>
+    `;
+  }, []);
+
+  // --- Update markers ---
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Calculate offset coordinates for overlapping markers (防重疊)
-    const offsetCoords = offsetOverlappingMarkers(filteredShops);
-    offsetCoordsRef.current = offsetCoords;
+    requestAnimationFrame(() => {
+      // Clear existing
+      const existing = Object.values(markersRef.current);
+      if (existing.length > 0) {
+        mapRef.current.remove(existing);
+        markersRef.current = {};
+      }
 
-    const existingMarkers = Object.values(markersRef.current);
-    if (existingMarkers.length > 0) {
-      mapRef.current.remove(existingMarkers);
-      markersRef.current = {};
-    }
+      const newMarkers: any[] = [];
 
-    const newMarkersList: any[] = [];
-    let currentIndex = 0;
+      displayedShops.forEach(shop => {
+        const [lng, lat] = wgs84ToGcj02(shop.longitude, shop.latitude);
+        const color = getMarkerColor(shop);
+        const isActive = shop.id === activeShopId;
 
-    const processBatch = () => {
-      const batch = filteredShops.slice(currentIndex, currentIndex + BATCH_SIZE);
-
-      batch.forEach(shop => {
-        // Use offset coordinates to prevent marker overlap
-        const [lng, lat] = offsetCoords.get(shop.id) || wgs84ToGcj02(shop.longitude, shop.latitude);
-        const markerColor = getMarkerColor(shop);
+        const markerContent = `
+          <div class="map-marker ${isActive ? 'map-marker--active' : ''}" style="--marker-color:${color};" role="button" aria-label="${shop.name} marker">
+            <div class="map-marker-inner"></div>
+            ${isActive ? '<div class="map-marker-pulse"></div>' : ''}
+          </div>
+        `;
 
         const marker = new window.AMap.Marker({
           position: [lng, lat],
-          content: `<div class="map-marker-dot" style="background: ${markerColor};"></div>`
+          content: markerContent,
         });
 
         marker.on('click', () => {
-          const groupLetter = shop.groupId ? String.fromCharCode(64 + shop.groupId) : 'N/A';
-          const content = `
-            <div class="map-infowindow">
-              <div class="map-infowindow-name">${shop.name}</div>
-              <div class="map-infowindow-address">${shop.address}</div>
-              <div class="map-infowindow-tags">
-                <span class="map-infowindow-tag map-infowindow-tag--group" style="background: ${markerColor};">
-                  Group ${groupLetter}
-                </span>
-                <span class="map-infowindow-tag map-infowindow-tag--status">
-                  ${shop.status}
-                </span>
-              </div>
-            </div>
-          `;
-          infoWindowRef.current.setContent(content);
-          // InfoWindow opens at offset position
+          setActiveShopId(shop.id);
+          infoWindowRef.current.setContent(createInfoContent(shop, color));
           infoWindowRef.current.open(mapRef.current, [lng, lat]);
         });
 
         markersRef.current[shop.id] = marker;
-        newMarkersList.push(marker);
+        newMarkers.push(marker);
       });
 
-      currentIndex += BATCH_SIZE;
-
-      if (currentIndex < filteredShops.length) {
-        requestAnimationFrame(processBatch);
-      } else {
-        // All batches processed, add markers to map
-        mapRef.current.add(newMarkersList);
-        if (newMarkersList.length > 0) {
-          mapRef.current.setFitView(newMarkersList);
-        }
-      }
-    };
-
-    requestAnimationFrame(processBatch);
-  }, [filteredShops, getMarkerColor, offsetOverlappingMarkers]);
+      mapRef.current.add(newMarkers);
+      if (newMarkers.length > 0) mapRef.current.setFitView(newMarkers);
+    });
+  }, [displayedShops, activeShopId, createInfoContent]);
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -264,10 +375,123 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       <div className="flex justify-between items-center">
         <div>
           <Title level={2} className="m-0 text-slate-800">Interactive Map</Title>
-          <Text className="text-slate-400 font-medium">Click on shop cards to locate on map.</Text>
+          <Text className="text-slate-400 font-medium">Click on shop cards or legend to filter the map.</Text>
         </div>
       </div>
 
+      {/* Bento Stats Grid */}
+      <div className="bento-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '16px' }}>
+        <BentoStatCard title="Total on Map" value={stats.total} icon={<Store className="w-6 h-6" />} color="var(--card-total)" size="large" />
+        <BentoStatCard title="Completed" value={stats.completed} icon={<CheckCircle className="w-6 h-6" />} color="var(--marker-done)" />
+        <BentoStatCard title="Scheduled" value={stats.scheduled} icon={<Calendar className="w-6 h-6" />} color="var(--marker-group-a)" />
+        <BentoStatCard title="Closed" value={stats.closed} icon={<XCircle className="w-6 h-6" />} color="var(--marker-closed)" />
+      </div>
+
+      {/* Glassmorphism Filter Bar */}
+      <div className="glass-filter-bar">
+        <div className="glass-filter-group">
+          <Calendar className="w-5 h-5 text-blue-700" strokeWidth={2} />
+          <label className="glass-filter-label">Schedule Date</label>
+          <DatePicker
+            className="glass-date-picker"
+            onChange={(date) => setDateFilter(date)}
+            value={dateFilter}
+            aria-label="Filter by schedule date"
+          />
+        </div>
+
+        <div className="glass-filter-divider" />
+
+        <div className="glass-filter-group">
+          <Info className="w-5 h-5 text-slate-400" strokeWidth={2} />
+          <label className="glass-filter-label" htmlFor="include-closed-toggle">
+            Include Last Year Closed
+          </label>
+          <Switch
+            size="small"
+            checked={includeMasterClosed}
+            onChange={setIncludeMasterClosed}
+          />
+        </div>
+      </div>
+
+      {/* Interactive Legend with counts */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 text-slate-400 flex-shrink-0">
+          <Tags className="w-4 h-4" strokeWidth={2} />
+          <span className="text-[10px] uppercase font-black tracking-widest">Legend:</span>
+        </div>
+        <div className="legend-panel" role="group" aria-label="Filter map by category">
+          {LEGEND_ITEMS.map((item) => {
+            if (item.key === '__divider__') {
+              return <div key="div" className="legend-divider" />;
+            }
+            const isActive = legendFilters.has(item.key);
+            const hasAnyFilter = legendFilters.size > 0;
+            const isDimmed = hasAnyFilter && !isActive;
+            return (
+              <button
+                key={item.key}
+                className={`legend-toggle ${isActive ? 'legend-toggle--active' : ''} ${isDimmed ? 'legend-toggle--dimmed' : ''}`}
+                style={{ '--legend-color': item.color } as React.CSSProperties}
+                onClick={() => toggleLegend(item.key)}
+                aria-pressed={isActive}
+                aria-label={`${item.label}: ${legendCounts[item.key] ?? 0} shops`}
+              >
+                <span className="legend-dot" />
+                <span className="legend-label-text">{item.label}</span>
+                <span className="legend-count">{legendCounts[item.key] ?? 0}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Map + Sidebar */}
+      <div className="flex gap-6 h-[720px]">
+        <div
+          id="map-container"
+          className="flex-1 rounded-[40px] overflow-hidden border border-slate-100 shadow-sm bg-slate-50"
+          style={{ height: '100%', width: '100%' }}
+        />
+
+        <div className="w-[400px] flex flex-col gap-4">
+          {/* Search Card */}
+          <Card className="rounded-[32px] border-none shadow-sm" styles={{ body: { padding: '24px' } }}>
+            <div className="flex items-center gap-2 mb-4 text-blue-700">
+              <Filter className="w-4 h-4" strokeWidth={2} />
+              <Text strong className="uppercase tracking-widest text-[11px]">Quick Search</Text>
+            </div>
+            <div className="flex flex-col gap-3 w-full">
+              <Input
+                prefix={<Search className="w-4 h-4 text-slate-300" strokeWidth={2} />}
+                placeholder="Search shop..."
+                className="h-11 rounded-xl bg-slate-50 border-none"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                aria-label="Search shops by name or address"
+              />
+              <Select
+                className="w-full h-11 custom-select"
+                placeholder="Region"
+                allowClear
+                onChange={setRegionFilter}
+                options={regionOptions}
+                aria-label="Filter by region"
+              />
+            </div>
+          </Card>
+
+          {/* Results Card */}
+          <Card
+            className="flex-1 rounded-[32px] border-none shadow-sm overflow-hidden"
+            styles={{ body: { padding: 0, height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 } }}
+          >
+            <div className="px-6 py-4 bg-slate-800 flex justify-between items-center text-white">
+              <Text strong className="text-white">
+                <Store className="w-4 h-4 inline-block mr-2 align-text-bottom" strokeWidth={2} />
+                Result ({displayedShops.length})
+              </Text>
       {/* Stats Cards */}
       <Row gutter={[20, 20]}>
         <Col span={6}>
@@ -390,6 +614,18 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
             </Space>
           </div>
 
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-white" style={{ minHeight: 0 }}>
+              {displayedShops.length === 0 ? (
+                <Empty className="mt-12" description="No shops match your filters" />
+              ) : (
+                displayedShops.map(shop => (
+                  <ShopBentoCard
+                    key={shop.id}
+                    shop={shop}
+                    onClick={() => handleShopClick(shop)}
+                    isActive={shop.id === activeShopId}
+                  />
+                ))
           {/* Results Card */}
           <div className="bento-results-card">
             <div className="bento-results-header">

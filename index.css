@@ -47,6 +47,19 @@
 
   /* Focus Ring */
   --focus-ring: 0 0 0 3px rgba(30, 64, 175, 0.3);
+
+  /* Map Marker Colors */
+  --marker-group-a: #3B82F6;
+  --marker-group-b: #A855F7;
+  --marker-group-c: #F59E0B;
+  --marker-done: #22C55E;
+  --marker-closed: #EF4444;
+  --marker-default: #94A3B8;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-blur: blur(16px);
+  --glass-border: rgba(255, 255, 255, 0.25);
 }
 
   /* 主題色 - Light Mode (淺色) */
@@ -77,6 +90,10 @@ body.dark {
 
   /* Focus ring for dark mode */
   --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.4);
+
+  /* Glassmorphism - Dark */
+  --glass-bg: rgba(15, 23, 42, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.08);
 }
 
 body {
@@ -2492,6 +2509,418 @@ body.dark .custom-main-content {
 }
 
 /* ============================================================
+   LOCATIONS / MAP VIEW - Glassmorphism + Bento + Legend
+   ============================================================ */
+
+/* --- Glass Filter Bar --- */
+.glass-filter-bar {
+  position: sticky;
+  top: var(--space-md);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  transition: box-shadow 200ms ease;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+.glass-filter-bar:hover {
+  box-shadow: var(--shadow-xl);
+}
+.glass-filter-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.glass-filter-label {
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.glass-filter-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--glass-border);
+  flex-shrink: 0;
+}
+.glass-date-picker.ant-picker {
+  height: 44px;
+  min-width: 200px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: rgba(255,255,255,0.5);
+  font-family: 'Fira Sans', sans-serif;
+  transition: all 200ms ease;
+}
+.glass-date-picker.ant-picker:hover,
+.glass-date-picker.ant-picker:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+/* --- Legend Toggle Buttons --- */
+.legend-panel {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  flex-wrap: wrap;
+}
+.legend-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+  transition: all 200ms ease;
+  font-family: 'Fira Sans', sans-serif;
+  user-select: none;
+}
+.legend-toggle:hover {
+  background: #f8fafc;
+  border-color: var(--legend-color, #94a3b8);
+}
+.legend-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.legend-toggle--active {
+  background: #f0f9ff;
+  border-color: var(--legend-color, var(--color-primary));
+  box-shadow: 0 0 0 1px var(--legend-color, var(--color-primary));
+}
+.legend-toggle--dimmed {
+  opacity: 0.35;
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--legend-color, #94a3b8);
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px var(--legend-color, #94a3b8);
+  flex-shrink: 0;
+  transition: transform 200ms ease;
+}
+.legend-toggle--active .legend-dot {
+  transform: scale(1.2);
+}
+.legend-toggle--dimmed .legend-dot {
+  background: #cbd5e1;
+  box-shadow: 0 0 0 1px #cbd5e1;
+}
+.legend-label-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+.legend-count {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  min-width: 24px;
+  text-align: right;
+  margin-left: auto;
+  padding-left: var(--space-sm);
+}
+.legend-toggle--dimmed .legend-label-text,
+.legend-toggle--dimmed .legend-count {
+  color: #94a3b8;
+}
+.legend-divider {
+  width: 1px;
+  align-self: stretch;
+  background: #e2e8f0;
+  margin: 4px 4px;
+  flex-shrink: 0;
+}
+
+/* --- Shop Bento Card --- */
+.shop-bento-card {
+  min-height: 88px;
+  width: 100%;
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Fira Sans', sans-serif;
+  transition: all 200ms ease;
+}
+.shop-bento-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--card-accent, var(--color-primary));
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--card-accent, var(--color-primary));
+}
+.shop-bento-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--color-primary);
+}
+.shop-bento-card:active {
+  transform: scale(0.98);
+}
+.shop-bento-card--active {
+  background: #eff6ff;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+.shop-bento-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+.shop-bento-name {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.3;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shop-bento-status {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.shop-bento-status[data-status="done"] {
+  background: #dcfce7;
+  color: #166534;
+}
+.shop-bento-status[data-status="closed"] {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.shop-bento-status[data-status="planned"],
+.shop-bento-status[data-status="rescheduled"] {
+  background: #dbeafe;
+  color: var(--color-primary);
+}
+.shop-bento-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.shop-bento-group {
+  font-size: 9px;
+  font-weight: 700;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.shop-bento-id {
+  font-family: 'Fira Code', monospace;
+  font-size: 10px;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+.shop-bento-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.shop-bento-address svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* --- Map Markers --- */
+.map-marker {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+.map-marker-inner {
+  width: 100%;
+  height: 100%;
+  background: var(--marker-color);
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.map-marker:hover .map-marker-inner {
+  transform: scale(1.25);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+.map-marker--active .map-marker-inner {
+  transform: scale(1.35);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.map-marker-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: var(--marker-color);
+  border-radius: 50%;
+  opacity: 0;
+  animation: marker-pulse 1.5s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes marker-pulse {
+  0% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.5); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+}
+
+/* --- InfoWindow Accessible --- */
+.info-window {
+  padding: var(--space-md);
+  min-width: 240px;
+  font-family: 'Fira Sans', sans-serif;
+  background: white;
+  border-radius: 12px;
+}
+.info-window-title {
+  font-family: 'Fira Code', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+.info-window-address {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+.info-window-tags {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.info-window-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+.info-window-tag--group { color: white; }
+.info-window-tag--status {
+  background: #f1f5f9;
+  color: #334155;
+}
+.info-window-tag--status[data-status="done"] {
+  background: #dcfce7;
+  color: #166534;
+}
+.info-window-tag--status[data-status="closed"] {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Dark mode overrides for Locations */
+.dark .glass-filter-bar {
+  border-color: var(--glass-border);
+}
+.dark .glass-date-picker.ant-picker {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.12);
+  color: var(--text-main);
+}
+.dark .legend-toggle {
+  background: var(--card-bg);
+  border-color: #1e293b;
+}
+.dark .legend-toggle--active {
+  background: rgba(30,64,175,0.15);
+}
+.dark .legend-label-text,
+.dark .legend-count {
+  color: #e2e8f0;
+}
+.dark .shop-bento-card {
+  background: var(--card-bg);
+  border-color: #1e293b;
+}
+.dark .shop-bento-card:hover {
+  border-color: var(--card-accent, var(--color-primary));
+}
+.dark .shop-bento-card--active {
+  background: rgba(30,64,175,0.15);
+  border-color: var(--color-primary);
+}
+.dark .shop-bento-name {
+  color: var(--text-main);
+}
+.dark .info-window {
+  background: var(--card-bg);
+}
+.dark .info-window-title { color: #f8fafc; }
+.dark .info-window-address { color: #94a3b8; }
+.dark .info-window-tag--status {
+  background: #1e293b;
+  color: #cbd5e1;
+}
+
+/* Reduced motion for map */
+@media (prefers-reduced-motion: reduce) {
+  .map-marker-pulse {
+    animation: none;
+    display: none;
+  }
+  .map-marker-inner,
+  .map-marker:hover .map-marker-inner,
+  .map-marker--active .map-marker-inner {
+    transition: none;
+    transform: none;
+  }
+  .shop-bento-card,
+  .shop-bento-card:hover,
+  .shop-bento-card:active {
+    transition: none;
+    transform: none;
+  }
+  .legend-dot,
+  .legend-toggle--active .legend-dot {
+    transition: none;
+    transform: none;
+  }
+}
    25. LOCATIONS PAGE - Glassmorphism, Bento Cards, Markers
    ============================================================ */
 

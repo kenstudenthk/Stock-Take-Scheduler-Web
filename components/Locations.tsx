@@ -265,32 +265,45 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     `;
   }, []);
 
-  // --- Update markers (with overlap detection) ---
+  // --- Update markers in batches (when displayedShops changes) ---
+  const isFirstRenderRef = useRef(true);
+
   useEffect(() => {
     if (!mapRef.current) return;
 
-    requestAnimationFrame(() => {
-      // Clear existing
-      const existing = Object.values(markersRef.current);
-      if (existing.length > 0) {
-        mapRef.current.remove(existing);
-        markersRef.current = {};
+    // Clear existing markers
+    const existing = Object.values(markersRef.current);
+    if (existing.length > 0) {
+      mapRef.current.remove(existing);
+      markersRef.current = {};
+    }
+
+    const offsetMap = offsetOverlappingMarkers(displayedShops);
+    const BATCH_SIZE = 80;
+    let batchIndex = 0;
+
+    const addBatch = () => {
+      const start = batchIndex * BATCH_SIZE;
+      const batch = displayedShops.slice(start, start + BATCH_SIZE);
+      if (batch.length === 0) {
+        // All batches done — fit view only on first load
+        if (isFirstRenderRef.current && Object.keys(markersRef.current).length > 0) {
+          mapRef.current.setFitView(Object.values(markersRef.current));
+          isFirstRenderRef.current = false;
+        }
+        return;
       }
 
-      const offsetMap = offsetOverlappingMarkers(displayedShops);
       const newMarkers: any[] = [];
-
-      displayedShops.forEach(shop => {
+      batch.forEach(shop => {
         const position = offsetMap.get(shop.id);
         if (!position) return;
         const [lng, lat] = position;
         const color = getMarkerColor(shop);
-        const isActive = shop.id === activeShopId;
 
         const markerContent = `
-          <div class="map-marker ${isActive ? 'map-marker--active' : ''}" style="--marker-color:${color};" role="button" aria-label="${shop.name} marker">
+          <div class="map-marker" style="--marker-color:${color};" role="button" aria-label="${shop.name} marker">
             <div class="map-marker-inner"></div>
-            ${isActive ? '<div class="map-marker-pulse"></div>' : ''}
           </div>
         `;
 
@@ -310,9 +323,35 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       });
 
       mapRef.current.add(newMarkers);
-      if (newMarkers.length > 0) mapRef.current.setFitView(newMarkers);
+      batchIndex++;
+      requestAnimationFrame(addBatch);
+    };
+
+    requestAnimationFrame(addBatch);
+  }, [displayedShops, createInfoContent, offsetOverlappingMarkers]);
+
+  // --- Update active marker style without recreating all markers ---
+  useEffect(() => {
+    Object.entries(markersRef.current).forEach(([id, marker]) => {
+      const isActive = id === activeShopId;
+      const dom = marker.getContentDom?.();
+      if (!dom) return;
+      const el = dom.querySelector('.map-marker');
+      if (!el) return;
+      if (isActive) {
+        el.classList.add('map-marker--active');
+        if (!el.querySelector('.map-marker-pulse')) {
+          const pulse = document.createElement('div');
+          pulse.className = 'map-marker-pulse';
+          el.appendChild(pulse);
+        }
+      } else {
+        el.classList.remove('map-marker--active');
+        const pulse = el.querySelector('.map-marker-pulse');
+        if (pulse) pulse.remove();
+      }
     });
-  }, [displayedShops, activeShopId, createInfoContent, offsetOverlappingMarkers]);
+  }, [activeShopId]);
 
   return (
     <div className="w-full flex flex-col gap-6">

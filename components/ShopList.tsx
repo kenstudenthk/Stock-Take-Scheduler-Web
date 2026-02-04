@@ -1,7 +1,7 @@
 // ShopList.tsx - Bento Grid Design
 
 import React, { useState, useMemo, memo } from 'react';
-import { Table, Input, Card, Typography, Space, Tag, DatePicker, message, Modal, Select, Row, Col, Badge, Button, Popover } from 'antd';
+import { Table, Input, Card, Typography, Space, Tag, DatePicker, message, Modal, Select, Row, Col, Badge, Button, Popover, Collapse } from 'antd';
 import {
   SearchOutlined, EnvironmentOutlined, ExclamationCircleOutlined, FilterOutlined,
   PhoneOutlined, UserOutlined, PlusOutlined, ClearOutlined, ShopOutlined,
@@ -9,13 +9,14 @@ import {
   BankOutlined, CompassOutlined, TeamOutlined, ThunderboltOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { Shop, View } from '../types';
+import { Shop, View, User, hasPermission } from '../types';
 import { ShopFormModal } from './ShopFormModal';
 import { SP_FIELDS } from '../constants';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 // Bento Card Component for Statistics
 const BentoStatCard = memo(({
@@ -65,10 +66,10 @@ const BentoFilterCard = memo(({
   </div>
 ));
 
-export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
+export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void, currentUser: User | null }> = ({ shops, graphToken, onRefresh, currentUser }) => {
   // ... 你的狀態設定 (searchText, filters 等) ...
   const [searchText, setSearchText] = useState('');
-  const [filterDate, setFilterDate] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<[string | null, string | null]>([null, null]);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
@@ -113,12 +114,28 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
   // --- ✅ 增強：核心過濾邏輯 (整合原有搜尋與所有新過濾器) ---
   const filteredData = useMemo(() => {
     return shops.filter(s => {
-      // 1. 原有搜尋與日期
-      const matchText = (s.name || '').toLowerCase().includes(searchText.toLowerCase()) || 
-                        (s.id || '').toLowerCase().includes(searchText.toLowerCase());
-      const matchDate = filterDate ? dayjs(s.scheduledDate).format('YYYY-MM-DD') === filterDate : true;
+      // 1. 增強搜尋：搜尋名稱、ID 和地址
+      const searchLower = searchText.toLowerCase().trim();
+      const matchText = !searchLower || 
+                        (s.name || '').toLowerCase().includes(searchLower) || 
+                        (s.id || '').toLowerCase().includes(searchLower) ||
+                        (s.address || '').toLowerCase().includes(searchLower);
       
-      // 2. 新增各項分類過濾
+      // 2. 日期範圍過濾
+      let matchDate = true;
+      if (dateRange[0] || dateRange[1]) {
+        const scheduledDate = dayjs(s.scheduledDate);
+        if (dateRange[0] && dateRange[1]) {
+          matchDate = scheduledDate.isSameOrAfter(dayjs(dateRange[0]), 'day') && 
+                     scheduledDate.isSameOrBefore(dayjs(dateRange[1]), 'day');
+        } else if (dateRange[0]) {
+          matchDate = scheduledDate.isSameOrAfter(dayjs(dateRange[0]), 'day');
+        } else if (dateRange[1]) {
+          matchDate = scheduledDate.isSameOrBefore(dayjs(dateRange[1]), 'day');
+        }
+      }
+      
+      // 3. 新增各項分類過濾
       const matchBrand = filters.brand === 'All' || s.brand === filters.brand;
       const matchRegion = filters.region === 'All' || s.region === filters.region;
       const matchDistrict = filters.district === 'All' || s.district === filters.district;
@@ -132,15 +149,16 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
       return matchText && matchDate && matchBrand && matchRegion && matchDistrict && 
              matchArea && matchBU && matchCall && matchMTR && matchGroup && matchStatus;
     });
-  }, [shops, searchText, filterDate, filters]);
+  }, [shops, searchText, dateRange, filters]);
 
   const resetAllFilters = () => {
     setSearchText('');
-    setFilterDate(null);
+    setDateRange([null, null]);
     setFilters({
       brand: 'All', district: 'All', region: 'All', area: 'All',
       bu: 'All', callStatus: 'All', mtr: 'All', group: 'All', status: 'All'
     });
+    message.info('All filters reset');
   };
 
 
@@ -266,32 +284,9 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
     </div>
   );
 
-  // Bento Filter Grid
-  const renderBentoFilters = () => (
-    <div className="bento-filters-section">
-      <div className="bento-filters-header">
-        <div className="flex items-center gap-3">
-          <div className="bento-filters-icon-wrapper">
-            <FilterOutlined />
-          </div>
-          <div>
-            <Text strong className="text-lg text-slate-800 block">Advanced Filters</Text>
-            <Text className="text-xs text-slate-400">
-              Showing <span className="text-teal-600 font-bold">{filteredData.length}</span> of {shops.length} shops
-            </Text>
-          </div>
-        </div>
-        <Button
-          type="text"
-          danger
-          icon={<ClearOutlined />}
-          onClick={resetAllFilters}
-          className="font-bold hover:bg-red-50 rounded-xl px-4"
-        >
-          Reset All
-        </Button>
-      </div>
-
+  // Bento Filter Grid with Accordion
+  const renderBentoFilters = () => {
+    const filterContent = (
       <div className="bento-filters-grid">
         <BentoFilterCard
           label="Region"
@@ -360,8 +355,48 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
           icon={<AppstoreOutlined />}
         />
       </div>
-    </div>
-  );
+    );
+
+    return (
+      <Collapse
+        defaultActiveKey={['1']}
+        className="custom-accordion"
+        items={[
+          {
+            key: '1',
+            label: (
+              <div className="flex items-center justify-between w-full pr-4">
+                <div className="flex items-center gap-3">
+                  <div className="bento-filters-icon-wrapper">
+                    <FilterOutlined />
+                  </div>
+                  <div>
+                    <Text strong className="text-lg text-slate-800">Advanced Filters</Text>
+                    <Text className="text-xs text-slate-400 ml-3">
+                      Showing <span className="text-teal-600 font-bold">{filteredData.length}</span> of {shops.length} shops
+                    </Text>
+                  </div>
+                </div>
+                <Button
+                  type="text"
+                  danger
+                  icon={<ClearOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resetAllFilters();
+                  }}
+                  className="font-bold hover:bg-red-50 rounded-xl px-4"
+                >
+                  Reset All
+                </Button>
+              </div>
+            ),
+            children: filterContent,
+          },
+        ]}
+      />
+    );
+  };
 
   const columns = [
   {
@@ -520,15 +555,16 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
     title: 'Actions',
     key: 'actions',
     align: 'left' as const,
-    width: '12%', // ✅ 稍微加寬以容納自定義按鈕
+    width: '12%',
     render: (_: any, record: Shop) => (
-      /* ❗ 只有當 selectedRowId 等於目前行的 id 時才會顯示 (即點擊後顯示) */
-      selectedRowId === record.id && (
+      /* Only show when row is selected and user has any permission */
+      selectedRowId === record.id && (hasPermission(currentUser, 'close_shop') || hasPermission(currentUser, 'edit_shop')) && (
         <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-          {/* ✅ 恢復您原有的 Close 按鈕樣式 */}
-          <button 
-            className="Btn close-btn-styled scale-75 origin-right" 
-            disabled={record.status?.toLowerCase() === 'closed'} 
+          {/* Close button - only visible for Admin/App Owner */}
+          {hasPermission(currentUser, 'close_shop') && (
+          <button
+            className="Btn close-btn-styled scale-75 origin-right"
+            disabled={record.status?.toLowerCase() === 'closed'}
             onClick={(e) => { e.stopPropagation(); handleCloseAction(record); }}
           >
             <div className="sign">
@@ -536,11 +572,13 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
             </div>
             <div className="btn-text text-[12px]">Close</div>
           </button>
+          )}
 
-          {/* ✅ 恢復您原有的 Edit 按鈕樣式 */}
-          <button 
-            className="Btn edit-btn-styled scale-75 origin-right" 
-            disabled={record.status?.toLowerCase() === 'closed'} 
+          {/* Edit button - only visible for Admin/App Owner */}
+          {hasPermission(currentUser, 'edit_shop') && (
+          <button
+            className="Btn edit-btn-styled scale-75 origin-right"
+            disabled={record.status?.toLowerCase() === 'closed'}
             onClick={(e) => { e.stopPropagation(); setTargetShop(record); setFormOpen(true); }}
           >
             <div className="sign">
@@ -548,6 +586,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
             </div>
             <div className="btn-text text-[12px]">Edit</div>
           </button>
+          )}
         </div>
       )
     ),
@@ -562,7 +601,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
           <Text style={{ fontFamily: "'Fira Sans', sans-serif", color: '#64748b' }}>Comprehensive store management with advanced filtering</Text>
         </div>
         <div className="flex items-center gap-4">
-          <div className="input-group">
+          <div className="input-group" style={{ position: 'relative' }}>
             <input
               required
               type="text"
@@ -571,12 +610,47 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
             />
-            <label className="user-label">Search by name or code...</label>
+            <label className="user-label">Search by name, code or address...</label>
+            {searchText && (
+              <button
+                onClick={() => setSearchText('')}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#94a3b8',
+                  fontSize: '16px',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '4px',
+                  transition: 'all 0.2s',
+                  zIndex: 10
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#ef4444';
+                  e.currentTarget.style.background = '#fee2e2';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#94a3b8';
+                  e.currentTarget.style.background = 'none';
+                }}
+              >
+                <ClearOutlined />
+              </button>
+            )}
           </div>
+          {hasPermission(currentUser, 'edit_shop') && (
           <button className="Btn new-btn-styled" onClick={() => { setTargetShop(null); setFormOpen(true); }}>
             <div className="sign"><PlusOutlined style={{ color: 'white', fontSize: '18px' }} /></div>
             <div className="btn-text">New Shop</div>
           </button>
+          )}
         </div>
       </div>
 
@@ -586,37 +660,64 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
       {/* Bento Filters Section */}
       {renderBentoFilters()}
 
-      {/* Date Filter & Table */}
+      {/* Date Range Filter & Table */}
       <Card className="rounded-[16px] border border-slate-200 shadow-md overflow-hidden bg-white mt-6" style={{ boxShadow: 'var(--shadow-md)' }}>
         <div className="p-5">
           <div className="flex justify-between items-center mb-6">
             <Text strong className="text-slate-600">
               <CalendarOutlined className="mr-2" />
-              Filter by Scheduled Date
+              Filter by Scheduled Date Range
             </Text>
-            <DatePicker
-              onChange={d => setFilterDate(d?.format('YYYY-MM-DD') || null)}
-              className="h-11 rounded-xl font-bold border-slate-200 w-48"
-              placeholder="Select Date"
-            />
+            <Space>
+              <RangePicker
+                onChange={(dates) => {
+                  if (dates) {
+                    setDateRange([
+                      dates[0]?.format('YYYY-MM-DD') || null,
+                      dates[1]?.format('YYYY-MM-DD') || null
+                    ]);
+                  } else {
+                    setDateRange([null, null]);
+                  }
+                }}
+                value={dateRange[0] && dateRange[1] ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
+                className="h-11 rounded-xl font-bold border-slate-200"
+                placeholder={['Start Date', 'End Date']}
+                format="DD MMM YYYY"
+              />
+              {(dateRange[0] || dateRange[1]) && (
+                <Button
+                  type="text"
+                  danger
+                  icon={<ClearOutlined />}
+                  onClick={() => setDateRange([null, null])}
+                  className="h-11"
+                >
+                  Clear
+                </Button>
+              )}
+            </Space>
           </div>
 
           <div className="st-master-table">
-            <Table 
-              columns={columns} 
-              dataSource={filteredData} // ✅ 使用過濾後的數據
-              rowKey="id" 
-              pagination={{ 
-                pageSize: 10, 
-                showSizeChanger: true, 
-                pageSizeOptions: ['10', '20', '50'],
-                showTotal: (total) => `Total ${total} shops`
-              }} 
-              onRow={(record) => ({ 
-                onClick: () => setSelectedRowId(record.id === selectedRowId ? null : record.id) 
-              })} 
-              rowClassName={(record) => record.id === selectedRowId ? 'selected-row cursor-pointer' : 'cursor-pointer'} 
-            />
+            <div className="table-scroll-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <Table
+                columns={columns}
+                dataSource={filteredData} // ✅ 使用過濾後的數據
+                rowKey="id"
+                scroll={{ x: 1200 }}
+                pagination={{
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50'],
+                  showTotal: (total) => `Total ${total} shops`
+                }}
+                onRow={(record) => ({
+                  onClick: () => setSelectedRowId(record.id === selectedRowId ? null : record.id)
+                })}
+                rowClassName={(record) => record.id === selectedRowId ? 'selected-row cursor-pointer' : 'cursor-pointer'}
+              />
+            </div>
           </div>
         </div>
       </Card>
@@ -630,7 +731,8 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
         shops={shops}
       />
 
-      {/* Floating Sticky CTA */}
+      {/* Floating Sticky CTA - only visible for Admin/App Owner */}
+      {hasPermission(currentUser, 'edit_shop') && (
       <div className="floating-cta">
         <button
           className="floating-cta-btn"
@@ -641,6 +743,7 @@ export const ShopList: React.FC<{ shops: Shop[], graphToken: string, onRefresh: 
           <span>Add Shop</span>
         </button>
       </div>
+      )}
 
       {/* Bento Grid Styles */}
 <style>{`

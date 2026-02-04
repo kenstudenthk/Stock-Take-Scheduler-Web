@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { SHAREPOINT_CONFIG, API_URLS } from '../constants/config';
+import { SP_FIELDS } from '../constants';
+import { User, UserRole } from '../types';
 
 interface SaveSchedulePayload {
   shopId: string;
@@ -76,7 +78,12 @@ class SharePointService {
 
       const data = await response.json();
       if (data.value && data.value.length > 0) {
-        return data.value[0].fields; 
+        const fields = data.value[0].fields;
+        // Map SharePoint field 'Role' to 'UserRole' expected by the app
+        return {
+          ...fields,
+          UserRole: fields.Role || 'User'
+        };
       }
       return null;
     } catch (error) {
@@ -199,9 +206,11 @@ async updatePasswordByEmail(email: string, hash: string) {
   // ... 之後保留你原本嘅 updateShopScheduleStatus, batchUpdateSchedules 等方法 ...
   
   async updateShopScheduleStatus(itemId: string, scheduleStatus: string, scheduledDate?: string, groupId?: number): Promise<void> {
-    const fields: Record<string, any> = { ScheduleStatus: scheduleStatus };
-    if (scheduledDate) fields['ScheduledDate'] = scheduledDate;
-    if (groupId) fields['GroupId'] = groupId;
+    const fields: Record<string, any> = { [SP_FIELDS.STATUS]: scheduleStatus };
+    if (scheduledDate) fields[SP_FIELDS.SCHEDULE_DATE] = scheduledDate;
+    if (groupId !== undefined) fields[SP_FIELDS.SCHEDULE_GROUP] = groupId.toString();
+
+    console.log('🔄 Updating shop schedule:', { itemId, fields });
 
     const response = await fetch(
       `${API_URLS.shopList}/items/${itemId}`,
@@ -214,7 +223,14 @@ async updatePasswordByEmail(email: string, hash: string) {
         body: JSON.stringify({ fields }),
       }
     );
-    if (!response.ok) throw new Error(`Update failed`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Update failed:', response.status, errorData);
+      throw new Error(errorData?.error?.message || `Update failed: ${response.status}`);
+    }
+
+    console.log('✅ Update successful');
   }
 
   /**
@@ -266,6 +282,102 @@ async updatePasswordByEmail(email: string, hash: string) {
       });
       return response.ok;
     } catch { return false; }
+  }
+
+  /**
+   * Get all members from Member List
+   */
+  async getAllMembers(): Promise<User[]> {
+    try {
+      const url = `${API_URLS.memberList}/items?$expand=fields($select=*)&$top=999`;
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.graphToken}`,
+          'Prefer': 'HonorNonIndexedQueriesWarningMayFailOverTime',
+          'ConsistencyLevel': 'eventual'
+        }
+      });
+
+      if (!response.ok) {
+        console.error("❌ Failed to fetch members");
+        return [];
+      }
+
+      const data = await response.json();
+      if (data.value && data.value.length > 0) {
+        return data.value.map((item: any) => ({
+          id: item.id,
+          Name: item.fields?.Name || item.fields?.Title || '',
+          UserEmail: item.fields?.UserEmail || '',
+          AliasEmail: item.fields?.AliasEmail || '',
+          UserRole: item.fields?.Role as UserRole || 'User',
+          AccountStatus: item.fields?.AccountStatus || 'Active',
+          AccountCreateDate: item.fields?.AccountCreateDate || ''
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error("❌ Error fetching members:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Update a member's role
+   */
+  async updateMemberRole(itemId: string, newRole: UserRole): Promise<boolean> {
+    try {
+      const url = `${API_URLS.memberList}/items/${itemId}/fields`;
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${this.graphToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ Role: newRole })
+      });
+
+      if (response.ok) {
+        console.log(`✅ Member role updated to ${newRole}`);
+        return true;
+      } else {
+        const errorDetail = await response.json();
+        console.error("❌ Failed to update role:", errorDetail.error?.message);
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Error updating member role:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Update a member's account status
+   */
+  async updateMemberStatus(itemId: string, status: 'Active' | 'Inactive'): Promise<boolean> {
+    try {
+      const url = `${API_URLS.memberList}/items/${itemId}/fields`;
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${this.graphToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ AccountStatus: status })
+      });
+
+      if (response.ok) {
+        console.log(`✅ Member status updated to ${status}`);
+        return true;
+      } else {
+        const errorDetail = await response.json();
+        console.error("❌ Failed to update status:", errorDetail.error?.message);
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Error updating member status:", error);
+      return false;
+    }
   }
 }
 

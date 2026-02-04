@@ -1,29 +1,59 @@
+/**
+ * Generator.tsx - 智能排程生成器
+ * 
+ * 設計系統準則遵循: design-system/stock-take-scheduler/pages/generator.md
+ * 
+ * 三步驟流程:
+ * - Step 1 (紅色/Problem): Configure - 設定篩選器和參數
+ * - Step 2 (橙色/Process): Generate - 創建排程
+ * - Step 3 (綠色/Solution): Sync - 儲存到 SharePoint
+ */
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Card, Row, Col, Space, Button, Typography, Switch, Select,
-  InputNumber, Table, Tag, message, Modal, DatePicker, Progress
+  InputNumber, Table, Tag, message, Modal, DatePicker, Progress, Tooltip
 } from 'antd';
 import {
   ControlOutlined, CheckCircleOutlined, SaveOutlined,
   ShopOutlined, HourglassOutlined, DeleteOutlined,
-  CalendarOutlined, SyncOutlined, HistoryOutlined, ReloadOutlined,
+  CalendarOutlined, SyncOutlined, HistoryOutlined,
   SettingOutlined, ThunderboltOutlined, CloudUploadOutlined,
-  ArrowRightOutlined
+  ArrowRightOutlined, RocketOutlined, WarningOutlined,
+  CheckCircleFilled, ClockCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
-import { Shop } from '../types';
+import { Shop, User, hasPermission } from '../types';
 import { SP_FIELDS } from '../constants';
 import { isHoliday, getAllHolidays } from '../constants/holidays';
-import { API_URLS } from '../constants/config';
 import { GENERATOR_DEFAULTS, BATCH_CONFIG } from '../constants/config';
 import { executeBatch, BatchResult, formatBatchResult } from '../utils/batchOperations';
-import { SchedulingWizardProgressBar, WizardStep } from './SchedulingWizardProgressBar';
 
 dayjs.extend(isBetween);
 
-// --- Wizard Step Types and Configuration ---
-type WizardStep = 'configure' | 'generate' | 'sync';
+const { Text, Title } = Typography;
+const { confirm } = Modal;
+const { RangePicker } = DatePicker;
+const { Option } = Select;
+
+// ========================================
+// DESIGN SYSTEM COLORS (Step-based)
+// ========================================
+const DESIGN_COLORS = {
+  step1: '#EF4444',      // Red - Problem/Configure
+  step2: '#F97316',      // Orange - Process/Generate
+  step3: '#22C55E',      // Green - Solution/Sync
+  cta: '#0D9488',        // Teal - Brand CTA
+  neutral: '#64748B',    // Slate - Supporting
+  bg: '#F8FAFC',         // Light background
+  border: '#E2E8F0'      // Border
+};
+
+// ========================================
+// WIZARD STEP CONFIGURATION
+// ========================================
+type WizardStep = 'configure' | 'generate' | 'sync' | 'complete';
 
 interface StepConfig {
   key: WizardStep;
@@ -32,8 +62,6 @@ interface StepConfig {
   description: string;
   icon: React.ReactNode;
   color: string;
-  activeColor: string;
-  completedColor: string;
 }
 
 const WIZARD_STEPS: StepConfig[] = [
@@ -43,9 +71,7 @@ const WIZARD_STEPS: StepConfig[] = [
     title: 'Configure',
     description: 'Set filters & parameters',
     icon: <SettingOutlined />,
-    color: '#ef4444',       // Red - Problem/Setup
-    activeColor: '#dc2626',
-    completedColor: '#22c55e'
+    color: DESIGN_COLORS.step1
   },
   {
     key: 'generate',
@@ -53,9 +79,7 @@ const WIZARD_STEPS: StepConfig[] = [
     title: 'Generate',
     description: 'Create schedule',
     icon: <ThunderboltOutlined />,
-    color: '#f97316',       // Orange - Process
-    activeColor: '#ea580c',
-    completedColor: '#22c55e'
+    color: DESIGN_COLORS.step2
   },
   {
     key: 'sync',
@@ -63,318 +87,24 @@ const WIZARD_STEPS: StepConfig[] = [
     title: 'Sync',
     description: 'Save to SharePoint',
     icon: <CloudUploadOutlined />,
-    color: '#22c55e',       // Green - Solution
-    activeColor: '#16a34a',
-    completedColor: '#22c55e'
+    color: DESIGN_COLORS.step3
   }
 ];
 
-// --- Wizard Progress Bar Component ---
-interface WizardProgressBarProps {
-  currentStep: WizardStep;
-  completedSteps: WizardStep[];
-  onStepClick?: (step: WizardStep) => void;
-  isProcessing?: boolean;
-  processProgress?: { current: number; total: number } | null;
-}
-
-const WizardProgressBar: React.FC<WizardProgressBarProps> = ({
-  currentStep,
-  completedSteps,
-  onStepClick,
-  isProcessing = false,
-  processProgress = null
-}) => {
-  const currentStepIndex = WIZARD_STEPS.findIndex(s => s.key === currentStep);
-
-  const getStepStatus = (step: StepConfig): 'completed' | 'active' | 'pending' => {
-    if (completedSteps.includes(step.key)) return 'completed';
-    if (step.key === currentStep) return 'active';
-    return 'pending';
-  };
-
-  const getStepColor = (step: StepConfig, status: 'completed' | 'active' | 'pending') => {
-    if (status === 'completed') return step.completedColor;
-    if (status === 'active') return step.activeColor;
-    return '#cbd5e1'; // slate-300
-  };
-
-  const getConnectorProgress = (stepIndex: number) => {
-    if (stepIndex >= currentStepIndex) return 0;
-    if (completedSteps.includes(WIZARD_STEPS[stepIndex + 1]?.key)) return 100;
-    if (WIZARD_STEPS[stepIndex + 1]?.key === currentStep) {
-      if (isProcessing && processProgress) {
-        return Math.round((processProgress.current / processProgress.total) * 100);
-      }
-      return 50;
-    }
-    return 0;
-  };
-
-  return (
-    <div className="wizard-progress-container">
-      <div className="wizard-progress-bar">
-        {WIZARD_STEPS.map((step, index) => {
-          const status = getStepStatus(step);
-          const stepColor = getStepColor(step, status);
-          const isClickable = completedSteps.includes(step.key) || step.key === currentStep;
-
-          return (
-            <React.Fragment key={step.key}>
-              {/* Step Node */}
-              <div
-                className={`wizard-step ${status} ${isClickable ? 'clickable' : ''}`}
-                onClick={() => isClickable && onStepClick?.(step.key)}
-                style={{ '--step-color': stepColor } as React.CSSProperties}
-              >
-                <div className="wizard-step-circle">
-                  {status === 'completed' ? (
-                    <CheckCircleOutlined className="wizard-step-icon completed-icon" />
-                  ) : (
-                    <span className="wizard-step-icon">{step.icon}</span>
-                  )}
-                  {status === 'active' && isProcessing && (
-                    <div className="wizard-step-pulse" />
-                  )}
-                </div>
-                <div className="wizard-step-label">
-                  <span className="wizard-step-number">Step {step.number}</span>
-                  <span className="wizard-step-title">{step.title}</span>
-                  <span className="wizard-step-description">{step.description}</span>
-                </div>
-              </div>
-
-              {/* Connector Line */}
-              {index < WIZARD_STEPS.length - 1 && (
-                <div className="wizard-connector">
-                  <div className="wizard-connector-track" />
-                  <div
-                    className="wizard-connector-fill"
-                    style={{
-                      width: `${getConnectorProgress(index)}%`,
-                      backgroundColor: status === 'completed' ? '#22c55e' : step.color
-                    }}
-                  />
-                  {status === 'active' && isProcessing && (
-                    <ArrowRightOutlined className="wizard-connector-arrow" />
-                  )}
-                </div>
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
-
-      {/* Progress Detail for Active Step */}
-      {isProcessing && processProgress && (
-        <div className="wizard-progress-detail">
-          <Progress
-            percent={Math.round((processProgress.current / processProgress.total) * 100)}
-            strokeColor={WIZARD_STEPS[currentStepIndex]?.color || '#0d9488'}
-            trailColor="#e2e8f0"
-            format={() => `${processProgress.current} / ${processProgress.total}`}
-            size="small"
-          />
-        </div>
-      )}
-
-      <style>{`
-        .wizard-progress-container {
-          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-          border-radius: 24px;
-          padding: 24px 32px;
-          margin-bottom: 24px;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-
-        .wizard-progress-bar {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          position: relative;
-        }
-
-        .wizard-step {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          position: relative;
-          z-index: 2;
-          transition: all 0.3s ease;
-          flex: 0 0 auto;
-          min-width: 120px;
-        }
-
-        .wizard-step.clickable {
-          cursor: pointer;
-        }
-
-        .wizard-step.clickable:hover .wizard-step-circle {
-          transform: scale(1.1);
-          box-shadow: 0 8px 25px -5px var(--step-color);
-        }
-
-        .wizard-step-circle {
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: var(--step-color);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 12px -2px var(--step-color);
-        }
-
-        .wizard-step.pending .wizard-step-circle {
-          background: #e2e8f0;
-          box-shadow: none;
-        }
-
-        .wizard-step-icon {
-          color: white;
-          font-size: 22px;
-        }
-
-        .wizard-step-icon.completed-icon {
-          font-size: 26px;
-        }
-
-        .wizard-step.pending .wizard-step-icon {
-          color: #94a3b8;
-        }
-
-        .wizard-step-pulse {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-          border: 3px solid var(--step-color);
-          animation: pulse-ring 1.5s ease-out infinite;
-        }
-
-        @keyframes pulse-ring {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(1.5);
-            opacity: 0;
-          }
-        }
-
-        .wizard-step-label {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          margin-top: 12px;
-          text-align: center;
-        }
-
-        .wizard-step-number {
-          font-size: 10px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          color: #94a3b8;
-        }
-
-        .wizard-step.active .wizard-step-number,
-        .wizard-step.completed .wizard-step-number {
-          color: var(--step-color);
-        }
-
-        .wizard-step-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: #334155;
-          margin-top: 2px;
-        }
-
-        .wizard-step.pending .wizard-step-title {
-          color: #94a3b8;
-        }
-
-        .wizard-step-description {
-          font-size: 11px;
-          color: #64748b;
-          margin-top: 2px;
-        }
-
-        .wizard-step.pending .wizard-step-description {
-          color: #cbd5e1;
-        }
-
-        .wizard-connector {
-          flex: 1;
-          height: 4px;
-          position: relative;
-          margin: 28px 12px 0;
-          display: flex;
-          align-items: center;
-        }
-
-        .wizard-connector-track {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          background: #e2e8f0;
-          border-radius: 2px;
-        }
-
-        .wizard-connector-fill {
-          position: absolute;
-          height: 100%;
-          border-radius: 2px;
-          transition: width 0.5s ease;
-        }
-
-        .wizard-connector-arrow {
-          position: absolute;
-          right: -8px;
-          color: #0d9488;
-          font-size: 16px;
-          animation: arrow-move 1s ease-in-out infinite;
-        }
-
-        @keyframes arrow-move {
-          0%, 100% {
-            transform: translateX(0);
-            opacity: 0.5;
-          }
-          50% {
-            transform: translateX(5px);
-            opacity: 1;
-          }
-        }
-
-        .wizard-progress-detail {
-          margin-top: 20px;
-          padding-top: 16px;
-          border-top: 1px solid #e2e8f0;
-        }
-
-        .wizard-progress-detail .ant-progress-text {
-          font-weight: 600;
-          color: #475569;
-        }
-      `}</style>
-    </div>
-  );
+// ========================================
+// REGION CONFIGURATION
+// ========================================
+const REGION_DISPLAY_CONFIG: Record<string, { label: string; social: string; svg: React.ReactNode }> = {
+  'HK': { label: 'HK Island', social: 'hk', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2"/></svg> },
+  'KN': { label: 'Kowloon', social: 'kn', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" stroke="currentColor" strokeWidth="2"/></svg> },
+  'NT': { label: 'N.T.', social: 'nt', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M2 20L9 4L14 14L18 8L22 20H2Z" stroke="currentColor" strokeWidth="2"/></svg> },
+  'Islands': { label: 'Lantau', social: 'islands', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 10C13.5 10 17 11 17 14C17 17 14 18 12 18C10 18 7 17 7 14Z" stroke="currentColor" strokeWidth="2"/><path d="M12 10V3" stroke="currentColor" strokeWidth="2"/></svg> },
+  'MO': { label: 'Macau', social: 'mo', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 9V21H20V9L12 3Z" stroke="currentColor" strokeWidth="2"/><path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2"/></svg> }
 };
 
-const { Text, Title } = Typography;
-const { confirm } = Modal;
-const { RangePicker } = DatePicker;
-const { Option } = Select;
-
-// Get all holidays for validation
-const ALL_HOLIDAYS = getAllHolidays();
-
-// --- 動態動畫組件 (保留原設計) ---
+// ========================================
+// ANIMATED LOADERS
+// ========================================
 const ResetChaseLoader = () => (
   <div className="chase-overlay">
     <div className="chase-scene">
@@ -393,106 +123,222 @@ const ResetChaseLoader = () => (
   </div>
 );
 
-const SyncGeometricLoader = ({ text = "Syncing to SharePoint...", progress }: { text?: string; progress?: { current: number; total: number } | null }) => (
-  <div className="sync-overlay">
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-      <div className="loader"><svg viewBox="0 0 80 80"><circle r="32" cy="40" cx="40"></circle></svg></div>
-      <div className="loader triangle"><svg viewBox="0 0 86 80"><polygon points="43 8 79 72 7 72"></polygon></svg></div>
-      <div className="loader"><svg viewBox="0 0 80 80"><rect height="64" width="64" y="8" x="8"></rect></svg></div>
-    </div>
-    <Title level={4} style={{ color: '#0d9488', marginTop: '20px' }}>{text}</Title>
-    {progress && (
-      <div style={{ width: '200px', marginTop: '16px' }}>
-        <Progress
-          percent={Math.round((progress.current / progress.total) * 100)}
-          size="small"
-          format={() => `${progress.current}/${progress.total}`}
-        />
+const SyncGeometricLoader = ({ text = "Syncing to SharePoint...", progress }: { text?: string; progress?: number }) => (
+  <div className="geometric-loader-overlay">
+    <div className="geometric-loader">
+      <div className="cube">
+        <div className="face front"></div>
+        <div className="face back"></div>
+        <div className="face left"></div>
+        <div className="face right"></div>
+        <div className="face top"></div>
+        <div className="face bottom"></div>
       </div>
+    </div>
+    <Title level={4} style={{ color: 'white', marginTop: '40px' }}>{text}</Title>
+    {progress !== undefined && (
+      <Progress 
+        percent={progress} 
+        strokeColor={{ '0%': DESIGN_COLORS.step2, '100%': DESIGN_COLORS.step3 }}
+        trailColor="rgba(255,255,255,0.2)"
+        style={{ width: '300px', marginTop: '20px' }}
+      />
     )}
   </div>
 );
 
-const SummaryCard = ({ label, value, subtext, bgColor, icon }: any) => (
-  <div className="summary-card-item">
-    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>{icon}</div>
+// ========================================
+// SUMMARY CARD COMPONENT
+// ========================================
+interface SummaryCardProps {
+  label: string;
+  value: number;
+  subtext: string;
+  bgColor: string;
+  icon: React.ReactNode;
+  isPulsing?: boolean;
+}
+
+const SummaryCard: React.FC<SummaryCardProps> = ({
+  label,
+  value,
+  subtext,
+  bgColor,
+  icon,
+  isPulsing = false
+}) => (
+  <div 
+    className={`summary-card-item ${isPulsing ? 'status-pulse status-pulse--danger' : ''}`}
+    style={{ borderLeft: `4px solid ${bgColor}` }}
+  >
+    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>
+      {icon}
+    </div>
     <div className="summary-card-body">
-      <div className="summary-card-header"><div className="summary-card-title">{label}</div></div>
+      <div className="summary-card-header">
+        <div className="summary-card-title">{label}</div>
+        <div className="summary-card-menu">
+          <div className="dot"></div>
+          <div className="dot"></div>
+          <div className="dot"></div>
+        </div>
+      </div>
       <div className="summary-card-value">{value}</div>
       <p className="summary-card-subtext">{subtext}</p>
     </div>
   </div>
 );
 
-const REGION_DISPLAY_CONFIG: Record<string, { label: string, social: string, svg: React.ReactNode }> = {
-  'HK': { label: 'HK Island', social: 'hk', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M3 21H21" stroke="currentColor" strokeWidth="2"/><path d="M5 21V7L10 3V21" stroke="currentColor" strokeWidth="2"/></svg> },
-  'KN': { label: 'Kowloon', social: 'kn', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/><path d="M12 21C15.5 17.4 19 14.1764 19 10.2C19 6.22355 15.866 3 12 3C8.13401 3 5 6.22355 5 10.2C5 14.1764 8.5 17.4 12 21Z" stroke="currentColor" strokeWidth="2"/></svg> },
-  'NT': { label: 'N.T.', social: 'nt', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M2 20L9 4L14 14L18 8L22 20H2Z" stroke="currentColor" strokeWidth="2"/></svg> },
-  'Islands': { label: 'Lantau', social: 'islands', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 10C13.5 10 17 11 17 14C17 17 14 18 12 18C10 18 7 17 7 14Z" stroke="currentColor" strokeWidth="2"/><path d="M12 10V3" stroke="currentColor" strokeWidth="2"/></svg> },
-  'MO': { label: 'Macau', social: 'mo', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 9V21H20V9L12 3Z" stroke="currentColor" strokeWidth="2"/><path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2"/></svg> }
+// ========================================
+// WIZARD PROGRESS BAR COMPONENT (Vertical Version)
+// ========================================
+interface WizardProgressBarVerticalProps {
+  currentStep: WizardStep;
+}
+
+const WizardProgressBarVertical: React.FC<WizardProgressBarVerticalProps> = ({ currentStep }) => {
+  const currentStepIndex = WIZARD_STEPS.findIndex(s => s.key === currentStep);
+
+  return (
+    <div className="wizard-progress-vertical-container">
+      <div className="wizard-steps-vertical-track">
+        {WIZARD_STEPS.map((step, index) => {
+          const isActive = step.key === currentStep;
+          const isCompleted = index < currentStepIndex;
+          const isPending = index > currentStepIndex;
+
+          return (
+            <React.Fragment key={step.key}>
+              {/* Step Item */}
+              <div 
+                className={`wizard-step-vertical ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isPending ? 'pending' : ''}`}
+                style={{ 
+                  '--step-color': isCompleted ? DESIGN_COLORS.step3 : step.color 
+                } as React.CSSProperties}
+              >
+                <div className="wizard-step-vertical-circle">
+                  {isCompleted ? (
+                    <CheckCircleFilled style={{ fontSize: 24, color: DESIGN_COLORS.step3 }} />
+                  ) : (
+                    <div className="wizard-step-vertical-icon" style={{ color: isActive ? step.color : DESIGN_COLORS.neutral }}>
+                      {step.icon}
+                    </div>
+                  )}
+                </div>
+                <div className="wizard-step-vertical-content">
+                  <div className="wizard-step-vertical-number">Step {step.number}</div>
+                  <div className="wizard-step-vertical-title">{step.title}</div>
+                  <div className="wizard-step-vertical-description">{step.description}</div>
+                </div>
+              </div>
+
+              {/* Vertical Connector */}
+              {index < WIZARD_STEPS.length - 1 && (
+                <div className="wizard-connector-vertical">
+                  <div className="wizard-connector-vertical-track"></div>
+                  <div 
+                    className="wizard-connector-vertical-fill"
+                    style={{
+                      height: isCompleted ? '100%' : isActive ? '50%' : '0%',
+                      backgroundColor: isCompleted ? DESIGN_COLORS.step3 : DESIGN_COLORS.step2
+                    }}
+                  ></div>
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
 };
 
-export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh: () => void }> = ({ shops, graphToken, onRefresh }) => {
-  // Wizard mode state
-  const [showWizard, setShowWizard] = useState(false);
+// ========================================
+// MAIN COMPONENT
+// ========================================
+export const Generator: React.FC<{
+  shops: Shop[];
+  graphToken: string;
+  onRefresh: () => void;
+  currentUser: User | null;
+}> = ({ shops, graphToken, onRefresh, currentUser }) => {
 
+  // ========================================
+  // STATE MANAGEMENT
+  // ========================================
   const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [shopsPerDay, setShopsPerDay] = useState<number>(GENERATOR_DEFAULTS.shopsPerDay);
   const [groupsPerDay, setGroupsPerDay] = useState<number>(GENERATOR_DEFAULTS.groupsPerDay);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [includeMTR, setIncludeMTR] = useState(true);
+  
   const [generatedResult, setGeneratedResult] = useState<any[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loadingType, setLoadingType] = useState<'reset' | 'sync'>('sync');
+  
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resetRange, setResetRange] = useState<any>(null);
-
-  // Batch operation state
+  
   const [saveProgress, setSaveProgress] = useState<{ current: number; total: number } | null>(null);
   const [lastBatchResult, setLastBatchResult] = useState<BatchResult<any> | null>(null);
   const [showRetryModal, setShowRetryModal] = useState(false);
-
-  // Wizard progress state
+  
   const [wizardStep, setWizardStep] = useState<WizardStep>('configure');
   const [syncCompleted, setSyncCompleted] = useState(false);
 
-  const activePool = useMemo(() => shops.filter(s => s.masterStatus !== 'Closed' && s.status !== 'Closed'), [shops]);
+  // Get all holidays for validation
+  const ALL_HOLIDAYS = getAllHolidays();
+
+  // ========================================
+  // COMPUTED DATA
+  // ========================================
+  const activePool = useMemo(() => 
+    shops.filter(s => s.masterStatus !== 'Closed' && s.status !== 'Closed'), 
+    [shops]
+  );
 
   const stats = useMemo(() => ({
-    total: activePool.length, completed: activePool.filter(s => s.status === 'Done').length,
+    total: activePool.length,
+    completed: activePool.filter(s => s.status === 'Done').length,
     unplanned: activePool.filter(s => s.status === 'Unplanned').length
   }), [activePool]);
 
   const regionRemainStats = useMemo(() => {
     const unplannedPool = activePool.filter(s => s.status === 'Unplanned');
     const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
-    unplannedPool.forEach(s => { if (counts.hasOwnProperty(s.region)) counts[s.region]++; });
+    unplannedPool.forEach(s => { 
+      if (counts.hasOwnProperty(s.region)) counts[s.region]++; 
+    });
+    
     return Object.keys(counts).map(key => {
       const config = REGION_DISPLAY_CONFIG[key] || { label: key, social: key.toLowerCase(), svg: null };
-      return { key, count: counts[key], displayName: config.label, socialKey: config.social, icon: config.svg };
+      return { 
+        key, 
+        count: counts[key], 
+        displayName: config.label, 
+        socialKey: config.social, 
+        icon: config.svg 
+      };
     });
   }, [activePool]);
 
-  const regionOptions = useMemo(() => Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort(), [activePool]);
+  const regionOptions = useMemo(() => 
+    Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort(), 
+    [activePool]
+  );
+
   const availableDistricts = useMemo(() => {
-    const filtered = selectedRegions.length > 0 ? activePool.filter(s => selectedRegions.includes(s.region)) : activePool;
+    const filtered = selectedRegions.length > 0 
+      ? activePool.filter(s => selectedRegions.includes(s.region)) 
+      : activePool;
     return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
   }, [activePool, selectedRegions]);
 
-  // Calculate configured filters count for wizard feedback
-  const configuredFiltersCount = useMemo(() => {
-    let count = 0;
-    if (selectedRegions.length > 0) count++;
-    if (selectedDistricts.length > 0) count++;
-    if (!includeMTR) count++;
-    if (shopsPerDay !== GENERATOR_DEFAULTS.shopsPerDay) count++;
-    if (groupsPerDay !== GENERATOR_DEFAULTS.groupsPerDay) count++;
-    return count;
-  }, [selectedRegions, selectedDistricts, includeMTR, shopsPerDay, groupsPerDay]);
-
-  // Update wizard step based on state changes
+  // ========================================
+  // WIZARD STEP AUTO-UPDATE
+  // ========================================
   useEffect(() => {
     if (syncCompleted) {
       setWizardStep('complete');
@@ -505,319 +351,401 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
     }
   }, [isSaving, generatedResult.length, syncCompleted]);
 
-  // Reset syncCompleted when starting fresh
   useEffect(() => {
     if (generatedResult.length === 0 && !isSaving) {
       setSyncCompleted(false);
     }
   }, [generatedResult.length, isSaving]);
 
-  const handleResetByPeriod = async () => {
-    if (!resetRange) { message.error("Please select a date range!"); return; }
-    const [start, end] = resetRange;
-    const targets = shops.filter(s => s.scheduledDate && dayjs(s.scheduledDate).isBetween(start, end, 'day', '[]'));
-    if (targets.length === 0) { message.warning("No schedules found."); return; }
-    confirm({
-      title: 'Reset Period?',
-      onOk: async () => {
-        setLoadingType('reset');
-        setIsSaving(true);
-        setSaveProgress({ current: 0, total: targets.length });
-        try {
-          const result = await executeBatch(
-            targets,
-            async (shop) => {
-              const response = await fetch(
-                `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
-                {
-                  method: 'PATCH',
-                  headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    [SP_FIELDS.SCHEDULE_DATE]: null,
-                    [SP_FIELDS.SCHEDULE_GROUP]: "0",
-                    [SP_FIELDS.STATUS]: 'Unplanned'
-                  })
-                }
-              );
-              if (!response.ok) throw new Error('Reset failed');
-            },
-            {
-              onProgress: (processed, total) => setSaveProgress({ current: processed, total }),
-            }
-          );
-          setResetModalVisible(false);
-          setResetRange(null);
-          onRefresh();
-          message.success(formatBatchResult(result));
-        } finally {
-          setIsSaving(false);
-          setSaveProgress(null);
-        }
-      }
-    });
-  };
-
-  const handleResetAll = () => {
-    const plannedShops = shops.filter(s => s.status === 'Planned');
-    if (plannedShops.length === 0) return message.info("No planned schedules.");
-    confirm({
-      title: 'RESET ALL?',
-      onOk: async () => {
-        setLoadingType('reset');
-        setIsSaving(true);
-        setSaveProgress({ current: 0, total: plannedShops.length });
-        try {
-          const result = await executeBatch(
-            plannedShops,
-            async (shop) => {
-              const response = await fetch(
-                `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
-                {
-                  method: 'PATCH',
-                  headers: { 'Authorization': `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    [SP_FIELDS.SCHEDULE_DATE]: null,
-                    [SP_FIELDS.SCHEDULE_GROUP]: "0",
-                    [SP_FIELDS.STATUS]: 'Unplanned'
-                  })
-                }
-              );
-              if (!response.ok) throw new Error('Reset failed');
-            },
-            {
-              onProgress: (processed, total) => setSaveProgress({ current: processed, total }),
-            }
-          );
-          onRefresh();
-          message.success(formatBatchResult(result));
-        } finally {
-          setIsSaving(false);
-          setSaveProgress(null);
-        }
-      }
-    });
-  };
-
-  // Check if date should be disabled (weekends + public holidays)
+  // ========================================
+  // DATE VALIDATION
+  // ========================================
   const disabledDate = useCallback((current: dayjs.Dayjs) => {
     if (!current) return false;
-
-    // Check if weekend (0 = Sunday, 6 = Saturday)
-    const isWeekend = current.day() === 0 || current.day() === 6;
-
-    // Check if public holiday using multi-year holiday system
     const dateStr = current.format('YYYY-MM-DD');
-    const isPublicHoliday = isHoliday(dateStr);
+    const dayOfWeek = current.day();
+    
+    // Disable weekends
+    if (dayOfWeek === 0 || dayOfWeek === 6) return true;
+    
+    // Disable public holidays
+    if (ALL_HOLIDAYS.includes(dateStr)) return true;
+    
+    // Disable past dates
+    if (current.isBefore(dayjs(), 'day')) return true;
+    
+    return false;
+  }, [ALL_HOLIDAYS]);
 
-    return isWeekend || isPublicHoliday;
-  }, []);
-
-  // Core logic: auto-skip weekends and holidays
+  // ========================================
+  // HANDLERS
+  // ========================================
   const handleGenerate = useCallback(() => {
     setIsCalculating(true);
+    setWizardStep('generate');
 
-    const isWorkingDay = (date: dayjs.Dayjs) => {
-      const day = date.day();
-      const isWeekend = (day === 0 || day === 6);
-      const dateStr = date.format('YYYY-MM-DD');
-      const isPublicHoliday = isHoliday(dateStr);
-      return !isWeekend && !isPublicHoliday;
-    };
+    try {
+      // Helper: Check if date is a working day
+      const isWorkingDay = (date: dayjs.Dayjs) => {
+        const day = date.day();
+        const isWeekend = (day === 0 || day === 6);
+        const dateStr = date.format('YYYY-MM-DD');
+        const isPublicHoliday = isHoliday(dateStr);
+        return !isWeekend && !isPublicHoliday;
+      };
 
-    const getNextWorkingDay = (date: dayjs.Dayjs) => {
-      let next = date;
-      while (!isWorkingDay(next)) { next = next.add(1, 'day'); }
-      return next;
-    };
+      // Helper: Get next working day
+      const getNextWorkingDay = (date: dayjs.Dayjs) => {
+        let next = date;
+        while (!isWorkingDay(next)) { 
+          next = next.add(1, 'day'); 
+        }
+        return next;
+      };
 
-    let pool = activePool.filter(s => {
-      const matchRegion = selectedRegions.length === 0 || selectedRegions.includes(s.region);
-      const matchDistrict = selectedDistricts.length === 0 || selectedDistricts.includes(s.district);
-      const matchMTR = includeMTR ? true : !s.is_mtr;
-      return s.status === 'Unplanned' && matchRegion && matchDistrict && matchMTR;
-    });
-    
-    if (pool.length === 0) { message.warning("No unplanned shops match filters."); setIsCalculating(false); return; }
-    
-    pool.sort((a, b) => (a.latitude + a.longitude) - (b.latitude + b.longitude));
-    
-    const results: any[] = [];
-    let currentDay = getNextWorkingDay(dayjs(startDate));
+      // Filter pool based on user selections
+      let pool = activePool.filter(s => {
+        const matchRegion = selectedRegions.length === 0 || selectedRegions.includes(s.region);
+        const matchDistrict = selectedDistricts.length === 0 || selectedDistricts.includes(s.district);
+        const matchMTR = includeMTR ? true : !s.is_mtr;
+        return s.status === 'Unplanned' && matchRegion && matchDistrict && matchMTR;
+      });
 
-    pool.forEach((shop, index) => {
-      const groupInDay = (index % shopsPerDay) % groupsPerDay + 1;
-      results.push({ ...shop, scheduledDate: currentDay.format('YYYY-MM-DD'), groupId: groupInDay });
-      if ((index + 1) % shopsPerDay === 0) {
-        currentDay = getNextWorkingDay(currentDay.add(1, 'day'));
+      if (pool.length === 0) {
+        message.warning('No shops match the selected filters!');
+        setIsCalculating(false);
+        setWizardStep('configure');
+        return;
       }
-    });
 
-    const sortedResults = results.sort((a, b) => {
-      if (a.scheduledDate !== b.scheduledDate) return dayjs(a.scheduledDate).unix() - dayjs(b.scheduledDate).unix();
-      return a.groupId - b.groupId;
-    });
+      // Generate schedule
+      const scheduled: any[] = [];
+      let currentDate = dayjs(startDate);
+      let shopIndex = 0;
 
-    setGeneratedResult(sortedResults);
-    setIsCalculating(false);
-  }, [activePool, selectedRegions, selectedDistricts, includeMTR, startDate, shopsPerDay, groupsPerDay]);
+      while (shopIndex < pool.length) {
+        currentDate = getNextWorkingDay(currentDate);
+        
+        const shopsForDay = pool.slice(shopIndex, shopIndex + shopsPerDay);
+        
+        shopsForDay.forEach((shop, idx) => {
+          const groupId = (idx % groupsPerDay) + 1;
+          scheduled.push({
+            ...shop,
+            scheduledDate: currentDate.format('YYYY-MM-DD'),
+            groupId: groupId
+          });
+        });
 
-  const saveToSharePoint = async () => {
-    setLoadingType('sync');
+        shopIndex += shopsPerDay;
+        currentDate = currentDate.add(1, 'day');
+      }
+
+      setGeneratedResult(scheduled);
+      
+      const totalDays = [...new Set(scheduled.map(s => s.scheduledDate))].length;
+      message.success(`✅ ${scheduled.length} shops scheduled across ${totalDays} days!`);
+      
+      // Add haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+      
+    } catch (error) {
+      console.error('Generation error:', error);
+      message.error('Failed to generate schedule. Please try again.');
+      setWizardStep('configure');
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [activePool, includeMTR, selectedRegions, selectedDistricts, startDate, shopsPerDay, groupsPerDay]);
+
+  const saveToSharePoint = useCallback(async () => {
+    if (generatedResult.length === 0) {
+      message.warning('No schedule to save!');
+      return;
+    }
+
     setIsSaving(true);
+    setWizardStep('sync');
     setSaveProgress({ current: 0, total: generatedResult.length });
-    setLastBatchResult(null);
 
     try {
       const result = await executeBatch(
         generatedResult,
         async (shop) => {
           const response = await fetch(
-            `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
+            `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
             {
               method: 'PATCH',
-              headers: {
-                'Authorization': `Bearer ${graphToken}`,
-                'Content-Type': 'application/json'
+              headers: { 
+                'Authorization': `Bearer ${graphToken}`, 
+                'Content-Type': 'application/json' 
               },
               body: JSON.stringify({
+                [SP_FIELDS.STATUS]: 'Planned',
                 [SP_FIELDS.SCHEDULE_DATE]: shop.scheduledDate,
-                [SP_FIELDS.SCHEDULE_GROUP]: shop.groupId.toString(),
-                [SP_FIELDS.STATUS]: 'Planned'
+                [SP_FIELDS.SCHEDULE_GROUP]: shop.groupId.toString()
               })
             }
           );
+          
           if (!response.ok) {
-            throw new Error(`Failed to update shop ${shop.name}`);
+            throw new Error(`Failed to save ${shop.name}`);
           }
         },
         {
-          concurrentRequests: BATCH_CONFIG.concurrentRequests,
-          onProgress: (processed, total) => {
-            setSaveProgress({ current: processed, total });
-          },
-          getItemName: (shop) => shop.name,
+          onProgress: (current, total) => setSaveProgress({ current, total }),
+          getItemName: (shop) => shop.name
         }
       );
 
       setLastBatchResult(result);
 
-      if (result.failureCount === 0) {
-        message.success(`Successfully synced ${result.successCount} shops!`);
+      if (result.successCount === result.totalProcessed) {
+        message.success(`✅ All ${result.successCount} shops synced successfully!`);
         setSyncCompleted(true);
+        setWizardStep('complete');
+        
+        // Haptic feedback for success
+        if (navigator.vibrate) {
+          navigator.vibrate([100, 50, 100]);
+        }
+        
         setTimeout(() => {
-          setGeneratedResult([]);
           onRefresh();
-        }, 2000); // Brief delay to show completion state
+          setGeneratedResult([]);
+        }, 2000);
       } else if (result.successCount > 0) {
-        message.warning(`Synced ${result.successCount} shops. ${result.failureCount} failed.`);
+        message.warning(`⚠️ ${result.successCount} synced, ${result.failureCount} failed.`);
         setShowRetryModal(true);
       } else {
-        message.error(`Failed to sync all ${result.failureCount} shops.`);
+        message.error(`❌ Failed to sync all ${result.failureCount} shops.`);
         setShowRetryModal(true);
       }
     } catch (error) {
+      console.error('Sync error:', error);
       message.error('Sync failed. Please try again.');
+      setWizardStep('generate');
     } finally {
       setIsSaving(false);
       setSaveProgress(null);
     }
-  };
+  }, [generatedResult, graphToken, onRefresh]);
 
-  const handleRetryFailed = async () => {
+  const handleRetryFailed = useCallback(async () => {
     if (!lastBatchResult || lastBatchResult.failureCount === 0) return;
 
     const failedShops = lastBatchResult.failed.map(f => f.item);
     setGeneratedResult(failedShops);
     setShowRetryModal(false);
-    // Trigger save again with only failed items
+    
     setTimeout(() => saveToSharePoint(), 100);
-  };
+  }, [lastBatchResult, saveToSharePoint]);
 
-  // Render wizard mode
-  if (showWizard) {
-    return (
-      <div className="w-full flex flex-col gap-6 pb-20">
-        {/* Wizard Header */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Button
-              icon={<RocketOutlined />}
-              onClick={() => setShowWizard(false)}
-              className="rounded-lg border-slate-200"
-            >
-              Exit Wizard
-            </Button>
-            <Title level={2} className="m-0 text-slate-800">
-              <ThunderboltOutlined className="text-orange-500 mr-2" />
-              Scheduling Wizard
-            </Title>
-          </div>
-        </div>
+  const handleResetAll = useCallback(() => {
+    confirm({
+      title: 'Reset All Schedules?',
+      icon: <WarningOutlined style={{ color: DESIGN_COLORS.step1 }} />,
+      content: 'This will reset ALL planned schedules back to "Unplanned" status.',
+      okText: 'Yes, Reset All',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        setLoadingType('reset');
+        setIsSaving(true);
 
-        {/* Wizard Component */}
-        <SchedulingWizard
-          shops={shops}
-          graphToken={graphToken}
-          onRefresh={onRefresh}
-          onClose={() => setShowWizard(false)}
-        />
-      </div>
+        const plannedShops = shops.filter(s => s.status === 'Planned');
+        
+        if (plannedShops.length === 0) {
+          message.warning('No planned schedules to reset.');
+          setIsSaving(false);
+          return;
+        }
+
+        setSaveProgress({ current: 0, total: plannedShops.length });
+        
+        try {
+          const result = await executeBatch(
+            plannedShops,
+            async (shop) => {
+              const response = await fetch(
+                `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+                {
+                  method: 'PATCH',
+                  headers: { 
+                    'Authorization': `Bearer ${graphToken}`, 
+                    'Content-Type': 'application/json' 
+                  },
+                  body: JSON.stringify({
+                    [SP_FIELDS.STATUS]: 'Unplanned',
+                    [SP_FIELDS.SCHEDULE_DATE]: null,
+                    [SP_FIELDS.SCHEDULE_GROUP]: null
+                  })
+                }
+              );
+              
+              if (!response.ok) {
+                throw new Error(`Failed to reset ${shop.name}`);
+              }
+            },
+            {
+              onProgress: (current, total) => setSaveProgress({ current, total }),
+              getItemName: (shop) => shop.name
+            }
+          );
+
+          if (result.successCount === result.totalProcessed) {
+            message.success(`✅ All ${result.successCount} schedules reset successfully!`);
+          } else if (result.successCount > 0) {
+            message.warning(`⚠️ ${result.successCount} reset, ${result.failureCount} failed.`);
+          } else {
+            message.error(`❌ Failed to reset all ${result.failureCount} schedules.`);
+          }
+          
+          onRefresh();
+        } catch (error) {
+          console.error('Reset error:', error);
+          message.error('Reset failed. Please try again.');
+        } finally {
+          setIsSaving(false);
+          setSaveProgress(null);
+        }
+      }
+    });
+  }, [shops, graphToken, onRefresh]);
+
+  const handleResetByPeriod = useCallback(async () => {
+    if (!resetRange) {
+      message.error('Please select a date range!');
+      return;
+    }
+
+    const [start, end] = resetRange;
+    const targets = shops.filter(s => 
+      s.scheduledDate && dayjs(s.scheduledDate).isBetween(start, end, 'day', '[]')
     );
-  }
 
+    if (targets.length === 0) {
+      message.warning('No schedules found in this period.');
+      return;
+    }
+
+    confirm({
+      title: `Reset ${targets.length} schedules?`,
+      icon: <WarningOutlined style={{ color: DESIGN_COLORS.step2 }} />,
+      content: `This will reset schedules from ${start.format('YYYY-MM-DD')} to ${end.format('YYYY-MM-DD')}.`,
+      okText: 'Confirm Reset',
+      okType: 'danger',
+      onOk: async () => {
+        setLoadingType('reset');
+        setIsSaving(true);
+        setSaveProgress({ current: 0, total: targets.length });
+
+        try {
+          const result = await executeBatch(
+            targets,
+            async (shop) => {
+              const response = await fetch(
+                `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+                {
+                  method: 'PATCH',
+                  headers: { 
+                    'Authorization': `Bearer ${graphToken}`, 
+                    'Content-Type': 'application/json' 
+                  },
+                  body: JSON.stringify({
+                    [SP_FIELDS.STATUS]: 'Unplanned',
+                    [SP_FIELDS.SCHEDULE_DATE]: null,
+                    [SP_FIELDS.SCHEDULE_GROUP]: null
+                  })
+                }
+              );
+              
+              if (!response.ok) {
+                throw new Error(`Failed to reset ${shop.name}`);
+              }
+            },
+            {
+              onProgress: (current, total) => setSaveProgress({ current, total }),
+              getItemName: (shop) => shop.name
+            }
+          );
+
+          if (result.successCount === result.totalProcessed) {
+            message.success(`✅ ${result.successCount} schedules reset successfully!`);
+          } else if (result.successCount > 0) {
+            message.warning(`⚠️ ${result.successCount} reset, ${result.failureCount} failed.`);
+          } else {
+            message.error(`❌ Failed to reset all ${result.failureCount} schedules.`);
+          }
+
+          setResetModalVisible(false);
+          setResetRange(null);
+          onRefresh();
+        } catch (error) {
+          console.error('Reset error:', error);
+          message.error('Reset failed. Please try again.');
+        } finally {
+          setIsSaving(false);
+          setSaveProgress(null);
+        }
+      }
+    });
+  }, [resetRange, shops, graphToken, onRefresh]);
+
+  // ========================================
+  // RENDER
+  // ========================================
   return (
-    <div className="w-full flex flex-col gap-8 pb-20">
-      {isSaving && (loadingType === 'reset' ? <ResetChaseLoader /> : <SyncGeometricLoader progress={saveProgress} />)}
-
-      {/* Intelligent Scheduling Wizard Progress Bar */}
-      <SchedulingWizardProgressBar
-        currentStep={wizardStep}
-        configuredFilters={configuredFiltersCount}
-        generatedCount={generatedResult.length}
-        syncProgress={saveProgress}
-        isProcessing={isCalculating || isSaving}
-      />
+    <div className="generator-container">
+      {/* Loading Overlays */}
+      {isSaving && (
+        loadingType === 'reset' 
+          ? <ResetChaseLoader />
+          : <SyncGeometricLoader 
+              text="Syncing to SharePoint..." 
+              progress={saveProgress ? Math.round((saveProgress.current / saveProgress.total) * 100) : 0}
+            />
+      )}
 
       {/* Retry Failed Modal */}
       <Modal
-        title="Partial Sync Failure"
+        title={<Space><WarningOutlined style={{ color: DESIGN_COLORS.step2 }} /> Sync Partially Failed</Space>}
         open={showRetryModal}
-        onCancel={() => {
-          setShowRetryModal(false);
-          setGeneratedResult([]);
-          onRefresh();
-        }}
+        onCancel={() => setShowRetryModal(false)}
         footer={[
-          <Button key="skip" onClick={() => {
-            setShowRetryModal(false);
-            setGeneratedResult([]);
-            onRefresh();
-          }}>
-            Skip Failed Items
+          <Button key="close" onClick={() => setShowRetryModal(false)}>
+            Close
           </Button>,
-          <Button
-            key="retry"
-            type="primary"
-            icon={<ReloadOutlined />}
+          <Button 
+            key="retry" 
+            type="primary" 
             onClick={handleRetryFailed}
+            style={{ backgroundColor: DESIGN_COLORS.step2 }}
           >
-            Retry Failed ({lastBatchResult?.failureCount || 0})
-          </Button>,
+            Retry Failed Items
+          </Button>
         ]}
+        centered
       >
         {lastBatchResult && (
-          <div className="py-4">
-            <p className="mb-4">
-              <CheckCircleOutlined className="text-green-500 mr-2" />
-              Successfully saved: <strong>{lastBatchResult.successCount}</strong> shops
-            </p>
-            <p className="mb-4 text-red-500">
-              Failed to save: <strong>{lastBatchResult.failureCount}</strong> shops
-            </p>
-            {lastBatchResult.failed.length > 0 && (
-              <div className="max-h-40 overflow-auto bg-gray-50 p-3 rounded">
-                <Text type="secondary" className="text-xs">Failed items:</Text>
-                <ul className="list-disc list-inside mt-2">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{lastBatchResult.successCount}</div>
+                <div className="text-sm text-green-700">Successful</div>
+              </div>
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">{lastBatchResult.failureCount}</div>
+                <div className="text-sm text-red-700">Failed</div>
+              </div>
+            </div>
+
+            {lastBatchResult.failureCount > 0 && (
+              <div>
+                <Text strong className="block mb-2">Failed Items:</Text>
+                <ul className="max-h-60 overflow-auto space-y-1">
                   {lastBatchResult.failed.slice(0, 10).map((f, i) => (
                     <li key={i} className="text-sm text-red-600">
                       {f.item.name}: {f.error}
@@ -835,48 +763,145 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
         )}
       </Modal>
 
-      <div className="flex justify-between items-center">
-        <Title level={2} className="m-0 text-slate-800">Schedule Generator</Title>
-        <Space>
-          {/* Wizard Launch Button */}
-          <Button
-            type="primary"
-            icon={<ThunderboltOutlined />}
-            onClick={() => setShowWizard(true)}
-            className="rounded-lg font-bold h-10 px-6"
-            style={{
-              background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-              border: 'none',
-              boxShadow: '0 4px 14px rgba(249, 115, 22, 0.35)',
-            }}
-          >
-            Start Wizard
-          </Button>
-          <Button icon={<HistoryOutlined />} onClick={() => setResetModalVisible(true)} className="rounded-lg border-red-200 text-red-500 font-bold hover:bg-red-50">Reset by Period</Button>
-          <Button danger type="primary" icon={<DeleteOutlined />} onClick={handleResetAll} className="rounded-lg font-bold">Reset All</Button>
-        </Space>
+      {/* Reset Period Modal */}
+      <Modal
+        title={<Space><CalendarOutlined /> Reset Range</Space>}
+        open={resetModalVisible}
+        onCancel={() => setResetModalVisible(false)}
+        onOk={handleResetByPeriod}
+        okText="Confirm Reset"
+        okButtonProps={{ danger: true }}
+        centered
+      >
+        <div className="py-6 text-center">
+          <Text className="block mb-6 text-slate-500">
+            Reset schedules within this period to 'Unplanned'.
+          </Text>
+          <RangePicker 
+            className="w-full h-12 rounded-xl" 
+            onChange={(dates) => setResetRange(dates)}
+          />
+        </div>
+      </Modal>
+
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <Title level={2} className="m-0" style={{ color: DESIGN_COLORS.neutral }}>
+          <ThunderboltOutlined style={{ color: DESIGN_COLORS.step2, marginRight: 8 }} />
+          Schedule Generator
+        </Title>
+        
+        {hasPermission(currentUser, 'reset_schedule') && (
+          <Space>
+            <Button 
+              icon={<HistoryOutlined />} 
+              onClick={() => setResetModalVisible(true)}
+              className="rounded-lg border-red-200 text-red-500 font-bold hover:bg-red-50"
+            >
+              Reset by Period
+            </Button>
+            <Button 
+              danger 
+              type="primary" 
+              icon={<DeleteOutlined />} 
+              onClick={handleResetAll}
+              className="rounded-lg font-bold"
+            >
+              Reset All
+            </Button>
+          </Space>
+        )}
       </div>
 
-      <Row gutter={[24, 24]}>
-        <Col span={8}><SummaryCard label="Active Shops" value={stats.total} subtext="Operational units" bgColor="hsl(195, 74%, 62%)" icon={<ShopOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
-        <Col span={8}><SummaryCard label="Completed" value={stats.completed} subtext="Done this year" bgColor="hsl(145, 58%, 55%)" icon={<CheckCircleOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
-        <Col span={8}><SummaryCard label="Remaining" value={stats.unplanned} subtext="Pending schedule" bgColor="#f1c40f" icon={<HourglassOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />} /></Col>
+      {/* Summary Stats */}
+      <Row gutter={[24, 24]} className="mb-8">
+        <Col span={8}>
+          <SummaryCard 
+            label="Active Shops" 
+            value={stats.total} 
+            subtext="Operational units" 
+            bgColor="hsl(195, 74%, 62%)" 
+            icon={<ShopOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />}
+          />
+        </Col>
+        <Col span={8}>
+          <SummaryCard 
+            label="Completed" 
+            value={stats.completed} 
+            subtext="Done this year" 
+            bgColor={DESIGN_COLORS.step3}
+            icon={<CheckCircleOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />}
+          />
+        </Col>
+        <Col span={8}>
+          <SummaryCard 
+            label="Remaining" 
+            value={stats.unplanned} 
+            subtext="Pending schedule" 
+            bgColor={DESIGN_COLORS.step2}
+            icon={<HourglassOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />}
+            isPulsing={stats.unplanned > 0}
+          />
+        </Col>
       </Row>
 
-      {/* ✅ 整合後的佈局：左側區域統計 + 右側生成設定 */}
+      {/* Main Content: Step 1 (Configure) */}
       <Row gutter={[24, 24]}>
-        {/* 左側：Active Unplanned Shops by Region */}
-        <Col span={9}>
-          <div className="bg-white p-8 rounded-[40px] shadow-sm border border-slate-100 h-full flex flex-col">
-            <Text strong className="text-[14px] text-slate-400 uppercase tracking-widest block mb-8">Unplanned Pool</Text>
-            <ul className="example-2 grid grid-cols-2 w-full gap-2 list-none p-0 m-0">
+        {/* Left: Main Content Area (20 cols) */}
+        <Col span={20}>
+          <Row gutter={[24, 24]}>
+            {/* Unplanned Pool */}
+            <Col span={9}>
+          <div 
+            className="bg-white p-8 rounded-[40px] shadow-sm h-full flex flex-col"
+            style={{ 
+              border: `2px solid ${DESIGN_COLORS.border}`,
+              borderLeft: `6px solid ${DESIGN_COLORS.step1}`
+            }}
+          >
+            <div className="flex items-center gap-2 mb-8">
+              <div 
+                className="w-3 h-3 rounded-full animate-pulse" 
+                style={{ backgroundColor: DESIGN_COLORS.step1 }}
+              ></div>
+              <Text strong className="text-[14px] text-slate-400 uppercase tracking-widest">
+                Step 1: Unplanned Pool
+              </Text>
+            </div>
+            
+            <ul className="example-2 unplanned-pool-layout w-full list-none p-0 m-0">
               {regionRemainStats.map(reg => (
                 <li key={reg.key} className="icon-content flex justify-center w-full">
-                  <a href="#" data-social={reg.socialKey} style={{ width: '100%', height: '100px', borderRadius: '20px', flexDirection: 'column', gap: '4px', margin: '0 auto' }}>
+                  <a 
+                    href="#" 
+                    data-social={reg.socialKey}
+                    style={{ 
+                      width: '100%', 
+                      height: '100px', 
+                      borderRadius: '20px', 
+                      flexDirection: 'column', 
+                      gap: '4px', 
+                      margin: '0 auto' 
+                    }}
+                  >
                     <div className="filled"></div>
                     <div style={{ position: 'relative', zIndex: 10 }}>{reg.icon}</div>
-                    <span style={{ position: 'relative', zIndex: 10, fontSize: '10px', fontWeight: 900, textAlign: 'center', textTransform: 'uppercase' }}>{reg.displayName}</span>
-                    <div className="font-black text-lg" style={{ position: 'relative', zIndex: 10 }}>{reg.count}</div>
+                    <span style={{ 
+                      position: 'relative', 
+                      zIndex: 10, 
+                      fontSize: '10px', 
+                      fontWeight: 900, 
+                      textAlign: 'center', 
+                      textTransform: 'uppercase' 
+                    }}>
+                      {reg.displayName}
+                    </span>
+                    <div 
+                      className="font-black text-lg" 
+                      style={{ position: 'relative', zIndex: 10 }}
+                    >
+                      {reg.count}
+                    </div>
                   </a>
                 </li>
               ))}
@@ -884,95 +909,529 @@ export const Generator: React.FC<{ shops: Shop[], graphToken: string, onRefresh:
           </div>
         </Col>
 
-        {/* 右側：Generation Settings */}
+        {/* Right: Generation Settings (Step 2 Preview) */}
         <Col span={15}>
-          <div className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 h-full">
+          <div 
+            className="bg-white rounded-[40px] p-8 shadow-sm h-full"
+            style={{ 
+              border: `2px solid ${DESIGN_COLORS.border}`,
+              borderLeft: `6px solid ${DESIGN_COLORS.step2}`
+            }}
+          >
             <div className="flex justify-between items-center mb-10">
-              <Space className="text-[18px] font-bold uppercase text-slate-800"><ControlOutlined className="text-teal-600" /> Generation Settings</Space>
-              <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
-                 <Switch checked={includeMTR} onChange={setIncludeMTR} size="small" />
-                 <Text className="text-[11px] font-black uppercase text-slate-500">Include MTR</Text>
-              </div>
+              <Space className="text-[18px] font-bold uppercase text-slate-800">
+                <ControlOutlined style={{ color: DESIGN_COLORS.step2 }} />
+                Step 2: Settings
+              </Space>
+              
+              <Tooltip title={includeMTR ? "MTR shops included" : "MTR shops excluded"}>
+                <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
+                  <Switch 
+                    checked={includeMTR} 
+                    onChange={setIncludeMTR}
+                    size="small"
+                  />
+                  <Text className="text-[11px] font-black uppercase text-slate-500">
+                    Include MTR
+                  </Text>
+                </div>
+              </Tooltip>
             </div>
-            
+
             <Row gutter={[16, 24]}>
               <Col span={12}>
-                <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">Filter Regions</Text>
-                <Select mode="multiple" className="w-full h-11 custom-select" placeholder="All Regions" value={selectedRegions} onChange={setSelectedRegions} allowClear maxTagCount="responsive">
-                  {regionOptions.map(r => <Option key={r} value={r}>{r}</Option>)}
+                <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">
+                  Filter Regions
+                </Text>
+                <Select
+                  mode="multiple"
+                  className="w-full h-11 custom-select"
+                  placeholder="All Regions"
+                  value={selectedRegions}
+                  onChange={setSelectedRegions}
+                  allowClear
+                  maxTagCount="responsive"
+                >
+                  {regionOptions.map(r => (
+                    <Option key={r} value={r}>{r}</Option>
+                  ))}
                 </Select>
               </Col>
+
               <Col span={12}>
-                <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">Filter Districts</Text>
-                <Select mode="multiple" className="w-full h-11 custom-select" placeholder="All Districts" value={selectedDistricts} onChange={setSelectedDistricts} allowClear maxTagCount="responsive">
-                  {availableDistricts.map(d => <Option key={d} value={d}>{d}</Option>)}
+                <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">
+                  Filter Districts
+                </Text>
+                <Select
+                  mode="multiple"
+                  className="w-full h-11 custom-select"
+                  placeholder="All Districts"
+                  value={selectedDistricts}
+                  onChange={setSelectedDistricts}
+                  allowClear
+                  maxTagCount="responsive"
+                >
+                  {availableDistricts.map(d => (
+                    <Option key={d} value={d}>{d}</Option>
+                  ))}
                 </Select>
               </Col>
+
               <Col span={8}>
-          <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Start Date</Text>
-          {/* ✅ 替換為 Ant Design DatePicker 並加入 disabledDate */}
-          <DatePicker 
-            value={startDate ? dayjs(startDate) : null} 
-            onChange={(date) => setStartDate(date ? date.format('YYYY-MM-DD') : '')}
-            disabledDate={disabledDate}
-            format="YYYY/MM/DD"
-            placeholder="Select Start Date"
-            className="bg-slate-50 border border-slate-200 h-11 rounded-xl w-full px-4 font-bold text-slate-700"
-            allowClear={false}
-          />
-       </Col>
-       
-       <Col span={8}>
-          <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Shops Per Day</Text>
-          <InputNumber value={shopsPerDay} onChange={v => setShopsPerDay(v || GENERATOR_DEFAULTS.shopsPerDay)} min={1} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
-       </Col>
-       <Col span={8}>
-          <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Groups Per Day</Text>
-          <InputNumber value={groupsPerDay} onChange={v => setGroupsPerDay(v || GENERATOR_DEFAULTS.groupsPerDay)} min={1} className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center" />
-       </Col>
-    </Row>
-            
+                <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">
+                  Start Date
+                </Text>
+                <DatePicker
+                  value={startDate ? dayjs(startDate) : null}
+                  onChange={(date) => setStartDate(date ? date.format('YYYY-MM-DD') : '')}
+                  disabledDate={disabledDate}
+                  format="YYYY/MM/DD"
+                  placeholder="Select Start Date"
+                  className="bg-slate-50 border border-slate-200 h-11 rounded-xl w-full px-4 font-bold text-slate-700"
+                  allowClear={false}
+                />
+              </Col>
+
+              <Col span={8}>
+                <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">
+                  Shops Per Day
+                </Text>
+                <InputNumber
+                  value={shopsPerDay}
+                  onChange={v => setShopsPerDay(v || GENERATOR_DEFAULTS.shopsPerDay)}
+                  min={1}
+                  className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
+                />
+              </Col>
+
+              <Col span={8}>
+                <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">
+                  Groups Per Day
+                </Text>
+                <InputNumber
+                  value={groupsPerDay}
+                  onChange={v => setGroupsPerDay(v || GENERATOR_DEFAULTS.groupsPerDay)}
+                  min={1}
+                  className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
+                />
+              </Col>
+            </Row>
+
+            {/* CTA: Generate Button */}
             <div className="flex justify-end mt-10">
-              <button className="sparkle-button" onClick={handleGenerate} disabled={isCalculating}>
-                <div className="dots_border"></div>
-                <Space className="text_button"><ControlOutlined /><span>GENERATE SCHEDULE</span></Space>
-              </button>
+              <Button
+                type="primary"
+                size="large"
+                icon={<ThunderboltOutlined />}
+                onClick={handleGenerate}
+                loading={isCalculating}
+                disabled={isCalculating}
+                className="h-12 px-16 rounded-xl font-black shadow-lg"
+                style={{
+                  background: `linear-gradient(135deg, ${DESIGN_COLORS.step2} 0%, ${DESIGN_COLORS.step1} 100%)`,
+                  border: 'none'
+                }}
+              >
+                {isCalculating ? 'Generating...' : 'GENERATE SCHEDULE'}
+              </Button>
             </div>
+          </div>
+        </Col>
+          </Row>
+        </Col>
+
+        {/* Right: Vertical Progress Bar (4 cols) */}
+        <Col span={4}>
+          <div className="vertical-wizard-progress">
+            <WizardProgressBarVertical currentStep={wizardStep} />
           </div>
         </Col>
       </Row>
 
+      {/* Preview Table (Step 3 Preview) */}
       {generatedResult.length > 0 && (
-        <Card title={<Space className="text-slate-700 font-bold"><SyncOutlined spin /> Schedule Preview (Holidays Excluded)</Space>} className="rounded-[40px] border-none shadow-sm overflow-hidden">
-          <Table dataSource={generatedResult} pagination={{ pageSize: 15 }} rowKey="id" columns={[
-            { title: 'Date', dataIndex: 'scheduledDate', key: 'date', render: d => <b className="text-slate-700">{dayjs(d).format('YYYY-MM-DD (ddd)')}</b> },
-            { title: 'Group', dataIndex: 'groupId', key: 'group', render: g => <Tag className={`font-black px-3 rounded-md border-none tag-group-${g}`}>{`Group ${String.fromCharCode(64 + g)}`}</Tag> },
-            { title: 'Shop Name', dataIndex: 'name', key: 'name', render: (n, r) => <Space><img src={r.brandIcon} className="w-6 h-6 object-contain" /><span>{n}</span></Space> },
-            { title: 'District', dataIndex: 'district', key: 'district' },
-          ]} />
-          <div className="flex justify-end p-8 border-t bg-slate-50">
-             <Button type="primary" icon={<SaveOutlined />} onClick={saveToSharePoint} className="bg-emerald-600 h-12 rounded-xl px-16 font-black shadow-lg">Confirm & Sync to SharePoint</Button>
-          </div>
+        <Card
+          className="mt-8 rounded-[40px] border-none shadow-sm overflow-hidden"
+          style={{ borderLeft: `6px solid ${DESIGN_COLORS.step3}` }}
+          title={
+            <Space className="text-slate-700 font-bold">
+              <ClockCircleOutlined spin={!syncCompleted} style={{ color: DESIGN_COLORS.step3 }} />
+              Step 3: Schedule Preview ({generatedResult.length} shops)
+            </Space>
+          }
+        >
+          <Table
+            dataSource={generatedResult}
+            pagination={{ pageSize: 15, showSizeChanger: false }}
+            rowKey="id"
+            columns={[
+              {
+                title: 'Date',
+                dataIndex: 'scheduledDate',
+                key: 'date',
+                render: d => (
+                  <b className="text-slate-700">
+                    {dayjs(d).format('YYYY-MM-DD (ddd)')}
+                  </b>
+                )
+              },
+              {
+                title: 'Group',
+                dataIndex: 'groupId',
+                key: 'group',
+                render: g => (
+                  <Tag
+                    className={`font-black px-3 rounded-md border-none tag-group-${g}`}
+                    color={g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange'}
+                  >
+                    {`Group ${String.fromCharCode(64 + g)}`}
+                  </Tag>
+                )
+              },
+              {
+                title: 'Shop Name',
+                dataIndex: 'name',
+                key: 'name',
+                render: (n, r) => (
+                  <Space>
+                    <img src={r.brandIcon} className="w-6 h-6 object-contain" alt={r.brand} />
+                    <span>{n}</span>
+                  </Space>
+                )
+              },
+              {
+                title: 'District',
+                dataIndex: 'district',
+                key: 'district'
+              }
+            ]}
+          />
+
+          {/* Final CTA: Confirm & Sync */}
+          {hasPermission(currentUser, 'generate_schedule') && !syncCompleted && (
+            <div className="flex justify-end p-8 border-t bg-slate-50">
+              <Button
+                type="primary"
+                size="large"
+                icon={syncCompleted ? <CheckCircleFilled /> : <SaveOutlined />}
+                onClick={saveToSharePoint}
+                loading={isSaving}
+                disabled={isSaving || syncCompleted}
+                className="h-12 px-16 rounded-xl font-black shadow-lg"
+                style={{
+                  backgroundColor: syncCompleted ? DESIGN_COLORS.step3 : DESIGN_COLORS.cta,
+                  borderColor: syncCompleted ? DESIGN_COLORS.step3 : DESIGN_COLORS.cta
+                }}
+              >
+                {syncCompleted ? 'SYNCED ✓' : 'CONFIRM & SYNC TO SHAREPOINT'}
+              </Button>
+            </div>
+          )}
+
+          {syncCompleted && (
+            <div className="p-8 text-center border-t bg-green-50">
+              <Space direction="vertical" size="small">
+                <CheckCircleFilled style={{ fontSize: 48, color: DESIGN_COLORS.step3 }} />
+                <Title level={4} style={{ color: DESIGN_COLORS.step3, margin: 0 }}>
+                  Schedule Synced Successfully!
+                </Title>
+                <Text type="secondary">
+                  All {generatedResult.length} shops have been saved to SharePoint.
+                </Text>
+              </Space>
+            </div>
+          )}
         </Card>
       )}
 
-      <Modal title={<Space><CalendarOutlined /> Reset Range</Space>} open={resetModalVisible} onCancel={() => setResetModalVisible(false)} onOk={handleResetByPeriod} okText="Confirm Reset" okButtonProps={{ danger: true }} centered>
-        <div className="py-6 text-center">
-          <Text className="block mb-6 text-slate-500">Reset schedules within this period to 'Unplanned'.</Text>
-          <RangePicker className="w-full h-12 rounded-xl" onChange={(dates) => setResetRange(dates)} />
-        </div>
-      </Modal>
-
+      {/* Custom Styles */}
       <style>{`
+        .generator-container {
+          width: 100%;
+          padding-bottom: 80px;
+        }
+
+        /* Custom Select Styling */
         .custom-select .ant-select-selector {
           background-color: #f8fafc !important;
           border: 1px solid #e2e8f0 !important;
           border-radius: 12px !important;
+        }
+
+        /* Wizard Progress Styles */
+        
+        /* Vertical Progress Bar Styles */
+        .wizard-progress-vertical-container {
+          background: white;
+          padding: 24px 16px;
+          border-radius: 24px;
+          border: 2px solid ${DESIGN_COLORS.border};
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+          height: 100%;
+          position: sticky;
+          top: 20px;
+        }
+
+        .wizard-steps-vertical-track {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+
+        .wizard-step-vertical {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          transition: all 0.3s ease;
+        }
+
+        .wizard-step-vertical.pending {
+          opacity: 0.5;
+        }
+
+        .wizard-step-vertical-circle {
+          width: 48px;
+          height: 48px;
+          min-width: 48px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: white;
+          border: 3px solid #e2e8f0;
+          transition: all 0.3s ease;
+        }
+
+        .wizard-step-vertical.active .wizard-step-vertical-circle {
+          border-color: var(--step-color);
+          box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
+          transform: scale(1.1);
+        }
+
+        .wizard-step-vertical.completed .wizard-step-vertical-circle {
+          border-color: ${DESIGN_COLORS.step3};
+          background: ${DESIGN_COLORS.step3};
+        }
+
+        .wizard-step-vertical-icon {
+          font-size: 22px;
+        }
+
+        .wizard-step-vertical-content {
+          flex: 1;
+          padding-top: 4px;
+        }
+
+        .wizard-step-vertical-number {
+          font-size: 9px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #94a3b8;
+          margin-bottom: 2px;
+        }
+
+        .wizard-step-vertical.active .wizard-step-vertical-number,
+        .wizard-step-vertical.completed .wizard-step-vertical-number {
+          color: var(--step-color);
+        }
+
+        .wizard-step-vertical-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: #334155;
+          margin-bottom: 2px;
+        }
+
+        .wizard-step-vertical.pending .wizard-step-vertical-title {
+          color: #94a3b8;
+        }
+
+        .wizard-step-vertical-description {
+          font-size: 10px;
+          color: #64748b;
+          line-height: 1.4;
+        }
+
+        .wizard-step-vertical.pending .wizard-step-vertical-description {
+          color: #cbd5e1;
+        }
+
+        .wizard-connector-vertical {
+          width: 48px;
+          height: 40px;
+          position: relative;
+          display: flex;
+          justify-content: center;
+        }
+
+        .wizard-connector-vertical-track {
+          position: absolute;
+          width: 4px;
+          height: 100%;
+          background: #e2e8f0;
+          border-radius: 2px;
+          left: 50%;
+          transform: translateX(-50%);
+        }
+
+        .wizard-connector-vertical-fill {
+          position: absolute;
+          width: 4px;
+          border-radius: 2px;
+          transition: height 0.5s ease;
+          left: 50%;
+          transform: translateX(-50%);
+          top: 0;
+        }
+
+        /* Unplanned Pool Layout - 2 rows (3 top, 2 bottom) */
+        .unplanned-pool-layout {
+          display: grid !important;
+          grid-template-columns: repeat(3, 1fr);
+          grid-template-rows: auto auto;
+          gap: 12px;
+          width: 100%;
+        }
+
+        .unplanned-pool-layout li:nth-child(1),
+        .unplanned-pool-layout li:nth-child(2),
+        .unplanned-pool-layout li:nth-child(3) {
+          grid-row: 1;
+        }
+
+        .unplanned-pool-layout li:nth-child(4) {
+          grid-row: 2;
+          grid-column: 1 / 2;
+        }
+
+        .unplanned-pool-layout li:nth-child(5) {
+          grid-row: 2;
+          grid-column: 3 / 4;
+        }
+
+        /* Loading Overlays */
+        .chase-overlay,
+        .geometric-loader-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0, 0, 0, 0.85);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        }
+
+        .chase-scene {
+          display: flex;
+          align-items: center;
+          gap: 50px;
+        }
+
+        .ghost-chaser {
+          animation: float 2s ease-in-out infinite;
+        }
+
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+
+        .pacman-runner {
+          width: 0;
+          height: 0;
+          border-top: 30px solid transparent;
+          border-bottom: 30px solid transparent;
+          border-left: 40px solid #fbbf24;
+          animation: run 1s linear infinite;
+        }
+
+        @keyframes run {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(-10px); }
+        }
+
+        .dots-trail {
+          display: flex;
+          gap: 15px;
+        }
+
+        .dot-node {
+          width: 12px;
+          height: 12px;
+          background: white;
+          border-radius: 50%;
+          animation: fade 1.5s ease-in-out infinite;
+        }
+
+        .dot-node:nth-child(2) { animation-delay: 0.2s; }
+        .dot-node:nth-child(3) { animation-delay: 0.4s; }
+        .dot-node:nth-child(4) { animation-delay: 0.6s; }
+
+        @keyframes fade {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+
+        /* Geometric Loader */
+        .geometric-loader {
+          perspective: 1000px;
+        }
+
+        .cube {
+          width: 100px;
+          height: 100px;
+          position: relative;
+          transform-style: preserve-3d;
+          animation: rotate-cube 3s infinite linear;
+        }
+
+        @keyframes rotate-cube {
+          from { transform: rotateX(0deg) rotateY(0deg); }
+          to { transform: rotateX(360deg) rotateY(360deg); }
+        }
+
+        .face {
+          position: absolute;
+          width: 100px;
+          height: 100px;
+          background: ${DESIGN_COLORS.step2};
+          border: 2px solid ${DESIGN_COLORS.step3};
+          opacity: 0.8;
+        }
+
+        .front { transform: rotateY(0deg) translateZ(50px); }
+        .back { transform: rotateY(180deg) translateZ(50px); }
+        .left { transform: rotateY(-90deg) translateZ(50px); }
+        .right { transform: rotateY(90deg) translateZ(50px); }
+        .top { transform: rotateX(90deg) translateZ(50px); }
+        .bottom { transform: rotateX(-90deg) translateZ(50px); }
+
+        /* Summary Card Pulse Animation */
+        .status-pulse {
+          animation: pulse-border 2s ease-in-out infinite;
+        }
+
+        .status-pulse--danger {
+          animation: pulse-border-danger 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-border-danger {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+          }
         }
       `}</style>
     </div>
   );
 };
 
-// Memoize the component to prevent unnecessary re-renders
+// Memoize component to prevent unnecessary re-renders
 export const MemoizedGenerator = React.memo(Generator);

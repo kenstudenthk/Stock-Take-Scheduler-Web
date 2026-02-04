@@ -1,20 +1,36 @@
-import React from 'react';
-import { 
-  HomeOutlined, EnvironmentOutlined, DatabaseOutlined, 
-  CalendarOutlined, SettingOutlined, LogoutOutlined, 
-  UserOutlined, SafetyCertificateOutlined, BugOutlined 
+import React, { useState, useEffect } from 'react';
+import {
+  HomeOutlined, EnvironmentOutlined, DatabaseOutlined,
+  CalendarOutlined, SettingOutlined, LogoutOutlined,
+  UserOutlined, SafetyCertificateOutlined, BugOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
-import { View } from '../types';
+import { View, User, hasAdminAccess } from '../types';
 
 export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, currentView, onReportError }) => {
-  const menuItems = [
-    { key: View.DASHBOARD, label: 'Dashboard', icon: <HomeOutlined /> },
-    { key: View.SHOP_LIST, label: 'Master List', icon: <DatabaseOutlined /> },
-    { key: View.CALENDAR, label: 'Schedules', icon: <CalendarOutlined /> },
-    { key: View.GENERATOR, label: 'Generator', icon: <SafetyCertificateOutlined /> },
-    { key: View.LOCATIONS, label: 'Map View', icon: <EnvironmentOutlined /> },
-    { key: View.INVENTORY, label: 'Inventory', icon: <DatabaseOutlined /> },
+  const isAdmin = hasAdminAccess(user as User | null);
+
+  // Mobile detection for responsive bottom nav
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 640);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const allMenuItems = [
+    { key: View.DASHBOARD, label: 'Dashboard', icon: <HomeOutlined />, requiresAdmin: false },
+    { key: View.SHOP_LIST, label: 'Master List', icon: <DatabaseOutlined />, requiresAdmin: false },
+    { key: View.CALENDAR, label: 'Schedules', icon: <CalendarOutlined />, requiresAdmin: false },
+    { key: View.GENERATOR, label: 'Generator', icon: <SafetyCertificateOutlined />, requiresAdmin: true },
+    { key: View.LOCATIONS, label: 'Map View', icon: <EnvironmentOutlined />, requiresAdmin: false },
+    { key: View.INVENTORY, label: 'Inventory', icon: <DatabaseOutlined />, requiresAdmin: true },
+    { key: View.PERMISSION, label: 'Permission', icon: <TeamOutlined />, requiresAdmin: true },
   ];
+
+  // Filter menu items based on user role
+  const menuItems = allMenuItems.filter(item => !item.requiresAdmin || isAdmin);
 
 return (
     <div className="custom-app-layout">
@@ -72,6 +88,20 @@ return (
       <main className="custom-main-content">
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation - Hidden by default via CSS, shown only on mobile */}
+      <nav className="mobile-bottom-nav">
+        {menuItems.slice(0, 5).map((item) => (
+          <button
+            key={item.key}
+            className={`mobile-nav-item ${currentView === item.key ? 'active' : ''}`}
+            onClick={() => onViewChange(item.key)}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 };

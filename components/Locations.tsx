@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback, memo } from 'react';
-import { Select, Input, Typography, Empty, DatePicker, Switch, message, Card } from 'antd';
+import { Select, Input, Typography, Row, Col, Empty, DatePicker, Switch, message, Card } from 'antd';
 import {
-  MapPin, Search, Store, CheckCircle, Calendar, XCircle,
-  Filter, Info, Tags
+  MapPin, Search, Store, Calendar, Filter, Info, Tags
 } from 'lucide-react';
+import { ShopOutlined, CheckCircleOutlined, CalendarOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shop } from '../types';
 import { wgs84ToGcj02 } from '../utils/coordTransform';
@@ -50,27 +50,28 @@ const OVERLAP_CONFIG = {
   RADIUS: 0.00008,
 } as const;
 
-// --- BentoStatCard ---
-const BentoStatCard = memo(({
-  title, value, icon, color, size = 'normal'
-}: {
-  title: string;
+// --- SummaryCard (consistent with Generator page) ---
+const SummaryCard = ({ label, value, subtext, bgColor, icon }: {
+  label: string;
   value: number;
+  subtext: string;
+  bgColor: string;
   icon: React.ReactNode;
-  color: string;
-  size?: 'normal' | 'large';
 }) => (
-  <div
-    className={`bento-stat-card bento-${size}`}
-    style={{ '--accent-color': color } as React.CSSProperties}
-  >
-    <div className="bento-stat-icon">{icon}</div>
-    <div className="bento-stat-content">
-      <span className="bento-stat-value">{value}</span>
-      <span className="bento-stat-title">{title}</span>
+  <div className="summary-card-item" style={{ borderLeft: `4px solid ${bgColor}` }}>
+    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>
+      {icon}
+    </div>
+    <div className="summary-card-body">
+      <div className="summary-card-header">
+        <div className="summary-card-title">{label}</div>
+        <div className="summary-card-menu"><div className="dot"></div><div className="dot"></div><div className="dot"></div></div>
+      </div>
+      <div className="summary-card-value">{value}</div>
+      <p className="summary-card-subtext">{subtext}</p>
     </div>
   </div>
-));
+);
 
 // --- ShopBentoCard ---
 const ShopBentoCard = memo(({
@@ -139,23 +140,23 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     });
   }, [shops, search, regionFilter, dateFilter, includeMasterClosed]);
 
-  // 2. Legend counts (always based on filteredShops)
-  const legendCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      'group-a': 0, 'group-b': 0, 'group-c': 0, 'completed': 0, 'closed': 0
-    };
-    filteredShops.forEach(shop => {
-      const cat = getShopCategory(shop);
-      if (cat in counts) counts[cat]++;
-    });
-    return counts;
-  }, [filteredShops]);
-
-  // 3. Apply legend filter on top → displayedShops
+  // 2. Apply legend filter on top → displayedShops
   const displayedShops = useMemo(() => {
     if (legendFilters.size === 0) return filteredShops;
     return filteredShops.filter(shop => legendFilters.has(getShopCategory(shop)));
   }, [filteredShops, legendFilters]);
+
+  // 3. Legend counts (based on displayedShops — reflects what's on the map)
+  const legendCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      'group-a': 0, 'group-b': 0, 'group-c': 0, 'completed': 0, 'closed': 0
+    };
+    displayedShops.forEach(shop => {
+      const cat = getShopCategory(shop);
+      if (cat in counts) counts[cat]++;
+    });
+    return counts;
+  }, [displayedShops]);
 
   // Stats from displayedShops (what's actually on the map)
   const stats = useMemo(() => ({
@@ -225,9 +226,8 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       zoom: 11,
     });
 
-    window.AMap.plugin(['AMap.ToolBar', 'AMap.MapType', 'AMap.Scale'], () => {
+    window.AMap.plugin(['AMap.ToolBar', 'AMap.Scale'], () => {
       mapRef.current.addControl(new window.AMap.ToolBar({ position: 'RB', offset: new window.AMap.Pixel(20, 40) }));
-      mapRef.current.addControl(new window.AMap.MapType({ defaultType: 0, position: 'RT' }));
       mapRef.current.addControl(new window.AMap.Scale());
     });
 
@@ -324,15 +324,45 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         </div>
       </div>
 
-      {/* Bento Stats Grid */}
-      <Card className="rounded-[32px] border-none shadow-sm" styles={{ body: { padding: '24px' } }}>
-        <div className="bento-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          <BentoStatCard title="Total on Map" value={stats.total} icon={<Store className="w-6 h-6" />} color="var(--card-total)" size="large" />
-          <BentoStatCard title="Completed" value={stats.completed} icon={<CheckCircle className="w-6 h-6" />} color="var(--marker-done)" />
-          <BentoStatCard title="Scheduled" value={stats.scheduled} icon={<Calendar className="w-6 h-6" />} color="var(--marker-group-a)" />
-          <BentoStatCard title="Closed" value={stats.closed} icon={<XCircle className="w-6 h-6" />} color="var(--marker-closed)" />
-        </div>
-      </Card>
+      {/* Stats Cards */}
+      <Row gutter={[24, 24]}>
+        <Col span={6}>
+          <SummaryCard
+            label="Total on Map"
+            value={stats.total}
+            subtext="Visible markers"
+            bgColor="hsl(195, 74%, 62%)"
+            icon={<ShopOutlined style={{ fontSize: 60, color: 'white', opacity: 0.5 }} />}
+          />
+        </Col>
+        <Col span={6}>
+          <SummaryCard
+            label="Completed"
+            value={stats.completed}
+            subtext="Done this year"
+            bgColor="#22C55E"
+            icon={<CheckCircleOutlined style={{ fontSize: 60, color: 'white', opacity: 0.5 }} />}
+          />
+        </Col>
+        <Col span={6}>
+          <SummaryCard
+            label="Scheduled"
+            value={stats.scheduled}
+            subtext="Planned visits"
+            bgColor="#3B82F6"
+            icon={<CalendarOutlined style={{ fontSize: 60, color: 'white', opacity: 0.5 }} />}
+          />
+        </Col>
+        <Col span={6}>
+          <SummaryCard
+            label="Closed"
+            value={stats.closed}
+            subtext="Permanently closed"
+            bgColor="#EF4444"
+            icon={<CloseCircleOutlined style={{ fontSize: 60, color: 'white', opacity: 0.5 }} />}
+          />
+        </Col>
+      </Row>
 
       {/* Glassmorphism Filter Bar */}
       <div className="glass-filter-bar">

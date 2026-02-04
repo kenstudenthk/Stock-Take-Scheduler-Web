@@ -15,15 +15,11 @@ jobs:
       issues: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: claude-3-7-sonnet@20250219
           prompt: |
             Review this pull request and comment on:
             - Bugs or potential issues

@@ -223,15 +223,12 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     mapRef.current = new window.AMap.Map('map-container', {
       center: [114.177216, 22.303719],
       zoom: 11,
-      viewMode: '3D',
-      pitch: 45
     });
 
-    window.AMap.plugin(['AMap.ToolBar', 'AMap.MapType', 'AMap.Scale', 'AMap.ControlBar'], () => {
+    window.AMap.plugin(['AMap.ToolBar', 'AMap.MapType', 'AMap.Scale'], () => {
       mapRef.current.addControl(new window.AMap.ToolBar({ position: 'RB', offset: new window.AMap.Pixel(20, 40) }));
       mapRef.current.addControl(new window.AMap.MapType({ defaultType: 0, position: 'RT' }));
       mapRef.current.addControl(new window.AMap.Scale());
-      mapRef.current.addControl(new window.AMap.ControlBar({ position: { top: '20px', left: '20px' } }));
     });
 
     infoWindowRef.current = new window.AMap.InfoWindow({ offset: new window.AMap.Pixel(0, -20) });
@@ -328,12 +325,14 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       </div>
 
       {/* Bento Stats Grid */}
-      <div className="bento-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '16px' }}>
-        <BentoStatCard title="Total on Map" value={stats.total} icon={<Store className="w-6 h-6" />} color="var(--card-total)" size="large" />
-        <BentoStatCard title="Completed" value={stats.completed} icon={<CheckCircle className="w-6 h-6" />} color="var(--marker-done)" />
-        <BentoStatCard title="Scheduled" value={stats.scheduled} icon={<Calendar className="w-6 h-6" />} color="var(--marker-group-a)" />
-        <BentoStatCard title="Closed" value={stats.closed} icon={<XCircle className="w-6 h-6" />} color="var(--marker-closed)" />
-      </div>
+      <Card className="rounded-[32px] border-none shadow-sm" styles={{ body: { padding: '24px' } }}>
+        <div className="bento-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+          <BentoStatCard title="Total on Map" value={stats.total} icon={<Store className="w-6 h-6" />} color="var(--card-total)" size="large" />
+          <BentoStatCard title="Completed" value={stats.completed} icon={<CheckCircle className="w-6 h-6" />} color="var(--marker-done)" />
+          <BentoStatCard title="Scheduled" value={stats.scheduled} icon={<Calendar className="w-6 h-6" />} color="var(--marker-group-a)" />
+          <BentoStatCard title="Closed" value={stats.closed} icon={<XCircle className="w-6 h-6" />} color="var(--marker-closed)" />
+        </div>
+      </Card>
 
       {/* Glassmorphism Filter Bar */}
       <div className="glass-filter-bar">

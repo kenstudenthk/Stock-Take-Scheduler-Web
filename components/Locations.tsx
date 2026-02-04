@@ -4,9 +4,6 @@ import {
   MapPin, Search, Store, CheckCircle, Calendar, XCircle,
   Filter, Info, Tags
 } from 'lucide-react';
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { Select, Input, Typography, Tag, Space, Row, Col, Empty, DatePicker, Switch, message } from 'antd';
-import { Search, Store, CheckCircle2, Calendar, XCircle, Filter, Info, Tags } from 'lucide-react';
 import dayjs from 'dayjs';
 import { Shop } from '../types';
 import { wgs84ToGcj02 } from '../utils/coordTransform';
@@ -47,7 +44,13 @@ const LEGEND_ITEMS = [
   { key: 'closed', label: 'Closed', color: '#EF4444' },
 ];
 
-// --- BentoStatCard (consistent with ShopList) ---
+// --- Overlap Detection Configuration ---
+const OVERLAP_CONFIG = {
+  PRECISION: 5,
+  RADIUS: 0.00008,
+} as const;
+
+// --- BentoStatCard ---
 const BentoStatCard = memo(({
   title, value, icon, color, size = 'normal'
 }: {
@@ -65,35 +68,6 @@ const BentoStatCard = memo(({
     <div className="bento-stat-content">
       <span className="bento-stat-value">{value}</span>
       <span className="bento-stat-title">{title}</span>
-// --- Marker Color Constants ---
-const MARKER_COLORS = {
-  GROUP_A: '#3B82F6',
-  GROUP_B: '#A855F7',
-  GROUP_C: '#F97316',
-  DONE: '#10B981',
-  CLOSED: '#EF4444',
-  DEFAULT: '#94A3B8'
-} as const;
-
-// --- Batch Size for Marker Rendering ---
-const BATCH_SIZE = 50;
-
-// --- Overlap Detection Configuration ---
-const OVERLAP_CONFIG = {
-  PRECISION: 5,      // Coordinate precision (decimal places) - ~1 meter accuracy
-  RADIUS: 0.00008,   // Offset radius in degrees (~8-10 meters)
-} as const;
-
-// --- Uiverse 風格的統計卡片組件 ---
-const SummaryCard = ({ label, value, bgColor, icon }: any) => (
-  <div className="summary-card-item">
-    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>{icon}</div>
-    <div className="summary-card-body">
-      <div className="summary-card-header">
-        <div className="summary-card-title">{label}</div>
-        <div className="summary-card-menu"><div className="dot"></div><div className="dot"></div><div className="dot"></div></div>
-      </div>
-      <div className="summary-card-value">{value}</div>
     </div>
   </div>
 ));
@@ -161,7 +135,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       );
       const matchMasterClosed = includeMasterClosed || s.masterStatus !== 'Closed';
 
-      return matchSearch && matchRegion && matchStatus && matchDate && matchMasterClosed;
+      return matchSearch && matchRegion && matchDate && matchMasterClosed;
     });
   }, [shops, search, regionFilter, dateFilter, includeMasterClosed]);
 
@@ -207,36 +181,11 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     });
   }, []);
 
-  // --- Map init ---
-  useEffect(() => {
-    if (!window.AMap || mapRef.current) return;
-
-    mapRef.current = new window.AMap.Map('map-container', {
-      center: [114.177216, 22.303719],
-      zoom: 11,
-      viewMode: '3D',
-      pitch: 45
-  // Helper function to get marker color
-  const getMarkerColor = useCallback((shop: Shop): string => {
-    if (shop.status === 'Done') return MARKER_COLORS.DONE;
-    if (shop.status === 'Closed') return MARKER_COLORS.CLOSED;
-    if (shop.groupId === 1) return MARKER_COLORS.GROUP_A;
-    if (shop.groupId === 2) return MARKER_COLORS.GROUP_B;
-    if (shop.groupId === 3) return MARKER_COLORS.GROUP_C;
-    return MARKER_COLORS.DEFAULT;
-  }, []);
-
-  /**
-   * Calculate offset coordinates for overlapping markers (防重疊)
-   * Groups shops by rounded coordinates and arranges overlapping markers in a radial pattern
-   * @param shopsToProcess - Array of shops to process
-   * @returns Map<shopId, [offsetLng, offsetLat]> with GCJ-02 coordinates
-   */
+  // Overlap detection for markers
   const offsetOverlappingMarkers = useCallback((shopsToProcess: Shop[]): Map<string, [number, number]> => {
     const offsetMap = new Map<string, [number, number]>();
     const positionGroups = new Map<string, Shop[]>();
 
-    // 1. Group shops by rounded coordinates (PRECISION decimal places)
     shopsToProcess.forEach(shop => {
       const [lng, lat] = wgs84ToGcj02(shop.longitude, shop.latitude);
       const key = `${lng.toFixed(OVERLAP_CONFIG.PRECISION)},${lat.toFixed(OVERLAP_CONFIG.PRECISION)}`;
@@ -247,17 +196,14 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       positionGroups.get(key)!.push(shop);
     });
 
-    // 2. Calculate offsets for each group
     positionGroups.forEach((groupShops, key) => {
       const [baseLng, baseLat] = key.split(',').map(Number);
       const count = groupShops.length;
 
       if (count === 1) {
-        // Single marker - no offset needed, use original converted coordinates
         const [lng, lat] = wgs84ToGcj02(groupShops[0].longitude, groupShops[0].latitude);
         offsetMap.set(groupShops[0].id, [lng, lat]);
       } else {
-        // Multiple markers - arrange in radial pattern
         groupShops.forEach((shop, index) => {
           const angle = (2 * Math.PI * index) / count;
           const offsetLng = baseLng + OVERLAP_CONFIG.RADIUS * Math.cos(angle);
@@ -270,16 +216,15 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     return offsetMap;
   }, []);
 
-  // ✅ 2. 地圖初始化與控制項加載
+  // --- Map init ---
   useEffect(() => {
     if (!window.AMap || mapRef.current) return;
 
-    // 初始化地圖
     mapRef.current = new window.AMap.Map('map-container', {
       center: [114.177216, 22.303719],
       zoom: 11,
-      viewMode: '3D', // 3D 模式才能完整使用 ControlBar
-      pitch: 45 // 初始傾斜角度
+      viewMode: '3D',
+      pitch: 45
     });
 
     window.AMap.plugin(['AMap.ToolBar', 'AMap.MapType', 'AMap.Scale', 'AMap.ControlBar'], () => {
@@ -308,7 +253,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     message.success(`Viewing: ${shop.name}`, 1.5);
   }, []);
 
-  // --- Create InfoWindow content (accessible) ---
+  // --- Create InfoWindow content ---
   const createInfoContent = useCallback((shop: Shop, color: string) => {
     const groupLetter = shop.groupId ? String.fromCharCode(64 + shop.groupId) : 'N/A';
     return `
@@ -323,7 +268,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     `;
   }, []);
 
-  // --- Update markers ---
+  // --- Update markers (with overlap detection) ---
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -335,10 +280,13 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
         markersRef.current = {};
       }
 
+      const offsetMap = offsetOverlappingMarkers(displayedShops);
       const newMarkers: any[] = [];
 
       displayedShops.forEach(shop => {
-        const [lng, lat] = wgs84ToGcj02(shop.longitude, shop.latitude);
+        const position = offsetMap.get(shop.id);
+        if (!position) return;
+        const [lng, lat] = position;
         const color = getMarkerColor(shop);
         const isActive = shop.id === activeShopId;
 
@@ -367,7 +315,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       mapRef.current.add(newMarkers);
       if (newMarkers.length > 0) mapRef.current.setFitView(newMarkers);
     });
-  }, [displayedShops, activeShopId, createInfoContent]);
+  }, [displayedShops, activeShopId, createInfoContent, offsetOverlappingMarkers]);
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -492,128 +440,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
                 <Store className="w-4 h-4 inline-block mr-2 align-text-bottom" strokeWidth={2} />
                 Result ({displayedShops.length})
               </Text>
-      {/* Stats Cards */}
-      <Row gutter={[20, 20]}>
-        <Col span={6}>
-          <SummaryCard
-            label="Total on Map"
-            value={stats.total}
-            bgColor="#1e293b"
-            icon={<Store size={20} color="white" />}
-          />
-        </Col>
-        <Col span={6}>
-          <SummaryCard
-            label="Completed"
-            value={stats.completed}
-            bgColor={MARKER_COLORS.DONE}
-            icon={<CheckCircle2 size={20} color="white" />}
-          />
-        </Col>
-        <Col span={6}>
-          <SummaryCard
-            label="Scheduled"
-            value={stats.scheduled}
-            bgColor={MARKER_COLORS.GROUP_A}
-            icon={<Calendar size={20} color="white" />}
-          />
-        </Col>
-        <Col span={6}>
-          <SummaryCard
-            label="Closed"
-            value={stats.closed}
-            bgColor={MARKER_COLORS.CLOSED}
-            icon={<XCircle size={20} color="white" />}
-          />
-        </Col>
-      </Row>
-
-      {/* Glassmorphism Filter Panel */}
-      <div className="glass-filter-panel flex items-center justify-between">
-        <Space size="large">
-          <div className="filter-section-label">
-            <Calendar size={16} className="text-teal-600" />
-            <span>Date Filter:</span>
-          </div>
-          <DatePicker
-            className="h-11 rounded-xl w-64 bg-slate-50 border-none"
-            onChange={(date) => setDateFilter(date)}
-            value={dateFilter}
-          />
-        </Space>
-        <div className="include-closed-toggle">
-          <Info size={16} className="text-slate-400" />
-          <span className="include-closed-label">Include Last Year Closed?</span>
-          <Switch size="small" checked={includeMasterClosed} onChange={setIncludeMasterClosed} />
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="legend-section">
-        <div className="legend-label">
-          <Tags size={14} />
-          <span>Legend:</span>
-        </div>
-        <div className="legend-items">
-          <div className="legend-item">
-            <div className="legend-dot" style={{ background: MARKER_COLORS.GROUP_A }} />
-            <span className="legend-text">Group A</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-dot" style={{ background: MARKER_COLORS.GROUP_B }} />
-            <span className="legend-text">Group B</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-dot" style={{ background: MARKER_COLORS.GROUP_C }} />
-            <span className="legend-text">Group C</span>
-          </div>
-          <div className="legend-divider" />
-          <div className="legend-item">
-            <div className="legend-dot" style={{ background: MARKER_COLORS.DONE }} />
-            <span className="legend-text">Completed</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-dot" style={{ background: MARKER_COLORS.CLOSED }} />
-            <span className="legend-text">Closed</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content: Map + Sidebar */}
-      <div className="flex gap-6 h-[720px]">
-        {/* Map Container */}
-        <div
-          id="map-container"
-          className="locations-map-container"
-          style={{ height: '100%', width: '100%' }}
-        />
-
-        {/* Bento Card Sidebar */}
-        <div className="w-[400px] bento-sidebar">
-          {/* Search Card */}
-          <div className="bento-search-card">
-            <div className="filter-section-label mb-4">
-              <Filter size={16} className="text-teal-600" />
-              <span>Quick Search</span>
             </div>
-            <Space direction="vertical" className="w-full" size="middle">
-              <Input
-                prefix={<Search size={16} className="text-slate-300" />}
-                placeholder="Search shop..."
-                className="h-11 rounded-xl bg-slate-50 border-none"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-              <Select
-                className="w-full h-11 custom-select"
-                placeholder="Region"
-                allowClear
-                onChange={setRegionFilter}
-                options={Array.from(new Set(shops.map(s => s.region))).map(r => ({ label: r, value: r }))}
-              />
-            </Space>
-          </div>
-
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-white" style={{ minHeight: 0 }}>
               {displayedShops.length === 0 ? (
                 <Empty className="mt-12" description="No shops match your filters" />
@@ -626,58 +453,9 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
                     isActive={shop.id === activeShopId}
                   />
                 ))
-          {/* Results Card */}
-          <div className="bento-results-card">
-            <div className="bento-results-header">
-              <div className="bento-results-header-text">
-                <Store size={16} />
-                <span>Result ({filteredShops.length})</span>
-              </div>
-            </div>
-
-            <div className="bento-results-list custom-scrollbar">
-              {filteredShops.length === 0 ? (
-                <Empty className="mt-12" />
-              ) : (
-                filteredShops.map(shop => {
-                  const groupColor = shop.groupId === 1 ? 'blue' : shop.groupId === 2 ? 'purple' : shop.groupId === 3 ? 'orange' : 'default';
-                  const groupLetter = shop.groupId ? String.fromCharCode(64 + shop.groupId) : '-';
-
-                  return (
-                    <div
-                      key={shop.id}
-                      onClick={() => handleShopClick(shop)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleShopClick(shop)}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`View ${shop.name} on map`}
-                      className="bento-shop-item"
-                    >
-                      <div className="bento-shop-name truncate pr-2">{shop.name}</div>
-                      <div className="bento-shop-tags">
-                        <Tag
-                          className="m-0 border-none text-[9px] font-black"
-                          color={groupColor}
-                        >
-                          GROUP {groupLetter}
-                        </Tag>
-                        <Tag
-                          className="m-0 border-none text-[10px] font-black uppercase"
-                          color={shop.status === 'Done' ? 'green' : 'blue'}
-                        >
-                          {shop.status}
-                        </Tag>
-                        <Text type="secondary" className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                          {shop.id}
-                        </Text>
-                      </div>
-                      <div className="bento-shop-address italic">{shop.address}</div>
-                    </div>
-                  );
-                })
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

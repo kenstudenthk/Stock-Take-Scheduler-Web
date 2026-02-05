@@ -10,11 +10,12 @@ Stock Take Scheduler Web is a React application for managing and scheduling inve
 
 ```bash
 npm run dev       # Start development server on http://localhost:3000
-npm run build     # Build for production
+npm run build     # Build for production (tsc + vite build)
 npm run preview   # Preview production build
+npm run lint      # Run ESLint
 ```
 
-No test runner or linter is configured in this project.
+ESLint is configured via `eslint.config.js` (flat config) with TypeScript, React Hooks, and React Refresh plugins. No test runner is configured.
 
 ## Architecture
 
@@ -23,6 +24,8 @@ No test runner or linter is configured in this project.
 - **UI:** Ant Design 5, Tailwind CSS 3
 - **Backend:** Microsoft Graph API (SharePoint Online)
 - **Maps:** AMap JS API (requires WGS-84 to GCJ-02 coordinate conversion)
+- **Calendar:** FullCalendar 6 (daygrid, timegrid, interaction)
+- **Icons:** Ant Design Icons, lucide-react
 - **Export:** ExcelJS (.xlsx), jsPDF (.pdf)
 - **Auth:** bcryptjs for password hashing
 
@@ -54,11 +57,11 @@ State is centralized in `App.tsx` using React hooks. Key state:
 App.tsx (root state, routing)
 ├── Layout.tsx (sidebar navigation)
 ├── Login.tsx (authentication)
-├── Dashboard.tsx (stats overview)
+├── Dashboard.tsx (stats overview, shop actions: Resume/Pool/Close/Reschedule)
 ├── Generator.tsx (schedule generation with K-means clustering)
 ├── Calendar.tsx (calendar view, Excel/PDF export)
 ├── ShopList.tsx (shop management, inline editing)
-├── Locations.tsx (AMap visualization)
+├── Locations.tsx (AMap visualization, batched markers, SummaryCard stats)
 ├── Inventory.tsx (asset tracking)
 ├── Settings.tsx (token management)
 └── ErrorBoundary.tsx (error catching)
@@ -93,3 +96,26 @@ Input sanitization: `sanitizeFilterValue()` escapes single quotes in OData filte
 - Tokens stored in localStorage with timestamps
 - 45-minute warning threshold for token expiry
 - Users must manually refresh tokens from Microsoft Graph Explorer
+
+## CI/CD
+
+GitHub Actions workflows in `.github/workflows/`:
+- **claude-code.yml** - Automated Claude Code review on PRs (opened/synchronize)
+- **gemini-review.yml** - Automated Gemini review on PRs (via workflow_call)
+- Additional Gemini workflows for dispatch, invocation, triage, and scheduled triage
+
+## Dashboard Shop Actions
+
+The Dashboard provides per-shop action buttons (permission-gated):
+- **Reschedule** (`reschedule_shop`) - Open date picker to reschedule an active shop
+- **Move to Pool** (`reschedule_shop`) - Clear scheduled date and set status to "Rescheduled"
+- **Close** (`close_shop`) - Mark a shop as closed
+- **Resume** (`close_shop`) - Re-open a closed shop, setting status back to "Pending"
+
+## Locations Page Performance
+
+The Locations (map) component uses performance optimizations for large datasets:
+- Batched marker creation (80 per frame) to prevent UI freeze
+- Lightweight active state via DOM CSS class toggling instead of full marker re-render
+- `setFitView` only on first render, not on every filter change
+- 2D map view (satellite layer removed for faster load)

@@ -1,0 +1,48 @@
+name: PR Autofix and Verify
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write # Required to commit changes back to the PR branch
+
+jobs:
+  autofix-and-verify:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        # We need to fetch the branch so we can push to it
+        ref: ${{ github.head_ref }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run ESLint with auto-fix
+      run: npm run lint -- --fix
+
+    - name: Check for modified files
+      id: git-check
+      run: echo "modified=$(if git diff-index --quiet HEAD --; then echo "false"; else echo "true"; fi)" >> $GITHUB_OUTPUT
+
+    - name: Commit and push changes
+      if: steps.git-check.outputs.modified == 'true'
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git commit -am "style: auto-fix linting issues"
+        git push
+
+    - name: Verify (Type Check)
+      run: npm run tsc -- --noEmit
+
+    - name: Verify (Build)
+      run: npm run build

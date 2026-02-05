@@ -1,0 +1,26 @@
+name: PR Verification
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20' # Or the version your project uses
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Check types
+      run: npm run tsc -- --noEmit
+
+    - name: Build project
+      run: npm run build

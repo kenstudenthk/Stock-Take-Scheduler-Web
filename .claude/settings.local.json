@@ -8,7 +8,18 @@
       "Bash(timeout 10 npm run dev:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nRefactor Calendar with FullCalendar: DnD, multi-view, holidays\n\n- Replace custom calendar grid with FullCalendar library\n- Add drag-and-drop to reschedule shops between dates\n- Add Month/Week/Day view toggle in toolbar\n- Display HK public holidays as background events with badges\n- Click events to change group assignment via modal\n- Add Design System CSS integration for FullCalendar theming\n- Support dark mode for all calendar components\n- Preserve existing export \\(Excel/PDF\\) functionality\n\nDependencies added:\n- @fullcalendar/react\n- @fullcalendar/daygrid\n- @fullcalendar/timegrid  \n- @fullcalendar/interaction\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(gh run list:*)",
+      "Bash(where:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx vite:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(ping:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr \":5173 \")",
+      "Bash(node:*)"
     ]
   }
 }

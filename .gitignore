@@ -72,3 +72,6 @@ build
 Thumbs.db
 .env.example
 test-token.js
+
+.gemini/
+gha-creds-*.json

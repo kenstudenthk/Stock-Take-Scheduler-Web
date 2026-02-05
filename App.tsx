@@ -181,7 +181,7 @@ function App() {
 
   const renderContent = () => {
     if (selectedMenuKey === View.SETTINGS) {
-      return <Settings token={graphToken} onUpdateToken={updateGraphToken} invToken={invToken} onUpdateInvToken={updateInvToken} />;
+      return <Settings token={graphToken} onUpdateToken={updateGraphToken} invToken={invToken} onUpdateInvToken={updateInvToken} onLogout={handleLogout} />;
     }
 
     if (!currentUser) return null;
@@ -226,7 +226,7 @@ return (
         />
       ) : (
         <>
-          <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 mobile-header-stack">
             <div className="flex items-center gap-4">
               {!isInitialLoading && hasTokenError && !loading && <TruckFlagNotice />}
               <Button 

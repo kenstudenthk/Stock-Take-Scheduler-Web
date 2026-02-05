@@ -249,7 +249,7 @@ export const Dashboard: React.FC<{
       </div>
 
       <Row gutter={[24, 24]}>
-  <Col span={6}>
+  <Col xs={12} sm={12} md={6} lg={6}>
     <SummaryCard
       label="Total Shop"
       value={stats.total}
@@ -258,7 +258,7 @@ export const Dashboard: React.FC<{
       icon={<ShopOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.85)' }} />}
     />
   </Col>
-  <Col span={6}>
+  <Col xs={12} sm={12} md={6} lg={6}>
     <SummaryCard
       label="Completed"
       value={stats.completed}
@@ -267,7 +267,7 @@ export const Dashboard: React.FC<{
       icon={<CheckCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.85)' }} />}
     />
   </Col>
-  <Col span={6}>
+  <Col xs={12} sm={12} md={6} lg={6}>
     <SummaryCard
       label="Closed"
       value={stats.closed}
@@ -277,7 +277,7 @@ export const Dashboard: React.FC<{
       icon={<CloseCircleOutlined style={{ fontSize: '40px', color: 'rgba(255,255,255,0.85)' }} />}
     />
   </Col>
-  <Col span={6}>
+  <Col xs={12} sm={12} md={6} lg={6}>
     <SummaryCard
       label="Remain"
       value={stats.remain}
@@ -291,7 +291,7 @@ export const Dashboard: React.FC<{
 
       <Card className="rounded-[32px] border-none shadow-sm overflow-hidden bg-white" bodyStyle={{ padding: 0 }}>
         {/* ✅ 加入日期與 Group Filter Tabs */}
-       <div className="p-8 flex items-center justify-between border-b border-slate-50">
+       <div className="p-8 flex items-center justify-between border-b border-slate-50 dashboard-header-stack">
   
   {/* ✅ 加入標題與新樣式的 DatePicker */}
   <div className="flex flex-col gap-2">

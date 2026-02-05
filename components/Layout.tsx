@@ -91,7 +91,10 @@ return (
 
       {/* Mobile Bottom Navigation - Hidden by default via CSS, shown only on mobile */}
       <nav className="mobile-bottom-nav">
-        {menuItems.slice(0, 5).map((item) => (
+        {[
+          ...menuItems.filter(i => [View.DASHBOARD, View.SHOP_LIST, View.CALENDAR, View.LOCATIONS].includes(i.key)),
+          { key: View.SETTINGS, label: 'Settings', icon: <SettingOutlined /> }
+        ].map((item) => (
           <button
             key={item.key}
             className={`mobile-nav-item ${currentView === item.key ? 'active' : ''}`}

@@ -23,13 +23,15 @@ interface Props {
   onUpdateToken: (t: string) => void;
   invToken: string;
   onUpdateInvToken: (t: string) => void;
+  onLogout?: () => void;
 }
 
 export const Settings: React.FC<Props> = ({ 
   token, 
   onUpdateToken, 
   invToken, 
-  onUpdateInvToken 
+  onUpdateInvToken,
+  onLogout
 }) => {
   
   // ✅ Token 状态追踪
@@ -385,6 +387,19 @@ export const Settings: React.FC<Props> = ({
       </Card>
 
       <div className="text-center mt-10">
+        {onLogout && (
+          <Button 
+            type="primary" 
+            danger 
+            size="large" 
+            icon={<LogoutOutlined />} 
+            onClick={onLogout}
+            className="w-full mb-6 sm:hidden"
+            style={{ height: '48px', borderRadius: '12px', fontWeight: 'bold' }}
+          >
+            LOGOUT SYSTEM
+          </Button>
+        )}
         <Text type="secondary" style={{ fontSize: '11px' }}>
           Authentication Method: OAuth 2.0 Bearer Token | Microsoft Graph API v1.0
         </Text>

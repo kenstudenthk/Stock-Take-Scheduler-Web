@@ -135,7 +135,10 @@ button,
 .summary-card-item,
 .resched-button,
 .bin-button,
+.resume-button,
+.pool-button,
 a[href],
+
 input[type="checkbox"],
 input[type="radio"],
 .ant-picker {
@@ -146,7 +149,9 @@ input[type="radio"],
 button:disabled,
 [role="button"][aria-disabled="true"],
 .resched-button:disabled,
-.bin-button:disabled {
+.bin-button:disabled,
+.resume-button:disabled,
+.pool-button:disabled {
   cursor: not-allowed;
 }
 
@@ -1093,7 +1098,7 @@ body.dark .custom-main-content {
    13.Dashboard Action Buttons (Re-Schedule & Close) 
    ============================================================ */
 
-.resched-button, .bin-button {
+.resched-button, .bin-button, .resume-button, .pool-button {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -1108,7 +1113,9 @@ body.dark .custom-main-content {
 }
 
 .resched-button:focus-visible,
-.bin-button:focus-visible {
+.bin-button:focus-visible,
+.resume-button:focus-visible,
+.pool-button:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -1202,8 +1209,99 @@ body.dark .custom-main-content {
   background-color: rgba(248, 113, 113, 0.2);
 }
 
+/* Resume (Design System Green) */
+.resume-button {
+  background-color: #DCFCE7;
+}
+.resume-svgIcon {
+  width: 16px;
+  transition: all 250ms ease;
+}
+.resume-svgIcon path {
+  stroke: #16A34A;
+  fill: none;
+}
+.resume-button:hover {
+  width: 110px;
+  border-radius: 50px;
+  background-color: #16A34A;
+}
+.resume-button:hover .resume-svgIcon {
+  width: 40px;
+  transform: translateY(60%);
+}
+.resume-button:hover .resume-svgIcon path {
+  stroke: white;
+  fill: none;
+}
+.resume-button::before {
+  position: absolute;
+  top: -20px;
+  content: "RESUME";
+  color: white;
+  transition-duration: .3s;
+  font-size: 10px;
+  font-weight: 900;
+}
+.resume-button:hover::before {
+  opacity: 1;
+  transform: translateY(32px);
+}
+.dark .resume-button {
+  background-color: rgba(22, 163, 74, 0.2);
+}
+
+/* Reschedule Pool (Design System Amber) */
+.pool-button {
+  background-color: #FEF3C7;
+}
+.pool-svgIcon {
+  width: 16px;
+  transition: all 250ms ease;
+}
+.pool-svgIcon path {
+  stroke: #D97706;
+  fill: none;
+}
+.pool-button:hover {
+  width: 100px;
+  border-radius: 50px;
+  background-color: #D97706;
+}
+.pool-button:hover .pool-svgIcon {
+  width: 40px;
+  transform: translateY(60%);
+}
+.pool-button:hover .pool-svgIcon path {
+  stroke: white;
+  fill: none;
+}
+.pool-button::before {
+  position: absolute;
+  top: -20px;
+  content: "POOL";
+  color: white;
+  transition-duration: .3s;
+  font-size: 10px;
+  font-weight: 900;
+}
+.pool-button:hover::before {
+  opacity: 1;
+  transform: translateY(32px);
+}
+.dark .pool-button {
+  background-color: rgba(217, 119, 6, 0.2);
+}
+
+/* Disabled for new buttons */
+.resume-button:disabled, .pool-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* ============================================================
-   14.Dashboard Action Buttons (Re-Schedule & Close) 
+   14.Dashboard Action Buttons (Re-Schedule & Close)
    ============================================================ */
 /* ============================================================
    Unified Dashboard & Generator Summary Cards - Design System

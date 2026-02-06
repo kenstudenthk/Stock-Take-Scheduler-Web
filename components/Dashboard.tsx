@@ -229,7 +229,7 @@ export const Dashboard: React.FC<{
 
   return (
     <div className="flex flex-col gap-8 pb-10">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0">
         <div>
           <Title level={2} className="m-0 text-slate-800 dark:text-slate-100" style={{ fontFamily: "'Fira Code', monospace" }}>
             Hello Admin,
@@ -326,18 +326,36 @@ export const Dashboard: React.FC<{
           {filteredShops.length === 0 ? <Empty className="py-20" /> : filteredShops.map(shop => {
             const isClosed = shop.status?.toLowerCase() === 'closed';
             return (
-              <div key={shop.id} className={`p-4 rounded-2xl flex items-center transition-all ${isClosed ? 'opacity-40 grayscale bg-slate-50' : 'bg-white hover:bg-slate-50/80 shadow-sm'}`}>
-                <div className="flex items-center gap-4" style={{ flex: 1 }}>
+              <div key={shop.id} className={`p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-4 transition-all ${isClosed ? 'opacity-40 grayscale bg-slate-50' : 'bg-white hover:bg-slate-50/80 shadow-sm'}`}>
+                {/* 1. Shop Info & Brand */}
+                <div className="flex items-center gap-4 w-full md:flex-1">
                   <img src={shop.brandIcon} alt={shop.brand} className="h-10 w-10 object-contain rounded-lg border border-slate-100 p-1 bg-white" />
-                  <div className="flex flex-col"><h4 className={`m-0 font-bold text-slate-800 ${isClosed ? 'line-through decoration-red-500' : ''}`}>{shop.name}</h4><Text className="text-[10px] font-bold text-slate-400 uppercase">{shop.brand} {shop.is_mtr ? '(MTR)' : ''}</Text></div>
+                  <div className="flex flex-col min-w-0">
+                    <h4 className={`m-0 font-bold text-slate-800 text-[15px] truncate ${isClosed ? 'line-through decoration-red-500' : ''}`}>{shop.name}</h4>
+                    <div className="flex items-center gap-2">
+                       <Text className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">{shop.brand}</Text>
+                       {shop.is_mtr && <Tag color="purple" className="m-0 text-[9px] font-bold border-none px-1">MTR</Tag>}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ width: 300 }}><Text className="text-xs text-slate-500 italic truncate block">{shop.address}</Text></div>
-                <div style={{ width: 120 }} className="text-center">
-  <Tag className={`m-0 border-none font-black text-[10px] px-3 rounded-md tag-group-${shop.groupId}`}>
-    GROUP {String.fromCharCode(64 + shop.groupId)}
-  </Tag>
-</div>
-                <div style={{ width: 220 }} className="flex justify-end gap-3 pr-2">
+
+                {/* 2. Address (Full on mobile, fixed on desktop) */}
+                <div className="w-full md:w-[300px]">
+                  <div className="flex items-start gap-1.5 opacity-60">
+                     <EnvironmentOutlined className="mt-0.5 text-[10px]" />
+                     <Text className="text-xs text-slate-500 italic leading-snug break-words line-clamp-2 md:line-clamp-1">{shop.address}</Text>
+                  </div>
+                </div>
+
+                {/* 3. Group Tag */}
+                <div className="w-full md:w-[120px] flex md:justify-center">
+                  <Tag className={`m-0 border-none font-black text-[10px] px-3 py-0.5 rounded-md w-fit tag-group-${shop.groupId}`}>
+                    GROUP {String.fromCharCode(64 + shop.groupId)}
+                  </Tag>
+                </div>
+
+                {/* 4. Action Buttons (Right align desktop, End align mobile) */}
+                <div className="w-full md:w-[220px] flex justify-end gap-3 pt-2 md:pt-0 mt-1 md:mt-0 border-t border-slate-100 md:border-t-0">
                   {isClosed ? (
                     /* Resume button - only visible for closed shops */
                     hasPermission(currentUser, 'close_shop') && (

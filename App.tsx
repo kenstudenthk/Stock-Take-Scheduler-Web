@@ -21,6 +21,7 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { ErrorReport } from './components/ErrorReport';
 import { Login } from './components/Login';
 import SharePointService from './services/SharePointService';
+import { TokenService } from './services/TokenService';
 
 // ✅ 使用你的 config.ts，避免硬編碼 URL
 import { API_URLS, TOKEN_CONFIG } from './constants/config'; 
@@ -57,9 +58,9 @@ function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(localStorage.getItem('theme') === 'dark');
   
-  // ✅ 修正：統一使用 config.ts 中的 Storage Keys
-  const [graphToken, setGraphToken] = useState<string>(localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken) || '');
-  const [invToken, setInvToken] = useState<string>(localStorage.getItem(TOKEN_CONFIG.storageKeys.invToken) || '');
+  // ✅ Token state - will be loaded from shared API
+  const [graphToken, setGraphToken] = useState<string>('');
+  const [tokenTimestamp, setTokenTimestamp] = useState<number | null>(null);
   
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
@@ -136,26 +137,26 @@ function App() {
   }, []);
 
   // ✅ 核心修正：更新 Token 後「立即」使用傳入的值呼叫 fetch
-  const updateGraphToken = (token: string) => {
+  // Token is now shared across all users via API
+  const updateGraphToken = async (token: string) => {
     const trimmedToken = token.trim();
     setGraphToken(trimmedToken);
-    localStorage.setItem(TOKEN_CONFIG.storageKeys.graphToken, trimmedToken);
-    
+
     if (trimmedToken) {
-      setHasTokenError(false); // ✅ 先隱藏卡車警告
-      fetchAllData(trimmedToken); // ✅ 立即刷新
-      message.success("Token updated. Refreshing data...");
+      setHasTokenError(false);
+      // Save to shared API
+      const success = await TokenService.setToken(trimmedToken);
+      if (success) {
+        setTokenTimestamp(Date.now());
+        message.success("Token updated and shared with all users. Refreshing data...");
+      } else {
+        message.warning("Token saved locally. API sync failed.");
+      }
+      fetchAllData(trimmedToken);
     } else {
       setHasTokenError(true);
       setAllShops([]);
     }
-  };
-
-  const updateInvToken = (token: string) => {
-    const trimmedToken = token.trim();
-    setInvToken(trimmedToken);
-    localStorage.setItem(TOKEN_CONFIG.storageKeys.invToken, trimmedToken);
-    message.success("Inventory Token updated.");
   };
 
   useEffect(() => {
@@ -163,15 +164,34 @@ function App() {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  // 初次載入與 currentUser 變更時刷新
-  useEffect(() => { 
-    if (graphToken) {
-      fetchAllData(graphToken); 
-    } else {
-      setHasTokenError(true);
-      setIsInitialLoading(false);
-    }
-  }, [fetchAllData, graphToken]); // ✅ 加入 graphToken 作為依賴
+  // ✅ Load shared token on app start
+  useEffect(() => {
+    const loadSharedToken = async () => {
+      try {
+        const { token, timestamp } = await TokenService.getToken();
+        if (token) {
+          setGraphToken(token);
+          setTokenTimestamp(timestamp);
+          fetchAllData(token);
+        } else {
+          setHasTokenError(true);
+          setIsInitialLoading(false);
+        }
+      } catch (error) {
+        console.error('Failed to load shared token:', error);
+        // Fallback to localStorage
+        const localToken = localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken) || '';
+        if (localToken) {
+          setGraphToken(localToken);
+          fetchAllData(localToken);
+        } else {
+          setHasTokenError(true);
+          setIsInitialLoading(false);
+        }
+      }
+    };
+    loadSharedToken();
+  }, [fetchAllData]);
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -181,7 +201,7 @@ function App() {
 
   const renderContent = () => {
     if (selectedMenuKey === View.SETTINGS) {
-      return <Settings token={graphToken} onUpdateToken={updateGraphToken} invToken={invToken} onUpdateInvToken={updateInvToken} onLogout={handleLogout} />;
+      return <Settings token={graphToken} tokenTimestamp={tokenTimestamp} onUpdateToken={updateGraphToken} onLogout={handleLogout} />;
     }
 
     if (!currentUser) return null;
@@ -198,7 +218,7 @@ function App() {
       );
       case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
-      case View.INVENTORY: return <Inventory invToken={invToken} shops={allShops} />;
+      case View.INVENTORY: return <Inventory invToken={graphToken} shops={allShops} />;
       case View.PERMISSION: return <Permission graphToken={graphToken} currentUser={currentUser} />;
       default: return null;
     }

@@ -3,7 +3,6 @@ import { Card, Input, Typography, Button, Space, message, Collapse, Divider, Ale
 import {
   CopyOutlined,
   KeyOutlined,
-  DatabaseOutlined,
   ShopOutlined,
   CaretRightOutlined,
   QuestionCircleOutlined,
@@ -22,28 +21,32 @@ const { Panel } = Collapse;
 interface Props {
   token: string;
   onUpdateToken: (t: string) => void;
-  invToken: string;
-  onUpdateInvToken: (t: string) => void;
+  tokenTimestamp: number | null;
   onLogout?: () => void;
 }
 
-export const Settings: React.FC<Props> = ({ 
-  token, 
-  onUpdateToken, 
-  invToken, 
-  onUpdateInvToken,
+export const Settings: React.FC<Props> = ({
+  token,
+  onUpdateToken,
+  tokenTimestamp: propTimestamp,
   onLogout
 }) => {
   
-  // ✅ Token 状态追踪
+  // ✅ Token 状态追踪 - use prop if available, fallback to localStorage
   const [tokenTimestamp, setTokenTimestamp] = useState<number>(
-    parseInt(localStorage.getItem(TOKEN_CONFIG.storageKeys.tokenTimestamp) || '0')
+    propTimestamp || parseInt(localStorage.getItem(TOKEN_CONFIG.storageKeys.tokenTimestamp) || '0')
   );
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [tokenStatus, setTokenStatus] = useState<'valid' | 'warning' | 'expired'>('valid');
 
+  // Sync timestamp from prop when it changes
+  useEffect(() => {
+    if (propTimestamp) {
+      setTokenTimestamp(propTimestamp);
+    }
+  }, [propTimestamp]);
+
   const shopListUrl = "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8";
-  const invListUrl = "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/2f2dff1c-8ce1-4B7B-9FF8-083A0BA1BB48";
   const graphExplorerUrl = "https://developer.microsoft.com/en-us/graph/graph-explorer";
 
   // ✅ 计算 Token 剩余时间
@@ -214,18 +217,12 @@ export const Settings: React.FC<Props> = ({
             </ol>
             
             <Space className="mt-4" wrap>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 icon={<ExportOutlined />}
                 onClick={() => openGraphExplorer(shopListUrl)}
               >
-                Open Graph Explorer (Shop List)
-              </Button>
-              <Button 
-                icon={<ExportOutlined />}
-                onClick={() => openGraphExplorer(invListUrl)}
-              >
-                Open Graph Explorer (Inventory)
+                Open Graph Explorer
               </Button>
             </Space>
           </div>
@@ -236,78 +233,65 @@ export const Settings: React.FC<Props> = ({
 
       {/* SharePoint URL 参考 */}
       <Card className="rounded-2xl shadow-sm border-none mb-6">
-        <Space direction="vertical" className="w-full" size="large">
-          <div>
-            <Text strong className="block mb-2 text-slate-400 text-xs uppercase tracking-wider">
-              <ShopOutlined /> Shop List SPO Endpoint
-            </Text>
-            <Input 
-              value={shopListUrl} 
-              readOnly 
-              suffix={
-                <Button 
-                  type="text" 
-                  icon={<CopyOutlined />} 
-                  onClick={() => handleCopy(shopListUrl, "Shop List URL")} 
-                />
-              }
-              className="bg-slate-50 font-mono text-xs py-2 rounded-lg"
-            />
-          </div>
+        <div className="mb-4">
+          <Text strong className="block mb-2 text-slate-400 text-xs uppercase tracking-wider">
+            <ShopOutlined /> SharePoint API Endpoint
+          </Text>
+          <Input
+            value={shopListUrl}
+            readOnly
+            suffix={
+              <Button
+                type="text"
+                icon={<CopyOutlined />}
+                onClick={() => handleCopy(shopListUrl, "SharePoint URL")}
+              />
+            }
+            className="bg-slate-50 font-mono text-xs py-2 rounded-lg"
+          />
+        </div>
 
-          <div>
-            <Text strong className="block mb-2 text-slate-400 text-xs uppercase tracking-wider">
-              <DatabaseOutlined /> Inventory List SPO Endpoint
-            </Text>
-            <Input 
-              value={invListUrl} 
-              readOnly 
-              suffix={
-                <Button 
-                  type="text" 
-                  icon={<CopyOutlined />} 
-                  onClick={() => handleCopy(invListUrl, "Inventory URL")} 
-                />
-              }
-              className="bg-slate-50 font-mono text-xs py-2 rounded-lg"
-            />
-          </div>
-        </Space>
-
-        <Divider className="my-8" />
+        <Divider className="my-6" />
 
         {/* Token 输入框 */}
         <div className="mb-4 flex justify-between items-center">
           <Text strong className="text-slate-400 text-xs uppercase tracking-wider">
-            <KeyOutlined /> Security Access Tokens
+            <KeyOutlined /> Security Access Token
           </Text>
           <Text type="secondary" style={{ fontSize: '11px' }}>
-            ⚠️ Tokens expire every 60-90 mins
+            Shared across all users
           </Text>
         </div>
 
         <Collapse
           bordered={false}
-          defaultActiveKey={!token || !invToken ? ['1', '2'] : []}
+          defaultActiveKey={!token ? ['1'] : []}
           expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
           className="bg-transparent"
         >
-          {/* Shop List Token */}
-          <Panel 
+          {/* Shared Access Token */}
+          <Panel
             header={
               <Space>
-                <Text strong>Shop Master List Token</Text>
+                <Text strong>SharePoint Access Token</Text>
                 {token ? (
-                  <Tag color="success" icon={<CheckCircleOutlined />}>✅</Tag>
+                  <Tag color="success" icon={<CheckCircleOutlined />}>Active</Tag>
                 ) : (
-                  <Tag color="error" icon={<WarningOutlined />}>❌</Tag>
+                  <Tag color="error" icon={<WarningOutlined />}>Missing</Tag>
                 )}
               </Space>
-            } 
+            }
             key="1"
             className="mb-4 bg-white border border-slate-100 rounded-xl overflow-hidden"
           >
-            <TextArea 
+            <Alert
+              message="Shared Token"
+              description="This token is shared across all users. Once updated, everyone can access the app without re-entering the token."
+              type="info"
+              showIcon
+              className="mb-4"
+            />
+            <TextArea
               placeholder="Paste Access Token from Graph Explorer here..."
               rows={4}
               value={token}
@@ -315,59 +299,18 @@ export const Settings: React.FC<Props> = ({
               className="rounded-lg font-mono text-xs mb-2 border-none bg-slate-50 focus:bg-white transition-all"
             />
             <Space>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 size="small"
                 onClick={() => openGraphExplorer(shopListUrl)}
               >
                 Get New Token
               </Button>
-              <Button 
-                type="link" 
-                size="small" 
-                danger 
-                onClick={() => handleUpdateToken('')}
-              >
-                Clear Token
-              </Button>
-            </Space>
-          </Panel>
-
-          {/* Inventory List Token */}
-          <Panel 
-            header={
-              <Space>
-                <Text strong>Inventory List Token</Text>
-                {invToken ? (
-                  <Tag color="success" icon={<CheckCircleOutlined />}>✅</Tag>
-                ) : (
-                  <Tag color="error" icon={<WarningOutlined />}>❌</Tag>
-                )}
-              </Space>
-            } 
-            key="2"
-            className="bg-white border border-slate-100 rounded-xl overflow-hidden"
-          >
-            <TextArea 
-              placeholder="Paste Inventory Access Token here..."
-              rows={4}
-              value={invToken}
-              onChange={(e) => onUpdateInvToken(e.target.value)}
-              className="rounded-lg font-mono text-xs mb-2 border-none bg-slate-50 focus:bg-white transition-all"
-            />
-            <Space>
-              <Button 
-                type="primary" 
+              <Button
+                type="link"
                 size="small"
-                onClick={() => openGraphExplorer(invListUrl)}
-              >
-                Get New Token
-              </Button>
-              <Button 
-                type="link" 
-                size="small" 
-                danger 
-                onClick={() => onUpdateInvToken('')}
+                danger
+                onClick={() => handleUpdateToken('')}
               >
                 Clear Token
               </Button>
@@ -376,14 +319,14 @@ export const Settings: React.FC<Props> = ({
         </Collapse>
       </Card>
 
-      {/* ✅ 新增：Token 过期提醒设置 */}
+      {/* ✅ Token Management Tips */}
       <Card className="rounded-2xl shadow-sm border-none mb-6">
-        <Title level={4}>💡 Token Management Tips</Title>
+        <Title level={4}>Token Management Tips</Title>
         <Space direction="vertical" size="small">
           <Text>• Tokens typically expire after <strong>60 minutes</strong></Text>
           <Text>• You'll receive a warning when <strong>15 minutes</strong> remain</Text>
+          <Text>• <strong>Shared token:</strong> Once updated, all users can access the app</Text>
           <Text>• Keep the Graph Explorer tab open for quick token refresh</Text>
-          <Text>• Bookmark this page for easy access: <code>Settings</code></Text>
         </Space>
       </Card>
 

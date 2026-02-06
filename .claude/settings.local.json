@@ -19,7 +19,13 @@
       "Bash(ping:*)",
       "Bash(netstat:*)",
       "Bash(findstr \":5173 \")",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "WebFetch(domain:lbs.amap.com)",
+      "Bash(find:*)",
+      "Bash(npx eslint:*)",
+      "Bash(curl:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)"
     ]
   }
 }

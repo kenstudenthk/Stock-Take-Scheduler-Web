@@ -4518,6 +4518,15 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
   gap: 8px;
 }
 
+/* Single option layout (walking only when < 1km) */
+.mobile-route-options--single {
+  justify-content: center;
+}
+
+.mobile-route-options--single .mobile-route-option {
+  max-width: 200px;
+}
+
 .mobile-route-option {
   flex: 1;
   display: flex;

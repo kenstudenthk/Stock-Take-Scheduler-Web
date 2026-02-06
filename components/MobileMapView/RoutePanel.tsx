@@ -9,6 +9,7 @@ interface RoutePanelProps {
   loading: boolean;
   onSelectRoute: (type: 'walking' | 'transit') => void;
   shopName: string;
+  distanceKm?: number; // straight-line distance in km
 }
 
 /**
@@ -22,8 +23,12 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
   loading,
   onSelectRoute,
   shopName,
+  distanceKm,
 }) => {
   const [showDirections, setShowDirections] = useState(false);
+
+  // If distance < 1km, only show walking option
+  const showTransitOption = distanceKm === undefined || distanceKm >= 1;
 
   const formatDistance = (meters: number): string => {
     if (meters < 1000) return `${meters}m`;
@@ -63,7 +68,7 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
       </div>
 
       {/* Route options */}
-      <div className="mobile-route-options">
+      <div className={`mobile-route-options ${!showTransitOption ? 'mobile-route-options--single' : ''}`}>
         {/* Walking option */}
         <button
           className={`mobile-route-option ${activeRoute === 'walking' ? 'active' : ''} ${!walking ? 'disabled' : ''}`}
@@ -91,32 +96,34 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
           )}
         </button>
 
-        {/* Transit option */}
-        <button
-          className={`mobile-route-option ${activeRoute === 'transit' ? 'active' : ''} ${!transit ? 'disabled' : ''}`}
-          onClick={() => transit && onSelectRoute('transit')}
-          disabled={!transit}
-          aria-pressed={activeRoute === 'transit'}
-        >
-          <div className="mobile-route-icon">
-            <Bus className="w-5 h-5" />
-          </div>
-          <div className="mobile-route-label">Transit</div>
-          {transit ? (
-            <>
-              <div className="mobile-route-distance">
-                <Route className="w-3 h-3" />
-                {formatDistance(transit.distance)}
-              </div>
-              <div className="mobile-route-time">
-                <Clock className="w-3 h-3" />
-                {formatDuration(transit.duration)}
-              </div>
-            </>
-          ) : (
-            <div className="mobile-route-unavailable">N/A</div>
-          )}
-        </button>
+        {/* Transit option - only show if distance >= 1km */}
+        {showTransitOption && (
+          <button
+            className={`mobile-route-option ${activeRoute === 'transit' ? 'active' : ''} ${!transit ? 'disabled' : ''}`}
+            onClick={() => transit && onSelectRoute('transit')}
+            disabled={!transit}
+            aria-pressed={activeRoute === 'transit'}
+          >
+            <div className="mobile-route-icon">
+              <Bus className="w-5 h-5" />
+            </div>
+            <div className="mobile-route-label">Transit</div>
+            {transit ? (
+              <>
+                <div className="mobile-route-distance">
+                  <Route className="w-3 h-3" />
+                  {formatDistance(transit.distance)}
+                </div>
+                <div className="mobile-route-time">
+                  <Clock className="w-3 h-3" />
+                  {formatDuration(transit.duration)}
+                </div>
+              </>
+            ) : (
+              <div className="mobile-route-unavailable">N/A</div>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Expandable directions */}

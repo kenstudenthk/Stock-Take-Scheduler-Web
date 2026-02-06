@@ -75,6 +75,13 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
     clearRoute,
   } = useAMapRoute();
 
+  // Auto-show walking route when routes are loaded
+  useEffect(() => {
+    if (walking && !activeRoute && showRoutePanel) {
+      showRoute('walking');
+    }
+  }, [walking, activeRoute, showRoutePanel, showRoute]);
+
   // Filter shops: today's date + selected group
   const todayShops = useMemo(() => {
     const today = dayjs().format('YYYY-MM-DD');
@@ -336,6 +343,7 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
             loading={routeLoading}
             onSelectRoute={handleRouteSelect}
             shopName={selectedShop.name}
+            distanceKm={selectedShop.distance}
           />
         </div>
       )}

@@ -7,6 +7,7 @@ import { ShopOutlined, CheckCircleOutlined, CalendarOutlined, CloseCircleOutline
 import dayjs from 'dayjs';
 import { Shop } from '../types';
 import { wgs84ToGcj02 } from '../utils/coordTransform';
+import { MobileMapView } from './MobileMapView';
 
 const { Title, Text } = Typography;
 
@@ -111,8 +112,24 @@ const ShopBentoCard = memo(({
   );
 });
 
+// --- Mobile detection hook ---
+const useIsMobile = (breakpoint: number = 640) => {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= breakpoint : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [breakpoint]);
+
+  return isMobile;
+};
+
 // --- Main component ---
 export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
+  const isMobile = useIsMobile();
   const mapRef = useRef<any>(null);
   const infoWindowRef = useRef<any>(null);
   const markersRef = useRef<{ [key: string]: any }>({});
@@ -217,9 +234,9 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     return offsetMap;
   }, []);
 
-  // --- Map init ---
+  // --- Map init (desktop only) ---
   useEffect(() => {
-    if (!window.AMap || mapRef.current) return;
+    if (isMobile || !window.AMap || mapRef.current) return;
 
     mapRef.current = new window.AMap.Map('map-container', {
       center: [114.177216, 22.303719],
@@ -232,7 +249,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
     });
 
     infoWindowRef.current = new window.AMap.InfoWindow({ offset: new window.AMap.Pixel(0, -20) });
-  }, []);
+  }, [isMobile]);
 
   // --- Shop click → smooth pan ---
   const handleShopClick = useCallback((shop: Shop) => {
@@ -352,6 +369,11 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       }
     });
   }, [activeShopId]);
+
+  // Render mobile map view for small screens
+  if (isMobile) {
+    return <MobileMapView shops={shops} />;
+  }
 
   return (
     <div className="w-full flex flex-col gap-6">

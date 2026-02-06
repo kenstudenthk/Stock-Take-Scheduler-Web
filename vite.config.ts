@@ -39,7 +39,8 @@ export default defineConfig(({ mode }) => {
           workbox: {
              // Since we use Graph API, we don't want to aggressively cache API responses that might be stale
              // but we do want to cache the app shell.
-             globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+             globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+             maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5 MB limit
           }
         })
       ],

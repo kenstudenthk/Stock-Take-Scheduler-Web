@@ -52,12 +52,22 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
   const clearRoute = useCallback(() => {
     // Clear walking route from map
     if (walkingRef.current) {
-      walkingRef.current.clear();
+      try {
+        walkingRef.current.clear();
+      } catch (e) {
+        // Ignore errors when clearing
+      }
     }
     // Clear transit route from map
     if (transferRef.current) {
-      transferRef.current.clear();
+      try {
+        transferRef.current.clear();
+      } catch (e) {
+        // Ignore errors when clearing
+      }
     }
+    walkingRef.current = null;
+    transferRef.current = null;
     setState({
       walking: null,
       transit: null,
@@ -73,7 +83,7 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
     mapInstance: any
   ) => {
     if (!window.AMap || !mapInstance) {
-      setState(prev => ({ ...prev, error: 'Map not initialized' }));
+      setState(prev => ({ ...prev, error: 'Map not initialized', loading: false }));
       return;
     }
 
@@ -81,11 +91,17 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
     fromRef.current = from;
     toRef.current = to;
 
-    setState(prev => ({ ...prev, loading: true, error: null }));
+    setState(prev => ({ ...prev, loading: true, error: null, walking: null, transit: null }));
 
     // Clear previous routes
-    if (walkingRef.current) walkingRef.current.clear();
-    if (transferRef.current) transferRef.current.clear();
+    if (walkingRef.current) {
+      try { walkingRef.current.clear(); } catch (e) {}
+      walkingRef.current = null;
+    }
+    if (transferRef.current) {
+      try { transferRef.current.clear(); } catch (e) {}
+      transferRef.current = null;
+    }
 
     const fromPos = new window.AMap.LngLat(from.lng, from.lat);
     const toPos = new window.AMap.LngLat(to.lng, to.lat);
@@ -93,7 +109,6 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
     let completedCount = 0;
     let walkingResult: RouteInfo | null = null;
     let transitResult: RouteInfo | null = null;
-    let hasError = false;
 
     const checkComplete = () => {
       completedCount++;
@@ -103,110 +118,134 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
           transit: transitResult,
           activeRoute: null,
           loading: false,
-          error: hasError && !walkingResult && !transitResult
+          error: !walkingResult && !transitResult
             ? 'Unable to plan route. Try a different destination.'
             : null,
         });
       }
     };
 
-    // Plan walking route
-    window.AMap.plugin('AMap.Walking', () => {
-      if (!walkingRef.current) {
-        walkingRef.current = new window.AMap.Walking({
-          map: null, // Don't draw initially
+    // Load plugins and search
+    const loadAndSearch = () => {
+      // Plan walking route
+      try {
+        const walking = new window.AMap.Walking({
+          map: null,
           autoFitView: false,
         });
+
+        walking.search(fromPos, toPos, (status: string, result: any) => {
+          if (status === 'complete' && result.routes && result.routes.length > 0) {
+            const route = result.routes[0];
+            const steps = route.steps?.map((step: any) => step.instruction) || [];
+            walkingResult = {
+              distance: route.distance,
+              duration: route.time,
+              steps,
+            };
+          }
+          checkComplete();
+        });
+      } catch (e) {
+        console.error('Walking route error:', e);
+        checkComplete();
       }
 
-      walkingRef.current.search(fromPos, toPos, (status: string, result: any) => {
-        if (status === 'complete' && result.routes && result.routes.length > 0) {
-          const route = result.routes[0];
-          const steps = route.steps?.map((step: any) => step.instruction) || [];
-          walkingResult = {
-            distance: route.distance,
-            duration: route.time,
-            steps,
-          };
-        } else {
-          hasError = true;
-        }
-        checkComplete();
-      });
-    });
-
-    // Plan transit route
-    window.AMap.plugin('AMap.Transfer', () => {
-      if (!transferRef.current) {
-        transferRef.current = new window.AMap.Transfer({
-          map: null, // Don't draw initially
+      // Plan transit route
+      try {
+        const transfer = new window.AMap.Transfer({
+          map: null,
           city: '香港',
           autoFitView: false,
           policy: window.AMap.TransferPolicy?.LEAST_TIME || 0,
         });
-      }
 
-      transferRef.current.search(fromPos, toPos, (status: string, result: any) => {
-        if (status === 'complete' && result.plans && result.plans.length > 0) {
-          const plan = result.plans[0];
-          const steps: string[] = [];
+        transfer.search(fromPos, toPos, (status: string, result: any) => {
+          if (status === 'complete' && result.plans && result.plans.length > 0) {
+            const plan = result.plans[0];
+            const steps: string[] = [];
 
-          // Extract transit steps
-          plan.segments?.forEach((segment: any) => {
-            if (segment.transit) {
-              const line = segment.transit.lines?.[0];
-              if (line) {
-                steps.push(`Take ${line.name} from ${segment.transit.on?.name || 'station'} to ${segment.transit.off?.name || 'station'}`);
+            plan.segments?.forEach((segment: any) => {
+              if (segment.transit) {
+                const line = segment.transit.lines?.[0];
+                if (line) {
+                  steps.push(`Take ${line.name} from ${segment.transit.on?.name || 'station'} to ${segment.transit.off?.name || 'station'}`);
+                }
+              } else if (segment.walking) {
+                steps.push(`Walk ${segment.walking.distance}m`);
               }
-            } else if (segment.walking) {
-              steps.push(`Walk ${segment.walking.distance}m`);
-            }
-          });
+            });
 
-          transitResult = {
-            distance: plan.distance,
-            duration: plan.time,
-            steps,
-          };
-        } else {
-          hasError = true;
-        }
+            transitResult = {
+              distance: plan.distance,
+              duration: plan.time,
+              steps,
+            };
+          }
+          checkComplete();
+        });
+      } catch (e) {
+        console.error('Transit route error:', e);
         checkComplete();
+      }
+    };
+
+    // Check if plugins are already loaded
+    if (window.AMap.Walking && window.AMap.Transfer) {
+      loadAndSearch();
+    } else {
+      // Load plugins first
+      window.AMap.plugin(['AMap.Walking', 'AMap.Transfer'], () => {
+        loadAndSearch();
       });
-    });
+    }
   }, []);
 
   const showRoute = useCallback((type: 'walking' | 'transit') => {
-    if (!mapRef.current || !fromRef.current || !toRef.current) return;
+    if (!mapRef.current || !fromRef.current || !toRef.current) {
+      console.error('Cannot show route: missing map or positions');
+      return;
+    }
 
     const fromPos = new window.AMap.LngLat(fromRef.current.lng, fromRef.current.lat);
     const toPos = new window.AMap.LngLat(toRef.current.lng, toRef.current.lat);
 
     // Clear previous visual routes
-    if (walkingRef.current) walkingRef.current.clear();
-    if (transferRef.current) transferRef.current.clear();
-
-    if (type === 'walking') {
-      // Re-create walking with map
-      const walking = new window.AMap.Walking({
-        map: mapRef.current,
-        autoFitView: true,
-      });
-      walking.search(fromPos, toPos);
-      walkingRef.current = walking;
-    } else {
-      // Re-create transit with map
-      const transfer = new window.AMap.Transfer({
-        map: mapRef.current,
-        city: '香港',
-        autoFitView: true,
-        policy: window.AMap.TransferPolicy?.LEAST_TIME || 0,
-      });
-      transfer.search(fromPos, toPos);
-      transferRef.current = transfer;
+    if (walkingRef.current) {
+      try { walkingRef.current.clear(); } catch (e) {}
+    }
+    if (transferRef.current) {
+      try { transferRef.current.clear(); } catch (e) {}
     }
 
-    setState(prev => ({ ...prev, activeRoute: type }));
+    const doShowRoute = () => {
+      if (type === 'walking') {
+        const walking = new window.AMap.Walking({
+          map: mapRef.current,
+          autoFitView: true,
+        });
+        walking.search(fromPos, toPos);
+        walkingRef.current = walking;
+      } else {
+        const transfer = new window.AMap.Transfer({
+          map: mapRef.current,
+          city: '香港',
+          autoFitView: true,
+          policy: window.AMap.TransferPolicy?.LEAST_TIME || 0,
+        });
+        transfer.search(fromPos, toPos);
+        transferRef.current = transfer;
+      }
+
+      setState(prev => ({ ...prev, activeRoute: type }));
+    };
+
+    // Ensure plugins are loaded
+    if (window.AMap.Walking && window.AMap.Transfer) {
+      doShowRoute();
+    } else {
+      window.AMap.plugin(['AMap.Walking', 'AMap.Transfer'], doShowRoute);
+    }
   }, []);
 
   return {

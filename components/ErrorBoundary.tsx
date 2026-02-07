@@ -1,96 +1,47 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Button, Result } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import React from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
 }
 
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
-  errorInfo: ErrorInfo | null;
 }
 
-/**
- * Error Boundary component to catch React rendering errors
- * Prevents the entire app from crashing when a component fails
- */
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<State> {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    this.setState({ errorInfo });
-
-    // Log error for debugging
-    console.error('ErrorBoundary caught an error:', error);
-    console.error('Component stack:', errorInfo.componentStack);
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
   }
 
-  handleReload = (): void => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
-  };
-
-  handleFullReload = (): void => {
-    window.location.reload();
-  };
-
-  render(): ReactNode {
+  render() {
     if (this.state.hasError) {
-      // Custom fallback UI if provided
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
-      // Default error UI
       return (
-        <div className="flex items-center justify-center min-h-[400px] p-8">
-          <Result
-            status="error"
-            title="Something went wrong"
-            subTitle="An unexpected error occurred. Please try again or refresh the page."
-            extra={[
-              <Button
-                key="retry"
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={this.handleReload}
-              >
-                Try Again
-              </Button>,
-              <Button
-                key="refresh"
-                onClick={this.handleFullReload}
-              >
-                Refresh Page
-              </Button>,
-            ]}
-          >
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <div className="mt-4 p-4 bg-red-50 rounded-lg text-left overflow-auto max-h-48">
-                <p className="text-red-600 font-mono text-sm">
-                  {this.state.error.toString()}
-                </p>
-                {this.state.errorInfo && (
-                  <pre className="text-red-400 font-mono text-xs mt-2 whitespace-pre-wrap">
-                    {this.state.errorInfo.componentStack}
-                  </pre>
-                )}
-              </div>
-            )}
-          </Result>
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-8 space-y-6 text-center">
+            <AlertTriangle className="w-12 h-12 text-red-600 mx-auto" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
+              <p className="text-gray-600 text-sm">{this.state.error?.message}</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Reload Page
+            </button>
+          </div>
         </div>
       );
     }
@@ -99,20 +50,4 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-/**
- * Higher-order component to wrap any component with error boundary
- */
-export function withErrorBoundary<P extends object>(
-  WrappedComponent: React.ComponentType<P>,
-  fallback?: ReactNode
-): React.FC<P> {
-  const WithErrorBoundary: React.FC<P> = (props) => (
-    <ErrorBoundary fallback={fallback}>
-      <WrappedComponent {...props} />
-    </ErrorBoundary>
-  );
-
-  WithErrorBoundary.displayName = `withErrorBoundary(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
-
-  return WithErrorBoundary;
-}
+export default ErrorBoundary;

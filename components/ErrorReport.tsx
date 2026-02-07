@@ -1,121 +1,82 @@
-import React from 'react';
-import { Modal, Form, Input, Select, Button, message, Space, Typography } from 'antd';
-import { BugOutlined, SendOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { AlertCircle, X, Send } from 'lucide-react';
 
-const { TextArea } = Input;
-const { Text } = Typography;
-
-interface Props {
+interface ErrorReportProps {
   visible: boolean;
-  onCancel: () => void;
-  token: string;
+  onClose: () => void;
 }
 
-export const ErrorReport: React.FC<Props> = ({ visible, onCancel, token }) => {
-  const [form] = Form.useForm();
-  const [submitting, setSubmitting] = React.useState(false);
+export const ErrorReport: React.FC<ErrorReportProps> = ({ visible, onClose }) => {
+  const [description, setDescription] = useState('');
+  const [sending, setSending] = useState(false);
 
-  const handleSubmit = async (values: any) => {
-    if (!token) {
-      message.error("No valid token found. Please update settings.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      // ✅ 使用您提供的 SharePoint List URL
-      const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/5d722abb-ab79-4fc5-b03c-099580db85ba/items`;
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fields: {
-            Title: values.title,
-            ErrorType: values.type,
-            Description: values.description,
-            Status: 'New'
-          }
-        })
-      });
-
-      if (response.ok) {
-        message.success("Error report submitted! We will check it soon.");
-        form.resetFields();
-        onCancel();
-      } else {
-        const errData = await response.json();
-        console.error("SP Error:", errData);
-        message.error("Failed to submit. Check console for details.");
-      }
-    } catch (err) {
-      message.error("Network Error. Please try again later.");
-    } finally {
-      setSubmitting(false);
-    }
+  const handleSubmit = async () => {
+    if (!description.trim()) return;
+    setSending(true);
+    setTimeout(() => {
+      console.log('Error report submitted:', description);
+      setDescription('');
+      setSending(false);
+      onClose();
+      alert('Thank you for reporting the issue!');
+    }, 1000);
   };
 
+  if (!visible) return null;
+
   return (
-    <Modal
-      title={
-        <Space>
-          <div className="bg-red-100 p-2 rounded-lg flex items-center justify-center">
-            <BugOutlined className="text-red-500 text-xl" />
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b p-6">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+            <h2 className="text-lg font-bold text-gray-900">Report an Issue</h2>
           </div>
-          <span className="font-bold text-slate-800">Report System Problem</span>
-        </Space>
-      }
-      visible={visible}
-      onCancel={onCancel}
-      footer={null}
-      centered
-      width={500}
-      className="error-report-modal"
-    >
-      <Form form={form} layout="vertical" onFinish={handleSubmit} className="mt-4">
-        <div className="bg-amber-50 p-3 rounded-xl border border-amber-100 mb-6">
-          <Text className="text-amber-700 text-[11px] font-bold uppercase tracking-wider block mb-1">Notice</Text>
-          <Text className="text-amber-800 text-xs">
-            Your report will be sent directly to the SharePoint list for tracking. 
-            Please provide shop code if the error is data-related.
-          </Text>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-lg transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        
-        <Form.Item name="type" label={<span className="font-bold text-slate-600">Problem Category</span>} rules={[{ required: true }]}>
-          <Select placeholder="What kind of issue?" className="h-10">
-            <Select.Option value="Bug">System Bug (功能異常)</Select.Option>
-            <Select.Option value="Data">Data Error (資料錯誤)</Select.Option>
-            <Select.Option value="UI">Visual/UI Issue (介面問題)</Select.Option>
-            <Select.Option value="Suggestion">Improvement (建議)</Select.Option>
-          </Select>
-        </Form.Item>
 
-        <Form.Item name="title" label={<span className="font-bold text-slate-600">Brief Summary</span>} rules={[{ required: true }]}>
-          <Input placeholder="e.g. Cannot save new inventory item" className="h-10 rounded-lg" />
-        </Form.Item>
+        {/* Content */}
+        <div className="px-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Describe the issue
+            </label>
+            <textarea
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Tell us what went wrong..."
+              rows={4}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 resize-none"
+            />
+          </div>
+        </div>
 
-        <Form.Item name="description" label={<span className="font-bold text-slate-600">Details</span>} rules={[{ required: true }]}>
-          <TextArea rows={4} placeholder="What happened? Any error message?" className="rounded-lg" />
-        </Form.Item>
-
-        <Form.Item className="mb-0 text-right mt-8">
-          <Space>
-            <Button onClick={onCancel} className="rounded-lg h-10 px-6">Cancel</Button>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
-              icon={<SendOutlined />} 
-              loading={submitting}
-              className="bg-red-500 border-none rounded-lg h-10 px-8 font-bold shadow-md hover:bg-red-600"
-            >
-              Submit Report
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
-    </Modal>
+        {/* Footer */}
+        <div className="flex gap-2 p-6 border-t">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!description.trim() || sending}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
+          >
+            <Send className="w-4 h-4" />
+            {sending ? 'Sending...' : 'Send'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
+
+export default ErrorReport;

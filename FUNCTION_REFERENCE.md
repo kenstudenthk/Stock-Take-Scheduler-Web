@@ -61,25 +61,155 @@ interface InventoryItem {
 
 ---
 
-## Permission System (RBAC)
+## Granular Permission System
+
+The app uses a granular permission system where each user can have individual page access and action permissions configured.
+
+### User Interface with Permissions
+```typescript
+interface User {
+  id?: string;
+  Name: string;
+  UserEmail: string;
+  AliasEmail: string;
+  PasswordHash?: string;
+  UserRole?: 'Admin' | 'App Owner' | 'User';
+  AccountStatus?: 'Active' | 'Inactive';
+  AccountCreateDate?: string;
+  Permissions?: UserPermissions;  // Custom permissions (JSON in SharePoint)
+}
+```
+
+### Permission Structure
+```typescript
+interface UserPermissions {
+  // Page Access - controls menu visibility and page access
+  pages: {
+    dashboard: boolean;    // Dashboard page
+    calendar: boolean;     // Calendar/Schedules page
+    generator: boolean;    // Schedule Generator wizard
+    locations: boolean;    // Map View page
+    shopList: boolean;     // Shop Master List page
+    inventory: boolean;    // Inventory management page
+    permission: boolean;   // Permission management page
+    settings: boolean;     // Settings page
+  };
+  // Feature Actions - controls specific functionality
+  actions: {
+    reschedule_shop: boolean;    // Change shop scheduled dates
+    close_shop: boolean;         // Mark shops as closed/resume
+    edit_shop: boolean;          // Modify shop details
+    add_shop: boolean;           // Create new shops
+    delete_shop: boolean;        // Remove shops from system
+    generate_schedule: boolean;  // Run K-means schedule generation
+    reset_schedule: boolean;     // Clear and reset all schedules
+    export_data: boolean;        // Export to Excel/PDF
+    manage_inventory: boolean;   // Add/edit/delete inventory items
+    manage_users: boolean;       // Modify user accounts and roles
+  };
+}
+```
+
+### Default Permissions by Role
+```typescript
+const DEFAULT_PERMISSIONS = {
+  'Admin': {
+    pages: { all: true },
+    actions: { all: true }
+  },
+  'App Owner': {
+    pages: { all: true },
+    actions: { all: true, delete_shop: false }
+  },
+  'User': {
+    pages: { dashboard: true, locations: true, settings: true },
+    actions: { all: false }
+  }
+};
+```
+
+### Permission Helper Functions
+```typescript
+// Check if user can access a specific page
+canAccessPage(user: User | null, page: keyof UserPermissions['pages']): boolean;
+
+// Check if user can perform a specific action
+canPerformAction(user: User | null, action: keyof UserPermissions['actions']): boolean;
+
+// Get user's effective permissions (custom or role defaults)
+getEffectivePermissions(user: User | null): UserPermissions;
+
+// Legacy helper (backward compatible)
+hasPermission(user: User | null, action: PermissionAction): boolean;
+```
+
+### Permission Mapping by Page
+
+| Page | Page Permission | Available Actions |
+|------|-----------------|-------------------|
+| **Dashboard** | `pages.dashboard` | `reschedule_shop`, `close_shop`, `edit_shop` |
+| **Calendar** | `pages.calendar` | `reschedule_shop`, `export_data` |
+| **Generator** | `pages.generator` | `generate_schedule`, `reset_schedule` |
+| **Locations** | `pages.locations` | (view only) |
+| **Shop List** | `pages.shopList` | `edit_shop`, `add_shop`, `delete_shop`, `export_data` |
+| **Inventory** | `pages.inventory` | `manage_inventory` |
+| **Permission** | `pages.permission` | `manage_users` |
+| **Settings** | `pages.settings` | (token management) |
+
+### SharePoint Storage
+Permissions are stored as JSON in the `Permissions` column (Multiple lines of text) in the Member List.
+
+Example stored value:
+```json
+{
+  "pages": {
+    "dashboard": true,
+    "calendar": true,
+    "generator": false,
+    "locations": true,
+    "shopList": true,
+    "inventory": false,
+    "permission": false,
+    "settings": true
+  },
+  "actions": {
+    "reschedule_shop": true,
+    "close_shop": false,
+    "edit_shop": true,
+    "add_shop": false,
+    "delete_shop": false,
+    "generate_schedule": false,
+    "reset_schedule": false,
+    "export_data": true,
+    "manage_inventory": false,
+    "manage_users": false
+  }
+}
+```
+
+### Usage in Components
 
 ```typescript
-type PermissionAction =
-  | 'view_dashboard'
-  | 'reschedule_shop'
-  | 'close_shop'
-  | 'edit_shop'
-  | 'generate_schedule'
-  | 'reset_schedule'
-  | 'manage_inventory'
-  | 'manage_users'
-  | 'view_settings';
+// In any component that needs permission checking
+import { canAccessPage, canPerformAction } from '../types';
 
-const ROLE_PERMISSIONS = {
-  'Admin': ['all permissions'],
-  'App Owner': ['all except manage_users'],
-  'User': ['view_dashboard', 'view_settings']
-};
+// Check page access (used in Layout.tsx for menu filtering)
+if (canAccessPage(currentUser, 'generator')) {
+  // Show generator menu item
+}
+
+// Check action permission (used in components for button visibility)
+{canPerformAction(currentUser, 'reschedule_shop') && (
+  <Button onClick={handleReschedule}>Reschedule</Button>
+)}
+
+// Check action permission for disabling
+<Button
+  disabled={!canPerformAction(currentUser, 'export_data')}
+  onClick={handleExport}
+>
+  Export
+</Button>
 ```
 
 ---
@@ -230,12 +360,19 @@ interface PermissionProps {
 }
 ```
 **Features:**
-- User management table
-- Role assignment dropdown
+- User management table with avatar, role, status
+- Role assignment dropdown (Admin/App Owner/User)
 - Status toggle (Active/Inactive)
-- Permission tooltips
-- Bento stat cards
+- **Configure button** - Opens permission editor modal
+- Bento stat cards (Total, Active, Admins, App Owners, Custom Perms)
 - Search by name/email/role
+
+**Permission Editor Modal:**
+- Two tabs: **Page Access** and **Actions**
+- Toggle switches for each permission
+- **Reset to Defaults** button - Restores role-based defaults
+- Admins shown as locked (cannot be modified)
+- Shows "Custom" tag for users with custom permissions
 
 ---
 
@@ -382,9 +519,13 @@ class SharePointService {
   getUserByAliasEmail(email: string): Promise<User | null>;
   registerMember(userData: object): Promise<boolean>;
   updatePasswordByEmail(email: string, hash: string): Promise<boolean>;
-  getAllMembers(): Promise<User[]>;
+  getAllMembers(): Promise<User[]>;  // Returns users with Permissions parsed from JSON
   updateMemberRole(id: string, role: string): Promise<boolean>;
   updateMemberStatus(id: string, status: string): Promise<boolean>;
+
+  // Permission Management
+  updateMemberPermissions(id: string, permissions: UserPermissions): Promise<boolean>;
+  resetMemberPermissions(id: string, role: UserRole): Promise<boolean>;
 
   // Shop Management
   getShops(): Promise<Shop[]>;

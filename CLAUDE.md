@@ -31,15 +31,21 @@ ESLint is configured via `eslint.config.js` (flat config) with TypeScript, React
 
 ### State Management
 State is centralized in `App.tsx` using React hooks. Key state:
-- `graphToken` / `invToken` - SharePoint API tokens (localStorage)
+- `graphToken` - SharePoint API token (shared via Cloudflare KV API)
+- `tokenTimestamp` - Token creation time for expiry tracking
 - `allShops` - Master shop data from SharePoint
-- `currentUser` - Authenticated user (sessionStorage)
+- `currentUser` - Authenticated user with permissions (sessionStorage)
 
 ### Service Layer
 `services/SharePointService.ts` is the main service handling all SharePoint API communication. It uses:
 - Bearer token authentication via Graph API
 - OData queries with `$filter`, `$select`, `$expand`
 - Headers: `Prefer: HonorNonIndexedQueriesWarningMayFailOverTime`, `ConsistencyLevel: eventual`
+- Permission methods: `updateMemberPermissions()`, `resetMemberPermissions()`
+
+`services/TokenService.ts` handles shared token storage:
+- `getToken()` - Fetch from Cloudflare KV API (fallback: localStorage)
+- `setToken()` - Save to API and localStorage backup
 
 ### Key Utilities
 - `utils/kmeans.ts` - K-means clustering for grouping shops by geographic proximity
@@ -59,7 +65,7 @@ State is centralized in `App.tsx` using React hooks. Key state:
 
 ```
 App.tsx (root state, routing)
-├── Layout.tsx (sidebar navigation)
+├── Layout.tsx (sidebar navigation, permission-filtered menu)
 ├── Login.tsx (authentication)
 ├── Dashboard.tsx (stats overview, shop actions: Resume/Pool/Close/Reschedule)
 ├── Generator.tsx (schedule generation with K-means clustering)
@@ -72,7 +78,8 @@ App.tsx (root state, routing)
 │       ├── BottomSheet.tsx (swipeable shop list)
 │       └── RoutePanel.tsx (walk/transit route options)
 ├── Inventory.tsx (asset tracking)
-├── Settings.tsx (token management)
+├── Permission.tsx (user management, granular permission editor)
+├── Settings.tsx (shared token management)
 └── ErrorBoundary.tsx (error catching)
 ```
 
@@ -102,9 +109,11 @@ Input sanitization: `sanitizeFilterValue()` escapes single quotes in OData filte
 
 ## Token Management
 
-- Tokens stored in localStorage with timestamps
+- **Shared token**: Stored in Cloudflare KV via `/api/token` endpoint
+- Once any user updates the token, all users can access the app
+- Falls back to localStorage if API unavailable
 - 45-minute warning threshold for token expiry
-- Users must manually refresh tokens from Microsoft Graph Explorer
+- Users refresh tokens from Microsoft Graph Explorer
 
 ## CI/CD
 
@@ -113,9 +122,45 @@ GitHub Actions workflows in `.github/workflows/`:
 - **gemini-review.yml** - Automated Gemini review on PRs (via workflow_call)
 - Additional Gemini workflows for dispatch, invocation, triage, and scheduled triage
 
+## Granular Permission System
+
+The app uses a granular permission system stored in SharePoint's `Permissions` column (JSON).
+
+### Permission Structure
+```typescript
+interface UserPermissions {
+  pages: {
+    dashboard, calendar, generator, locations,
+    shopList, inventory, permission, settings
+  };
+  actions: {
+    reschedule_shop, close_shop, edit_shop, add_shop, delete_shop,
+    generate_schedule, reset_schedule, export_data,
+    manage_inventory, manage_users
+  };
+}
+```
+
+### Helper Functions (`types.ts`)
+- `canAccessPage(user, page)` - Check if user can access a page (used in Layout.tsx)
+- `canPerformAction(user, action)` - Check if user can perform an action
+- `getEffectivePermissions(user)` - Get user's permissions (custom or role defaults)
+- `hasPermission(user, action)` - Legacy helper for backward compatibility
+
+### Default Permissions by Role
+- **Admin**: All pages and actions enabled
+- **App Owner**: All except `delete_shop`
+- **User**: Only `dashboard`, `locations`, `settings` pages; no actions
+
+### Permission Page Features
+- Configure button opens modal with Page Access and Actions tabs
+- Toggle switches for each permission
+- Reset to Defaults button restores role-based defaults
+- Custom permissions shown with "Custom" tag
+
 ## Dashboard Shop Actions
 
-The Dashboard provides per-shop action buttons (permission-gated):
+The Dashboard provides per-shop action buttons (permission-gated via `canPerformAction`):
 - **Reschedule** (`reschedule_shop`) - Open date picker to reschedule an active shop
 - **Move to Pool** (`reschedule_shop`) - Clear scheduled date and set status to "Rescheduled"
 - **Close** (`close_shop`) - Mark a shop as closed

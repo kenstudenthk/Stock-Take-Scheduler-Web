@@ -79,10 +79,28 @@ class SharePointService {
       const data = await response.json();
       if (data.value && data.value.length > 0) {
         const fields = data.value[0].fields;
-        // Map SharePoint field 'Role' to 'UserRole' expected by the app
+
+        // Parse permissions JSON if available
+        let permissions: UserPermissions | undefined;
+        if (fields.Permissions) {
+          try {
+            permissions = JSON.parse(fields.Permissions);
+          } catch {
+            permissions = undefined;
+          }
+        }
+
+        // Map SharePoint fields to User interface
         return {
-          ...fields,
-          UserRole: fields.Role || 'User'
+          id: data.value[0].id,
+          Name: fields.Name || fields.Title || '',
+          UserEmail: fields.UserEmail || '',
+          AliasEmail: fields.AliasEmail || '',
+          PasswordHash: fields.PasswordHash,
+          UserRole: (fields.Role as UserRole) || 'User',
+          AccountStatus: fields.AccountStatus || 'Active',
+          AccountCreateDate: fields.AccountCreateDate || '',
+          Permissions: permissions,
         };
       }
       return null;

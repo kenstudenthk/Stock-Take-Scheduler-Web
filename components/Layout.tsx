@@ -5,23 +5,38 @@ import {
   UserOutlined, SafetyCertificateOutlined, BugOutlined,
   TeamOutlined
 } from '@ant-design/icons';
-import { View, User, hasAdminAccess } from '../types';
+import { View, User, canAccessPage, UserPermissions } from '../types';
 
 export const Layout: React.FC<any> = ({ children, onLogout, user, onViewChange, currentView, onReportError }) => {
-  const isAdmin = hasAdminAccess(user as User | null);
+  // Map View enum to permission page keys
+  const viewToPermissionKey: Record<View, keyof UserPermissions['pages'] | null> = {
+    [View.DASHBOARD]: 'dashboard',
+    [View.SHOP_LIST]: 'shopList',
+    [View.CALENDAR]: 'calendar',
+    [View.GENERATOR]: 'generator',
+    [View.LOCATIONS]: 'locations',
+    [View.INVENTORY]: 'inventory',
+    [View.PERMISSION]: 'permission',
+    [View.SETTINGS]: 'settings',
+    [View.REPORTS]: null, // Not currently used
+  };
 
   const allMenuItems = [
-    { key: View.DASHBOARD, label: 'Dashboard', icon: <HomeOutlined />, requiresAdmin: false },
-    { key: View.SHOP_LIST, label: 'Master List', icon: <DatabaseOutlined />, requiresAdmin: false },
-    { key: View.CALENDAR, label: 'Schedules', icon: <CalendarOutlined />, requiresAdmin: false },
-    { key: View.GENERATOR, label: 'Generator', icon: <SafetyCertificateOutlined />, requiresAdmin: true },
-    { key: View.LOCATIONS, label: 'Map View', icon: <EnvironmentOutlined />, requiresAdmin: false },
-    { key: View.INVENTORY, label: 'Inventory', icon: <DatabaseOutlined />, requiresAdmin: true },
-    { key: View.PERMISSION, label: 'Permission', icon: <TeamOutlined />, requiresAdmin: true },
+    { key: View.DASHBOARD, label: 'Dashboard', icon: <HomeOutlined /> },
+    { key: View.SHOP_LIST, label: 'Master List', icon: <DatabaseOutlined /> },
+    { key: View.CALENDAR, label: 'Schedules', icon: <CalendarOutlined /> },
+    { key: View.GENERATOR, label: 'Generator', icon: <SafetyCertificateOutlined /> },
+    { key: View.LOCATIONS, label: 'Map View', icon: <EnvironmentOutlined /> },
+    { key: View.INVENTORY, label: 'Inventory', icon: <DatabaseOutlined /> },
+    { key: View.PERMISSION, label: 'Permission', icon: <TeamOutlined /> },
   ];
 
-  // Filter menu items based on user role
-  const menuItems = allMenuItems.filter(item => !item.requiresAdmin || isAdmin);
+  // Filter menu items based on user's granular permissions
+  const menuItems = allMenuItems.filter(item => {
+    const permKey = viewToPermissionKey[item.key];
+    if (!permKey) return true; // If no permission key mapped, show by default
+    return canAccessPage(user as User | null, permKey);
+  });
 
 return (
     <div className="custom-app-layout">

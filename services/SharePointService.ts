@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { SHAREPOINT_CONFIG, API_URLS } from '../constants/config';
 import { SP_FIELDS } from '../constants';
-import { User, UserRole } from '../types';
+import { User, UserRole, UserPermissions, DEFAULT_PERMISSIONS } from '../types';
 
 interface SaveSchedulePayload {
   shopId: string;
@@ -305,15 +305,28 @@ async updatePasswordByEmail(email: string, hash: string) {
 
       const data = await response.json();
       if (data.value && data.value.length > 0) {
-        return data.value.map((item: any) => ({
-          id: item.id,
-          Name: item.fields?.Name || item.fields?.Title || '',
-          UserEmail: item.fields?.UserEmail || '',
-          AliasEmail: item.fields?.AliasEmail || '',
-          UserRole: item.fields?.Role as UserRole || 'User',
-          AccountStatus: item.fields?.AccountStatus || 'Active',
-          AccountCreateDate: item.fields?.AccountCreateDate || ''
-        }));
+        return data.value.map((item: any) => {
+          // Parse permissions JSON if available
+          let permissions: UserPermissions | undefined;
+          if (item.fields?.Permissions) {
+            try {
+              permissions = JSON.parse(item.fields.Permissions);
+            } catch {
+              permissions = undefined;
+            }
+          }
+
+          return {
+            id: item.id,
+            Name: item.fields?.Name || item.fields?.Title || '',
+            UserEmail: item.fields?.UserEmail || '',
+            AliasEmail: item.fields?.AliasEmail || '',
+            UserRole: item.fields?.Role as UserRole || 'User',
+            AccountStatus: item.fields?.AccountStatus || 'Active',
+            AccountCreateDate: item.fields?.AccountCreateDate || '',
+            Permissions: permissions,
+          };
+        });
       }
       return [];
     } catch (error) {
@@ -378,6 +391,43 @@ async updatePasswordByEmail(email: string, hash: string) {
       console.error("❌ Error updating member status:", error);
       return false;
     }
+  }
+
+  /**
+   * Update a member's granular permissions
+   */
+  async updateMemberPermissions(itemId: string, permissions: UserPermissions): Promise<boolean> {
+    try {
+      const url = `${API_URLS.memberList}/items/${itemId}/fields`;
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${this.graphToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ Permissions: JSON.stringify(permissions) })
+      });
+
+      if (response.ok) {
+        console.log(`✅ Member permissions updated`);
+        return true;
+      } else {
+        const errorDetail = await response.json();
+        console.error("❌ Failed to update permissions:", errorDetail.error?.message);
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Error updating member permissions:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Reset a member's permissions to role defaults
+   */
+  async resetMemberPermissions(itemId: string, role: UserRole): Promise<boolean> {
+    const defaultPerms = DEFAULT_PERMISSIONS[role];
+    return this.updateMemberPermissions(itemId, defaultPerms);
   }
 }
 

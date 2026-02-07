@@ -1,159 +1,47 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Card, Typography, Space, Tag, message, Select, Switch, Input, Row, Col, Avatar, Badge, Tooltip } from 'antd';
+import { Table, Card, Typography, Space, Tag, message, Select, Switch, Input, Row, Col, Avatar, Badge, Tooltip, Modal, Tabs, Divider, Button } from 'antd';
 import {
   TeamOutlined, SearchOutlined, UserOutlined, MailOutlined,
   CrownOutlined, SafetyCertificateOutlined, CheckCircleOutlined,
-  CloseCircleOutlined, CalendarOutlined, InfoCircleOutlined
+  CloseCircleOutlined, CalendarOutlined, InfoCircleOutlined,
+  SettingOutlined, LockOutlined, UnlockOutlined, ReloadOutlined,
+  DashboardOutlined, ScheduleOutlined, EnvironmentOutlined,
+  ShopOutlined, DatabaseOutlined, AppstoreOutlined, ExportOutlined,
+  EditOutlined, DeleteOutlined, PlusOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { User, UserRole } from '../types';
+import { User, UserRole, UserPermissions, DEFAULT_PERMISSIONS, getEffectivePermissions } from '../types';
 import SharePointService from '../services/SharePointService';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// Role Permission Descriptions
-const rolePermissions = {
-  Admin: {
-    title: "Administrator",
-    description: "Full system access with all privileges",
-    can: [
-      "Manage all users and permissions",
-      "Create, edit, and delete all content",
-      "Access and modify system settings",
-      "View all reports and analytics",
-      "Configure security settings",
-      "Manage billing and subscriptions"
-    ],
-    cannot: [
-      "Cannot be deleted if only admin exists",
-      "All actions are logged for audit"
-    ],
-    color: "#ef4444"
-  },
-  "App Owner": {
-    title: "App Owner",
-    description: "Application management with elevated permissions",
-    can: [
-      "Manage application content",
-      "Configure app settings",
-      "View analytics and reports",
-      "Manage user roles (except Admin)",
-      "Access app-specific features",
-      "Upload and manage media"
-    ],
-    cannot: [
-      "Cannot modify system settings",
-      "Cannot create or delete Admin users",
-      "Cannot access billing information",
-      "Cannot configure security settings"
-    ],
-    color: "#a855f7"
-  },
-  User: {
-    title: "User",
-    description: "Standard access for regular users",
-    can: [
-      "View assigned content",
-      "Edit own profile",
-      "Comment on posts",
-      "Download available resources",
-      "Submit requests"
-    ],
-    cannot: [
-      "Cannot create or delete users",
-      "Cannot modify any settings",
-      "Cannot access admin areas",
-      "Cannot change permissions",
-      "Cannot view other users' data",
-      "Cannot access analytics"
-    ],
-    color: "#3b82f6"
-  }
-};
+// Permission labels and icons for UI
+const PAGE_PERMISSIONS = [
+  { key: 'dashboard', label: 'Dashboard', icon: <DashboardOutlined />, description: 'View dashboard statistics and shop status' },
+  { key: 'calendar', label: 'Calendar', icon: <CalendarOutlined />, description: 'View and manage schedule calendar' },
+  { key: 'generator', label: 'Generator', icon: <AppstoreOutlined />, description: 'Generate schedules with K-means clustering' },
+  { key: 'locations', label: 'Locations', icon: <EnvironmentOutlined />, description: 'View shop locations on map' },
+  { key: 'shopList', label: 'Shop List', icon: <ShopOutlined />, description: 'View and manage shop master data' },
+  { key: 'inventory', label: 'Inventory', icon: <DatabaseOutlined />, description: 'Manage asset inventory' },
+  { key: 'permission', label: 'Permissions', icon: <LockOutlined />, description: 'Manage user permissions' },
+  { key: 'settings', label: 'Settings', icon: <SettingOutlined />, description: 'Access system settings' },
+] as const;
 
-// Tooltip Component for Role Permissions
-const RolePermissionTooltip = ({ role }: { role: UserRole }) => {
-  const info = rolePermissions[role];
-  
-  return (
-    <div style={{ maxWidth: '320px', fontFamily: "'Fira Sans', sans-serif" }}>
-      <div style={{
-        borderLeft: `4px solid ${info.color}`,
-        paddingLeft: '12px',
-        marginBottom: '12px'
-      }}>
-        <div style={{ 
-          fontWeight: 700, 
-          fontSize: '14px', 
-          color: '#1e293b',
-          marginBottom: '4px'
-        }}>
-          {info.title}
-        </div>
-        <div style={{ 
-          fontSize: '12px', 
-          color: '#64748b',
-          lineHeight: '1.4'
-        }}>
-          {info.description}
-        </div>
-      </div>
-      
-      <div style={{ marginBottom: '12px' }}>
-        <div style={{
-          fontSize: '11px',
-          fontWeight: 700,
-          color: '#16a34a',
-          marginBottom: '6px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px'
-        }}>
-          <CheckCircleOutlined /> CAN DO
-        </div>
-        <ul style={{
-          margin: 0,
-          paddingLeft: '20px',
-          fontSize: '11px',
-          color: '#475569',
-          lineHeight: '1.6'
-        }}>
-          {info.can.map((item, index) => (
-            <li key={index}>{item}</li>
-          ))}
-        </ul>
-      </div>
-      
-      <div>
-        <div style={{
-          fontSize: '11px',
-          fontWeight: 700,
-          color: '#dc2626',
-          marginBottom: '6px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px'
-        }}>
-          <CloseCircleOutlined /> CANNOT DO
-        </div>
-        <ul style={{
-          margin: 0,
-          paddingLeft: '20px',
-          fontSize: '11px',
-          color: '#475569',
-          lineHeight: '1.6'
-        }}>
-          {info.cannot.map((item, index) => (
-            <li key={index}>{item}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-};
+const ACTION_PERMISSIONS = [
+  { key: 'reschedule_shop', label: 'Reschedule Shop', icon: <ScheduleOutlined />, description: 'Change shop scheduled dates' },
+  { key: 'close_shop', label: 'Close Shop', icon: <CloseCircleOutlined />, description: 'Mark shops as closed' },
+  { key: 'edit_shop', label: 'Edit Shop', icon: <EditOutlined />, description: 'Modify shop details' },
+  { key: 'add_shop', label: 'Add Shop', icon: <PlusOutlined />, description: 'Create new shops' },
+  { key: 'delete_shop', label: 'Delete Shop', icon: <DeleteOutlined />, description: 'Remove shops from system' },
+  { key: 'generate_schedule', label: 'Generate Schedule', icon: <AppstoreOutlined />, description: 'Run schedule generation' },
+  { key: 'reset_schedule', label: 'Reset Schedule', icon: <ReloadOutlined />, description: 'Clear and reset schedules' },
+  { key: 'export_data', label: 'Export Data', icon: <ExportOutlined />, description: 'Export to Excel/PDF' },
+  { key: 'manage_inventory', label: 'Manage Inventory', icon: <DatabaseOutlined />, description: 'Add/edit inventory items' },
+  { key: 'manage_users', label: 'Manage Users', icon: <TeamOutlined />, description: 'Modify user accounts and roles' },
+] as const;
 
-// Bento Card Component for Statistics (matching ShopList style)
+// Bento Card Component for Statistics
 const BentoStatCard = ({
   title, value, subtitle, icon, color, size = 'normal'
 }: {
@@ -174,6 +62,29 @@ const BentoStatCard = ({
   </div>
 );
 
+// Permission Toggle Component
+const PermissionToggle = ({
+  checked,
+  onChange,
+  disabled,
+  loading,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+  loading?: boolean;
+}) => (
+  <Switch
+    checked={checked}
+    onChange={onChange}
+    disabled={disabled}
+    loading={loading}
+    size="small"
+    checkedChildren={<UnlockOutlined />}
+    unCheckedChildren={<LockOutlined />}
+  />
+);
+
 interface PermissionProps {
   graphToken: string;
   currentUser: User | null;
@@ -185,6 +96,10 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('All');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingMember, setEditingMember] = useState<User | null>(null);
+  const [editingPermissions, setEditingPermissions] = useState<UserPermissions | null>(null);
+  const [savingPermissions, setSavingPermissions] = useState(false);
 
   const sharePointService = useMemo(() => new SharePointService(graphToken), [graphToken]);
 
@@ -210,6 +125,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
       admins: members.filter(m => m.UserRole === 'Admin').length,
       appOwners: members.filter(m => m.UserRole === 'App Owner').length,
       users: members.filter(m => m.UserRole === 'User').length,
+      customPerms: members.filter(m => m.Permissions !== undefined).length,
     };
   }, [members]);
 
@@ -232,7 +148,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
     if (success) {
       message.success(`${member.Name}'s role updated to ${newRole}`);
       setMembers(prev => prev.map(m =>
-        m.id === member.id ? { ...m, UserRole: newRole } : m
+        m.id === member.id ? { ...m, UserRole: newRole, Permissions: undefined } : m
       ));
     } else {
       message.error('Failed to update role');
@@ -256,6 +172,53 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
     setUpdatingId(null);
   };
 
+  const openPermissionEditor = (member: User) => {
+    setEditingMember(member);
+    // Get effective permissions (custom or role-based defaults)
+    const effectivePerms = getEffectivePermissions(member);
+    setEditingPermissions(JSON.parse(JSON.stringify(effectivePerms))); // Deep clone
+    setEditModalVisible(true);
+  };
+
+  const handlePagePermissionChange = (page: keyof UserPermissions['pages'], value: boolean) => {
+    if (!editingPermissions) return;
+    setEditingPermissions({
+      ...editingPermissions,
+      pages: { ...editingPermissions.pages, [page]: value }
+    });
+  };
+
+  const handleActionPermissionChange = (action: keyof UserPermissions['actions'], value: boolean) => {
+    if (!editingPermissions) return;
+    setEditingPermissions({
+      ...editingPermissions,
+      actions: { ...editingPermissions.actions, [action]: value }
+    });
+  };
+
+  const handleSavePermissions = async () => {
+    if (!editingMember?.id || !editingPermissions) return;
+    setSavingPermissions(true);
+    const success = await sharePointService.updateMemberPermissions(editingMember.id, editingPermissions);
+    if (success) {
+      message.success(`Permissions saved for ${editingMember.Name}`);
+      setMembers(prev => prev.map(m =>
+        m.id === editingMember.id ? { ...m, Permissions: editingPermissions } : m
+      ));
+      setEditModalVisible(false);
+    } else {
+      message.error('Failed to save permissions');
+    }
+    setSavingPermissions(false);
+  };
+
+  const handleResetToDefaults = () => {
+    if (!editingMember) return;
+    const role = editingMember.UserRole || 'User';
+    setEditingPermissions(JSON.parse(JSON.stringify(DEFAULT_PERMISSIONS[role])));
+    message.info(`Reset to ${role} defaults`);
+  };
+
   const getRoleColor = (role: UserRole | undefined) => {
     switch (role) {
       case 'Admin': return 'red';
@@ -277,7 +240,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
     {
       title: 'User',
       key: 'user',
-      width: '28%',
+      width: '25%',
       render: (record: User) => (
         <Space size={12}>
           <Avatar
@@ -288,15 +251,14 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
           <div className="flex flex-col">
             <Text strong className="text-[14px] text-slate-800">{record.Name}</Text>
             <div className="flex items-center gap-1">
-              <Tooltip 
-                title={<RolePermissionTooltip role={record.UserRole || 'User'} />}
-                placement="right"
-                overlayClassName="role-tooltip"
-              >
-                <Tag color={getRoleColor(record.UserRole)} className="m-0 text-[10px] font-bold border-none cursor-help">
-                  {getRoleIcon(record.UserRole)} {record.UserRole} <InfoCircleOutlined style={{ fontSize: '10px', marginLeft: '2px' }} />
+              <Tag color={getRoleColor(record.UserRole)} className="m-0 text-[10px] font-bold border-none">
+                {getRoleIcon(record.UserRole)} {record.UserRole}
+              </Tag>
+              {record.Permissions && (
+                <Tag color="cyan" className="m-0 text-[10px] border-none">
+                  <SettingOutlined /> Custom
                 </Tag>
-              </Tooltip>
+              )}
             </div>
           </div>
         </Space>
@@ -305,7 +267,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
     {
       title: 'Email',
       key: 'email',
-      width: '25%',
+      width: '22%',
       render: (record: User) => (
         <div className="flex flex-col gap-1">
           <Text className="text-[12px] text-slate-700">
@@ -318,24 +280,9 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
       ),
     },
     {
-      title: () => (
-        <Space>
-          Role
-          <Tooltip 
-            title={
-              <div style={{ fontFamily: "'Fira Sans', sans-serif", fontSize: '12px' }}>
-                <div style={{ fontWeight: 700, marginBottom: '8px' }}>Role Permissions Guide</div>
-                <div style={{ marginBottom: '6px' }}>Hover over any role tag to see detailed permissions.</div>
-                <div style={{ color: '#94a3b8', fontSize: '11px' }}>You cannot change your own role.</div>
-              </div>
-            }
-          >
-            <InfoCircleOutlined style={{ color: '#94a3b8', cursor: 'help' }} />
-          </Tooltip>
-        </Space>
-      ),
+      title: 'Role',
       key: 'role',
-      width: '18%',
+      width: '15%',
       render: (record: User) => (
         <Select
           value={record.UserRole}
@@ -343,42 +290,16 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
           className="w-full role-select"
           loading={updatingId === record.id}
           disabled={updatingId === record.id || record.id === currentUser?.id}
+          size="small"
         >
           <Option value="Admin">
-            <Tooltip 
-              title={<RolePermissionTooltip role="Admin" />}
-              placement="right"
-              overlayClassName="role-tooltip"
-            >
-              <Space>
-                <CrownOutlined className="text-red-500" /> Admin
-                <InfoCircleOutlined style={{ fontSize: '11px', color: '#94a3b8' }} />
-              </Space>
-            </Tooltip>
+            <Space><CrownOutlined className="text-red-500" /> Admin</Space>
           </Option>
           <Option value="App Owner">
-            <Tooltip 
-              title={<RolePermissionTooltip role="App Owner" />}
-              placement="right"
-              overlayClassName="role-tooltip"
-            >
-              <Space>
-                <SafetyCertificateOutlined className="text-purple-500" /> App Owner
-                <InfoCircleOutlined style={{ fontSize: '11px', color: '#94a3b8' }} />
-              </Space>
-            </Tooltip>
+            <Space><SafetyCertificateOutlined className="text-purple-500" /> App Owner</Space>
           </Option>
           <Option value="User">
-            <Tooltip 
-              title={<RolePermissionTooltip role="User" />}
-              placement="right"
-              overlayClassName="role-tooltip"
-            >
-              <Space>
-                <UserOutlined className="text-blue-500" /> User
-                <InfoCircleOutlined style={{ fontSize: '11px', color: '#94a3b8' }} />
-              </Space>
-            </Tooltip>
+            <Space><UserOutlined className="text-blue-500" /> User</Space>
           </Option>
         </Select>
       ),
@@ -386,7 +307,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
     {
       title: 'Status',
       key: 'status',
-      width: '12%',
+      width: '10%',
       align: 'center' as const,
       render: (record: User) => (
         <div className="flex items-center justify-center gap-2">
@@ -405,9 +326,27 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
       ),
     },
     {
+      title: 'Permissions',
+      key: 'permissions',
+      width: '13%',
+      align: 'center' as const,
+      render: (record: User) => (
+        <Button
+          type="primary"
+          size="small"
+          icon={<SettingOutlined />}
+          onClick={() => openPermissionEditor(record)}
+          disabled={record.id === currentUser?.id}
+          className="permission-edit-btn"
+        >
+          Configure
+        </Button>
+      ),
+    },
+    {
       title: 'Created',
       key: 'created',
-      width: '17%',
+      width: '15%',
       render: (record: User) => (
         <Text className="text-[11px] text-slate-500">
           <CalendarOutlined className="mr-1" />
@@ -428,7 +367,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
             Permission Management
           </Title>
           <Text style={{ fontFamily: "'Fira Sans', sans-serif", color: '#64748b' }}>
-            Manage user roles and access control
+            Manage user roles and granular access control
           </Text>
         </div>
       </div>
@@ -462,10 +401,10 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
           color="#a855f7"
         />
         <BentoStatCard
-          title="Users"
-          value={stats.users}
-          icon={<UserOutlined />}
-          color="#3b82f6"
+          title="Custom Perms"
+          value={stats.customPerms}
+          icon={<SettingOutlined />}
+          color="#f59e0b"
         />
       </div>
 
@@ -533,6 +472,110 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
           />
         </div>
       </Card>
+
+      {/* Permission Editor Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-3">
+            <Avatar
+              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${editingMember?.Name}`}
+              size={40}
+            />
+            <div>
+              <div className="font-bold text-lg">{editingMember?.Name}</div>
+              <div className="text-sm text-gray-500">Configure Permissions</div>
+            </div>
+          </div>
+        }
+        open={editModalVisible}
+        onCancel={() => setEditModalVisible(false)}
+        width={700}
+        footer={[
+          <Button key="reset" onClick={handleResetToDefaults} icon={<ReloadOutlined />}>
+            Reset to Defaults
+          </Button>,
+          <Button key="cancel" onClick={() => setEditModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="save"
+            type="primary"
+            onClick={handleSavePermissions}
+            loading={savingPermissions}
+            icon={<CheckCircleOutlined />}
+          >
+            Save Permissions
+          </Button>,
+        ]}
+      >
+        <Tabs
+          defaultActiveKey="pages"
+          items={[
+            {
+              key: 'pages',
+              label: (
+                <span>
+                  <AppstoreOutlined /> Page Access
+                </span>
+              ),
+              children: (
+                <div className="permission-grid">
+                  {PAGE_PERMISSIONS.map(perm => (
+                    <div key={perm.key} className="permission-item">
+                      <div className="permission-item-info">
+                        <div className="permission-item-icon">{perm.icon}</div>
+                        <div>
+                          <div className="permission-item-label">{perm.label}</div>
+                          <div className="permission-item-desc">{perm.description}</div>
+                        </div>
+                      </div>
+                      <PermissionToggle
+                        checked={editingPermissions?.pages[perm.key as keyof UserPermissions['pages']] ?? false}
+                        onChange={(v) => handlePagePermissionChange(perm.key as keyof UserPermissions['pages'], v)}
+                        disabled={editingMember?.UserRole === 'Admin'}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ),
+            },
+            {
+              key: 'actions',
+              label: (
+                <span>
+                  <SettingOutlined /> Actions
+                </span>
+              ),
+              children: (
+                <div className="permission-grid">
+                  {ACTION_PERMISSIONS.map(perm => (
+                    <div key={perm.key} className="permission-item">
+                      <div className="permission-item-info">
+                        <div className="permission-item-icon">{perm.icon}</div>
+                        <div>
+                          <div className="permission-item-label">{perm.label}</div>
+                          <div className="permission-item-desc">{perm.description}</div>
+                        </div>
+                      </div>
+                      <PermissionToggle
+                        checked={editingPermissions?.actions[perm.key as keyof UserPermissions['actions']] ?? false}
+                        onChange={(v) => handleActionPermissionChange(perm.key as keyof UserPermissions['actions'], v)}
+                        disabled={editingMember?.UserRole === 'Admin'}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ),
+            },
+          ]}
+        />
+
+        {editingMember?.UserRole === 'Admin' && (
+          <div className="admin-notice">
+            <InfoCircleOutlined /> Admins have full access to all features. Permissions cannot be modified.
+          </div>
+        )}
+      </Modal>
 
       <style>{`
         .permission-container {
@@ -741,27 +784,97 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
 
         .role-select .ant-select-selector {
           border-radius: 8px !important;
-          height: 36px !important;
+          height: 32px !important;
           font-weight: 600 !important;
         }
 
-        .role-select .ant-select-selection-item {
-          line-height: 34px !important;
+        .permission-edit-btn {
+          background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%) !important;
+          border: none !important;
+          font-weight: 600 !important;
+          font-size: 11px !important;
         }
 
-        /* Custom Tooltip Styles */
-        .role-tooltip .ant-tooltip-inner {
-          background: white !important;
-          color: #1e293b !important;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-          padding: 12px !important;
-          border-radius: 8px !important;
-          border: 1px solid #e2e8f0 !important;
+        .permission-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          padding: 16px 0;
         }
 
-        .role-tooltip .ant-tooltip-arrow-content {
-          background: white !important;
-          border: 1px solid #e2e8f0 !important;
+        .permission-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          background: #f8fafc;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          transition: all 150ms ease;
+        }
+
+        .permission-item:hover {
+          background: #eff6ff;
+          border-color: #3B82F6;
+        }
+
+        .permission-item-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .permission-item-icon {
+          width: 36px;
+          height: 36px;
+          background: white;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          color: #3B82F6;
+          border: 1px solid #e2e8f0;
+        }
+
+        .permission-item-label {
+          font-weight: 600;
+          font-size: 13px;
+          color: #1e293b;
+        }
+
+        .permission-item-desc {
+          font-size: 11px;
+          color: #64748b;
+          max-width: 200px;
+        }
+
+        .admin-notice {
+          margin-top: 16px;
+          padding: 12px 16px;
+          background: #fef3c7;
+          border: 1px solid #f59e0b;
+          border-radius: 8px;
+          color: #92400e;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+          .permission-grid {
+            grid-template-columns: 1fr;
+          }
+          .bento-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .bento-stat-card {
+            grid-column: span 1;
+          }
+          .bento-large {
+            grid-column: span 2;
+          }
         }
       `}</style>
     </div>

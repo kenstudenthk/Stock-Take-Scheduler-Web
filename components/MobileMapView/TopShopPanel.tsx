@@ -58,13 +58,14 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
               onExpandChange(true); // Auto-expand when group changes
             }}
             bordered={false}
-            className="mobile-top-group-select"
+            className="mobile-top-group-select w-full"
+            style={{ width: '100%' }}
             popupMatchSelectWidth={false}
-            dropdownStyle={{ borderRadius: '12px', padding: '8px' }}
+            dropdownStyle={{ borderRadius: '12px', padding: '8px', zIndex: 3000 }}
             options={[
-              { value: 1, label: <span className="font-bold text-slate-800">Group A ({groupCounts[1] || 0})</span> },
-              { value: 2, label: <span className="font-bold text-slate-800">Group B ({groupCounts[2] || 0})</span> },
-              { value: 3, label: <span className="font-bold text-slate-800">Group C ({groupCounts[3] || 0})</span> },
+              { value: 1, label: <span className="font-bold text-slate-800 text-lg">Group A ({groupCounts[1] || 0})</span> },
+              { value: 2, label: <span className="font-bold text-slate-800 text-lg">Group B ({groupCounts[2] || 0})</span> },
+              { value: 3, label: <span className="font-bold text-slate-800 text-lg">Group C ({groupCounts[3] || 0})</span> },
             ]}
           />
         </div>
@@ -138,7 +139,7 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
           top: 0;
           left: 0;
           right: 0;
-          z-index: 1000;
+          z-index: 2000;
           background: white;
           border-bottom-left-radius: 20px;
           border-bottom-right-radius: 20px;
@@ -159,6 +160,9 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
           padding: 0 !important;
           font-size: 16px !important;
           font-weight: 800 !important;
+          height: 32px !important;
+          display: flex;
+          align-items: center;
         }
 
         .mobile-top-toggle-btn {

@@ -6,7 +6,6 @@ import { Shop } from '../../types';
 import { wgs84ToGcj02 } from '../../utils/coordTransform';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import { useAMapRoute } from '../../hooks/useAMapRoute';
-import { GroupSelector } from './GroupSelector';
 import { BottomSheet, BottomSheetState } from './BottomSheet';
 import { RoutePanel } from './RoutePanel';
 
@@ -98,20 +97,6 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
       return { ...shop, distance };
     });
   }, [todayShops, userPosition]);
-
-  // Group counts for selector
-  const groupCounts = useMemo(() => {
-    const today = dayjs().format('YYYY-MM-DD');
-    const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
-    shops.forEach(s => {
-      if (s.scheduledDate && dayjs(s.scheduledDate).format('YYYY-MM-DD') === today) {
-        if (s.groupId && counts[s.groupId] !== undefined) {
-          counts[s.groupId]++;
-        }
-      }
-    });
-    return counts;
-  }, [shops]);
 
   // Selected shop object
   const selectedShop = useMemo(() => {
@@ -282,15 +267,6 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
 
   return (
     <div className="mobile-map-view">
-      {/* Group Selector - Fixed top bar */}
-      <div className="mobile-map-topbar">
-        <GroupSelector
-          selectedGroup={selectedGroup}
-          onSelectGroup={setSelectedGroup}
-          groupCounts={groupCounts}
-        />
-      </div>
-
       {/* Map Container */}
       <div id="mobile-map-container" className="mobile-map-container" />
 
@@ -352,6 +328,11 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
         onNavigate={handleNavigate}
         state={sheetState}
         onStateChange={setSheetState}
+        selectedGroup={selectedGroup}
+        onGroupChange={(group) => {
+          setSelectedGroup(group);
+          setSelectedShopId(null); // Clear selection when switching groups
+        }}
       />
     </div>
   );

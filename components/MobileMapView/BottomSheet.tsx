@@ -1,6 +1,7 @@
 import React, { useRef, useCallback, useEffect } from 'react';
-import { MapPin, Navigation } from 'lucide-react';
+import { MapPin, Navigation, ChevronDown } from 'lucide-react';
 import { Shop } from '../../types';
+import { Select } from 'antd';
 
 export type BottomSheetState = 'collapsed' | 'half' | 'expanded';
 
@@ -15,6 +16,8 @@ interface BottomSheetProps {
   onNavigate: (shop: Shop) => void;
   state: BottomSheetState;
   onStateChange: (state: BottomSheetState) => void;
+  selectedGroup: number | null;
+  onGroupChange: (groupId: number) => void;
 }
 
 const CATEGORY_COLORS: Record<number, string> = {
@@ -34,17 +37,25 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   onNavigate,
   state,
   onStateChange,
+  selectedGroup,
+  onGroupChange,
 }) => {
   const sheetRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef<number>(0);
   const startStateRef = useRef<BottomSheetState>(state);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // Don't drag if touching the selector
+    if ((e.target as HTMLElement).closest('.ant-select')) return;
+    
     startYRef.current = e.touches[0].clientY;
     startStateRef.current = state;
   }, [state]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    // Don't drag if touching the selector
+    if ((e.target as HTMLElement).closest('.ant-select')) return;
+
     const endY = e.changedTouches[0].clientY;
     const deltaY = startYRef.current - endY;
     const threshold = 50;
@@ -108,10 +119,28 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         <div className="mobile-sheet-handle-bar" />
       </div>
 
-      {/* Header */}
-      <div className="mobile-sheet-header">
-        <span className="mobile-sheet-title">
-          {shops.length} {shops.length === 1 ? 'shop' : 'shops'} scheduled today
+      {/* Header with Group Selector */}
+      <div className="mobile-sheet-header flex items-center justify-between px-4 pb-2">
+        <div className="flex flex-col">
+          <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider mb-0.5">Assigned Group</span>
+          <Select
+            value={selectedGroup}
+            onChange={onGroupChange}
+            bordered={false}
+            className="mobile-group-select"
+            popupMatchSelectWidth={false}
+            suffixIcon={<ChevronDown className="w-4 h-4 text-slate-800" />}
+            dropdownStyle={{ borderRadius: '12px', padding: '8px' }}
+            options={[
+              { value: 1, label: <span className="font-bold text-slate-800 text-lg">Group A</span> },
+              { value: 2, label: <span className="font-bold text-slate-800 text-lg">Group B</span> },
+              { value: 3, label: <span className="font-bold text-slate-800 text-lg">Group C</span> },
+            ]}
+          />
+        </div>
+        <span className="mobile-sheet-title text-right">
+          <span className="text-xl font-black text-slate-800 block leading-none">{shops.length}</span>
+          <span className="text-[10px] text-slate-400 uppercase font-bold">Shops Today</span>
         </span>
       </div>
 
@@ -181,6 +210,15 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           })
         )}
       </div>
+      <style>{`
+        .mobile-group-select .ant-select-selector {
+          padding-left: 0 !important;
+          background-color: transparent !important;
+        }
+        .mobile-group-select .ant-select-selection-item {
+          padding-right: 24px !important;
+        }
+      `}</style>
     </div>
   );
 };

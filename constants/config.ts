@@ -45,9 +45,13 @@ export const TOKEN_CONFIG = {
   // Token storage keys
   storageKeys: {
     graphToken: 'stockTakeToken',
-    invToken: 'stockTakeInvToken',
     tokenTimestamp: 'stockTakeTokenTimestamp',
   },
+} as const;
+
+// Cloudflare Token Sync
+export const CLOUDFLARE_CONFIG = {
+  tokenSyncEndpoint: 'https://stock-take-token-sync.f6v9zfjpcs.workers.dev/',
 } as const;
 
 // Default Values for Generator

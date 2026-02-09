@@ -21,6 +21,7 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { ErrorReport } from './components/ErrorReport';
 import { Login } from './components/Login';
 import SharePointService from './services/SharePointService';
+import { TokenService } from './services/TokenService';
 
 // ✅ 使用你的 config.ts，避免硬編碼 URL
 import { API_URLS, TOKEN_CONFIG } from './constants/config'; 
@@ -59,7 +60,6 @@ function App() {
   
   // ✅ 修正：統一使用 config.ts 中的 Storage Keys
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken) || '');
-  const [invToken, setInvToken] = useState<string>(localStorage.getItem(TOKEN_CONFIG.storageKeys.invToken) || '');
   
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,6 +71,24 @@ function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(JSON.parse(sessionStorage.getItem('currentUser') || 'null'));
 
   const sharePointService = useMemo(() => new SharePointService(graphToken), [graphToken]);
+
+  // Cloudflare Token Auto-Sync
+  useEffect(() => {
+    const syncToken = async () => {
+      const remoteToken = await TokenService.fetchRemoteToken();
+      if (remoteToken && remoteToken !== graphToken) {
+        console.log("🔄 Syncing token from cloud...");
+        updateGraphToken(remoteToken, false); // Don't broadcast again if fetching from remote
+      }
+    };
+    
+    // Initial sync
+    syncToken();
+
+    // Optional: Poll every 5 minutes to keep token fresh if updated by someone else
+    const interval = setInterval(syncToken, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []); // Run once on mount
 
   // 核心抓取資料函式
   const fetchAllData = useCallback(async (token: string) => {
@@ -136,26 +154,24 @@ function App() {
   }, []);
 
   // ✅ 核心修正：更新 Token 後「立即」使用傳入的值呼叫 fetch
-  const updateGraphToken = (token: string) => {
+  const updateGraphToken = async (token: string, broadcast = true) => {
     const trimmedToken = token.trim();
     setGraphToken(trimmedToken);
     localStorage.setItem(TOKEN_CONFIG.storageKeys.graphToken, trimmedToken);
     
     if (trimmedToken) {
+      // Broadcast to Cloudflare if user manually updated it
+      if (broadcast) {
+        await TokenService.broadcastToken(trimmedToken);
+        message.success("Token updated & synced to cloud!");
+      }
+
       setHasTokenError(false); // ✅ 先隱藏卡車警告
       fetchAllData(trimmedToken); // ✅ 立即刷新
-      message.success("Token updated. Refreshing data...");
     } else {
       setHasTokenError(true);
       setAllShops([]);
     }
-  };
-
-  const updateInvToken = (token: string) => {
-    const trimmedToken = token.trim();
-    setInvToken(trimmedToken);
-    localStorage.setItem(TOKEN_CONFIG.storageKeys.invToken, trimmedToken);
-    message.success("Inventory Token updated.");
   };
 
   useEffect(() => {
@@ -181,7 +197,7 @@ function App() {
 
   const renderContent = () => {
     if (selectedMenuKey === View.SETTINGS) {
-      return <Settings token={graphToken} onUpdateToken={updateGraphToken} invToken={invToken} onUpdateInvToken={updateInvToken} onLogout={handleLogout} />;
+      return <Settings token={graphToken} onUpdateToken={updateGraphToken} onLogout={handleLogout} />;
     }
 
     if (!currentUser) return null;
@@ -198,7 +214,7 @@ function App() {
       );
       case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
       case View.LOCATIONS: return <Locations shops={allShops} />;
-      case View.INVENTORY: return <Inventory invToken={invToken} shops={allShops} />;
+      case View.INVENTORY: return <Inventory token={graphToken} shops={allShops} />;
       case View.PERMISSION: return <Permission graphToken={graphToken} currentUser={currentUser} />;
       default: return null;
     }

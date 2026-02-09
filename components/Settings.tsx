@@ -11,7 +11,8 @@ import {
   ClockCircleOutlined,
   WarningOutlined,
   CheckCircleOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  CloudSyncOutlined
 } from '@ant-design/icons';
 import { TOKEN_CONFIG } from '../constants/config';
 
@@ -22,16 +23,12 @@ const { Panel } = Collapse;
 interface Props {
   token: string;
   onUpdateToken: (t: string) => void;
-  invToken: string;
-  onUpdateInvToken: (t: string) => void;
   onLogout?: () => void;
 }
 
 export const Settings: React.FC<Props> = ({ 
   token, 
   onUpdateToken, 
-  invToken, 
-  onUpdateInvToken,
   onLogout
 }) => {
   
@@ -85,7 +82,7 @@ export const Settings: React.FC<Props> = ({
       const now = Date.now();
       localStorage.setItem(TOKEN_CONFIG.storageKeys.tokenTimestamp, now.toString());
       setTokenTimestamp(now);
-      message.success('Token updated successfully!');
+      // Success message is handled in App.tsx
     }
   };
 
@@ -157,9 +154,12 @@ export const Settings: React.FC<Props> = ({
                 `Approximately ${timeLeft} minutes remaining`
               }
             </Text>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              Last updated: {new Date(tokenTimestamp).toLocaleTimeString()}
-            </Text>
+            <div className="flex items-center gap-2">
+              <CloudSyncOutlined style={{ color: '#1890ff' }} />
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                Auto-sync enabled
+              </Text>
+            </div>
           </div>
 
           {tokenStatus !== 'valid' && (
@@ -282,13 +282,13 @@ export const Settings: React.FC<Props> = ({
             <KeyOutlined /> Security Access Tokens
           </Text>
           <Text type="secondary" style={{ fontSize: '11px' }}>
-            ⚠️ Tokens expire every 60-90 mins
+            ⚠️ Token is automatically synced to cloud
           </Text>
         </div>
 
         <Collapse
           bordered={false}
-          defaultActiveKey={!token || !invToken ? ['1', '2'] : []}
+          defaultActiveKey={['1']}
           expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
           className="bg-transparent"
         >
@@ -296,11 +296,11 @@ export const Settings: React.FC<Props> = ({
           <Panel 
             header={
               <Space>
-                <Text strong>Shop Master List Token</Text>
+                <Text strong>Global Microsoft Graph Token</Text>
                 {token ? (
-                  <Tag color="success" icon={<CheckCircleOutlined />}>✅</Tag>
+                  <Tag color="success" icon={<CheckCircleOutlined />}>Active</Tag>
                 ) : (
-                  <Tag color="error" icon={<WarningOutlined />}>❌</Tag>
+                  <Tag color="error" icon={<WarningOutlined />}>Missing</Tag>
                 )}
               </Space>
             } 
@@ -332,47 +332,6 @@ export const Settings: React.FC<Props> = ({
               </Button>
             </Space>
           </Panel>
-
-          {/* Inventory List Token */}
-          <Panel 
-            header={
-              <Space>
-                <Text strong>Inventory List Token</Text>
-                {invToken ? (
-                  <Tag color="success" icon={<CheckCircleOutlined />}>✅</Tag>
-                ) : (
-                  <Tag color="error" icon={<WarningOutlined />}>❌</Tag>
-                )}
-              </Space>
-            } 
-            key="2"
-            className="bg-white border border-slate-100 rounded-xl overflow-hidden"
-          >
-            <TextArea 
-              placeholder="Paste Inventory Access Token here..."
-              rows={4}
-              value={invToken}
-              onChange={(e) => onUpdateInvToken(e.target.value)}
-              className="rounded-lg font-mono text-xs mb-2 border-none bg-slate-50 focus:bg-white transition-all"
-            />
-            <Space>
-              <Button 
-                type="primary" 
-                size="small"
-                onClick={() => openGraphExplorer(invListUrl)}
-              >
-                Get New Token
-              </Button>
-              <Button 
-                type="link" 
-                size="small" 
-                danger 
-                onClick={() => onUpdateInvToken('')}
-              >
-                Clear Token
-              </Button>
-            </Space>
-          </Panel>
         </Collapse>
       </Card>
 
@@ -383,7 +342,7 @@ export const Settings: React.FC<Props> = ({
           <Text>• Tokens typically expire after <strong>60 minutes</strong></Text>
           <Text>• You'll receive a warning when <strong>15 minutes</strong> remain</Text>
           <Text>• Keep the Graph Explorer tab open for quick token refresh</Text>
-          <Text>• Bookmark this page for easy access: <code>Settings</code></Text>
+          <Text>• <strong>Auto-Sync:</strong> Updating the token here will update it for all other users automatically.</Text>
         </Space>
       </Card>
 

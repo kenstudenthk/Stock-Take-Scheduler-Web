@@ -15,11 +15,11 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 interface Props {
-  invToken: string;
+  token: string;
   shops: Shop[];
 }
 
-export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
+export const Inventory: React.FC<Props> = ({ token, shops }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -39,11 +39,11 @@ export const Inventory: React.FC<Props> = ({ invToken, shops }) => {
   });
 
   const fetchInventory = async () => {
-    if (!invToken) return;
+    if (!token) return;
     setLoading(true);
     try {
       const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/2f2dff1c-8ce1-4B7B-9FF8-083A0BA1BB48/items?$expand=fields($select=*)&$top=999`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${invToken}` } });
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const json = await res.json();
       
       if (json.value) {

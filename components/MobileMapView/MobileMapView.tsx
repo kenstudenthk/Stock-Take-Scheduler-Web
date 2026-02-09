@@ -54,6 +54,7 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
   const [selectedGroup, setSelectedGroup] = useState<number | null>(1); // Default to Group A
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
   const [showRoutePanel, setShowRoutePanel] = useState(false);
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
 
   const {
     position: userPosition,
@@ -249,6 +250,7 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
 
     setSelectedShopId(shop.id);
     setShowRoutePanel(true);
+    setIsPanelExpanded(false); // Collapse list to show map and route
   }, [userPosition, getCurrentPosition, planRoute, clearRoute]);
 
   const handleGpsClick = useCallback(() => {
@@ -283,6 +285,8 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
         }}
         onNavigate={handleNavigate}
         groupCounts={groupCounts}
+        expanded={isPanelExpanded}
+        onExpandChange={setIsPanelExpanded}
       />
 
       {/* Map Container */}

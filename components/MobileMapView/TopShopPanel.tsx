@@ -11,6 +11,8 @@ interface TopShopPanelProps {
   onSelectShop: (shop: Shop) => void;
   onNavigate: (shop: Shop) => void;
   groupCounts: Record<number, number>;
+  expanded: boolean;
+  onExpandChange: (expanded: boolean) => void;
 }
 
 const CATEGORY_COLORS: Record<number, string> = {
@@ -26,10 +28,10 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
   selectedShopId,
   onSelectShop,
   onNavigate,
-  groupCounts
+  groupCounts,
+  expanded,
+  onExpandChange
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   const formatDistance = (distanceKm?: number): string => {
     if (distanceKm === undefined) return '--';
     if (distanceKm < 1) return `${Math.round(distanceKm * 1000)}m`;
@@ -53,7 +55,7 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
             value={selectedGroup}
             onChange={(val) => {
               onSelectGroup(val);
-              setIsExpanded(true); // Auto-expand when group changes
+              onExpandChange(true); // Auto-expand when group changes
             }}
             bordered={false}
             className="mobile-top-group-select"
@@ -69,17 +71,17 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
         
         <button 
           className="mobile-top-toggle-btn"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => onExpandChange(!expanded)}
         >
           <span className="text-xs font-bold text-slate-500 mr-1">
             {shops.length} Shops
           </span>
-          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
       </div>
 
       {/* Expandable Shop List */}
-      {isExpanded && (
+      {expanded && (
         <div className="mobile-top-list">
           {sortedShops.length === 0 ? (
             <div className="p-4 text-center text-slate-400 text-sm">

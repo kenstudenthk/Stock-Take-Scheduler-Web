@@ -170,7 +170,7 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
         .mobile-custom-dropdown {
           position: absolute;
           top: 100%;
-          left: 0;
+          left: 16px;
           width: 200px;
           background: white;
           border-radius: 12px;

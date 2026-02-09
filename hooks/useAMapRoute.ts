@@ -156,10 +156,24 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
             if (segment.transit) {
               const line = segment.transit.lines?.[0];
               if (line) {
-                steps.push(`Take ${line.name} from ${segment.transit.on?.name || 'station'} to ${segment.transit.off?.name || 'station'}`);
+                const stopCount = segment.transit.via_num || 0;
+                const lineName = line.name.replace(/\(.*?\)/g, '').trim(); // Remove bracketed info like (direction)
+                steps.push(`Take ${lineName} (${line.type === 'SUBWAY' ? 'MTR' : 'Bus'})`);
+                steps.push(`Board at ${segment.transit.on?.name || 'station'}`);
+                if (stopCount > 0) {
+                  steps.push(`Pass ${stopCount} stops`);
+                }
+                steps.push(`Exit at ${segment.transit.off?.name || 'station'}`);
               }
             } else if (segment.walking) {
-              steps.push(`Walk ${segment.walking.distance}m`);
+              // Use specific walking instructions if available
+              if (segment.walking.steps && segment.walking.steps.length > 0) {
+                segment.walking.steps.forEach((s: any) => {
+                  if (s.instruction) steps.push(s.instruction);
+                });
+              } else {
+                steps.push(`Walk ${segment.walking.distance}m`);
+              }
             }
           });
 

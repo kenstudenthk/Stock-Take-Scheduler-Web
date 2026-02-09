@@ -54,6 +54,7 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
   }
 
   const activeRouteInfo = activeRoute === 'walking' ? walking : activeRoute === 'transit' ? transit : null;
+  const showWalking = walking && walking.distance <= 1000;
 
   return (
     <div className="mobile-route-panel">
@@ -64,36 +65,31 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
 
       {/* Route options */}
       <div className="mobile-route-options">
-        {/* Walking option */}
-        <button
-          className={`mobile-route-option ${activeRoute === 'walking' ? 'active' : ''} ${!walking ? 'disabled' : ''}`}
-          onClick={() => walking && onSelectRoute('walking')}
-          disabled={!walking}
-          aria-pressed={activeRoute === 'walking'}
-        >
-          <div className="mobile-route-icon">
-            <Footprints className="w-5 h-5" />
-          </div>
-          <div className="mobile-route-label">Walk</div>
-          {walking ? (
-            <>
-              <div className="mobile-route-distance">
-                <Route className="w-3 h-3" />
-                {formatDistance(walking.distance)}
-              </div>
-              <div className="mobile-route-time">
-                <Clock className="w-3 h-3" />
-                {formatDuration(walking.duration)}
-              </div>
-            </>
-          ) : (
-            <div className="mobile-route-unavailable">N/A</div>
-          )}
-        </button>
+        {/* Walking option - only if <= 1km */}
+        {showWalking && (
+          <button
+            className={`mobile-route-option ${activeRoute === 'walking' ? 'active' : ''}`}
+            onClick={() => onSelectRoute('walking')}
+            aria-pressed={activeRoute === 'walking'}
+          >
+            <div className="mobile-route-icon">
+              <Footprints className="w-5 h-5" />
+            </div>
+            <div className="mobile-route-label">Walk</div>
+            <div className="mobile-route-distance">
+              <Route className="w-3 h-3" />
+              {formatDistance(walking.distance)}
+            </div>
+            <div className="mobile-route-time">
+              <Clock className="w-3 h-3" />
+              {formatDuration(walking.duration)}
+            </div>
+          </button>
+        )}
 
         {/* Transit option */}
         <button
-          className={`mobile-route-option ${activeRoute === 'transit' ? 'active' : ''} ${!transit ? 'disabled' : ''}`}
+          className={`mobile-route-option ${activeRoute === 'transit' ? 'active' : ''} ${!transit ? 'disabled' : ''} ${!showWalking ? 'w-full' : ''}`}
           onClick={() => transit && onSelectRoute('transit')}
           disabled={!transit}
           aria-pressed={activeRoute === 'transit'}
@@ -127,21 +123,41 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
             onClick={() => setShowDirections(!showDirections)}
             aria-expanded={showDirections}
           >
-            <span>Directions ({activeRouteInfo.steps.length} steps)</span>
+            <span>{activeRoute === 'transit' ? 'Transit Details' : 'Walk Directions'} ({activeRouteInfo.steps.length} steps)</span>
             {showDirections ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           {showDirections && (
             <ol className="mobile-route-steps">
-              {activeRouteInfo.steps.map((step, index) => (
-                <li key={index} className="mobile-route-step">
-                  <span className="mobile-route-step-num">{index + 1}</span>
-                  <span className="mobile-route-step-text">{step}</span>
-                </li>
-              ))}
+              {activeRouteInfo.steps.map((step, index) => {
+                // Heuristic to style transit steps differently
+                const isBoarding = step.includes('Board at');
+                const isExiting = step.includes('Exit at');
+                const isTransit = step.includes('Take ');
+                
+                return (
+                  <li key={index} className={`mobile-route-step ${isTransit ? 'transit-main' : ''}`}>
+                    <span className="mobile-route-step-num">
+                      {isTransit ? <Bus className="w-3 h-3" /> : index + 1}
+                    </span>
+                    <span className={`mobile-route-step-text ${isBoarding || isExiting ? 'font-bold text-slate-800' : ''}`}>
+                      {step}
+                    </span>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </div>
       )}
+      <style>{`
+        .transit-main {
+          background-color: #f0f9ff;
+          border-left: 4px solid #0ea5e9;
+          margin: 8px 0;
+          padding: 8px !important;
+          border-radius: 4px;
+        }
+      `}</style>
     </div>
   );
 };

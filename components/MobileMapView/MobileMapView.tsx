@@ -6,7 +6,7 @@ import { Shop } from '../../types';
 import { wgs84ToGcj02 } from '../../utils/coordTransform';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import { useAMapRoute } from '../../hooks/useAMapRoute';
-import { BottomSheet, BottomSheetState } from './BottomSheet';
+import { TopShopPanel } from './TopShopPanel';
 import { RoutePanel } from './RoutePanel';
 
 declare global {
@@ -44,7 +44,7 @@ const haversineDistance = (
 
 /**
  * Mobile-optimized map view for Field Engineers.
- * Features: Group selection, GPS location, route planning, shop list.
+ * Features: Top Dropdown Shop List, GPS location, route planning.
  */
 export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
   const mapRef = useRef<any>(null);
@@ -53,7 +53,6 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
 
   const [selectedGroup, setSelectedGroup] = useState<number | null>(1); // Default to Group A
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
-  const [sheetState, setSheetState] = useState<BottomSheetState>('half');
   const [showRoutePanel, setShowRoutePanel] = useState(false);
 
   const {
@@ -97,6 +96,20 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
       return { ...shop, distance };
     });
   }, [todayShops, userPosition]);
+
+  // Group counts for selector
+  const groupCounts = useMemo(() => {
+    const today = dayjs().format('YYYY-MM-DD');
+    const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
+    shops.forEach(s => {
+      if (s.scheduledDate && dayjs(s.scheduledDate).format('YYYY-MM-DD') === today) {
+        if (s.groupId && counts[s.groupId] !== undefined) {
+          counts[s.groupId]++;
+        }
+      }
+    });
+    return counts;
+  }, [shops]);
 
   // Selected shop object
   const selectedShop = useMemo(() => {
@@ -153,7 +166,6 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
 
       marker.on('click', () => {
         setSelectedShopId(shop.id);
-        setSheetState('half');
       });
 
       markersRef.current[shop.id] = marker;
@@ -162,7 +174,7 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
 
     // Fit view to show all markers
     if (todayShops.length > 0) {
-      mapRef.current.setFitView(Object.values(markersRef.current), false, [60, 60, 200, 60]);
+      mapRef.current.setFitView(Object.values(markersRef.current), false, [100, 60, 100, 60]);
     }
   }, [todayShops]);
 
@@ -170,12 +182,10 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
   useEffect(() => {
     if (!mapRef.current || !userPosition) return;
 
-    // Remove previous user marker
     if (userMarkerRef.current) {
       mapRef.current.remove(userMarkerRef.current);
     }
 
-    // Create user location marker with pulse animation
     const userMarkerContent = `
       <div class="mobile-user-marker">
         <div class="mobile-user-marker-dot"></div>
@@ -229,10 +239,8 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
 
     const [shopLng, shopLat] = wgs84ToGcj02(shop.longitude, shop.latitude);
 
-    // Clear previous route
     clearRoute();
 
-    // Plan new route
     planRoute(
       { lng: userPosition.lng, lat: userPosition.lat },
       { lng: shopLng, lat: shopLat },
@@ -241,10 +249,8 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
 
     setSelectedShopId(shop.id);
     setShowRoutePanel(true);
-    setSheetState('collapsed');
   }, [userPosition, getCurrentPosition, planRoute, clearRoute]);
 
-  // Handle GPS button click
   const handleGpsClick = useCallback(() => {
     getCurrentPosition();
     if (userPosition && mapRef.current) {
@@ -253,20 +259,32 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
     }
   }, [getCurrentPosition, userPosition]);
 
-  // Handle route selection
   const handleRouteSelect = useCallback((type: 'walking' | 'transit') => {
     showRoute(type);
   }, [showRoute]);
 
-  // Close route panel
   const handleCloseRoutePanel = useCallback(() => {
     setShowRoutePanel(false);
     clearRoute();
-    setSheetState('half');
   }, [clearRoute]);
 
   return (
     <div className="mobile-map-view">
+      {/* Top Shop List Panel */}
+      <TopShopPanel
+        selectedGroup={selectedGroup}
+        onSelectGroup={setSelectedGroup}
+        shops={shopsWithDistance}
+        selectedShopId={selectedShopId}
+        onSelectShop={(shop) => {
+          setSelectedShopId(shop.id);
+          setShowRoutePanel(false);
+          clearRoute();
+        }}
+        onNavigate={handleNavigate}
+        groupCounts={groupCounts}
+      />
+
       {/* Map Container */}
       <div id="mobile-map-container" className="mobile-map-container" />
 
@@ -315,25 +333,6 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
           />
         </div>
       )}
-
-      {/* Bottom Sheet */}
-      <BottomSheet
-        shops={shopsWithDistance}
-        selectedShopId={selectedShopId}
-        onSelectShop={(shop) => {
-          setSelectedShopId(shop.id);
-          setShowRoutePanel(false);
-          clearRoute();
-        }}
-        onNavigate={handleNavigate}
-        state={sheetState}
-        onStateChange={setSheetState}
-        selectedGroup={selectedGroup}
-        onGroupChange={(group) => {
-          setSelectedGroup(group);
-          setSelectedShopId(null); // Clear selection when switching groups
-        }}
-      />
     </div>
   );
 };

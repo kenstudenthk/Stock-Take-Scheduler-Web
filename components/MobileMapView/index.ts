@@ -1,4 +1,3 @@
 export { MobileMapView } from './MobileMapView';
-export { BottomSheet } from './BottomSheet';
-export type { BottomSheetState } from './BottomSheet';
+export { TopShopPanel } from './TopShopPanel';
 export { RoutePanel } from './RoutePanel';

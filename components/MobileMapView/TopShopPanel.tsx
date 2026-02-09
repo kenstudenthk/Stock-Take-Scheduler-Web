@@ -154,15 +154,54 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
           align-items: center;
           padding: 12px 16px;
           border-bottom: 1px solid #f1f5f9;
+          gap: 12px;
         }
 
-        .mobile-top-group-select .ant-select-selector {
-          padding: 0 !important;
-          font-size: 16px !important;
-          font-weight: 800 !important;
-          height: 32px !important;
+        .mobile-custom-select-trigger {
           display: flex;
           align-items: center;
+          gap: 8px;
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+        }
+
+        .mobile-custom-dropdown {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          width: 200px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+          border: 1px solid #f1f5f9;
+          padding: 8px;
+          margin-top: 8px;
+          z-index: 3000;
+        }
+
+        .mobile-dropdown-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          padding: 10px 12px;
+          background: none;
+          border: none;
+          text-align: left;
+          border-radius: 8px;
+          cursor: pointer;
+          color: #1e293b;
+        }
+
+        .mobile-dropdown-item:active {
+          background-color: #f1f5f9;
+        }
+
+        .mobile-dropdown-item.active {
+          background-color: #eff6ff;
+          color: #3b82f6;
         }
 
         .mobile-top-toggle-btn {
@@ -173,6 +212,7 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
           border-radius: 20px;
           border: 1px solid #e2e8f0;
           cursor: pointer;
+          margin-left: auto;
         }
 
         .mobile-top-list {

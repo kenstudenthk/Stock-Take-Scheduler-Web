@@ -152,6 +152,7 @@ The `MobileMapView` component provides a mobile-optimized map for Field Engineer
   - Emoji indicators (🚌 transit, 🚶 walking, 📍 stations)
   - Color-coded styling (blue for transit, green for walking, yellow for stations)
   - Scrollable content with max-height constraints for smaller screens
+  - **Clickable segment headers** - Tap any segment to zoom map to that specific part
 
 ### Component Architecture
 ```
@@ -177,9 +178,9 @@ MobileMapView.tsx
 5. Taps navigate button → bottom sheet slides up with walk AND transit options:
    - Walking: Only shown if distance ≤ 1km, includes turn-by-turn directions
    - Transit: Shows route number, boarding stop, all via stops, exit stop, segment distances/durations
-6. Taps preferred route → route drawn on map, expandable directions show detailed step-by-step navigation
-7. Taps drag handle or header → bottom sheet collapses to show only header, revealing full map with route
-8. Taps collapsed header → bottom sheet expands again to show full route details
+6. Taps preferred route → route drawn on map, panel auto-collapses, expandable directions available
+7. Taps individual segment (🚶 Walk or 🚌 Transit header) → map zooms to that specific segment, panel collapses
+8. Taps drag handle or header → bottom sheet collapses/expands to toggle between map view and details
 
 ### Recent Improvements (2026-02-10)
 
@@ -210,8 +211,18 @@ MobileMapView.tsx
 
 #### 5. Bottom Sheet Design (AMap-inspired)
 - Positioned panel as fixed bottom sheet instead of floating card
-- Added drag handle visual indicator
+- Added drag handle visual indicator for intuitive interaction
 - Implemented tap-to-collapse/expand functionality
-- Rounded only top corners (20px 20px 0 0)
-- Smooth animations for collapse/expand transitions
+- Rounded only top corners (20px 20px 0 0) for sheet appearance
+- Smooth animations for collapse/expand transitions (max-height with ease-in-out)
+- Auto-collapse when selecting route to immediately show map
 - Users can now see full map with route while navigating
+
+#### 6. Tap-to-Zoom Individual Segments
+- Each route segment header (🚶 Walk, 🚌 Transit) is now clickable
+- Tapping a segment collapses the panel and zooms map to that specific part
+- Uses AMap's `setFitView()` to properly frame the segment path
+- Fallback method centers map if primary zoom fails
+- Visual feedback: hover effect with translateX and lighter background
+- Allows users to focus on specific walking or transit portions of the route
+- Mimics AMap's native segment selection behavior

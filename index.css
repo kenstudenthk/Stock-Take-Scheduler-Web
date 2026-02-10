@@ -4449,7 +4449,10 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
   left: 16px;
   right: 16px;
   bottom: 80px;
+  max-height: calc(100vh - 180px); /* Leave space for top panel and bottom navigation */
   z-index: 160;
+  display: flex;
+  flex-direction: column;
 }
 
 .mobile-route-close {
@@ -4475,6 +4478,9 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
   border-radius: 20px;
   box-shadow: 0 4px 30px rgba(0,0,0,0.15);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
 }
 
 .mobile-route-panel--loading {
@@ -4605,6 +4611,9 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
   list-style: none;
   margin: 0;
   padding: 0 16px 16px;
+  overflow-y: auto;
+  max-height: 50vh; /* Allow scrolling for long directions */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .mobile-route-step {

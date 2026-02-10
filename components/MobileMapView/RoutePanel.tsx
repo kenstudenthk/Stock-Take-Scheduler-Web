@@ -60,6 +60,7 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
     }
 
     console.log('✅ Segment path length:', segment.path.length);
+    console.log('📍 First path point:', segment.path[0]);
 
     // Collapse panel to show map
     setIsCollapsed(true);
@@ -67,18 +68,60 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
     // Zoom map to fit this segment's path
     setTimeout(() => {
       try {
-        // Create a bounds object from the path
-        const bounds = new window.AMap.Bounds();
-        segment.path.forEach((point: any) => {
-          if (point.lat && point.lng) {
-            bounds.extend([point.lng, point.lat]);
-          } else if (point.getLng && point.getLat) {
-            bounds.extend([point.getLng(), point.getLat()]);
+        // Check if path has valid coordinates
+        if (!segment.path || segment.path.length === 0) {
+          console.log('❌ Empty path');
+          return;
+        }
+
+        // Extract coordinates from AMap.LngLat objects
+        const coordinates: [number, number][] = [];
+        segment.path.forEach((point: any, idx: number) => {
+          let lng, lat;
+
+          // Try different formats
+          if (point.getLng && typeof point.getLng === 'function') {
+            lng = point.getLng();
+            lat = point.getLat();
+          } else if (point.lng !== undefined && point.lat !== undefined) {
+            lng = point.lng;
+            lat = point.lat;
+          } else if (point.KL !== undefined && point.kT !== undefined) {
+            // AMap internal format
+            lng = point.KL;
+            lat = point.kT;
+          } else if (Array.isArray(point) && point.length >= 2) {
+            lng = point[0];
+            lat = point[1];
+          }
+
+          if (lng !== undefined && lat !== undefined && !isNaN(lng) && !isNaN(lat)) {
+            coordinates.push([lng, lat]);
+          } else {
+            console.log(`⚠️ Invalid point at index ${idx}:`, point);
           }
         });
 
-        console.log('🎯 Setting map bounds:', bounds);
+        console.log('✅ Valid coordinates:', coordinates.length);
+
+        if (coordinates.length === 0) {
+          console.log('❌ No valid coordinates found');
+          return;
+        }
+
+        // Create bounds from coordinates
+        const bounds = new window.AMap.Bounds(
+          coordinates[0],
+          coordinates[0]
+        );
+
+        coordinates.forEach(coord => {
+          bounds.extend(coord);
+        });
+
+        console.log('🎯 Bounds:', bounds.toString());
         mapInstance.setBounds(bounds, false, [60, 60, 60, 200]);
+        console.log('✅ Map bounds set successfully');
       } catch (error) {
         console.error('❌ Error setting bounds:', error);
       }

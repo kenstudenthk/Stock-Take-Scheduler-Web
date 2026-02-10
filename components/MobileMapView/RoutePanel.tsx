@@ -24,6 +24,7 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
   shopName,
 }) => {
   const [showDirections, setShowDirections] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const formatDistance = (meters: number): string => {
     if (meters < 1000) return `${meters}m`;
@@ -57,11 +58,18 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
   const showWalking = walking && walking.distance <= 1000;
 
   return (
-    <div className="mobile-route-panel">
-      {/* Route destination */}
-      <div className="mobile-route-header">
-        <span className="mobile-route-to">To: {shopName}</span>
+    <div className={`mobile-route-panel ${isCollapsed ? 'collapsed' : ''}`}>
+      {/* Collapsible header with drag handle */}
+      <div className="mobile-route-drag-header" onClick={() => setIsCollapsed(!isCollapsed)}>
+        <div className="mobile-route-drag-handle"></div>
+        <div className="mobile-route-header-content">
+          <span className="mobile-route-to">To: {shopName}</span>
+          {isCollapsed ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </div>
       </div>
+
+      {/* Collapsible content */}
+      <div className="mobile-route-content">{/* Route destination */}
 
       {/* Route options */}
       <div className="mobile-route-options">
@@ -173,7 +181,46 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
           )}
         </div>
       )}
+      </div>
       <style>{`
+        .mobile-route-drag-header {
+          background: #f8fafc;
+          padding: 8px 16px;
+          cursor: pointer;
+          border-bottom: 1px solid #e2e8f0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .mobile-route-drag-handle {
+          width: 40px;
+          height: 4px;
+          background: #cbd5e1;
+          border-radius: 2px;
+        }
+
+        .mobile-route-header-content {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .mobile-route-content {
+          overflow: hidden;
+          transition: max-height 0.3s ease;
+        }
+
+        .mobile-route-panel.collapsed .mobile-route-content {
+          max-height: 0;
+        }
+
+        .mobile-route-panel:not(.collapsed) .mobile-route-content {
+          max-height: 100vh;
+        }
+
         .transit-header {
           background-color: #eff6ff;
           border-left: 4px solid #3b82f6;

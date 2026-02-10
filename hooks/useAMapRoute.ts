@@ -157,7 +157,34 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
           plan.segments?.forEach((segment: any, segIndex: number) => {
             console.log(`📦 Segment ${segIndex}:`, segment); // DEBUG
 
-            if (segment.transit) {
+            // Check if this is a walking segment
+            if (segment.transit_mode === 'WALK') {
+              console.log('🚶 Walking Segment:', segment.transit); // DEBUG
+
+              const walkDist = segment.distance || 0;
+              const walkTime = segment.time || 0;
+
+              // Walking segment header
+              if (segIndex === 0) {
+                steps.push(`🚶 Walk to boarding point (${walkDist}m, ~${Math.round(walkTime / 60)} min)`);
+              } else {
+                steps.push(`🚶 Walk ${walkDist}m (~${Math.round(walkTime / 60)} min)`);
+              }
+
+              // Detailed walking instructions if available
+              if (segment.transit?.steps && segment.transit.steps.length > 0) {
+                segment.transit.steps.forEach((s: any, idx: number) => {
+                  if (s.instruction) {
+                    // Add indentation for walking sub-steps
+                    const instruction = s.instruction.trim();
+                    const distance = s.distance ? ` (${s.distance}m)` : '';
+                    steps.push(`   ${idx + 1}. ${instruction}${distance}`);
+                  }
+                });
+              }
+
+              steps.push(''); // Empty line for spacing
+            } else if (segment.transit) {
               const line = segment.transit.lines?.[0];
               console.log('🚇 Transit Line:', line); // DEBUG
               console.log('🚏 On Station:', segment.transit.on_station); // DEBUG
@@ -218,32 +245,6 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
 
                 steps.push(''); // Empty line for spacing
               }
-            } else if (segment.walking) {
-              console.log('🚶 Walking Segment:', segment.walking); // DEBUG
-
-              const walkDist = segment.walking.distance || 0;
-              const walkTime = segment.walking.time || segment.walking.duration || 0;
-
-              // Walking segment header
-              if (segIndex === 0) {
-                steps.push(`🚶 Walk to boarding point (${walkDist}m, ~${Math.round(walkTime / 60)} min)`);
-              } else {
-                steps.push(`🚶 Walk ${walkDist}m (~${Math.round(walkTime / 60)} min)`);
-              }
-
-              // Detailed walking instructions if available
-              if (segment.walking.steps && segment.walking.steps.length > 0) {
-                segment.walking.steps.forEach((s: any, idx: number) => {
-                  if (s.instruction) {
-                    // Add indentation for walking sub-steps
-                    const instruction = s.instruction.trim();
-                    const distance = s.distance ? ` (${s.distance}m)` : '';
-                    steps.push(`   ${idx + 1}. ${instruction}${distance}`);
-                  }
-                });
-              }
-
-              steps.push(''); // Empty line for spacing
             }
           });
 

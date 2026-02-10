@@ -68,9 +68,8 @@ App.tsx (root state, routing)
 ├── Locations.tsx (AMap visualization, batched markers, SummaryCard stats)
 │   └── MobileMapView/ (mobile-only, renders on screens ≤640px)
 │       ├── MobileMapView.tsx (main mobile map component)
-│       ├── GroupSelector.tsx (A/B/C group toggle buttons)
-│       ├── BottomSheet.tsx (swipeable shop list)
-│       └── RoutePanel.tsx (walk/transit route options)
+│       ├── TopShopPanel.tsx (collapsible top panel with group selector & shop list)
+│       └── RoutePanel.tsx (walk/transit route options with detailed directions)
 ├── Inventory.tsx (asset tracking)
 ├── Settings.tsx (token management)
 └── ErrorBoundary.tsx (error catching)
@@ -134,22 +133,27 @@ The Locations (map) component uses performance optimizations for large datasets:
 The `MobileMapView` component provides a mobile-optimized map for Field Engineers (FEs) to navigate between shops during stock takes. It renders automatically on screens ≤640px width.
 
 ### Features
-- **Group Selection**: A/B/C toggle buttons filter shops by assigned group
+- **Group Selection**: Ant Design Select dropdown in top panel to switch between Groups A/B/C (z-index 9999, isolated stacking context)
 - **Today's Filter**: Auto-filters to shops scheduled for today only
+- **Top Panel**: Collapsible shop list panel at top showing distance-sorted shops (expandable/collapsible)
 - **GPS Location**: On-demand location button (saves battery), shows blue pulsing marker
 - **Distance Display**: Haversine formula calculates distance from user to each shop
 - **Route Planning**: Both walking and transit routes calculated via AMap.Walking/AMap.Transfer
-- **Bottom Sheet**: Swipeable shop list with 3 states (collapsed 64px, half 40vh, expanded 80vh)
+- **Enhanced Transit Details**: Comprehensive route information including:
+  - Via stops list with all intermediate stations (stop1 → stop2 → stop3)
+  - Distance and duration for each transit segment
+  - Detailed turn-by-turn walking directions with distances
+  - Emoji indicators (🚌 transit, 🚶 walking, 📍 stations)
+  - Color-coded styling (blue for transit, green for walking, yellow for stations)
 
 ### Component Architecture
 ```
 MobileMapView.tsx
-├── GroupSelector.tsx      # A/B/C toggle at top
-├── BottomSheet.tsx        # Swipeable shop list
-├── RoutePanel.tsx         # Walk/transit options
+├── TopShopPanel.tsx       # Top collapsible panel with group dropdown + shop list
+├── RoutePanel.tsx         # Walk/transit route options with enhanced details
 └── hooks/
-    ├── useGeolocation.ts  # AMap.Geolocation wrapper
-    └── useAMapRoute.ts    # AMap.Walking + AMap.Transfer
+    ├── useGeolocation.ts  # AMap.Geolocation wrapper (on-demand GPS)
+    └── useAMapRoute.ts    # AMap.Walking + AMap.Transfer (enhanced route extraction)
 ```
 
 ### AMap Plugins Used
@@ -159,9 +163,24 @@ MobileMapView.tsx
 - `AMap.Scale` - Map scale control
 
 ### UX Flow
-1. FE opens Map View on mobile → sees Group A/B/C selector
-2. Taps their assigned group → map shows today's shops for that group
-3. Taps GPS button → locates user, shows distance to each shop
-4. Taps shop card → map centers on shop
-5. Taps navigate button → sees walk AND transit options side-by-side
-6. Taps preferred route → route drawn on map with turn-by-turn directions
+1. FE opens Map View on mobile → sees top panel with Group A dropdown (default)
+2. Taps group dropdown → selects their assigned group → panel auto-expands showing today's shops
+3. Taps GPS button (floating action button) → locates user, calculates distances to all shops
+4. Taps shop card in list → map centers on shop, shows shop details
+5. Taps navigate button → sees walk AND transit options side-by-side with full details:
+   - Walking: Only shown if distance ≤ 1km, includes turn-by-turn directions
+   - Transit: Shows route number, boarding stop, all via stops, exit stop, segment distances/durations
+6. Taps preferred route → route drawn on map, expandable directions show detailed step-by-step navigation
+
+### Recent Improvements (2026-02-10)
+1. **Fixed Group Selector Dropdown** - Resolved z-index issue where dropdown was unclickable
+   - Increased dropdown z-index to 9999
+   - Added `getPopupContainer` to render in correct DOM context
+   - Added `isolation: isolate` to create proper stacking context
+
+2. **Enhanced Transit Route Details** - Comprehensive public transport navigation info
+   - Extracts via stops list from AMap Transit API showing all intermediate stations
+   - Displays distance (km) and duration (min) for each transit segment
+   - Shows detailed walking directions with turn-by-turn instructions and distances
+   - Color-coded UI with emoji icons for better visual hierarchy
+   - Based on AMap Web Service API documentation for transit routing

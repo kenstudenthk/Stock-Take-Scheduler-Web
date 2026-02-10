@@ -74,56 +74,40 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
           return;
         }
 
-        // Extract coordinates from AMap.LngLat objects
-        const coordinates: [number, number][] = [];
-        segment.path.forEach((point: any, idx: number) => {
-          let lng, lat;
-
-          // Try different formats
-          if (point.getLng && typeof point.getLng === 'function') {
-            lng = point.getLng();
-            lat = point.getLat();
-          } else if (point.lng !== undefined && point.lat !== undefined) {
-            lng = point.lng;
-            lat = point.lat;
-          } else if (point.KL !== undefined && point.kT !== undefined) {
-            // AMap internal format
-            lng = point.KL;
-            lat = point.kT;
-          } else if (Array.isArray(point) && point.length >= 2) {
-            lng = point[0];
-            lat = point[1];
-          }
-
-          if (lng !== undefined && lat !== undefined && !isNaN(lng) && !isNaN(lat)) {
-            coordinates.push([lng, lat]);
-          } else {
-            console.log(`⚠️ Invalid point at index ${idx}:`, point);
-          }
-        });
-
-        console.log('✅ Valid coordinates:', coordinates.length);
-
-        if (coordinates.length === 0) {
-          console.log('❌ No valid coordinates found');
-          return;
-        }
-
-        // Create bounds from coordinates
-        const bounds = new window.AMap.Bounds(
-          coordinates[0],
-          coordinates[0]
-        );
-
-        coordinates.forEach(coord => {
-          bounds.extend(coord);
-        });
-
-        console.log('🎯 Bounds:', bounds.toString());
-        mapInstance.setBounds(bounds, false, [60, 60, 60, 200]);
-        console.log('✅ Map bounds set successfully');
+        // Simply use setFitView which accepts the path directly
+        console.log('🎯 Calling setFitView with path');
+        mapInstance.setFitView(segment.path, false, [80, 80, 80, 220]);
+        console.log('✅ Map zoom successful');
       } catch (error) {
-        console.error('❌ Error setting bounds:', error);
+        console.error('❌ Error with setFitView:', error);
+
+        // Fallback: try to extract center and set manual zoom
+        try {
+          console.log('🔄 Trying fallback method...');
+          const firstPoint = segment.path[0];
+          const lastPoint = segment.path[segment.path.length - 1];
+
+          console.log('First point:', firstPoint);
+          console.log('Last point:', lastPoint);
+
+          // Calculate center
+          let centerLng, centerLat;
+          if (firstPoint.getLng && typeof firstPoint.getLng === 'function') {
+            centerLng = (firstPoint.getLng() + lastPoint.getLng()) / 2;
+            centerLat = (firstPoint.getLat() + lastPoint.getLat()) / 2;
+          } else if (firstPoint.KL !== undefined) {
+            centerLng = (firstPoint.KL + lastPoint.KL) / 2;
+            centerLat = (firstPoint.kT + lastPoint.kT) / 2;
+          }
+
+          if (centerLng && centerLat) {
+            console.log('📍 Setting center:', centerLng, centerLat);
+            mapInstance.setZoomAndCenter(15, [centerLng, centerLat]);
+            console.log('✅ Fallback zoom successful');
+          }
+        } catch (fallbackError) {
+          console.error('❌ Fallback also failed:', fallbackError);
+        }
       }
     }, 300);
   };

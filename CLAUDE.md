@@ -139,12 +139,19 @@ The `MobileMapView` component provides a mobile-optimized map for Field Engineer
 - **GPS Location**: On-demand location button (saves battery), shows blue pulsing marker
 - **Distance Display**: Haversine formula calculates distance from user to each shop
 - **Route Planning**: Both walking and transit routes calculated via AMap.Walking/AMap.Transfer
+- **Bottom Sheet Route Panel**: AMap-inspired design with collapsible interface
+  - Fixed to bottom of screen with drag handle
+  - Tap to collapse/expand for better map visibility
+  - Smooth animation transitions
+  - Close button in top-right corner
 - **Enhanced Transit Details**: Comprehensive route information including:
   - Via stops list with all intermediate stations (stop1 → stop2 → stop3)
   - Distance and duration for each transit segment
   - Detailed turn-by-turn walking directions with distances
+  - MTR entrance/exit information (e.g., "A出入口", "D出入口")
   - Emoji indicators (🚌 transit, 🚶 walking, 📍 stations)
   - Color-coded styling (blue for transit, green for walking, yellow for stations)
+  - Scrollable content with max-height constraints for smaller screens
 
 ### Component Architecture
 ```
@@ -167,20 +174,44 @@ MobileMapView.tsx
 2. Taps group dropdown → selects their assigned group → panel auto-expands showing today's shops
 3. Taps GPS button (floating action button) → locates user, calculates distances to all shops
 4. Taps shop card in list → map centers on shop, shows shop details
-5. Taps navigate button → sees walk AND transit options side-by-side with full details:
+5. Taps navigate button → bottom sheet slides up with walk AND transit options:
    - Walking: Only shown if distance ≤ 1km, includes turn-by-turn directions
    - Transit: Shows route number, boarding stop, all via stops, exit stop, segment distances/durations
 6. Taps preferred route → route drawn on map, expandable directions show detailed step-by-step navigation
+7. Taps drag handle or header → bottom sheet collapses to show only header, revealing full map with route
+8. Taps collapsed header → bottom sheet expands again to show full route details
 
 ### Recent Improvements (2026-02-10)
-1. **Fixed Group Selector Dropdown** - Resolved z-index issue where dropdown was unclickable
-   - Increased dropdown z-index to 9999
-   - Added `getPopupContainer` to render in correct DOM context
-   - Added `isolation: isolate` to create proper stacking context
 
-2. **Enhanced Transit Route Details** - Comprehensive public transport navigation info
-   - Extracts via stops list from AMap Transit API showing all intermediate stations
-   - Displays distance (km) and duration (min) for each transit segment
-   - Shows detailed walking directions with turn-by-turn instructions and distances
-   - Color-coded UI with emoji icons for better visual hierarchy
-   - Based on AMap Web Service API documentation for transit routing
+#### 1. Fixed Group Selector Dropdown
+- Resolved z-index issue where dropdown was unclickable
+- Increased dropdown z-index to 9999
+- Added `getPopupContainer` to render in correct DOM context
+- Added `isolation: isolate` to create proper stacking context
+
+#### 2. Enhanced Transit Route Details
+- Extracts via stops list from AMap Transit API showing all intermediate stations
+- Displays distance (km) and duration (min) for each transit segment
+- Shows detailed walking directions with turn-by-turn instructions and distances
+- Handles Chinese transit type names (地铁线路 for MTR, 普通公交线路 for Bus)
+- Uses correct AMap API fields: `on_station`/`off_station` instead of `on`/`off`
+- Displays MTR entrance/exit information when available
+- Color-coded UI with emoji icons for better visual hierarchy
+
+#### 3. Fixed Walking Segments Display
+- Corrected detection using `transit_mode === 'WALK'` field
+- Walking data is in `segment.transit.steps`, not `segment.walking.steps`
+- All walking directions now display correctly with turn-by-turn instructions
+
+#### 4. Responsive Route Panel for Small Screens
+- Added max-height constraints for iPhone 14 Pro and smaller devices
+- Made route steps scrollable with `overflow-y: auto`
+- Added iOS smooth scrolling with `-webkit-overflow-scrolling: touch`
+
+#### 5. Bottom Sheet Design (AMap-inspired)
+- Positioned panel as fixed bottom sheet instead of floating card
+- Added drag handle visual indicator
+- Implemented tap-to-collapse/expand functionality
+- Rounded only top corners (20px 20px 0 0)
+- Smooth animations for collapse/expand transitions
+- Users can now see full map with route while navigating

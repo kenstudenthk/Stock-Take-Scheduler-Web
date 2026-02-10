@@ -334,6 +334,7 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
             loading={routeLoading}
             onSelectRoute={handleRouteSelect}
             shopName={selectedShop.name}
+            mapInstance={mapRef.current}
           />
         </div>
       )}

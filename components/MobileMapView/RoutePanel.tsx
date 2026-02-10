@@ -9,6 +9,7 @@ interface RoutePanelProps {
   loading: boolean;
   onSelectRoute: (type: 'walking' | 'transit') => void;
   shopName: string;
+  mapInstance?: any;
 }
 
 /**
@@ -22,9 +23,25 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
   loading,
   onSelectRoute,
   shopName,
+  mapInstance,
 }) => {
   const [showDirections, setShowDirections] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Handle clicking on route option - zoom to that route segment
+  const handleRouteClick = (type: 'walking' | 'transit') => {
+    onSelectRoute(type);
+    setIsCollapsed(true); // Collapse panel to show map
+
+    // Zoom map to show the selected route
+    if (mapInstance) {
+      setTimeout(() => {
+        const routeInfo = type === 'walking' ? walking : transit;
+        // The route will be drawn by the parent component's showRoute call
+        // which already calls setFitView on the route
+      }, 100);
+    }
+  };
 
   const formatDistance = (meters: number): string => {
     if (meters < 1000) return `${meters}m`;
@@ -77,7 +94,7 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
         {showWalking && (
           <button
             className={`mobile-route-option ${activeRoute === 'walking' ? 'active' : ''}`}
-            onClick={() => onSelectRoute('walking')}
+            onClick={() => handleRouteClick('walking')}
             aria-pressed={activeRoute === 'walking'}
           >
             <div className="mobile-route-icon">
@@ -98,7 +115,7 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
         {/* Transit option */}
         <button
           className={`mobile-route-option ${activeRoute === 'transit' ? 'active' : ''} ${!transit ? 'disabled' : ''} ${!showWalking ? 'w-full' : ''}`}
-          onClick={() => transit && onSelectRoute('transit')}
+          onClick={() => transit && handleRouteClick('transit')}
           disabled={!transit}
           aria-pressed={activeRoute === 'transit'}
         >
@@ -210,15 +227,13 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
 
         .mobile-route-content {
           overflow: hidden;
-          transition: max-height 0.3s ease;
+          transition: max-height 0.3s ease-in-out;
+          max-height: 100vh;
         }
 
         .mobile-route-panel.collapsed .mobile-route-content {
-          max-height: 0;
-        }
-
-        .mobile-route-panel:not(.collapsed) .mobile-route-content {
-          max-height: 100vh;
+          max-height: 0 !important;
+          overflow: hidden;
         }
 
         .transit-header {

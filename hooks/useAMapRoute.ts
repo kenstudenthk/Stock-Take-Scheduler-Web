@@ -151,19 +151,36 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
           const plan = result.plans[0];
           const steps: string[] = [];
 
+          console.log('🔍 Transit Plan Data:', JSON.stringify(plan, null, 2)); // DEBUG
+
           // Extract transit steps with enhanced details
           plan.segments?.forEach((segment: any, segIndex: number) => {
+            console.log(`📦 Segment ${segIndex}:`, segment); // DEBUG
+
             if (segment.transit) {
               const line = segment.transit.lines?.[0];
+              console.log('🚇 Transit Line:', line); // DEBUG
+              console.log('🚏 On Stop:', segment.transit.on); // DEBUG
+              console.log('🚏 Off Stop:', segment.transit.off); // DEBUG
+
               if (line) {
                 const stopCount = segment.transit.via_num || 0;
-                const lineName = line.name.replace(/\(.*?\)/g, '').trim();
-                const transitType = line.type === 'SUBWAY' ? 'MTR' : line.type === 'BUS' ? 'Bus' : line.type;
-                const onStopName = segment.transit.on?.name || 'station';
-                const offStopName = segment.transit.off?.name || 'station';
+                const lineName = line.name ? line.name.replace(/\(.*?\)/g, '').trim() : 'Unknown Line';
+                const transitType = line.type === 'SUBWAY' ? 'MTR' : line.type === 'BUS' ? 'Bus' : (line.type || 'Transit');
+
+                // Try multiple ways to get station names
+                const onStopName = segment.transit.on?.name ||
+                                   segment.transit.departure?.name ||
+                                   segment.transit.start?.name ||
+                                   'Starting station';
+                const offStopName = segment.transit.off?.name ||
+                                    segment.transit.arrival?.name ||
+                                    segment.transit.end?.name ||
+                                    'Destination station';
 
                 // Route header with type
                 steps.push(`🚌 Take ${lineName} (${transitType})`);
+                steps.push(''); // Empty line for spacing
 
                 // Boarding info
                 steps.push(`📍 Board at: ${onStopName}`);
@@ -184,14 +201,19 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
                   const distKm = (segment.transit.distance / 1000).toFixed(1);
                   steps.push(`   Distance: ${distKm}km`);
                 }
-                if (segment.transit.duration) {
-                  const mins = Math.round(segment.transit.duration / 60);
+                if (segment.transit.duration || segment.transit.time) {
+                  const duration = segment.transit.duration || segment.transit.time;
+                  const mins = Math.round(duration / 60);
                   steps.push(`   Duration: ~${mins} min`);
                 }
+
+                steps.push(''); // Empty line for spacing
               }
             } else if (segment.walking) {
-              const walkDist = segment.walking.distance;
-              const walkTime = segment.walking.time;
+              console.log('🚶 Walking Segment:', segment.walking); // DEBUG
+
+              const walkDist = segment.walking.distance || 0;
+              const walkTime = segment.walking.time || segment.walking.duration || 0;
 
               // Walking segment header
               if (segIndex === 0) {
@@ -211,6 +233,8 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
                   }
                 });
               }
+
+              steps.push(''); // Empty line for spacing
             }
           });
 

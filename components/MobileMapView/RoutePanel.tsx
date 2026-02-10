@@ -129,6 +129,11 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
           {showDirections && (
             <ol className="mobile-route-steps">
               {activeRouteInfo.steps.map((step, index) => {
+                // Skip empty lines for cleaner display
+                if (!step || step.trim() === '') {
+                  return <li key={index} className="mobile-route-spacer" />;
+                }
+
                 // Enhanced styling based on step content
                 const isTransitHeader = step.includes('🚌 Take');
                 const isWalkHeader = step.includes('🚶 Walk');
@@ -137,6 +142,7 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
                 const isViaInfo = step.includes('Via:') || step.includes('Pass ') || step.includes('Distance:') || step.includes('Duration:');
                 const isWalkSubStep = step.trim().match(/^\d+\./); // Walking sub-steps like "1.", "2."
                 const isIndented = step.startsWith('   ');
+                const isEmpty = step.trim() === '';
 
                 return (
                   <li
@@ -147,9 +153,10 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
                       ${isBoardingPoint || isExitPoint ? 'station-point' : ''}
                       ${isViaInfo ? 'via-info' : ''}
                       ${isIndented ? 'indented-step' : ''}
+                      ${isEmpty ? 'empty-line' : ''}
                     `}
                   >
-                    {!isIndented && !isViaInfo && (
+                    {!isIndented && !isViaInfo && !isEmpty && (
                       <span className="mobile-route-step-num">
                         {isTransitHeader ? <Bus className="w-3 h-3" /> :
                          isWalkHeader ? <Footprints className="w-3 h-3" /> :
@@ -157,7 +164,7 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
                       </span>
                     )}
                     <span className="mobile-route-step-text">
-                      {step}
+                      {step || '\u00A0'}
                     </span>
                   </li>
                 );
@@ -214,6 +221,15 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
         .mobile-route-step {
           list-style: none;
           padding: 4px 0;
+        }
+
+        .mobile-route-spacer {
+          height: 8px;
+          list-style: none;
+        }
+
+        .empty-line {
+          height: 8px;
         }
 
         .mobile-route-step-num {

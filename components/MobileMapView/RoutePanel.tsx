@@ -31,16 +31,11 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
   // Handle clicking on route option - zoom to that route segment
   const handleRouteClick = (type: 'walking' | 'transit') => {
     onSelectRoute(type);
-    setIsCollapsed(true); // Collapse panel to show map
 
-    // Zoom map to show the selected route
-    if (mapInstance) {
-      setTimeout(() => {
-        const routeInfo = type === 'walking' ? walking : transit;
-        // The route will be drawn by the parent component's showRoute call
-        // which already calls setFitView on the route
-      }, 100);
-    }
+    // Collapse panel after a short delay to ensure route is drawn first
+    setTimeout(() => {
+      setIsCollapsed(true);
+    }, 300);
   };
 
   const formatDistance = (meters: number): string => {
@@ -77,7 +72,10 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
   return (
     <div className={`mobile-route-panel ${isCollapsed ? 'collapsed' : ''}`}>
       {/* Collapsible header with drag handle */}
-      <div className="mobile-route-drag-header" onClick={() => setIsCollapsed(!isCollapsed)}>
+      <div
+        className="mobile-route-drag-header"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
         <div className="mobile-route-drag-handle"></div>
         <div className="mobile-route-header-content">
           <span className="mobile-route-to">To: {shopName}</span>

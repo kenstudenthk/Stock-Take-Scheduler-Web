@@ -40,20 +40,49 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
 
   // Handle clicking on specific segment step - zoom map to that segment
   const handleSegmentClick = (step: string) => {
+    console.log('🎯 Segment clicked:', step);
     const routeInfo = activeRoute === 'walking' ? walking : transit;
-    if (!routeInfo?.segments || !mapInstance) return;
+    console.log('📊 Route info:', routeInfo);
+    console.log('🗺️ Map instance:', mapInstance);
+
+    if (!routeInfo?.segments || !mapInstance) {
+      console.log('❌ Missing route info or map instance');
+      return;
+    }
 
     // Find the segment that matches this step description
     const segment = routeInfo.segments.find(seg => step.includes(seg.description));
-    if (!segment || !segment.path || segment.path.length === 0) return;
+    console.log('🔍 Found segment:', segment);
+
+    if (!segment || !segment.path || segment.path.length === 0) {
+      console.log('❌ No segment or path found');
+      return;
+    }
+
+    console.log('✅ Segment path length:', segment.path.length);
 
     // Collapse panel to show map
     setIsCollapsed(true);
 
     // Zoom map to fit this segment's path
     setTimeout(() => {
-      mapInstance.setFitView(segment.path, false, [60, 60, 60, 200]);
-    }, 100);
+      try {
+        // Create a bounds object from the path
+        const bounds = new window.AMap.Bounds();
+        segment.path.forEach((point: any) => {
+          if (point.lat && point.lng) {
+            bounds.extend([point.lng, point.lat]);
+          } else if (point.getLng && point.getLat) {
+            bounds.extend([point.getLng(), point.getLat()]);
+          }
+        });
+
+        console.log('🎯 Setting map bounds:', bounds);
+        mapInstance.setBounds(bounds, false, [60, 60, 60, 200]);
+      } catch (error) {
+        console.error('❌ Error setting bounds:', error);
+      }
+    }, 300);
   };
 
   const formatDistance = (meters: number): string => {

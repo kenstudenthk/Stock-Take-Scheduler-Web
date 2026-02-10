@@ -38,6 +38,24 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
     }, 300);
   };
 
+  // Handle clicking on specific segment step - zoom map to that segment
+  const handleSegmentClick = (step: string) => {
+    const routeInfo = activeRoute === 'walking' ? walking : transit;
+    if (!routeInfo?.segments || !mapInstance) return;
+
+    // Find the segment that matches this step description
+    const segment = routeInfo.segments.find(seg => step.includes(seg.description));
+    if (!segment || !segment.path || segment.path.length === 0) return;
+
+    // Collapse panel to show map
+    setIsCollapsed(true);
+
+    // Zoom map to fit this segment's path
+    setTimeout(() => {
+      mapInstance.setFitView(segment.path, false, [60, 60, 60, 200]);
+    }, 100);
+  };
+
   const formatDistance = (meters: number): string => {
     if (meters < 1000) return `${meters}m`;
     return `${(meters / 1000).toFixed(1)}km`;
@@ -166,6 +184,7 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
                 const isWalkSubStep = step.trim().match(/^\d+\./); // Walking sub-steps like "1.", "2."
                 const isIndented = step.startsWith('   ');
                 const isEmpty = step.trim() === '';
+                const isClickable = isTransitHeader || isWalkHeader; // Main segment headers are clickable
 
                 return (
                   <li
@@ -177,7 +196,10 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
                       ${isViaInfo ? 'via-info' : ''}
                       ${isIndented ? 'indented-step' : ''}
                       ${isEmpty ? 'empty-line' : ''}
+                      ${isClickable ? 'clickable-segment' : ''}
                     `}
+                    onClick={() => isClickable && handleSegmentClick(step)}
+                    style={{ cursor: isClickable ? 'pointer' : 'default' }}
                   >
                     {!isIndented && !isViaInfo && !isEmpty && (
                       <span className="mobile-route-step-num">
@@ -242,6 +264,16 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
           border-radius: 6px;
           font-weight: 600;
           color: #1e40af;
+          transition: all 0.2s ease;
+        }
+
+        .transit-header.clickable-segment:hover {
+          background-color: #dbeafe;
+          transform: translateX(4px);
+        }
+
+        .transit-header.clickable-segment:active {
+          background-color: #bfdbfe;
         }
 
         .walk-header {
@@ -252,6 +284,16 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
           border-radius: 6px;
           font-weight: 600;
           color: #166534;
+          transition: all 0.2s ease;
+        }
+
+        .walk-header.clickable-segment:hover {
+          background-color: #dcfce7;
+          transform: translateX(4px);
+        }
+
+        .walk-header.clickable-segment:active {
+          background-color: #bbf7d0;
         }
 
         .station-point {

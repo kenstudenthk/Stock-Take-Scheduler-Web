@@ -6,10 +6,18 @@ declare global {
   }
 }
 
+export interface RouteSegment {
+  type: 'walking' | 'transit';
+  description: string;
+  path?: any[]; // AMap path coordinates for this segment
+  bounds?: { southwest: any; northeast: any }; // Bounding box for zoom
+}
+
 export interface RouteInfo {
   distance: number; // meters
   duration: number; // seconds
   steps?: string[]; // turn-by-turn directions
+  segments?: RouteSegment[]; // Individual segments with paths for zoom
 }
 
 export interface RouteState {
@@ -150,6 +158,7 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
         if (status === 'complete' && result.plans && result.plans.length > 0) {
           const plan = result.plans[0];
           const steps: string[] = [];
+          const segments: RouteSegment[] = [];
 
           console.log('🔍 Transit Plan Data:', JSON.stringify(plan, null, 2)); // DEBUG
 
@@ -165,11 +174,18 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
               const walkTime = segment.time || 0;
 
               // Walking segment header
-              if (segIndex === 0) {
-                steps.push(`🚶 Walk to boarding point (${walkDist}m, ~${Math.round(walkTime / 60)} min)`);
-              } else {
-                steps.push(`🚶 Walk ${walkDist}m (~${Math.round(walkTime / 60)} min)`);
-              }
+              const walkDescription = segIndex === 0
+                ? `🚶 Walk to boarding point (${walkDist}m, ~${Math.round(walkTime / 60)} min)`
+                : `🚶 Walk ${walkDist}m (~${Math.round(walkTime / 60)} min)`;
+
+              steps.push(walkDescription);
+
+              // Store segment with path for zoom capability
+              segments.push({
+                type: 'walking',
+                description: walkDescription,
+                path: segment.transit?.path || [],
+              });
 
               // Detailed walking instructions if available
               if (segment.transit?.steps && segment.transit.steps.length > 0) {
@@ -207,8 +223,16 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
                 const offStopName = segment.transit.off_station?.name || 'Destination station';
 
                 // Route header with type
-                steps.push(`🚌 Take ${lineName} (${transitType})`);
+                const transitDescription = `🚌 Take ${lineName} (${transitType})`;
+                steps.push(transitDescription);
                 steps.push(''); // Empty line for spacing
+
+                // Store segment with path for zoom capability
+                segments.push({
+                  type: 'transit',
+                  description: transitDescription,
+                  path: segment.transit.path || [],
+                });
 
                 // Boarding info with entrance (for MTR)
                 if (segment.transit.entrance?.name) {
@@ -252,6 +276,7 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
             distance: plan.distance,
             duration: plan.time,
             steps,
+            segments,
           };
         } else {
           hasError = true;

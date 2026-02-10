@@ -61,7 +61,8 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
             className="mobile-top-group-select w-full"
             style={{ width: '100%' }}
             popupMatchSelectWidth={false}
-            dropdownStyle={{ borderRadius: '12px', padding: '8px', zIndex: 3000 }}
+            dropdownStyle={{ borderRadius: '12px', padding: '8px', zIndex: 9999 }}
+            getPopupContainer={(trigger) => trigger.parentElement || document.body}
             options={[
               { value: 1, label: <span className="font-bold text-slate-800 text-lg">Group A ({groupCounts[1] || 0})</span> },
               { value: 2, label: <span className="font-bold text-slate-800 text-lg">Group B ({groupCounts[2] || 0})</span> },
@@ -147,6 +148,7 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
           max-height: 70vh;
           display: flex;
           flex-direction: column;
+          isolation: isolate;
         }
         
         .mobile-top-header {

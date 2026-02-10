@@ -151,28 +151,65 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
           const plan = result.plans[0];
           const steps: string[] = [];
 
-          // Extract transit steps
-          plan.segments?.forEach((segment: any) => {
+          // Extract transit steps with enhanced details
+          plan.segments?.forEach((segment: any, segIndex: number) => {
             if (segment.transit) {
               const line = segment.transit.lines?.[0];
               if (line) {
                 const stopCount = segment.transit.via_num || 0;
-                const lineName = line.name.replace(/\(.*?\)/g, '').trim(); // Remove bracketed info like (direction)
-                steps.push(`Take ${lineName} (${line.type === 'SUBWAY' ? 'MTR' : 'Bus'})`);
-                steps.push(`Board at ${segment.transit.on?.name || 'station'}`);
-                if (stopCount > 0) {
-                  steps.push(`Pass ${stopCount} stops`);
+                const lineName = line.name.replace(/\(.*?\)/g, '').trim();
+                const transitType = line.type === 'SUBWAY' ? 'MTR' : line.type === 'BUS' ? 'Bus' : line.type;
+                const onStopName = segment.transit.on?.name || 'station';
+                const offStopName = segment.transit.off?.name || 'station';
+
+                // Route header with type
+                steps.push(`🚌 Take ${lineName} (${transitType})`);
+
+                // Boarding info
+                steps.push(`📍 Board at: ${onStopName}`);
+
+                // Show via stops if available
+                if (segment.transit.via_stops && segment.transit.via_stops.length > 0) {
+                  const viaStopNames = segment.transit.via_stops.map((stop: any) => stop.name).join(' → ');
+                  steps.push(`   Via: ${viaStopNames}`);
+                } else if (stopCount > 0) {
+                  steps.push(`   Pass ${stopCount} stop${stopCount > 1 ? 's' : ''}`);
                 }
-                steps.push(`Exit at ${segment.transit.off?.name || 'station'}`);
+
+                // Exit info
+                steps.push(`📍 Exit at: ${offStopName}`);
+
+                // Transit segment duration/distance if available
+                if (segment.transit.distance) {
+                  const distKm = (segment.transit.distance / 1000).toFixed(1);
+                  steps.push(`   Distance: ${distKm}km`);
+                }
+                if (segment.transit.duration) {
+                  const mins = Math.round(segment.transit.duration / 60);
+                  steps.push(`   Duration: ~${mins} min`);
+                }
               }
             } else if (segment.walking) {
-              // Use specific walking instructions if available
-              if (segment.walking.steps && segment.walking.steps.length > 0) {
-                segment.walking.steps.forEach((s: any) => {
-                  if (s.instruction) steps.push(s.instruction);
-                });
+              const walkDist = segment.walking.distance;
+              const walkTime = segment.walking.time;
+
+              // Walking segment header
+              if (segIndex === 0) {
+                steps.push(`🚶 Walk to boarding point (${walkDist}m, ~${Math.round(walkTime / 60)} min)`);
               } else {
-                steps.push(`Walk ${segment.walking.distance}m`);
+                steps.push(`🚶 Walk ${walkDist}m (~${Math.round(walkTime / 60)} min)`);
+              }
+
+              // Detailed walking instructions if available
+              if (segment.walking.steps && segment.walking.steps.length > 0) {
+                segment.walking.steps.forEach((s: any, idx: number) => {
+                  if (s.instruction) {
+                    // Add indentation for walking sub-steps
+                    const instruction = s.instruction.trim();
+                    const distance = s.distance ? ` (${s.distance}m)` : '';
+                    steps.push(`   ${idx + 1}. ${instruction}${distance}`);
+                  }
+                });
               }
             }
           });

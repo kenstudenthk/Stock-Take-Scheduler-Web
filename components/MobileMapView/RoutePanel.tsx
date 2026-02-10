@@ -129,17 +129,34 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
           {showDirections && (
             <ol className="mobile-route-steps">
               {activeRouteInfo.steps.map((step, index) => {
-                // Heuristic to style transit steps differently
-                const isBoarding = step.includes('Board at');
-                const isExiting = step.includes('Exit at');
-                const isTransit = step.includes('Take ');
-                
+                // Enhanced styling based on step content
+                const isTransitHeader = step.includes('🚌 Take');
+                const isWalkHeader = step.includes('🚶 Walk');
+                const isBoardingPoint = step.includes('📍 Board at');
+                const isExitPoint = step.includes('📍 Exit at');
+                const isViaInfo = step.includes('Via:') || step.includes('Pass ') || step.includes('Distance:') || step.includes('Duration:');
+                const isWalkSubStep = step.trim().match(/^\d+\./); // Walking sub-steps like "1.", "2."
+                const isIndented = step.startsWith('   ');
+
                 return (
-                  <li key={index} className={`mobile-route-step ${isTransit ? 'transit-main' : ''}`}>
-                    <span className="mobile-route-step-num">
-                      {isTransit ? <Bus className="w-3 h-3" /> : index + 1}
-                    </span>
-                    <span className={`mobile-route-step-text ${isBoarding || isExiting ? 'font-bold text-slate-800' : ''}`}>
+                  <li
+                    key={index}
+                    className={`mobile-route-step
+                      ${isTransitHeader ? 'transit-header' : ''}
+                      ${isWalkHeader ? 'walk-header' : ''}
+                      ${isBoardingPoint || isExitPoint ? 'station-point' : ''}
+                      ${isViaInfo ? 'via-info' : ''}
+                      ${isIndented ? 'indented-step' : ''}
+                    `}
+                  >
+                    {!isIndented && !isViaInfo && (
+                      <span className="mobile-route-step-num">
+                        {isTransitHeader ? <Bus className="w-3 h-3" /> :
+                         isWalkHeader ? <Footprints className="w-3 h-3" /> :
+                         index + 1}
+                      </span>
+                    )}
+                    <span className="mobile-route-step-text">
                       {step}
                     </span>
                   </li>
@@ -150,12 +167,65 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
         </div>
       )}
       <style>{`
-        .transit-main {
-          background-color: #f0f9ff;
-          border-left: 4px solid #0ea5e9;
-          margin: 8px 0;
+        .transit-header {
+          background-color: #eff6ff;
+          border-left: 4px solid #3b82f6;
+          margin: 12px 0 4px 0;
           padding: 8px !important;
+          border-radius: 6px;
+          font-weight: 600;
+          color: #1e40af;
+        }
+
+        .walk-header {
+          background-color: #f0fdf4;
+          border-left: 4px solid #22c55e;
+          margin: 12px 0 4px 0;
+          padding: 8px !important;
+          border-radius: 6px;
+          font-weight: 600;
+          color: #166534;
+        }
+
+        .station-point {
+          background-color: #fef3c7;
+          padding: 6px 8px !important;
+          margin: 2px 0 2px 12px;
           border-radius: 4px;
+          font-weight: 500;
+          color: #92400e;
+        }
+
+        .via-info {
+          color: #64748b;
+          font-size: 0.85rem;
+          padding: 2px 8px !important;
+          margin: 2px 0 2px 12px;
+          font-style: italic;
+        }
+
+        .indented-step {
+          padding-left: 24px !important;
+          color: #475569;
+          font-size: 0.9rem;
+          margin: 2px 0;
+        }
+
+        .mobile-route-step {
+          list-style: none;
+          padding: 4px 0;
+        }
+
+        .mobile-route-step-num {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 24px;
+          margin-right: 8px;
+        }
+
+        .mobile-route-step-text {
+          vertical-align: middle;
         }
       `}</style>
     </div>

@@ -160,30 +160,35 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
             if (segment.transit) {
               const line = segment.transit.lines?.[0];
               console.log('🚇 Transit Line:', line); // DEBUG
-              console.log('🚏 On Stop:', segment.transit.on); // DEBUG
-              console.log('🚏 Off Stop:', segment.transit.off); // DEBUG
+              console.log('🚏 On Station:', segment.transit.on_station); // DEBUG
+              console.log('🚏 Off Station:', segment.transit.off_station); // DEBUG
 
               if (line) {
                 const stopCount = segment.transit.via_num || 0;
                 const lineName = line.name ? line.name.replace(/\(.*?\)/g, '').trim() : 'Unknown Line';
-                const transitType = line.type === 'SUBWAY' ? 'MTR' : line.type === 'BUS' ? 'Bus' : (line.type || 'Transit');
 
-                // Try multiple ways to get station names
-                const onStopName = segment.transit.on?.name ||
-                                   segment.transit.departure?.name ||
-                                   segment.transit.start?.name ||
-                                   'Starting station';
-                const offStopName = segment.transit.off?.name ||
-                                    segment.transit.arrival?.name ||
-                                    segment.transit.end?.name ||
-                                    'Destination station';
+                // Handle different transit types
+                let transitType = 'Transit';
+                if (line.type === '地铁线路' || line.type === 'SUBWAY') {
+                  transitType = 'MTR';
+                } else if (line.type === '普通公交线路' || line.type === 'BUS') {
+                  transitType = 'Bus';
+                }
+
+                // Get station names from correct fields
+                const onStopName = segment.transit.on_station?.name || 'Starting station';
+                const offStopName = segment.transit.off_station?.name || 'Destination station';
 
                 // Route header with type
                 steps.push(`🚌 Take ${lineName} (${transitType})`);
                 steps.push(''); // Empty line for spacing
 
-                // Boarding info
-                steps.push(`📍 Board at: ${onStopName}`);
+                // Boarding info with entrance (for MTR)
+                if (segment.transit.entrance?.name) {
+                  steps.push(`📍 Board at: ${onStopName} (${segment.transit.entrance.name})`);
+                } else {
+                  steps.push(`📍 Board at: ${onStopName}`);
+                }
 
                 // Show via stops if available
                 if (segment.transit.via_stops && segment.transit.via_stops.length > 0) {
@@ -193,8 +198,12 @@ export const useAMapRoute = (): UseAMapRouteReturn => {
                   steps.push(`   Pass ${stopCount} stop${stopCount > 1 ? 's' : ''}`);
                 }
 
-                // Exit info
-                steps.push(`📍 Exit at: ${offStopName}`);
+                // Exit info with exit gate (for MTR)
+                if (segment.transit.exit?.name) {
+                  steps.push(`📍 Exit at: ${offStopName} (${segment.transit.exit.name})`);
+                } else {
+                  steps.push(`📍 Exit at: ${offStopName}`);
+                }
 
                 // Transit segment duration/distance if available
                 if (segment.transit.distance) {

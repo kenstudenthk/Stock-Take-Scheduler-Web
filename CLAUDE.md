@@ -6,6 +6,67 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Stock Take Scheduler Web is a React application for managing and scheduling inventory stock takes across retail shop locations in Hong Kong. It integrates with Microsoft SharePoint via Graph API for data persistence.
 
+---
+
+## ⚠️ After-Fix Protocol (MANDATORY)
+
+**You MUST follow this protocol after EVERY bug fix, issue resolution, or feature addition — no exceptions.**
+
+### Rules
+
+1. After fixing any bug or issue, ALWAYS update this CLAUDE.md file **in the same commit or PR**.
+2. Document the root cause, the fix applied, and a prevention rule for the future.
+3. If the same type of bug appears again, check the "Known Pitfalls" section first before attempting a fix.
+4. NEVER close a task or open a PR without updating this file.
+
+### What to document
+
+- **Root cause** — Why did this bug happen? (e.g. wrong API field, missing null check, z-index conflict)
+- **Fix applied** — What file(s) were changed and what was done?
+- **Prevention rule** — A clear rule starting with "ALWAYS" or "NEVER" to prevent recurrence
+
+### Where to add it
+
+| Type of issue | Where to document |
+|---|---|
+| Bug in a specific component | Add under that component's section in this file |
+| Recurring pattern / gotcha | Add to `## Known Pitfalls` section below |
+| SharePoint / API issue | Add under `## SharePoint Integration` |
+| Performance issue | Add under relevant component or `## Known Pitfalls` |
+
+### Format to use
+
+```
+#### ⚠️ Known Issue: [Component or Area Name]
+- **Date**: YYYY-MM-DD
+- **Problem**: [What went wrong]
+- **Root Cause**: [Why it happened]
+- **Fix**: [What was changed]
+- **Rule**: ALWAYS/NEVER [prevention rule going forward]
+```
+
+---
+
+## Known Pitfalls
+
+> This section is auto-maintained. Claude MUST append new entries here after every fix.
+
+#### ⚠️ Known Issue: MobileMapView — Group Selector Dropdown
+- **Date**: 2026-02-10
+- **Problem**: Dropdown was unclickable on mobile
+- **Root Cause**: z-index conflict with map canvas stacking context
+- **Fix**: Increased dropdown z-index to 9999, added `getPopupContainer`, added `isolation: isolate`
+- **Rule**: ALWAYS set `getPopupContainer` and `isolation: isolate` on Ant Design dropdowns rendered over map or canvas elements
+
+#### ⚠️ Known Issue: MobileMapView — Walking Segments Not Displaying
+- **Date**: 2026-02-10
+- **Problem**: Walking turn-by-turn directions were missing in RoutePanel
+- **Root Cause**: Incorrect field detection; used `segment.walking.steps` instead of `segment.transit.steps` with `transit_mode === 'WALK'`
+- **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
+- **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
+
+---
+
 ## Development Commands
 
 ```bash
@@ -138,7 +199,7 @@ The `MobileMapView` component provides a mobile-optimized map for Field Engineer
 - **Top Panel**: Collapsible shop list panel at top showing distance-sorted shops (expandable/collapsible)
 - **GPS Location**: On-demand location button (saves battery), shows blue pulsing marker
 - **Distance Display**: Haversine formula calculates distance from user to each shop
-- **Route Planning**: Both walking and transit routes calculated via AMap.Walking/AMap.Transfer
+- **Route Planning**: Both walking and transit routes calculated via AMap.Walking and AMap.Transfer
 - **Bottom Sheet Route Panel**: AMap-inspired design with collapsible interface
   - Fixed to bottom of screen with drag handle
   - Tap to collapse/expand for better map visibility

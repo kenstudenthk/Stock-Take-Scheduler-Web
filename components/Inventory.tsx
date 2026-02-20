@@ -32,6 +32,7 @@ import {
   PlusOutlined,
 } from "@ant-design/icons";
 import { INV_FIELDS } from "../constants";
+import { API_URLS } from "../constants/config";
 import { Shop, InventoryItem } from "../types";
 
 const { Title, Text } = Typography;
@@ -65,7 +66,7 @@ export const Inventory = ({ token, shops }: Props) => {
     if (!token) return;
     setLoading(true);
     try {
-      const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/2f2dff1c-8ce1-4B7B-9FF8-083A0BA1BB48/items?$expand=fields($select=*)&$top=999`;
+      const url = `${API_URLS.inventoryList}/items?$expand=fields($select=*)&$top=999`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -586,9 +587,68 @@ export const Inventory = ({ token, shops }: Props) => {
         <Form
           form={form}
           layout="vertical"
-          onFinish={(values) => {
-            message.loading("Updating SharePoint...");
-            setFormVisible(false);
+          onFinish={async (values) => {
+            const loadingKey = "inv-saving";
+            message.loading({
+              content: "Saving to SharePoint...",
+              key: loadingKey,
+            });
+            try {
+              const shopNameClean =
+                shops.find((s) => s.id === values.shopCode)?.name ||
+                values.shopName?.split(" - ").slice(1).join(" - ") ||
+                values.shopName;
+
+              const fields = {
+                [INV_FIELDS.SHOP_CODE]: values.shopCode || "",
+                [INV_FIELDS.SHOP_NAME]: shopNameClean || "",
+                [INV_FIELDS.SHOP_BRAND]: values.shopBrand || "",
+                [INV_FIELDS.BUSINESS_UNIT]: values.businessUnit || "",
+                [INV_FIELDS.ASSET_NAME]: values.assetName || "",
+                [INV_FIELDS.CMDB]: values.cmdb || "",
+                [INV_FIELDS.ASSET_ITEM_ID]: values.assetItemId || "",
+                [INV_FIELDS.BRAND]: values.brand || "",
+                [INV_FIELDS.SERIAL_NO]: values.serialNo || "",
+                [INV_FIELDS.STOCK_TAKE_STATUS]:
+                  values.stockTakeStatus || "Unverified",
+                [INV_FIELDS.IN_USE_STATUS]: values.inUseStatus || "N/A",
+                [INV_FIELDS.REMARKS]: values.remarks || "",
+              };
+
+              if (formMode === "new") {
+                const res = await fetch(`${API_URLS.inventoryList}/items`, {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ fields }),
+                });
+                if (!res.ok) throw new Error(await res.text());
+              } else if (formMode === "edit" && selectedItem) {
+                const res = await fetch(
+                  `${API_URLS.inventoryList}/items/${selectedItem.id}/fields`,
+                  {
+                    method: "PATCH",
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(fields),
+                  },
+                );
+                if (!res.ok) throw new Error(await res.text());
+              }
+
+              message.success({ content: "Saved!", key: loadingKey });
+              setFormVisible(false);
+              fetchInventory();
+            } catch {
+              message.error({
+                content: "Save failed. Check token or permissions.",
+                key: loadingKey,
+              });
+            }
           }}
         >
           <Row gutter={16}>

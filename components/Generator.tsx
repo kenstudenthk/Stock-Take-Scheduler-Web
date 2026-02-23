@@ -1,34 +1,64 @@
 /**
  * Generator.tsx - 智能排程生成器
- * 
+ *
  * 設計系統準則遵循: design-system/stock-take-scheduler/pages/generator.md
- * 
+ *
  * 三步驟流程:
  * - Step 1 (紅色/Problem): Configure - 設定篩選器和參數
  * - Step 2 (橙色/Process): Generate - 創建排程
  * - Step 3 (綠色/Solution): Sync - 儲存到 SharePoint
  */
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
-  Card, Row, Col, Space, Button, Typography, Switch, Select,
-  InputNumber, Table, Tag, message, Modal, DatePicker, Progress, Tooltip
-} from 'antd';
+  Card,
+  Row,
+  Col,
+  Space,
+  Button,
+  Typography,
+  Switch,
+  Select,
+  InputNumber,
+  Table,
+  Tag,
+  message,
+  Modal,
+  DatePicker,
+  Progress,
+  Tooltip,
+} from "antd";
 import {
-  ControlOutlined, CheckCircleOutlined, SaveOutlined,
-  ShopOutlined, HourglassOutlined, DeleteOutlined,
-  CalendarOutlined, SyncOutlined, HistoryOutlined,
-  SettingOutlined, ThunderboltOutlined, CloudUploadOutlined,
-  ArrowRightOutlined, RocketOutlined, WarningOutlined,
-  CheckCircleFilled, ClockCircleOutlined
-} from '@ant-design/icons';
-import dayjs from 'dayjs';
-import isBetween from 'dayjs/plugin/isBetween';
-import { Shop, User, hasPermission } from '../types';
-import { SP_FIELDS } from '../constants';
-import { isHoliday, getAllHolidays } from '../constants/holidays';
-import { GENERATOR_DEFAULTS, BATCH_CONFIG } from '../constants/config';
-import { executeBatch, BatchResult, formatBatchResult } from '../utils/batchOperations';
+  ControlOutlined,
+  CheckCircleOutlined,
+  SaveOutlined,
+  ShopOutlined,
+  HourglassOutlined,
+  DeleteOutlined,
+  CalendarOutlined,
+  SyncOutlined,
+  HistoryOutlined,
+  SettingOutlined,
+  ThunderboltOutlined,
+  CloudUploadOutlined,
+  ArrowRightOutlined,
+  RocketOutlined,
+  WarningOutlined,
+  CheckCircleFilled,
+  ClockCircleOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
+import { Shop, User, hasPermission } from "../types";
+import { SP_FIELDS } from "../constants";
+import { isHoliday, getAllHolidays } from "../constants/holidays";
+import { GENERATOR_DEFAULTS, BATCH_CONFIG } from "../constants/config";
+import {
+  executeBatch,
+  BatchResult,
+  formatBatchResult,
+} from "../utils/batchOperations";
 
 dayjs.extend(isBetween);
 
@@ -41,19 +71,19 @@ const { Option } = Select;
 // DESIGN SYSTEM COLORS (Step-based)
 // ========================================
 const DESIGN_COLORS = {
-  step1: '#EF4444',      // Red - Problem/Configure
-  step2: '#F97316',      // Orange - Process/Generate
-  step3: '#22C55E',      // Green - Solution/Sync
-  cta: '#0D9488',        // Teal - Brand CTA
-  neutral: '#64748B',    // Slate - Supporting
-  bg: '#F8FAFC',         // Light background
-  border: '#E2E8F0'      // Border
+  step1: "#EF4444", // Red - Problem/Configure
+  step2: "#F97316", // Orange - Process/Generate
+  step3: "#22C55E", // Green - Solution/Sync
+  cta: "#0D9488", // Teal - Brand CTA
+  neutral: "#64748B", // Slate - Supporting
+  bg: "#F8FAFC", // Light background
+  border: "#E2E8F0", // Border
 };
 
 // ========================================
 // WIZARD STEP CONFIGURATION
 // ========================================
-type WizardStep = 'configure' | 'generate' | 'sync' | 'complete';
+type WizardStep = "configure" | "generate" | "sync" | "complete";
 
 interface StepConfig {
   key: WizardStep;
@@ -66,40 +96,104 @@ interface StepConfig {
 
 const WIZARD_STEPS: StepConfig[] = [
   {
-    key: 'configure',
+    key: "configure",
     number: 1,
-    title: 'Configure',
-    description: 'Set filters & parameters',
+    title: "Configure",
+    description: "Set filters & parameters",
     icon: <SettingOutlined />,
-    color: DESIGN_COLORS.step1
+    color: DESIGN_COLORS.step1,
   },
   {
-    key: 'generate',
+    key: "generate",
     number: 2,
-    title: 'Generate',
-    description: 'Create schedule',
+    title: "Generate",
+    description: "Create schedule",
     icon: <ThunderboltOutlined />,
-    color: DESIGN_COLORS.step2
+    color: DESIGN_COLORS.step2,
   },
   {
-    key: 'sync',
+    key: "sync",
     number: 3,
-    title: 'Sync',
-    description: 'Save to SharePoint',
+    title: "Sync",
+    description: "Save to SharePoint",
     icon: <CloudUploadOutlined />,
-    color: DESIGN_COLORS.step3
-  }
+    color: DESIGN_COLORS.step3,
+  },
 ];
 
 // ========================================
 // REGION CONFIGURATION
 // ========================================
-const REGION_DISPLAY_CONFIG: Record<string, { label: string; social: string; svg: React.ReactNode }> = {
-  'HK': { label: 'HK Island', social: 'hk', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2"/></svg> },
-  'KN': { label: 'Kowloon', social: 'kn', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" stroke="currentColor" strokeWidth="2"/></svg> },
-  'NT': { label: 'N.T.', social: 'nt', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M2 20L9 4L14 14L18 8L22 20H2Z" stroke="currentColor" strokeWidth="2"/></svg> },
-  'Islands': { label: 'Lantau', social: 'islands', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 10C13.5 10 17 11 17 14C17 17 14 18 12 18C10 18 7 17 7 14Z" stroke="currentColor" strokeWidth="2"/><path d="M12 10V3" stroke="currentColor" strokeWidth="2"/></svg> },
-  'MO': { label: 'Macau', social: 'mo', svg: <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 9V21H20V9L12 3Z" stroke="currentColor" strokeWidth="2"/><path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2"/></svg> }
+const REGION_DISPLAY_CONFIG: Record<
+  string,
+  { label: string; social: string; svg: React.ReactNode }
+> = {
+  HK: {
+    label: "HK Island",
+    social: "hk",
+    svg: (
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    ),
+  },
+  KN: {
+    label: "Kowloon",
+    social: "kn",
+    svg: (
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none">
+        <rect
+          x="6"
+          y="6"
+          width="12"
+          height="12"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+      </svg>
+    ),
+  },
+  NT: {
+    label: "N.T.",
+    social: "nt",
+    svg: (
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M2 20L9 4L14 14L18 8L22 20H2Z"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+      </svg>
+    ),
+  },
+  Islands: {
+    label: "Lantau",
+    social: "islands",
+    svg: (
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M12 10C13.5 10 17 11 17 14C17 17 14 18 12 18C10 18 7 17 7 14Z"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <path d="M12 10V3" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    ),
+  },
+  MO: {
+    label: "Macau",
+    social: "mo",
+    svg: (
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M12 3L4 9V21H20V9L12 3Z"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    ),
+  },
 };
 
 // ========================================
@@ -109,21 +203,62 @@ const ResetChaseLoader = () => (
   <div className="chase-overlay">
     <div className="chase-scene">
       <div className="ghost-chaser">
-        <div style={{ background: '#ef4444', width: '140px', height: '140px', borderRadius: '70px 70px 0 0', position: 'relative' }}>
-          <div style={{ display: 'flex', gap: '20px', paddingTop: '40px', justifyContent: 'center' }}>
-            <div style={{ width: '30px', height: '35px', background: 'white', borderRadius: '50%' }} />
-            <div style={{ width: '30px', height: '35px', background: 'white', borderRadius: '50%' }} />
+        <div
+          style={{
+            background: "#ef4444",
+            width: "140px",
+            height: "140px",
+            borderRadius: "70px 70px 0 0",
+            position: "relative",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: "20px",
+              paddingTop: "40px",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                width: "30px",
+                height: "35px",
+                background: "white",
+                borderRadius: "50%",
+              }}
+            />
+            <div
+              style={{
+                width: "30px",
+                height: "35px",
+                background: "white",
+                borderRadius: "50%",
+              }}
+            />
           </div>
         </div>
       </div>
       <div className="pacman-runner"></div>
-      <div className="dots-trail">{[1, 2, 3, 4].map(i => <div key={i} className="dot-node" />)}</div>
+      <div className="dots-trail">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="dot-node" />
+        ))}
+      </div>
     </div>
-    <Title level={4} style={{ color: 'white', marginTop: '40px' }}>Resetting Schedules...</Title>
+    <Title level={4} style={{ color: "white", marginTop: "40px" }}>
+      Resetting Schedules...
+    </Title>
   </div>
 );
 
-const SyncGeometricLoader = ({ text = "Syncing to SharePoint...", progress }: { text?: string; progress?: number }) => (
+const SyncGeometricLoader = ({
+  text = "Syncing to SharePoint...",
+  progress,
+}: {
+  text?: string;
+  progress?: number;
+}) => (
   <div className="geometric-loader-overlay">
     <div className="geometric-loader">
       <div className="cube">
@@ -135,13 +270,15 @@ const SyncGeometricLoader = ({ text = "Syncing to SharePoint...", progress }: { 
         <div className="face bottom"></div>
       </div>
     </div>
-    <Title level={4} style={{ color: 'white', marginTop: '40px' }}>{text}</Title>
+    <Title level={4} style={{ color: "white", marginTop: "40px" }}>
+      {text}
+    </Title>
     {progress !== undefined && (
-      <Progress 
-        percent={progress} 
-        strokeColor={{ '0%': DESIGN_COLORS.step2, '100%': DESIGN_COLORS.step3 }}
+      <Progress
+        percent={progress}
+        strokeColor={{ "0%": DESIGN_COLORS.step2, "100%": DESIGN_COLORS.step3 }}
         trailColor="rgba(255,255,255,0.2)"
-        style={{ width: '300px', marginTop: '20px' }}
+        style={{ width: "300px", marginTop: "20px" }}
       />
     )}
   </div>
@@ -165,13 +302,16 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
   subtext,
   bgColor,
   icon,
-  isPulsing = false
+  isPulsing = false,
 }) => (
-  <div 
-    className={`summary-card-item ${isPulsing ? 'status-pulse status-pulse--danger' : ''}`}
+  <div
+    className={`summary-card-item ${isPulsing ? "status-pulse status-pulse--danger" : ""}`}
     style={{ borderLeft: `4px solid ${bgColor}` }}
   >
-    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>
+    <div
+      className="summary-card-icon-area"
+      style={{ backgroundColor: bgColor }}
+    >
       {icon}
     </div>
     <div className="summary-card-body">
@@ -196,8 +336,10 @@ interface WizardProgressBarVerticalProps {
   currentStep: WizardStep;
 }
 
-const WizardProgressBarVertical: React.FC<WizardProgressBarVerticalProps> = ({ currentStep }) => {
-  const currentStepIndex = WIZARD_STEPS.findIndex(s => s.key === currentStep);
+const WizardProgressBarVertical: React.FC<WizardProgressBarVerticalProps> = ({
+  currentStep,
+}) => {
+  const currentStepIndex = WIZARD_STEPS.findIndex((s) => s.key === currentStep);
 
   return (
     <div className="wizard-progress-vertical-container">
@@ -210,25 +352,40 @@ const WizardProgressBarVertical: React.FC<WizardProgressBarVerticalProps> = ({ c
           return (
             <React.Fragment key={step.key}>
               {/* Step Item */}
-              <div 
-                className={`wizard-step-vertical ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isPending ? 'pending' : ''}`}
-                style={{ 
-                  '--step-color': isCompleted ? DESIGN_COLORS.step3 : step.color 
-                } as React.CSSProperties}
+              <div
+                className={`wizard-step-vertical ${isActive ? "active" : ""} ${isCompleted ? "completed" : ""} ${isPending ? "pending" : ""}`}
+                style={
+                  {
+                    "--step-color": isCompleted
+                      ? DESIGN_COLORS.step3
+                      : step.color,
+                  } as React.CSSProperties
+                }
               >
                 <div className="wizard-step-vertical-circle">
                   {isCompleted ? (
-                    <CheckCircleFilled style={{ fontSize: 24, color: DESIGN_COLORS.step3 }} />
+                    <CheckCircleFilled
+                      style={{ fontSize: 24, color: DESIGN_COLORS.step3 }}
+                    />
                   ) : (
-                    <div className="wizard-step-vertical-icon" style={{ color: isActive ? step.color : DESIGN_COLORS.neutral }}>
+                    <div
+                      className="wizard-step-vertical-icon"
+                      style={{
+                        color: isActive ? step.color : DESIGN_COLORS.neutral,
+                      }}
+                    >
                       {step.icon}
                     </div>
                   )}
                 </div>
                 <div className="wizard-step-vertical-content">
-                  <div className="wizard-step-vertical-number">Step {step.number}</div>
+                  <div className="wizard-step-vertical-number">
+                    Step {step.number}
+                  </div>
                   <div className="wizard-step-vertical-title">{step.title}</div>
-                  <div className="wizard-step-vertical-description">{step.description}</div>
+                  <div className="wizard-step-vertical-description">
+                    {step.description}
+                  </div>
                 </div>
               </div>
 
@@ -236,11 +393,13 @@ const WizardProgressBarVertical: React.FC<WizardProgressBarVerticalProps> = ({ c
               {index < WIZARD_STEPS.length - 1 && (
                 <div className="wizard-connector-vertical">
                   <div className="wizard-connector-vertical-track"></div>
-                  <div 
+                  <div
                     className="wizard-connector-vertical-fill"
                     style={{
-                      height: isCompleted ? '100%' : isActive ? '50%' : '0%',
-                      backgroundColor: isCompleted ? DESIGN_COLORS.step3 : DESIGN_COLORS.step2
+                      height: isCompleted ? "100%" : isActive ? "50%" : "0%",
+                      backgroundColor: isCompleted
+                        ? DESIGN_COLORS.step3
+                        : DESIGN_COLORS.step2,
                     }}
                   ></div>
                 </div>
@@ -262,30 +421,39 @@ export const Generator: React.FC<{
   onRefresh: () => void;
   currentUser: User | null;
 }> = ({ shops, graphToken, onRefresh, currentUser }) => {
-
   // ========================================
   // STATE MANAGEMENT
   // ========================================
-  const [startDate, setStartDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
-  const [shopsPerDay, setShopsPerDay] = useState<number>(GENERATOR_DEFAULTS.shopsPerDay);
-  const [groupsPerDay, setGroupsPerDay] = useState<number>(GENERATOR_DEFAULTS.groupsPerDay);
+  const [startDate, setStartDate] = useState<string>(
+    dayjs().format("YYYY-MM-DD"),
+  );
+  const [shopsPerDay, setShopsPerDay] = useState<number>(
+    GENERATOR_DEFAULTS.shopsPerDay,
+  );
+  const [groupsPerDay, setGroupsPerDay] = useState<number>(
+    GENERATOR_DEFAULTS.groupsPerDay,
+  );
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [includeMTR, setIncludeMTR] = useState(true);
-  
+
   const [generatedResult, setGeneratedResult] = useState<any[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [loadingType, setLoadingType] = useState<'reset' | 'sync'>('sync');
-  
+  const [loadingType, setLoadingType] = useState<"reset" | "sync">("sync");
+
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resetRange, setResetRange] = useState<any>(null);
-  
-  const [saveProgress, setSaveProgress] = useState<{ current: number; total: number } | null>(null);
-  const [lastBatchResult, setLastBatchResult] = useState<BatchResult<any> | null>(null);
+
+  const [saveProgress, setSaveProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
+  const [lastBatchResult, setLastBatchResult] =
+    useState<BatchResult<any> | null>(null);
   const [showRetryModal, setShowRetryModal] = useState(false);
-  
-  const [wizardStep, setWizardStep] = useState<WizardStep>('configure');
+
+  const [wizardStep, setWizardStep] = useState<WizardStep>("configure");
   const [syncCompleted, setSyncCompleted] = useState(false);
 
   // Get all holidays for validation
@@ -294,60 +462,90 @@ export const Generator: React.FC<{
   // ========================================
   // COMPUTED DATA
   // ========================================
-  const activePool = useMemo(() => 
-    shops.filter(s => s.masterStatus !== 'Closed' && s.status !== 'Closed'), 
-    [shops]
+  const activePool = useMemo(
+    () =>
+      shops.filter((s) => s.masterStatus !== "Closed" && s.status !== "Closed"),
+    [shops],
   );
 
-  const stats = useMemo(() => ({
-    total: activePool.length,
-    completed: activePool.filter(s => s.status === 'Done').length,
-    unplanned: activePool.filter(s => s.status === 'Unplanned').length
-  }), [activePool]);
+  const stats = useMemo(
+    () => ({
+      total: activePool.length,
+      completed: activePool.filter((s) => s.status === "Done").length,
+      unplanned: activePool.filter((s) => s.status === "Unplanned").length,
+    }),
+    [activePool],
+  );
 
   const regionRemainStats = useMemo(() => {
-    const unplannedPool = activePool.filter(s => s.status === 'Unplanned');
-    const counts: Record<string, number> = { 'HK': 0, 'KN': 0, 'NT': 0, 'Islands': 0, 'MO': 0 };
-    unplannedPool.forEach(s => { 
-      if (counts.hasOwnProperty(s.region)) counts[s.region]++; 
+    const unplannedPool = activePool.filter((s) => s.status === "Unplanned");
+    const counts: Record<string, number> = {
+      HK: 0,
+      KN: 0,
+      NT: 0,
+      Islands: 0,
+      MO: 0,
+    };
+    unplannedPool.forEach((s) => {
+      if (counts.hasOwnProperty(s.region)) counts[s.region]++;
     });
-    
-    return Object.keys(counts).map(key => {
-      const config = REGION_DISPLAY_CONFIG[key] || { label: key, social: key.toLowerCase(), svg: null };
-      return { 
-        key, 
-        count: counts[key], 
-        displayName: config.label, 
-        socialKey: config.social, 
-        icon: config.svg 
+
+    return Object.keys(counts).map((key) => {
+      const config = REGION_DISPLAY_CONFIG[key] || {
+        label: key,
+        social: key.toLowerCase(),
+        svg: null,
+      };
+      return {
+        key,
+        count: counts[key],
+        displayName: config.label,
+        socialKey: config.social,
+        icon: config.svg,
       };
     });
   }, [activePool]);
-
-  const regionOptions = useMemo(() => 
-    Array.from(new Set(activePool.map(s => s.region))).filter(Boolean).sort(), 
-    [activePool]
+  const regionOptions = useMemo(
+    () =>
+      Array.from(new Set(activePool.map((s) => s.region)))
+        .filter(Boolean)
+        .sort(),
+    [activePool],
   );
 
   const availableDistricts = useMemo(() => {
-    const filtered = selectedRegions.length > 0 
-      ? activePool.filter(s => selectedRegions.includes(s.region)) 
-      : activePool;
-    return Array.from(new Set(filtered.map(s => s.district))).filter(Boolean).sort();
+    const filtered =
+      selectedRegions.length > 0
+        ? activePool.filter((s) => selectedRegions.includes(s.region))
+        : activePool;
+    return Array.from(new Set(filtered.map((s) => s.district)))
+      .filter(Boolean)
+      .sort();
   }, [activePool, selectedRegions]);
+
+  const reschedulePool = useMemo(
+    () =>
+      shops.filter(
+        (s) =>
+          s.masterStatus !== "Closed" &&
+          s.status === "Rescheduled" &&
+          !s.scheduledDate,
+      ),
+    [shops],
+  );
 
   // ========================================
   // WIZARD STEP AUTO-UPDATE
   // ========================================
   useEffect(() => {
     if (syncCompleted) {
-      setWizardStep('complete');
+      setWizardStep("complete");
     } else if (isSaving) {
-      setWizardStep('sync');
+      setWizardStep("sync");
     } else if (generatedResult.length > 0) {
-      setWizardStep('generate');
+      setWizardStep("generate");
     } else {
-      setWizardStep('configure');
+      setWizardStep("configure");
     }
   }, [isSaving, generatedResult.length, syncCompleted]);
 
@@ -360,36 +558,39 @@ export const Generator: React.FC<{
   // ========================================
   // DATE VALIDATION
   // ========================================
-  const disabledDate = useCallback((current: dayjs.Dayjs) => {
-    if (!current) return false;
-    const dateStr = current.format('YYYY-MM-DD');
-    const dayOfWeek = current.day();
-    
-    // Disable weekends
-    if (dayOfWeek === 0 || dayOfWeek === 6) return true;
-    
-    // Disable public holidays
-    if (ALL_HOLIDAYS.includes(dateStr)) return true;
-    
-    // Disable past dates
-    if (current.isBefore(dayjs(), 'day')) return true;
-    
-    return false;
-  }, [ALL_HOLIDAYS]);
+  const disabledDate = useCallback(
+    (current: dayjs.Dayjs) => {
+      if (!current) return false;
+      const dateStr = current.format("YYYY-MM-DD");
+      const dayOfWeek = current.day();
+
+      // Disable weekends
+      if (dayOfWeek === 0 || dayOfWeek === 6) return true;
+
+      // Disable public holidays
+      if (ALL_HOLIDAYS.includes(dateStr)) return true;
+
+      // Disable past dates
+      if (current.isBefore(dayjs(), "day")) return true;
+
+      return false;
+    },
+    [ALL_HOLIDAYS],
+  );
 
   // ========================================
   // HANDLERS
   // ========================================
   const handleGenerate = useCallback(() => {
     setIsCalculating(true);
-    setWizardStep('generate');
+    setWizardStep("generate");
 
     try {
       // Helper: Check if date is a working day
       const isWorkingDay = (date: dayjs.Dayjs) => {
         const day = date.day();
-        const isWeekend = (day === 0 || day === 6);
-        const dateStr = date.format('YYYY-MM-DD');
+        const isWeekend = day === 0 || day === 6;
+        const dateStr = date.format("YYYY-MM-DD");
         const isPublicHoliday = isHoliday(dateStr);
         return !isWeekend && !isPublicHoliday;
       };
@@ -397,24 +598,29 @@ export const Generator: React.FC<{
       // Helper: Get next working day
       const getNextWorkingDay = (date: dayjs.Dayjs) => {
         let next = date;
-        while (!isWorkingDay(next)) { 
-          next = next.add(1, 'day'); 
+        while (!isWorkingDay(next)) {
+          next = next.add(1, "day");
         }
         return next;
       };
 
       // Filter pool based on user selections
-      let pool = activePool.filter(s => {
-        const matchRegion = selectedRegions.length === 0 || selectedRegions.includes(s.region);
-        const matchDistrict = selectedDistricts.length === 0 || selectedDistricts.includes(s.district);
+      let pool = activePool.filter((s) => {
+        const matchRegion =
+          selectedRegions.length === 0 || selectedRegions.includes(s.region);
+        const matchDistrict =
+          selectedDistricts.length === 0 ||
+          selectedDistricts.includes(s.district);
         const matchMTR = includeMTR ? true : !s.is_mtr;
-        return s.status === 'Unplanned' && matchRegion && matchDistrict && matchMTR;
+        return (
+          s.status === "Unplanned" && matchRegion && matchDistrict && matchMTR
+        );
       });
 
       if (pool.length === 0) {
-        message.warning('No shops match the selected filters!');
+        message.warning("No shops match the selected filters!");
         setIsCalculating(false);
-        setWizardStep('configure');
+        setWizardStep("configure");
         return;
       }
 
@@ -425,49 +631,130 @@ export const Generator: React.FC<{
 
       while (shopIndex < pool.length) {
         currentDate = getNextWorkingDay(currentDate);
-        
+
         const shopsForDay = pool.slice(shopIndex, shopIndex + shopsPerDay);
-        
+
         shopsForDay.forEach((shop, idx) => {
           const groupId = (idx % groupsPerDay) + 1;
           scheduled.push({
             ...shop,
-            scheduledDate: currentDate.format('YYYY-MM-DD'),
-            groupId: groupId
+            scheduledDate: currentDate.format("YYYY-MM-DD"),
+            groupId: groupId,
           });
         });
 
         shopIndex += shopsPerDay;
-        currentDate = currentDate.add(1, 'day');
+        currentDate = currentDate.add(1, "day");
       }
 
       setGeneratedResult(scheduled);
-      
-      const totalDays = [...new Set(scheduled.map(s => s.scheduledDate))].length;
-      message.success(`✅ ${scheduled.length} shops scheduled across ${totalDays} days!`);
-      
+
+      const totalDays = [...new Set(scheduled.map((s) => s.scheduledDate))]
+        .length;
+      message.success(
+        `✅ ${scheduled.length} shops scheduled across ${totalDays} days!`,
+      );
+
       // Add haptic feedback if available
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
-      
     } catch (error) {
-      console.error('Generation error:', error);
-      message.error('Failed to generate schedule. Please try again.');
-      setWizardStep('configure');
+      console.error("Generation error:", error);
+      message.error("Failed to generate schedule. Please try again.");
+      setWizardStep("configure");
     } finally {
       setIsCalculating(false);
     }
-  }, [activePool, includeMTR, selectedRegions, selectedDistricts, startDate, shopsPerDay, groupsPerDay]);
+  }, [
+    activePool,
+    includeMTR,
+    selectedRegions,
+    selectedDistricts,
+    startDate,
+    shopsPerDay,
+    groupsPerDay,
+  ]);
+
+  const handleGeneratePool = useCallback(() => {
+    if (reschedulePool.length === 0) {
+      message.warning("Reschedule pool is empty — no shops to schedule.");
+      return;
+    }
+
+    setIsCalculating(true);
+    setWizardStep("generate");
+
+    try {
+      const isWorkingDay = (date: dayjs.Dayjs) => {
+        const day = date.day();
+        const isWeekend = day === 0 || day === 6;
+        const dateStr = date.format("YYYY-MM-DD");
+        const isPublicHoliday = isHoliday(dateStr);
+        return !isWeekend && !isPublicHoliday;
+      };
+
+      const getNextWorkingDay = (date: dayjs.Dayjs) => {
+        let next = date;
+        while (!isWorkingDay(next)) {
+          next = next.add(1, "day");
+        }
+        return next;
+      };
+
+      const scheduled: any[] = [];
+      let currentDate = dayjs(startDate);
+      let shopIndex = 0;
+
+      while (shopIndex < reschedulePool.length) {
+        currentDate = getNextWorkingDay(currentDate);
+
+        const shopsForDay = reschedulePool.slice(
+          shopIndex,
+          shopIndex + shopsPerDay,
+        );
+
+        shopsForDay.forEach((shop, idx) => {
+          const groupId = (idx % groupsPerDay) + 1;
+          scheduled.push({
+            ...shop,
+            scheduledDate: currentDate.format("YYYY-MM-DD"),
+            groupId: groupId,
+          });
+        });
+
+        shopIndex += shopsPerDay;
+        currentDate = currentDate.add(1, "day");
+      }
+
+      setGeneratedResult(scheduled);
+
+      const totalDays = [...new Set(scheduled.map((s) => s.scheduledDate))]
+        .length;
+      message.success(
+        `✅ ${scheduled.length} pool shops scheduled across ${totalDays} days!`,
+      );
+
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    } catch (error) {
+      console.error("Pool generation error:", error);
+      message.error("Failed to generate pool schedule. Please try again.");
+      setWizardStep("configure");
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [reschedulePool, startDate, shopsPerDay, groupsPerDay]);
 
   const saveToSharePoint = useCallback(async () => {
     if (generatedResult.length === 0) {
-      message.warning('No schedule to save!');
+      message.warning("No schedule to save!");
       return;
     }
 
     setIsSaving(true);
-    setWizardStep('sync');
+    setWizardStep("sync");
     setSaveProgress({ current: 0, total: generatedResult.length });
 
     try {
@@ -477,56 +764,60 @@ export const Generator: React.FC<{
           const response = await fetch(
             `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
             {
-              method: 'PATCH',
-              headers: { 
-                'Authorization': `Bearer ${graphToken}`, 
-                'Content-Type': 'application/json' 
+              method: "PATCH",
+              headers: {
+                Authorization: `Bearer ${graphToken}`,
+                "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                [SP_FIELDS.STATUS]: 'Planned',
+                [SP_FIELDS.STATUS]: "Planned",
                 [SP_FIELDS.SCHEDULE_DATE]: shop.scheduledDate,
-                [SP_FIELDS.SCHEDULE_GROUP]: shop.groupId.toString()
-              })
-            }
+                [SP_FIELDS.SCHEDULE_GROUP]: shop.groupId.toString(),
+              }),
+            },
           );
-          
+
           if (!response.ok) {
             throw new Error(`Failed to save ${shop.name}`);
           }
         },
         {
           onProgress: (current, total) => setSaveProgress({ current, total }),
-          getItemName: (shop) => shop.name
-        }
+          getItemName: (shop) => shop.name,
+        },
       );
 
       setLastBatchResult(result);
 
       if (result.successCount === result.totalProcessed) {
-        message.success(`✅ All ${result.successCount} shops synced successfully!`);
+        message.success(
+          `✅ All ${result.successCount} shops synced successfully!`,
+        );
         setSyncCompleted(true);
-        setWizardStep('complete');
-        
+        setWizardStep("complete");
+
         // Haptic feedback for success
         if (navigator.vibrate) {
           navigator.vibrate([100, 50, 100]);
         }
-        
+
         setTimeout(() => {
           onRefresh();
           setGeneratedResult([]);
         }, 2000);
       } else if (result.successCount > 0) {
-        message.warning(`⚠️ ${result.successCount} synced, ${result.failureCount} failed.`);
+        message.warning(
+          `⚠️ ${result.successCount} synced, ${result.failureCount} failed.`,
+        );
         setShowRetryModal(true);
       } else {
         message.error(`❌ Failed to sync all ${result.failureCount} shops.`);
         setShowRetryModal(true);
       }
     } catch (error) {
-      console.error('Sync error:', error);
-      message.error('Sync failed. Please try again.');
-      setWizardStep('generate');
+      console.error("Sync error:", error);
+      message.error("Sync failed. Please try again.");
+      setWizardStep("generate");
     } finally {
       setIsSaving(false);
       setSaveProgress(null);
@@ -536,35 +827,36 @@ export const Generator: React.FC<{
   const handleRetryFailed = useCallback(async () => {
     if (!lastBatchResult || lastBatchResult.failureCount === 0) return;
 
-    const failedShops = lastBatchResult.failed.map(f => f.item);
+    const failedShops = lastBatchResult.failed.map((f) => f.item);
     setGeneratedResult(failedShops);
     setShowRetryModal(false);
-    
+
     setTimeout(() => saveToSharePoint(), 100);
   }, [lastBatchResult, saveToSharePoint]);
 
   const handleResetAll = useCallback(() => {
     confirm({
-      title: 'Reset All Schedules?',
+      title: "Reset All Schedules?",
       icon: <WarningOutlined style={{ color: DESIGN_COLORS.step1 }} />,
-      content: 'This will reset ALL planned schedules back to "Unplanned" status.',
-      okText: 'Yes, Reset All',
-      okType: 'danger',
-      cancelText: 'Cancel',
+      content:
+        'This will reset ALL planned schedules back to "Unplanned" status.',
+      okText: "Yes, Reset All",
+      okType: "danger",
+      cancelText: "Cancel",
       onOk: async () => {
-        setLoadingType('reset');
+        setLoadingType("reset");
         setIsSaving(true);
 
-        const plannedShops = shops.filter(s => s.status === 'Planned');
-        
+        const plannedShops = shops.filter((s) => s.status === "Planned");
+
         if (plannedShops.length === 0) {
-          message.warning('No planned schedules to reset.');
+          message.warning("No planned schedules to reset.");
           setIsSaving(false);
           return;
         }
 
         setSaveProgress({ current: 0, total: plannedShops.length });
-        
+
         try {
           const result = await executeBatch(
             plannedShops,
@@ -572,73 +864,82 @@ export const Generator: React.FC<{
               const response = await fetch(
                 `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
                 {
-                  method: 'PATCH',
-                  headers: { 
-                    'Authorization': `Bearer ${graphToken}`, 
-                    'Content-Type': 'application/json' 
+                  method: "PATCH",
+                  headers: {
+                    Authorization: `Bearer ${graphToken}`,
+                    "Content-Type": "application/json",
                   },
                   body: JSON.stringify({
-                    [SP_FIELDS.STATUS]: 'Unplanned',
+                    [SP_FIELDS.STATUS]: "Unplanned",
                     [SP_FIELDS.SCHEDULE_DATE]: null,
-                    [SP_FIELDS.SCHEDULE_GROUP]: null
-                  })
-                }
+                    [SP_FIELDS.SCHEDULE_GROUP]: null,
+                  }),
+                },
               );
-              
+
               if (!response.ok) {
                 throw new Error(`Failed to reset ${shop.name}`);
               }
             },
             {
-              onProgress: (current, total) => setSaveProgress({ current, total }),
-              getItemName: (shop) => shop.name
-            }
+              onProgress: (current, total) =>
+                setSaveProgress({ current, total }),
+              getItemName: (shop) => shop.name,
+            },
           );
 
           if (result.successCount === result.totalProcessed) {
-            message.success(`✅ All ${result.successCount} schedules reset successfully!`);
+            message.success(
+              `✅ All ${result.successCount} schedules reset successfully!`,
+            );
           } else if (result.successCount > 0) {
-            message.warning(`⚠️ ${result.successCount} reset, ${result.failureCount} failed.`);
+            message.warning(
+              `⚠️ ${result.successCount} reset, ${result.failureCount} failed.`,
+            );
           } else {
-            message.error(`❌ Failed to reset all ${result.failureCount} schedules.`);
+            message.error(
+              `❌ Failed to reset all ${result.failureCount} schedules.`,
+            );
           }
-          
+
           onRefresh();
         } catch (error) {
-          console.error('Reset error:', error);
-          message.error('Reset failed. Please try again.');
+          console.error("Reset error:", error);
+          message.error("Reset failed. Please try again.");
         } finally {
           setIsSaving(false);
           setSaveProgress(null);
         }
-      }
+      },
     });
   }, [shops, graphToken, onRefresh]);
 
   const handleResetByPeriod = useCallback(async () => {
     if (!resetRange) {
-      message.error('Please select a date range!');
+      message.error("Please select a date range!");
       return;
     }
 
     const [start, end] = resetRange;
-    const targets = shops.filter(s => 
-      s.scheduledDate && dayjs(s.scheduledDate).isBetween(start, end, 'day', '[]')
+    const targets = shops.filter(
+      (s) =>
+        s.scheduledDate &&
+        dayjs(s.scheduledDate).isBetween(start, end, "day", "[]"),
     );
 
     if (targets.length === 0) {
-      message.warning('No schedules found in this period.');
+      message.warning("No schedules found in this period.");
       return;
     }
 
     confirm({
       title: `Reset ${targets.length} schedules?`,
       icon: <WarningOutlined style={{ color: DESIGN_COLORS.step2 }} />,
-      content: `This will reset schedules from ${start.format('YYYY-MM-DD')} to ${end.format('YYYY-MM-DD')}.`,
-      okText: 'Confirm Reset',
-      okType: 'danger',
+      content: `This will reset schedules from ${start.format("YYYY-MM-DD")} to ${end.format("YYYY-MM-DD")}.`,
+      okText: "Confirm Reset",
+      okType: "danger",
       onOk: async () => {
-        setLoadingType('reset');
+        setLoadingType("reset");
         setIsSaving(true);
         setSaveProgress({ current: 0, total: targets.length });
 
@@ -649,83 +950,96 @@ export const Generator: React.FC<{
               const response = await fetch(
                 `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
                 {
-                  method: 'PATCH',
-                  headers: { 
-                    'Authorization': `Bearer ${graphToken}`, 
-                    'Content-Type': 'application/json' 
+                  method: "PATCH",
+                  headers: {
+                    Authorization: `Bearer ${graphToken}`,
+                    "Content-Type": "application/json",
                   },
                   body: JSON.stringify({
-                    [SP_FIELDS.STATUS]: 'Unplanned',
+                    [SP_FIELDS.STATUS]: "Unplanned",
                     [SP_FIELDS.SCHEDULE_DATE]: null,
-                    [SP_FIELDS.SCHEDULE_GROUP]: null
-                  })
-                }
+                    [SP_FIELDS.SCHEDULE_GROUP]: null,
+                  }),
+                },
               );
-              
+
               if (!response.ok) {
                 throw new Error(`Failed to reset ${shop.name}`);
               }
             },
             {
-              onProgress: (current, total) => setSaveProgress({ current, total }),
-              getItemName: (shop) => shop.name
-            }
+              onProgress: (current, total) =>
+                setSaveProgress({ current, total }),
+              getItemName: (shop) => shop.name,
+            },
           );
 
           if (result.successCount === result.totalProcessed) {
-            message.success(`✅ ${result.successCount} schedules reset successfully!`);
+            message.success(
+              `✅ ${result.successCount} schedules reset successfully!`,
+            );
           } else if (result.successCount > 0) {
-            message.warning(`⚠️ ${result.successCount} reset, ${result.failureCount} failed.`);
+            message.warning(
+              `⚠️ ${result.successCount} reset, ${result.failureCount} failed.`,
+            );
           } else {
-            message.error(`❌ Failed to reset all ${result.failureCount} schedules.`);
+            message.error(
+              `❌ Failed to reset all ${result.failureCount} schedules.`,
+            );
           }
 
           setResetModalVisible(false);
           setResetRange(null);
           onRefresh();
         } catch (error) {
-          console.error('Reset error:', error);
-          message.error('Reset failed. Please try again.');
+          console.error("Reset error:", error);
+          message.error("Reset failed. Please try again.");
         } finally {
           setIsSaving(false);
           setSaveProgress(null);
         }
-      }
+      },
     });
   }, [resetRange, shops, graphToken, onRefresh]);
-
-  // ========================================
-  // RENDER
-  // ========================================
   return (
     <div className="generator-container">
       {/* Loading Overlays */}
-      {isSaving && (
-        loadingType === 'reset' 
-          ? <ResetChaseLoader />
-          : <SyncGeometricLoader 
-              text="Syncing to SharePoint..." 
-              progress={saveProgress ? Math.round((saveProgress.current / saveProgress.total) * 100) : 0}
-            />
-      )}
+      {isSaving &&
+        (loadingType === "reset" ? (
+          <ResetChaseLoader />
+        ) : (
+          <SyncGeometricLoader
+            text="Syncing to SharePoint..."
+            progress={
+              saveProgress
+                ? Math.round((saveProgress.current / saveProgress.total) * 100)
+                : 0
+            }
+          />
+        ))}
 
       {/* Retry Failed Modal */}
       <Modal
-        title={<Space><WarningOutlined style={{ color: DESIGN_COLORS.step2 }} /> Sync Partially Failed</Space>}
+        title={
+          <Space>
+            <WarningOutlined style={{ color: DESIGN_COLORS.step2 }} /> Sync
+            Partially Failed
+          </Space>
+        }
         open={showRetryModal}
         onCancel={() => setShowRetryModal(false)}
         footer={[
           <Button key="close" onClick={() => setShowRetryModal(false)}>
             Close
           </Button>,
-          <Button 
-            key="retry" 
-            type="primary" 
+          <Button
+            key="retry"
+            type="primary"
             onClick={handleRetryFailed}
             style={{ backgroundColor: DESIGN_COLORS.step2 }}
           >
             Retry Failed Items
-          </Button>
+          </Button>,
         ]}
         centered
       >
@@ -733,18 +1047,24 @@ export const Generator: React.FC<{
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{lastBatchResult.successCount}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {lastBatchResult.successCount}
+                </div>
                 <div className="text-sm text-green-700">Successful</div>
               </div>
               <div className="text-center p-4 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">{lastBatchResult.failureCount}</div>
+                <div className="text-2xl font-bold text-red-600">
+                  {lastBatchResult.failureCount}
+                </div>
                 <div className="text-sm text-red-700">Failed</div>
               </div>
             </div>
 
             {lastBatchResult.failureCount > 0 && (
               <div>
-                <Text strong className="block mb-2">Failed Items:</Text>
+                <Text strong className="block mb-2">
+                  Failed Items:
+                </Text>
                 <ul className="max-h-60 overflow-auto space-y-1">
                   {lastBatchResult.failed.slice(0, 10).map((f, i) => (
                     <li key={i} className="text-sm text-red-600">
@@ -765,7 +1085,11 @@ export const Generator: React.FC<{
 
       {/* Reset Period Modal */}
       <Modal
-        title={<Space><CalendarOutlined /> Reset Range</Space>}
+        title={
+          <Space>
+            <CalendarOutlined /> Reset Range
+          </Space>
+        }
         open={resetModalVisible}
         onCancel={() => setResetModalVisible(false)}
         onOk={handleResetByPeriod}
@@ -777,8 +1101,8 @@ export const Generator: React.FC<{
           <Text className="block mb-6 text-slate-500">
             Reset schedules within this period to 'Unplanned'.
           </Text>
-          <RangePicker 
-            className="w-full h-12 rounded-xl" 
+          <RangePicker
+            className="w-full h-12 rounded-xl"
             onChange={(dates) => setResetRange(dates)}
           />
         </div>
@@ -786,24 +1110,30 @@ export const Generator: React.FC<{
 
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
-        <Title level={2} className="m-0" style={{ color: DESIGN_COLORS.neutral }}>
-          <ThunderboltOutlined style={{ color: DESIGN_COLORS.step2, marginRight: 8 }} />
+        <Title
+          level={2}
+          className="m-0"
+          style={{ color: DESIGN_COLORS.neutral }}
+        >
+          <ThunderboltOutlined
+            style={{ color: DESIGN_COLORS.step2, marginRight: 8 }}
+          />
           Schedule Generator
         </Title>
-        
-        {hasPermission(currentUser, 'reset_schedule') && (
+
+        {hasPermission(currentUser, "reset_schedule") && (
           <Space>
-            <Button 
-              icon={<HistoryOutlined />} 
+            <Button
+              icon={<HistoryOutlined />}
               onClick={() => setResetModalVisible(true)}
               className="rounded-lg border-red-200 text-red-500 font-bold hover:bg-red-50"
             >
               Reset by Period
             </Button>
-            <Button 
-              danger 
-              type="primary" 
-              icon={<DeleteOutlined />} 
+            <Button
+              danger
+              type="primary"
+              icon={<DeleteOutlined />}
               onClick={handleResetAll}
               className="rounded-lg font-bold"
             >
@@ -816,30 +1146,42 @@ export const Generator: React.FC<{
       {/* Summary Stats */}
       <Row gutter={[24, 24]} className="mb-8">
         <Col span={8}>
-          <SummaryCard 
-            label="Active Shops" 
-            value={stats.total} 
-            subtext="Operational units" 
-            bgColor="hsl(195, 74%, 62%)" 
-            icon={<ShopOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />}
+          <SummaryCard
+            label="Active Shops"
+            value={stats.total}
+            subtext="Operational units"
+            bgColor="hsl(195, 74%, 62%)"
+            icon={
+              <ShopOutlined
+                style={{ fontSize: 60, color: "white", opacity: 0.5 }}
+              />
+            }
           />
         </Col>
         <Col span={8}>
-          <SummaryCard 
-            label="Completed" 
-            value={stats.completed} 
-            subtext="Done this year" 
+          <SummaryCard
+            label="Completed"
+            value={stats.completed}
+            subtext="Done this year"
             bgColor={DESIGN_COLORS.step3}
-            icon={<CheckCircleOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />}
+            icon={
+              <CheckCircleOutlined
+                style={{ fontSize: 60, color: "white", opacity: 0.5 }}
+              />
+            }
           />
         </Col>
         <Col span={8}>
-          <SummaryCard 
-            label="Remaining" 
-            value={stats.unplanned} 
-            subtext="Pending schedule" 
+          <SummaryCard
+            label="Remaining"
+            value={stats.unplanned}
+            subtext="Pending schedule"
             bgColor={DESIGN_COLORS.step2}
-            icon={<HourglassOutlined style={{fontSize: 60, color: 'white', opacity: 0.5}} />}
+            icon={
+              <HourglassOutlined
+                style={{ fontSize: 60, color: "white", opacity: 0.5 }}
+              />
+            }
             isPulsing={stats.unplanned > 0}
           />
         </Col>
@@ -852,191 +1194,230 @@ export const Generator: React.FC<{
           <Row gutter={[24, 24]}>
             {/* Unplanned Pool */}
             <Col span={9}>
-          <div 
-            className="bg-white p-8 rounded-[40px] shadow-sm h-full flex flex-col"
-            style={{ 
-              border: `2px solid ${DESIGN_COLORS.border}`,
-              borderLeft: `6px solid ${DESIGN_COLORS.step1}`
-            }}
-          >
-            <div className="flex items-center gap-2 mb-8">
-              <div 
-                className="w-3 h-3 rounded-full animate-pulse" 
-                style={{ backgroundColor: DESIGN_COLORS.step1 }}
-              ></div>
-              <Text strong className="text-[14px] text-slate-400 uppercase tracking-widest">
-                Step 1: Unplanned Pool
-              </Text>
-            </div>
-            
-            <ul className="example-2 unplanned-pool-layout w-full list-none p-0 m-0">
-              {regionRemainStats.map(reg => (
-                <li key={reg.key} className="icon-content flex justify-center w-full">
-                  <a 
-                    href="#" 
-                    data-social={reg.socialKey}
-                    style={{ 
-                      width: '100%', 
-                      height: '100px', 
-                      borderRadius: '20px', 
-                      flexDirection: 'column', 
-                      gap: '4px', 
-                      margin: '0 auto' 
-                    }}
-                  >
-                    <div className="filled"></div>
-                    <div style={{ position: 'relative', zIndex: 10 }}>{reg.icon}</div>
-                    <span style={{ 
-                      position: 'relative', 
-                      zIndex: 10, 
-                      fontSize: '10px', 
-                      fontWeight: 900, 
-                      textAlign: 'center', 
-                      textTransform: 'uppercase' 
-                    }}>
-                      {reg.displayName}
-                    </span>
-                    <div 
-                      className="font-black text-lg" 
-                      style={{ position: 'relative', zIndex: 10 }}
-                    >
-                      {reg.count}
-                    </div>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Col>
-
-        {/* Right: Generation Settings (Step 2 Preview) */}
-        <Col span={15}>
-          <div 
-            className="bg-white rounded-[40px] p-8 shadow-sm h-full"
-            style={{ 
-              border: `2px solid ${DESIGN_COLORS.border}`,
-              borderLeft: `6px solid ${DESIGN_COLORS.step2}`
-            }}
-          >
-            <div className="flex justify-between items-center mb-10">
-              <Space className="text-[18px] font-bold uppercase text-slate-800">
-                <ControlOutlined style={{ color: DESIGN_COLORS.step2 }} />
-                Step 2: Settings
-              </Space>
-              
-              <Tooltip title={includeMTR ? "MTR shops included" : "MTR shops excluded"}>
-                <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
-                  <Switch 
-                    checked={includeMTR} 
-                    onChange={setIncludeMTR}
-                    size="small"
-                  />
-                  <Text className="text-[11px] font-black uppercase text-slate-500">
-                    Include MTR
-                  </Text>
-                </div>
-              </Tooltip>
-            </div>
-
-            <Row gutter={[16, 24]}>
-              <Col span={12}>
-                <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">
-                  Filter Regions
-                </Text>
-                <Select
-                  mode="multiple"
-                  className="w-full h-11 custom-select"
-                  placeholder="All Regions"
-                  value={selectedRegions}
-                  onChange={setSelectedRegions}
-                  allowClear
-                  maxTagCount="responsive"
-                >
-                  {regionOptions.map(r => (
-                    <Option key={r} value={r}>{r}</Option>
-                  ))}
-                </Select>
-              </Col>
-
-              <Col span={12}>
-                <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">
-                  Filter Districts
-                </Text>
-                <Select
-                  mode="multiple"
-                  className="w-full h-11 custom-select"
-                  placeholder="All Districts"
-                  value={selectedDistricts}
-                  onChange={setSelectedDistricts}
-                  allowClear
-                  maxTagCount="responsive"
-                >
-                  {availableDistricts.map(d => (
-                    <Option key={d} value={d}>{d}</Option>
-                  ))}
-                </Select>
-              </Col>
-
-              <Col span={8}>
-                <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">
-                  Start Date
-                </Text>
-                <DatePicker
-                  value={startDate ? dayjs(startDate) : null}
-                  onChange={(date) => setStartDate(date ? date.format('YYYY-MM-DD') : '')}
-                  disabledDate={disabledDate}
-                  format="YYYY/MM/DD"
-                  placeholder="Select Start Date"
-                  className="bg-slate-50 border border-slate-200 h-11 rounded-xl w-full px-4 font-bold text-slate-700"
-                  allowClear={false}
-                />
-              </Col>
-
-              <Col span={8}>
-                <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">
-                  Shops Per Day
-                </Text>
-                <InputNumber
-                  value={shopsPerDay}
-                  onChange={v => setShopsPerDay(v || GENERATOR_DEFAULTS.shopsPerDay)}
-                  min={1}
-                  className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
-                />
-              </Col>
-
-              <Col span={8}>
-                <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">
-                  Groups Per Day
-                </Text>
-                <InputNumber
-                  value={groupsPerDay}
-                  onChange={v => setGroupsPerDay(v || GENERATOR_DEFAULTS.groupsPerDay)}
-                  min={1}
-                  className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
-                />
-              </Col>
-            </Row>
-
-            {/* CTA: Generate Button */}
-            <div className="flex justify-end mt-10">
-              <Button
-                type="primary"
-                size="large"
-                icon={<ThunderboltOutlined />}
-                onClick={handleGenerate}
-                loading={isCalculating}
-                disabled={isCalculating}
-                className="h-12 px-16 rounded-xl font-black shadow-lg"
+              <div
+                className="bg-white p-8 rounded-[40px] shadow-sm h-full flex flex-col"
                 style={{
-                  background: `linear-gradient(135deg, ${DESIGN_COLORS.step2} 0%, ${DESIGN_COLORS.step1} 100%)`,
-                  border: 'none'
+                  border: `2px solid ${DESIGN_COLORS.border}`,
+                  borderLeft: `6px solid ${DESIGN_COLORS.step1}`,
                 }}
               >
-                {isCalculating ? 'Generating...' : 'GENERATE SCHEDULE'}
-              </Button>
-            </div>
-          </div>
-        </Col>
+                <div className="flex items-center gap-2 mb-8">
+                  <div
+                    className="w-3 h-3 rounded-full animate-pulse"
+                    style={{ backgroundColor: DESIGN_COLORS.step1 }}
+                  ></div>
+                  <Text
+                    strong
+                    className="text-[14px] text-slate-400 uppercase tracking-widest"
+                  >
+                    Step 1: Unplanned Pool
+                  </Text>
+                </div>
+
+                <ul className="example-2 unplanned-pool-layout w-full list-none p-0 m-0">
+                  {regionRemainStats.map((reg) => (
+                    <li
+                      key={reg.key}
+                      className="icon-content flex justify-center w-full"
+                    >
+                      <a
+                        href="#"
+                        data-social={reg.socialKey}
+                        style={{
+                          width: "100%",
+                          height: "100px",
+                          borderRadius: "20px",
+                          flexDirection: "column",
+                          gap: "4px",
+                          margin: "0 auto",
+                        }}
+                      >
+                        <div className="filled"></div>
+                        <div style={{ position: "relative", zIndex: 10 }}>
+                          {reg.icon}
+                        </div>
+                        <span
+                          style={{
+                            position: "relative",
+                            zIndex: 10,
+                            fontSize: "10px",
+                            fontWeight: 900,
+                            textAlign: "center",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {reg.displayName}
+                        </span>
+                        <div
+                          className="font-black text-lg"
+                          style={{ position: "relative", zIndex: 10 }}
+                        >
+                          {reg.count}
+                        </div>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Col>
+
+            {/* Right: Generation Settings (Step 2 Preview) */}
+            <Col span={15}>
+              <div
+                className="bg-white rounded-[40px] p-8 shadow-sm h-full"
+                style={{
+                  border: `2px solid ${DESIGN_COLORS.border}`,
+                  borderLeft: `6px solid ${DESIGN_COLORS.step2}`,
+                }}
+              >
+                <div className="flex justify-between items-center mb-10">
+                  <Space className="text-[18px] font-bold uppercase text-slate-800">
+                    <ControlOutlined style={{ color: DESIGN_COLORS.step2 }} />
+                    Step 2: Settings
+                  </Space>
+
+                  <Tooltip
+                    title={
+                      includeMTR ? "MTR shops included" : "MTR shops excluded"
+                    }
+                  >
+                    <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
+                      <Switch
+                        checked={includeMTR}
+                        onChange={setIncludeMTR}
+                        size="small"
+                      />
+                      <Text className="text-[11px] font-black uppercase text-slate-500">
+                        Include MTR
+                      </Text>
+                    </div>
+                  </Tooltip>
+                </div>
+
+                <Row gutter={[16, 24]}>
+                  <Col span={12}>
+                    <Text
+                      strong
+                      className="text-slate-400 block mb-2 uppercase text-[10px] ml-1"
+                    >
+                      Filter Regions
+                    </Text>
+                    <Select
+                      mode="multiple"
+                      className="w-full h-11 custom-select"
+                      placeholder="All Regions"
+                      value={selectedRegions}
+                      onChange={setSelectedRegions}
+                      allowClear
+                      maxTagCount="responsive"
+                    >
+                      {regionOptions.map((r) => (
+                        <Option key={r} value={r}>
+                          {r}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Col>
+
+                  <Col span={12}>
+                    <Text
+                      strong
+                      className="text-slate-400 block mb-2 uppercase text-[10px] ml-1"
+                    >
+                      Filter Districts
+                    </Text>
+                    <Select
+                      mode="multiple"
+                      className="w-full h-11 custom-select"
+                      placeholder="All Districts"
+                      value={selectedDistricts}
+                      onChange={setSelectedDistricts}
+                      allowClear
+                      maxTagCount="responsive"
+                    >
+                      {availableDistricts.map((d) => (
+                        <Option key={d} value={d}>
+                          {d}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Col>
+
+                  <Col span={8}>
+                    <Text
+                      strong
+                      className="text-slate-400 block mb-2 uppercase text-xs ml-1"
+                    >
+                      Start Date
+                    </Text>
+                    <DatePicker
+                      value={startDate ? dayjs(startDate) : null}
+                      onChange={(date) =>
+                        setStartDate(date ? date.format("YYYY-MM-DD") : "")
+                      }
+                      disabledDate={disabledDate}
+                      format="YYYY/MM/DD"
+                      placeholder="Select Start Date"
+                      className="bg-slate-50 border border-slate-200 h-11 rounded-xl w-full px-4 font-bold text-slate-700"
+                      allowClear={false}
+                    />
+                  </Col>
+
+                  <Col span={8}>
+                    <Text
+                      strong
+                      className="text-slate-400 block mb-2 uppercase text-xs ml-1"
+                    >
+                      Shops Per Day
+                    </Text>
+                    <InputNumber
+                      value={shopsPerDay}
+                      onChange={(v) =>
+                        setShopsPerDay(v || GENERATOR_DEFAULTS.shopsPerDay)
+                      }
+                      min={1}
+                      className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
+                    />
+                  </Col>
+
+                  <Col span={8}>
+                    <Text
+                      strong
+                      className="text-slate-400 block mb-2 uppercase text-xs ml-1"
+                    >
+                      Groups Per Day
+                    </Text>
+                    <InputNumber
+                      value={groupsPerDay}
+                      onChange={(v) =>
+                        setGroupsPerDay(v || GENERATOR_DEFAULTS.groupsPerDay)
+                      }
+                      min={1}
+                      className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
+                    />
+                  </Col>
+                </Row>
+
+                {/* CTA: Generate Button */}
+                <div className="flex justify-end mt-10">
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<ThunderboltOutlined />}
+                    onClick={handleGenerate}
+                    loading={isCalculating}
+                    disabled={isCalculating}
+                    className="h-12 px-16 rounded-xl font-black shadow-lg"
+                    style={{
+                      background: `linear-gradient(135deg, ${DESIGN_COLORS.step2} 0%, ${DESIGN_COLORS.step1} 100%)`,
+                      border: "none",
+                    }}
+                  >
+                    {isCalculating ? "Generating..." : "GENERATE SCHEDULE"}
+                  </Button>
+                </div>
+              </div>
+            </Col>
           </Row>
         </Col>
 
@@ -1048,6 +1429,82 @@ export const Generator: React.FC<{
         </Col>
       </Row>
 
+      {/* Reschedule Pool Section */}
+      {reschedulePool.length > 0 && (
+        <Card
+          className="mt-8 rounded-[40px] border-none shadow-sm overflow-hidden"
+          style={{ borderLeft: `6px solid ${DESIGN_COLORS.step2}` }}
+          title={
+            <Space className="text-slate-700 font-bold">
+              <ReloadOutlined style={{ color: DESIGN_COLORS.step2 }} />
+              Reschedule Pool ({reschedulePool.length} shops awaiting
+              rescheduling)
+            </Space>
+          }
+          extra={
+            hasPermission(currentUser, "generate_schedule") && (
+              <Button
+                type="primary"
+                icon={<ThunderboltOutlined />}
+                onClick={handleGeneratePool}
+                loading={isCalculating}
+                disabled={isCalculating}
+                style={{
+                  backgroundColor: DESIGN_COLORS.step2,
+                  borderColor: DESIGN_COLORS.step2,
+                }}
+                className="rounded-xl font-black"
+              >
+                Generate Pool Schedule
+              </Button>
+            )
+          }
+        >
+          <Table
+            dataSource={reschedulePool}
+            pagination={{ pageSize: 10, showSizeChanger: false }}
+            rowKey="id"
+            columns={[
+              {
+                title: "Shop Name",
+                dataIndex: "name",
+                key: "name",
+                render: (n, r: any) => (
+                  <Space>
+                    <img
+                      src={r.brandIcon}
+                      className="w-6 h-6 object-contain"
+                      alt={r.brand}
+                    />
+                    <span>{n}</span>
+                  </Space>
+                ),
+              },
+              {
+                title: "Region",
+                dataIndex: "region",
+                key: "region",
+              },
+              {
+                title: "District",
+                dataIndex: "district",
+                key: "district",
+              },
+              {
+                title: "MTR",
+                dataIndex: "is_mtr",
+                key: "is_mtr",
+                render: (v: boolean) =>
+                  v ? (
+                    <Tag color="purple" className="border-none font-bold">
+                      MTR
+                    </Tag>
+                  ) : null,
+              },
+            ]}
+          />
+        </Card>
+      )}
       {/* Preview Table (Step 3 Preview) */}
       {generatedResult.length > 0 && (
         <Card
@@ -1055,7 +1512,10 @@ export const Generator: React.FC<{
           style={{ borderLeft: `6px solid ${DESIGN_COLORS.step3}` }}
           title={
             <Space className="text-slate-700 font-bold">
-              <ClockCircleOutlined spin={!syncCompleted} style={{ color: DESIGN_COLORS.step3 }} />
+              <ClockCircleOutlined
+                spin={!syncCompleted}
+                style={{ color: DESIGN_COLORS.step3 }}
+              />
               Step 3: Schedule Preview ({generatedResult.length} shops)
             </Space>
           }
@@ -1066,77 +1526,94 @@ export const Generator: React.FC<{
             rowKey="id"
             columns={[
               {
-                title: 'Date',
-                dataIndex: 'scheduledDate',
-                key: 'date',
-                render: d => (
+                title: "Date",
+                dataIndex: "scheduledDate",
+                key: "date",
+                render: (d) => (
                   <b className="text-slate-700">
-                    {dayjs(d).format('YYYY-MM-DD (ddd)')}
+                    {dayjs(d).format("YYYY-MM-DD (ddd)")}
                   </b>
-                )
+                ),
               },
               {
-                title: 'Group',
-                dataIndex: 'groupId',
-                key: 'group',
-                render: g => (
+                title: "Group",
+                dataIndex: "groupId",
+                key: "group",
+                render: (g) => (
                   <Tag
                     className={`font-black px-3 rounded-md border-none tag-group-${g}`}
-                    color={g === 1 ? 'blue' : g === 2 ? 'purple' : 'orange'}
+                    color={g === 1 ? "blue" : g === 2 ? "purple" : "orange"}
                   >
                     {`Group ${String.fromCharCode(64 + g)}`}
                   </Tag>
-                )
+                ),
               },
               {
-                title: 'Shop Name',
-                dataIndex: 'name',
-                key: 'name',
+                title: "Shop Name",
+                dataIndex: "name",
+                key: "name",
                 render: (n, r) => (
                   <Space>
-                    <img src={r.brandIcon} className="w-6 h-6 object-contain" alt={r.brand} />
+                    <img
+                      src={r.brandIcon}
+                      className="w-6 h-6 object-contain"
+                      alt={r.brand}
+                    />
                     <span>{n}</span>
                   </Space>
-                )
+                ),
               },
               {
-                title: 'District',
-                dataIndex: 'district',
-                key: 'district'
-              }
+                title: "District",
+                dataIndex: "district",
+                key: "district",
+              },
             ]}
           />
 
           {/* Final CTA: Confirm & Sync */}
-          {hasPermission(currentUser, 'generate_schedule') && !syncCompleted && (
-            <div className="flex justify-end p-8 border-t bg-slate-50">
-              <Button
-                type="primary"
-                size="large"
-                icon={syncCompleted ? <CheckCircleFilled /> : <SaveOutlined />}
-                onClick={saveToSharePoint}
-                loading={isSaving}
-                disabled={isSaving || syncCompleted}
-                className="h-12 px-16 rounded-xl font-black shadow-lg"
-                style={{
-                  backgroundColor: syncCompleted ? DESIGN_COLORS.step3 : DESIGN_COLORS.cta,
-                  borderColor: syncCompleted ? DESIGN_COLORS.step3 : DESIGN_COLORS.cta
-                }}
-              >
-                {syncCompleted ? 'SYNCED ✓' : 'CONFIRM & SYNC TO SHAREPOINT'}
-              </Button>
-            </div>
-          )}
+          {hasPermission(currentUser, "generate_schedule") &&
+            !syncCompleted && (
+              <div className="flex justify-end p-8 border-t bg-slate-50">
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={
+                    syncCompleted ? <CheckCircleFilled /> : <SaveOutlined />
+                  }
+                  onClick={saveToSharePoint}
+                  loading={isSaving}
+                  disabled={isSaving || syncCompleted}
+                  className="h-12 px-16 rounded-xl font-black shadow-lg"
+                  style={{
+                    backgroundColor: syncCompleted
+                      ? DESIGN_COLORS.step3
+                      : DESIGN_COLORS.cta,
+                    borderColor: syncCompleted
+                      ? DESIGN_COLORS.step3
+                      : DESIGN_COLORS.cta,
+                  }}
+                >
+                  {syncCompleted ? "SYNCED ✓" : "CONFIRM & SYNC TO SHAREPOINT"}
+                </Button>
+              </div>
+            )}
 
           {syncCompleted && (
             <div className="p-8 text-center border-t bg-green-50">
               <Space direction="vertical" size="small">
-                <CheckCircleFilled style={{ fontSize: 48, color: DESIGN_COLORS.step3 }} />
-                <Title level={4} style={{ color: DESIGN_COLORS.step3, margin: 0 }}>
+                <CheckCircleFilled
+                  style={{ fontSize: 48, color: DESIGN_COLORS.step3 }}
+                />
+                <Title
+                  level={4}
+                  style={{ color: DESIGN_COLORS.step3, margin: 0 }}
+                >
                   Schedule Synced Successfully!
                 </Title>
                 <Text type="secondary">
-                  All {generatedResult.length} shops have been saved to SharePoint.
+                  All {generatedResult.length} shops have been saved to
+                  SharePoint.
                 </Text>
               </Space>
             </div>

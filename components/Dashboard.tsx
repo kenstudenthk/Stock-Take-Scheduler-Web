@@ -3,7 +3,7 @@ import { Card, Tag, Space, Button, Row, Col, Empty, DatePicker, Typography, Moda
 import { 
   ShopOutlined, HourglassOutlined, CheckCircleOutlined, 
   PrinterOutlined, EnvironmentOutlined, CalendarOutlined,
-  CloseCircleOutlined, ExclamationCircleOutlined
+  CloseCircleOutlined, ExclamationCircleOutlined, SyncOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shop, User, hasPermission } from '../types';
@@ -392,7 +392,13 @@ export const Dashboard: React.FC<{
         </div>
       </Card>
 
-      <Modal title={<Space><CalendarOutlined className="text-indigo-600" /><span>Smart Reschedule</span></Space>} open={isReschedOpen} onOk={handleConfirmReschedule} onCancel={() => setIsReschedOpen(false)} okText="Confirm New Date" width={450} centered>
+      <Modal title={<Space><CalendarOutlined className="text-indigo-600" /><span>Smart Reschedule</span></Space>} open={isReschedOpen} onCancel={() => setIsReschedOpen(false)} width={450} centered footer={[
+          <Button key="pool" icon={<SyncOutlined />} onClick={() => { handleMoveToPool(targetShop!); setIsReschedOpen(false); }}>
+            Move to Reschedule Pool
+          </Button>,
+          <Button key="cancel" onClick={() => setIsReschedOpen(false)}>Cancel</Button>,
+          <Button key="ok" type="primary" onClick={handleConfirmReschedule} disabled={!reschedDate}>Confirm New Date</Button>
+        ]}>
         <div className="py-4">
           <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100"><Text type="secondary" className="text-xs uppercase font-bold block mb-1">Target Shop</Text><Text strong className="text-lg text-indigo-900">{targetShop?.name}</Text></div>
           <DatePicker className="w-full h-12 rounded-xl" disabledDate={d => (d && d < dayjs().startOf('day')) || !checkDateAvailability(d, targetShop!).valid} value={reschedDate} onChange={val => setReschedDate(val)} />

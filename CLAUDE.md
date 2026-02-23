@@ -176,10 +176,34 @@ GitHub Actions workflows in `.github/workflows/`:
 ## Dashboard Shop Actions
 
 The Dashboard provides per-shop action buttons (permission-gated):
-- **Reschedule** (`reschedule_shop`) - Open date picker to reschedule an active shop
-- **Move to Pool** (`reschedule_shop`) - Clear scheduled date and set status to "Rescheduled"
+- **Reschedule** (`reschedule_shop`) - Open Smart Reschedule modal with date picker
+- **Move to Pool** (`reschedule_shop`) - Clear scheduled date and set status to "Rescheduled" (row button)
 - **Close** (`close_shop`) - Mark a shop as closed
 - **Resume** (`close_shop`) - Re-open a closed shop, setting status back to "Pending"
+
+### Smart Reschedule Modal
+The modal (`isReschedOpen`) has a custom footer with three buttons:
+1. **Move to Reschedule Pool** — calls `handleMoveToPool()` inline, closes modal; use when date cannot be confirmed immediately
+2. **Cancel** — closes modal without changes
+3. **Confirm New Date** — disabled until a date is selected; calls `handleConfirmReschedule()`
+
+Pool shops are identified by: `status === 'Rescheduled'` AND `!scheduledDate`.
+
+## Reschedule Pool (Generator)
+
+The Generator page includes a **Reschedule Pool section** that appears automatically when pool shops exist.
+
+### Pool shop identification
+```typescript
+shops.filter(s => s.masterStatus !== 'Closed' && s.status === 'Rescheduled' && !s.scheduledDate)
+```
+
+### Pool section behaviour
+- Rendered as a Card above the Preview Table, only when `reschedulePool.length > 0`
+- Shows a table of pool shops (name/brand icon, region, district, MTR tag)
+- **Generate Pool Schedule** button (`generate_schedule` permission) — runs same scheduling algorithm as regular generate, using current `startDate`, `shopsPerDay`, `groupsPerDay` settings
+- Result feeds into `generatedResult` → existing Preview Table + Confirm & Sync flow handles saving to SharePoint
+- Syncing sets status to `Planned` and assigns a date/group, removing the shop from the pool
 
 ## Locations Page Performance
 

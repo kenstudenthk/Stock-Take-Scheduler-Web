@@ -16,6 +16,7 @@ import {
   DatePicker,
   Progress,
   Steps,
+  Tooltip,
 } from "antd";
 import {
   ControlOutlined,
@@ -419,8 +420,18 @@ export const SchedulingWizard: React.FC<SchedulingWizardProps> = ({
       Islands: 0,
       MO: 0,
     };
+    const totals: Record<string, number> = {
+      HK: 0,
+      KN: 0,
+      NT: 0,
+      Islands: 0,
+      MO: 0,
+    };
     unplannedPool.forEach((s) => {
       if (counts.hasOwnProperty(s.region)) counts[s.region]++;
+    });
+    activePool.forEach((s) => {
+      if (totals.hasOwnProperty(s.region)) totals[s.region]++;
     });
     return Object.keys(counts).map((key) => {
       const config = REGION_DISPLAY_CONFIG[key] || {
@@ -428,9 +439,16 @@ export const SchedulingWizard: React.FC<SchedulingWizardProps> = ({
         social: key.toLowerCase(),
         svg: null,
       };
+      const total = totals[key];
+      const unplanned = counts[key];
+      const planned = total - unplanned;
+      const plannedPct = total > 0 ? Math.round((planned / total) * 100) : 0;
       return {
         key,
-        count: counts[key],
+        count: unplanned,
+        total,
+        planned,
+        plannedPct,
         displayName: config.label,
         socialKey: config.social,
         icon: config.svg,
@@ -695,12 +713,8 @@ export const SchedulingWizard: React.FC<SchedulingWizardProps> = ({
                     <div
                       key={reg.key}
                       className={`
-                        p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer
-                        ${
-                          selectedRegions.includes(reg.key)
-                            ? "border-teal-500 bg-teal-50"
-                            : "border-transparent bg-slate-50 hover:bg-slate-100"
-                        }
+                        relative overflow-hidden p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer bg-slate-50
+                        ${selectedRegions.includes(reg.key) ? "border-teal-500" : "border-transparent"}
                       `}
                       onClick={() => {
                         if (selectedRegions.includes(reg.key)) {
@@ -712,13 +726,28 @@ export const SchedulingWizard: React.FC<SchedulingWizardProps> = ({
                         }
                       }}
                     >
-                      <div className="flex items-center gap-2 mb-2">
+                      {/* Planned fill */}
+                      <Tooltip title={`Planned Shops · ${reg.planned} Shops · ${reg.plannedPct}%`} placement="top">
+                        <div
+                          className="absolute top-0 left-0 h-full bg-teal-100 transition-all duration-500"
+                          style={{ width: `${reg.plannedPct}%` }}
+                        />
+                      </Tooltip>
+                      {/* Unplanned fill */}
+                      <Tooltip title={`Unplanned Shops · ${reg.count} Shops · ${100 - reg.plannedPct}%`} placement="top">
+                        <div
+                          className="absolute top-0 h-full"
+                          style={{ left: `${reg.plannedPct}%`, right: 0 }}
+                        />
+                      </Tooltip>
+                      {/* Card content */}
+                      <div className="relative z-10 flex items-center gap-2 mb-2">
                         <span className="text-teal-600">{reg.icon}</span>
                         <span className="text-xs font-bold text-slate-500 uppercase">
                           {reg.displayName}
                         </span>
                       </div>
-                      <div className="text-2xl font-black text-slate-800">
+                      <div className="relative z-10 text-2xl font-black text-slate-800">
                         {reg.count}
                       </div>
                     </div>

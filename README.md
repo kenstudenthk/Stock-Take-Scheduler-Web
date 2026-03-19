@@ -154,12 +154,12 @@ Interactive map showing all shop locations.
 - **AMap Integration:**
   - Full Hong Kong map coverage
   - Zoom and pan controls
-  - Satellite/Standard view toggle
+  - 2D map view (optimised for performance)
 
 - **Shop Markers:**
   - Color-coded markers by region
   - Click marker to view shop details
-  - Clustered markers for dense areas
+  - Batched marker creation (80/frame) to prevent UI freeze
 
 - **Filtering:**
   - Filter markers by region
@@ -171,11 +171,39 @@ Interactive map showing all shop locations.
   - Full address
   - Contact information
   - Current schedule status
-  - Quick link to edit shop
 
 - **Coordinate System:**
   - WGS-84 to GCJ-02 conversion
-  - Accurate positioning for China maps
+  - Accurate positioning for AMap
+
+---
+
+### 6b. Mobile Map Navigation (PWA)
+
+Mobile-optimised map for Field Engineers (FEs) navigating between shops during stock takes. Renders automatically on screens ≤640px.
+
+**Features:**
+- **Group Selection**: Dropdown to switch between Groups A/B/C
+- **Today's Filter**: Auto-filters to shops scheduled for today
+- **GPS Location**: On-demand button (saves battery), blue pulsing marker
+- **Distance Display**: Haversine distance from user to each shop
+- **Route Planning**: Walking and transit routes via AMap
+- **Bottom Sheet Route Panel**: Fixed to bottom, collapsible, drag handle
+  - Walking: shown only if distance ≤ 1km, turn-by-turn directions
+  - Transit: route number, via stops, MTR entrance/exit info
+  - Tap segment header → map zooms to that segment
+
+**Component Structure:**
+```
+MobileMapView.tsx
+├── TopShopPanel.tsx   # Group dropdown + distance-sorted shop list
+├── RoutePanel.tsx     # Walk/transit details with tap-to-zoom segments
+└── hooks/
+    ├── useGeolocation.ts   # AMap.Geolocation (on-demand GPS)
+    └── useAMapRoute.ts     # AMap.Walking + AMap.Transfer
+```
+
+**AMap Plugins:** `AMap.Geolocation`, `AMap.Walking`, `AMap.Transfer`, `AMap.Scale`
 
 ---
 

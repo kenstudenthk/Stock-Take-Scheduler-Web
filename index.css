@@ -10,6 +10,14 @@
 :root {
   --primary-teal: #0d9488;
   --sidebar-bg: #2b3467;
+
+  /* Wizard Step Colors (single source of truth — matches DESIGN_COLORS in Generator.tsx) */
+  --wizard-step1: #0D9488; /* Teal   — Configure */
+  --wizard-step2: #D97706; /* Amber  — Generate  */
+  --wizard-step3: #22C55E; /* Green  — Sync      */
+  --wizard-neutral: #64748B;
+  --wizard-bg: #F8FAFC;
+  --wizard-border: #E2E8F0;
   --bg-main: #ffffff;
   --bg-header: #ffffff;
   --text-main: #1e293b;

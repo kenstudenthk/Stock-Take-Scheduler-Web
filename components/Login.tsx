@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { message, Typography } from 'antd';
+import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import bcrypt from 'bcryptjs';
 
 const { Text } = Typography;
@@ -30,6 +31,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+
+  // --- Email validation state ---
+  const [emailError, setEmailError] = useState<string>("");
+
   // 檢查 SharePoint 連線狀態
   useEffect(() => {
     const checkConnection = async () => {
@@ -48,6 +56,10 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
     setName('');
     setUserEmailPrefix('');
     setAliasEmailPrefix('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setShowOldPassword(false);
+    setEmailError('');
   };
 
   const handleModeSwitch = (e: React.MouseEvent, targetMode: Mode) => {
@@ -104,7 +116,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
     try {
       const salt = bcrypt.genSaltSync(10);
       const hash = bcrypt.hashSync(password, salt);
-      
+
       const fullUserEmail = `${userEmailPrefix}@corpq.hk.pccw.com`;
       const fullAliasEmail = `${aliasEmailPrefix}@pccw.com`;
 
@@ -180,13 +192,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
           <div className="form-content-area" style={{ gap: '6px', marginTop: '10px' }}>
             <div className="field-group">
               <label className="field-label">Full Name</label>
-              <input type="text" placeholder="e.g. Kilson Li" value={name} onChange={e => setName(e.target.value)} />
+              <input type="text" placeholder="e.g. Kilson Li" value={name} onChange={e => setName(e.target.value)} autoComplete="name" />
             </div>
-            
+
             <div className="field-group">
               <label className="field-label">User Email (@corpq.hk.pccw.com)</label>
               <div className="flex items-center gap-1">
-                <input style={{ flex: 1 }} type="text" placeholder="0200XXXX" value={userEmailPrefix} onChange={e => setUserEmailPrefix(e.target.value)} />
+                <input style={{ flex: 1 }} type="text" placeholder="0200XXXX" value={userEmailPrefix} onChange={e => setUserEmailPrefix(e.target.value)} autoComplete="off" />
                 <span className="text-[9px] font-bold text-slate-400">@corpq...</span>
               </div>
             </div>
@@ -194,7 +206,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
             <div className="field-group">
               <label className="field-label">Alias Email (Login ID)</label>
               <div className="flex items-center gap-1">
-                <input style={{ flex: 1 }} type="text" placeholder="kilson.km.li" value={aliasEmailPrefix} onChange={e => setAliasEmailPrefix(e.target.value)} />
+                <input style={{ flex: 1 }} type="text" placeholder="kilson.km.li" value={aliasEmailPrefix} onChange={e => setAliasEmailPrefix(e.target.value)} autoComplete="off" />
                 <span className="text-[9px] font-bold text-slate-400">@pccw.com</span>
               </div>
             </div>
@@ -202,11 +214,21 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
             <div className="grid grid-cols-2 gap-2">
               <div className="field-group">
                 <label className="field-label">Password</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
+                <div className="pw-field-wrapper">
+                  <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
+                  <button type="button" className="pw-toggle-btn" onClick={() => setShowPassword(v => !v)} tabIndex={-1}>
+                    {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                  </button>
+                </div>
               </div>
               <div className="field-group">
                 <label className="field-label">Confirm</label>
-                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                <div className="pw-field-wrapper">
+                  <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+                  <button type="button" className="pw-toggle-btn" onClick={() => setShowConfirmPassword(v => !v)} tabIndex={-1}>
+                    {showConfirmPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -228,23 +250,54 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
         <div className="form-content-area">
           <div className="field-group">
             <label className="field-label">Alias Email</label>
-            <input type="text" placeholder="kilson.km.li@pccw.com" value={aliasemail} onChange={e => setAliasemail(e.target.value)} />
+            <input
+              type="text"
+              placeholder="kilson.km.li@pccw.com"
+              value={aliasemail}
+              onChange={e => setAliasemail(e.target.value)}
+              onBlur={() => {
+                if (aliasemail && !aliasemail.endsWith('@pccw.com')) {
+                  setEmailError('Email must end with @pccw.com');
+                } else {
+                  setEmailError('');
+                }
+              }}
+              autoComplete="username"
+            />
+            {emailError && (
+              <span className="text-[10px] text-red-500 mt-0.5 block">{emailError}</span>
+            )}
           </div>
 
           {mode === 'change' && (
             <div className="field-group animate-fade-in">
               <label className="field-label" style={{ color: '#3b82f6' }}>Old Password</label>
-              <input type="password" placeholder="Verify Old Password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} style={{ border: '2px solid #3b82f6' }} />
+              <div className="pw-field-wrapper">
+                <input type={showOldPassword ? "text" : "password"} placeholder="Verify Old Password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} style={{ border: '2px solid #3b82f6' }} autoComplete="current-password" />
+                <button type="button" className="pw-toggle-btn" onClick={() => setShowOldPassword(v => !v)} tabIndex={-1}>
+                  {showOldPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                </button>
+              </div>
             </div>
           )}
 
           <div className="field-group">
             <label className="field-label">New Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
+            <div className="pw-field-wrapper">
+              <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
+              <button type="button" className="pw-toggle-btn" onClick={() => setShowPassword(v => !v)} tabIndex={-1}>
+                {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+              </button>
+            </div>
           </div>
           <div className="field-group">
             <label className="field-label">Confirm New Password</label>
-            <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+            <div className="pw-field-wrapper">
+              <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+              <button type="button" className="pw-toggle-btn" onClick={() => setShowConfirmPassword(v => !v)} tabIndex={-1}>
+                {showConfirmPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+              </button>
+            </div>
           </div>
         </div>
         <button className={`main-submit-btn ${mode === 'change' ? 'change-mode-hover' : ''}`} type="submit" disabled={loading}>
@@ -270,16 +323,42 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
 
       <div className="main-login-container">
         <div className="card-switch-area">
-          <label className="switch-label">
-            <input 
-              type="checkbox" 
-              className="hidden-toggle" 
-              checked={isFlipped} 
-              onChange={(e) => { 
-                setIsFlipped(e.target.checked); 
-                if (!e.target.checked) setMode('set'); 
-                resetFields(); 
-              }} 
+          {/* Visible tab toggle */}
+          <div className="login-tab-toggle">
+            <button
+              type="button"
+              className={`login-tab-btn ${!isFlipped ? 'login-tab-btn--active' : ''}`}
+              onClick={() => {
+                setIsFlipped(false);
+                setMode('set');
+                resetFields();
+              }}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              className={`login-tab-btn ${isFlipped && mode === 'register' ? 'login-tab-btn--active' : ''}`}
+              onClick={() => {
+                setIsFlipped(true);
+                setMode('register');
+                resetFields();
+              }}
+            >
+              Register
+            </button>
+          </div>
+          {/* Keep the hidden checkbox so the 3D flip animation still works */}
+          <label className="switch-label" style={{ display: 'none' }}>
+            <input
+              type="checkbox"
+              className="hidden-toggle"
+              checked={isFlipped}
+              onChange={(e) => {
+                setIsFlipped(e.target.checked);
+                if (!e.target.checked) setMode('set');
+                resetFields();
+              }}
             />
             <span className="slider-base"></span>
             <span className="side-labels"></span>
@@ -297,15 +376,36 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
               <div className="form-content-area">
                 <div className="field-group">
                   <label className="field-label">Alias Email</label>
-                  <input type="text" placeholder="kilson.km.li@pccw.com" value={aliasemail} onChange={e => setAliasemail(e.target.value)} />
+                  <input
+                    type="text"
+                    placeholder="kilson.km.li@pccw.com"
+                    value={aliasemail}
+                    onChange={e => setAliasemail(e.target.value)}
+                    onBlur={() => {
+                      if (aliasemail && !aliasemail.endsWith('@pccw.com')) {
+                        setEmailError('Email must end with @pccw.com');
+                      } else {
+                        setEmailError('');
+                      }
+                    }}
+                    autoComplete="username"
+                  />
+                  {emailError && (
+                    <span className="text-[10px] text-red-500 mt-0.5 block">{emailError}</span>
+                  )}
                 </div>
                 <div className="field-group">
                   <label className="field-label">Password</label>
-                  <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
+                  <div className="pw-field-wrapper">
+                    <input type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" />
+                    <button type="button" className="pw-toggle-btn" onClick={() => setShowPassword(v => !v)} tabIndex={-1}>
+                      {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                    </button>
+                  </div>
                 </div>
               </div>
               <button className="main-submit-btn" type="submit" disabled={loading}>LOG IN</button>
-              
+
               <div className="bottom-link-group">
                 <div className="flex justify-between w-full px-2">
                   <span className="bottom-link text-[10px]" onClick={(e) => handleModeSwitch(e, 'set')}>First time? <a>Set Password</a></span>

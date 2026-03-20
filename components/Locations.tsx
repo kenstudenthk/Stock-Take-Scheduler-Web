@@ -8,6 +8,8 @@ import dayjs from 'dayjs';
 import { Shop } from '../types';
 import { wgs84ToGcj02 } from '../utils/coordTransform';
 import { MobileMapView } from './MobileMapView';
+import { useAMap } from '../utils/loadAMap';
+import StatCard from "./StatCard";
 
 const { Title, Text } = Typography;
 
@@ -50,29 +52,6 @@ const OVERLAP_CONFIG = {
   PRECISION: 5,
   RADIUS: 0.00008,
 } as const;
-
-// --- SummaryCard (consistent with Generator page) ---
-const SummaryCard = ({ label, value, subtext, bgColor, icon }: {
-  label: string;
-  value: number;
-  subtext: string;
-  bgColor: string;
-  icon: React.ReactNode;
-}) => (
-  <div className="summary-card-item" style={{ borderLeft: `4px solid ${bgColor}` }}>
-    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>
-      {icon}
-    </div>
-    <div className="summary-card-body">
-      <div className="summary-card-header">
-        <div className="summary-card-title">{label}</div>
-        <div className="summary-card-menu"><div className="dot"></div><div className="dot"></div><div className="dot"></div></div>
-      </div>
-      <div className="summary-card-value">{value}</div>
-      <p className="summary-card-subtext">{subtext}</p>
-    </div>
-  </div>
-);
 
 // --- ShopBentoCard ---
 const ShopBentoCard = memo(({
@@ -130,6 +109,7 @@ const useIsMobile = (breakpoint: number = 640) => {
 // --- Main component ---
 export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const isMobile = useIsMobile();
+  const { amap } = useAMap();
   const mapRef = useRef<any>(null);
   const infoWindowRef = useRef<any>(null);
   const markersRef = useRef<{ [key: string]: any }>({});
@@ -236,20 +216,20 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
   // --- Map init (desktop only) ---
   useEffect(() => {
-    if (isMobile || !window.AMap || mapRef.current) return;
+    if (isMobile || !amap || mapRef.current) return;
 
-    mapRef.current = new window.AMap.Map('map-container', {
+    mapRef.current = new amap.Map('map-container', {
       center: [114.177216, 22.303719],
       zoom: 11,
     });
 
-    window.AMap.plugin(['AMap.ToolBar', 'AMap.Scale'], () => {
-      mapRef.current.addControl(new window.AMap.ToolBar({ position: 'RB', offset: new window.AMap.Pixel(20, 40) }));
-      mapRef.current.addControl(new window.AMap.Scale());
+    amap.plugin(['AMap.ToolBar', 'AMap.Scale'], () => {
+      mapRef.current.addControl(new amap.ToolBar({ position: 'RB', offset: new amap.Pixel(20, 40) }));
+      mapRef.current.addControl(new amap.Scale());
     });
 
-    infoWindowRef.current = new window.AMap.InfoWindow({ offset: new window.AMap.Pixel(0, -20) });
-  }, [isMobile]);
+    infoWindowRef.current = new amap.InfoWindow({ offset: new amap.Pixel(0, -20) });
+  }, [isMobile, amap]);
 
   // --- Shop click → smooth pan ---
   const handleShopClick = useCallback((shop: Shop) => {
@@ -324,7 +304,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           </div>
         `;
 
-        const marker = new window.AMap.Marker({
+        const marker = new amap.Marker({
           position: [lng, lat],
           content: markerContent,
         });
@@ -388,7 +368,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       {/* Stats Cards */}
       <Row gutter={[24, 24]}>
         <Col span={6}>
-          <SummaryCard
+          <StatCard
             label="Total on Map"
             value={stats.total}
             subtext="Visible markers"
@@ -397,7 +377,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           />
         </Col>
         <Col span={6}>
-          <SummaryCard
+          <StatCard
             label="Completed"
             value={stats.completed}
             subtext="Done this year"
@@ -406,7 +386,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           />
         </Col>
         <Col span={6}>
-          <SummaryCard
+          <StatCard
             label="Scheduled"
             value={stats.scheduled}
             subtext="Planned visits"
@@ -415,7 +395,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           />
         </Col>
         <Col span={6}>
-          <SummaryCard
+          <StatCard
             label="Closed"
             value={stats.closed}
             subtext="Permanently closed"

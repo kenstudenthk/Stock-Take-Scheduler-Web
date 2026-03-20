@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Shop, Schedule, ShopCluster } from "../types";
+import { Shop, Schedule, ShopCluster, ShopStatus } from "../types";
 
 // 根據環境變數決定使用真實 API 還是 Mock
 const API_URL = process.env.VITE_POWER_AUTOMATE_URL;
@@ -16,11 +16,11 @@ const generateMockShops = (count: number): Shop[] => {
     "Tuen Mun",
   ];
   const regions = ["Hong Kong Island", "Kowloon", "New Territories"];
-  const statuses: Array<"completed" | "scheduled" | "pending" | "closed"> = [
-    "completed",
-    "scheduled",
-    "pending",
-    "closed",
+  const statuses: ShopStatus[] = [
+    "Done",
+    "Planned",
+    "Pending",
+    "Closed",
   ];
   const brands = ["Brand A", "Brand B", "Brand C", "Luxury", "Premium"];
   const shops: Shop[] = [];
@@ -33,10 +33,13 @@ const generateMockShops = (count: number): Shop[] => {
       longitude: 114.1615 + Math.random() * 0.15,
       district: districts[i % districts.length],
       region: regions[i % regions.length],
-      brand: brands[i % brands.length], // ✅ 添加品牌
-      is_mtr: i % 3 === 0, // ✅ 添加 MTR 標記 (33% 是 MTR 站)
+      area: districts[i % districts.length],
+      brand: brands[i % brands.length],
+      is_mtr: i % 3 === 0,
       status: statuses[i % statuses.length],
-    } as Shop);
+      masterStatus: "Active",
+      groupId: (i % 3) + 1,
+    });
   }
   return shops;
 };

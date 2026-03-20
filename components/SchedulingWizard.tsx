@@ -51,6 +51,7 @@ import {
   BatchResult,
   formatBatchResult,
 } from "../utils/batchOperations";
+import { isWorkingDay, getNextWorkingDay, filterSchedulePool } from "../utils/scheduleGeneration";
 
 dayjs.extend(isBetween);
 
@@ -66,8 +67,8 @@ const DESIGN_COLORS = {
   cta: "#F97316",
   background: "#F0FDFA",
   text: "#134E4A",
-  step1: "#EF4444", // Problem - Red
-  step2: "#F97316", // Process - Orange
+  step1: "#0D9488", // Configure - Teal
+  step2: "#D97706", // Generate - Amber
   step3: "#10B981", // Solution - Green
 };
 
@@ -501,32 +502,10 @@ export const SchedulingWizard: React.FC<SchedulingWizardProps> = ({
   const handleGenerate = useCallback(() => {
     setWizardStatus("generating");
 
-    const isWorkingDay = (date: dayjs.Dayjs) => {
-      const day = date.day();
-      const isWeekend = day === 0 || day === 6;
-      const dateStr = date.format("YYYY-MM-DD");
-      const isPublicHoliday = isHoliday(dateStr);
-      return !isWeekend && !isPublicHoliday;
-    };
-
-    const getNextWorkingDay = (date: dayjs.Dayjs) => {
-      let next = date;
-      while (!isWorkingDay(next)) {
-        next = next.add(1, "day");
-      }
-      return next;
-    };
-
-    let pool = activePool.filter((s) => {
-      const matchRegion =
-        selectedRegions.length === 0 || selectedRegions.includes(s.region);
-      const matchDistrict =
-        selectedDistricts.length === 0 ||
-        selectedDistricts.includes(s.district);
-      const matchMTR = includeMTR ? true : !s.is_mtr;
-      return (
-        s.status === "Unplanned" && matchRegion && matchDistrict && matchMTR
-      );
+    let pool = filterSchedulePool(activePool, {
+      selectedRegions,
+      selectedDistricts,
+      includeMTR,
     });
 
     if (pool.length === 0) {
@@ -749,6 +728,10 @@ export const SchedulingWizard: React.FC<SchedulingWizardProps> = ({
                       </div>
                       <div className="relative z-10 text-2xl font-black text-slate-800">
                         {reg.count}
+                      </div>
+                      <div className="relative z-10 flex items-center justify-between mt-1">
+                        <span className="text-[10px] text-slate-400">unplanned</span>
+                        <span className="text-[10px] font-semibold text-teal-600">{reg.plannedPct}% done</span>
                       </div>
                     </div>
                   ))}

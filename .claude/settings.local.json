@@ -25,7 +25,11 @@
       "Bash(npx eslint:*)",
       "Bash(curl:*)",
       "Bash(git merge:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(rtk git:*)",
+      "Bash(rtk npm:*)",
+      "Bash(dir:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

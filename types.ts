@@ -2,8 +2,7 @@ export enum View {
   DASHBOARD = "dashboard",
   CALENDAR = "schedules",
   GENERATOR = "generator",
-  LOCATIONS = "shop-locations",
-  SHOP_LIST = "shop-list",
+  SHOPS = "shops",
   REPORTS = "reports",
   SETTINGS = "settings",
   INVENTORY = "inventory",
@@ -91,6 +90,15 @@ export const hasPermission = (
   return (ROLE_PERMISSIONS[user.UserRole] || []).includes(action);
 };
 
+export type ShopStatus =
+  | "Planned"
+  | "Pending"
+  | "Rescheduled"
+  | "Closed"
+  | "Done"
+  | "Re-Open"
+  | "Unplanned";
+
 export interface Shop {
   id: string;
   sharePointItemId?: string;
@@ -104,7 +112,7 @@ export interface Shop {
   brand: string;
   brandIcon?: string;
   is_mtr: boolean;
-  status: string;
+  status: ShopStatus;
   scheduleStatus?: string;
   masterStatus: string;
   groupId: number;

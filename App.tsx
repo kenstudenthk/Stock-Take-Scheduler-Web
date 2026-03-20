@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { message, Button, Tag, Avatar, Space, Typography, ConfigProvider } from 'antd'; 
-import { 
-  SyncOutlined, 
+import { message, Button, Tag, Avatar, Space, Typography, ConfigProvider } from 'antd';
+import {
+  SyncOutlined,
   WarningFilled,
-  KeyOutlined 
+  KeyOutlined
 } from '@ant-design/icons';
 
 import { Layout } from './components/Layout';
 import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
 import { Calendar } from './components/Calendar';
-import { Locations } from './components/Locations';
+import { Shops } from './components/Shops';
 import { Settings } from './components/Settings';
 import { Shop, View, User, hasAdminAccess } from './types';
-import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
 import { Permission } from './components/Permission';
@@ -24,7 +23,7 @@ import SharePointService from './services/SharePointService';
 import { TokenService } from './services/TokenService';
 
 // ✅ 使用你的 config.ts，避免硬編碼 URL
-import { API_URLS, TOKEN_CONFIG } from './constants/config'; 
+import { API_URLS, TOKEN_CONFIG } from './constants/config';
 import './index.css';
 
 const { Text } = Typography;
@@ -56,17 +55,21 @@ const TruckFlagNotice: React.FC = () => (
 
 function App() {
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(localStorage.getItem('theme') === 'dark');
-  
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved !== null) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
   // ✅ 修正：統一使用 config.ts 中的 Storage Keys
   const [graphToken, setGraphToken] = useState<string>(localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken) || '');
-  
+
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasTokenError, setHasTokenError] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
-  
+
   // ✅ 使用 User 型別
   const [currentUser, setCurrentUser] = useState<User | null>(JSON.parse(sessionStorage.getItem('currentUser') || 'null'));
 
@@ -81,7 +84,7 @@ function App() {
         updateGraphToken(remoteToken, false); // Don't broadcast again if fetching from remote
       }
     };
-    
+
     // Initial sync
     syncToken();
 
@@ -101,11 +104,11 @@ function App() {
     try {
       // ✅ 使用 API_URLS
       const url = `${API_URLS.shopList}/items?$expand=fields($select=*)&$top=999`;
-      const res = await fetch(url, { 
-        headers: { 
+      const res = await fetch(url, {
+        headers: {
           'Authorization': `Bearer ${token}`,
-          'Prefer': 'HonorNonIndexedQueriesWarningMayFail' 
-        } 
+          'Prefer': 'HonorNonIndexedQueriesWarningMayFail'
+        }
       });
 
       if (res.status === 401) {
@@ -128,7 +131,7 @@ function App() {
               district: f[SP_FIELDS.DISTRICT] || '',
               area: f[SP_FIELDS.AREA] || '',
               status: f[SP_FIELDS.STATUS] || 'Unplanned',
-              masterStatus: f[SP_FIELDS.OLD_STATUS] || '', 
+              masterStatus: f[SP_FIELDS.OLD_STATUS] || '',
               scheduledDate: f[SP_FIELDS.SCHEDULE_DATE] || '',
               groupId: parseInt(f[SP_FIELDS.SCHEDULE_GROUP] || "0"),
               is_mtr: f[SP_FIELDS.MTR] === 'Yes',
@@ -158,7 +161,7 @@ function App() {
     const trimmedToken = token.trim();
     setGraphToken(trimmedToken);
     localStorage.setItem(TOKEN_CONFIG.storageKeys.graphToken, trimmedToken);
-    
+
     if (trimmedToken) {
       // Broadcast to Cloudflare if user manually updated it
       if (broadcast) {
@@ -180,9 +183,9 @@ function App() {
   }, [isDarkMode]);
 
   // 初次載入與 currentUser 變更時刷新
-  useEffect(() => { 
+  useEffect(() => {
     if (graphToken) {
-      fetchAllData(graphToken); 
+      fetchAllData(graphToken);
     } else {
       setHasTokenError(true);
       setIsInitialLoading(false);
@@ -204,7 +207,7 @@ function App() {
 
     switch (selectedMenuKey) {
       case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} currentUser={currentUser} />;
-      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
+      case View.SHOPS: return <Shops shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
       case View.CALENDAR: return (
         <Calendar
           shops={allShops}
@@ -213,7 +216,6 @@ function App() {
         />
       );
       case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
-      case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory token={graphToken} shops={allShops} />;
       case View.PERMISSION: return <Permission graphToken={graphToken} currentUser={currentUser} />;
       default: return null;
@@ -222,16 +224,16 @@ function App() {
 
 return (
   <ConfigProvider theme={{ token: { colorPrimary: '#05043e', borderRadius: 8 } }}>
-    <Layout 
-      onLogout={handleLogout} 
-      user={currentUser} 
+    <Layout
+      onLogout={handleLogout}
+      user={currentUser}
       onViewChange={(key: View) => setSelectedMenuKey(key)}
       currentView={selectedMenuKey}
       onReportError={() => setReportModalVisible(true)}
     >
       {!currentUser && selectedMenuKey !== View.SETTINGS ? (
-        <Login 
-          sharePointService={sharePointService} 
+        <Login
+          sharePointService={sharePointService}
           onLoginSuccess={(user) => {
             setCurrentUser(user);
             sessionStorage.setItem('currentUser', JSON.stringify(user));
@@ -245,8 +247,8 @@ return (
           <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 mobile-header-stack">
             <div className="flex items-center gap-4">
               {!isInitialLoading && hasTokenError && !loading && <TruckFlagNotice />}
-              <Button 
-                icon={<SyncOutlined spin={loading} />} 
+              <Button
+                icon={<SyncOutlined spin={loading} />}
                 onClick={() => fetchAllData(graphToken)}
                 className="hover:border-[#05043e] hover:text-[#05043e]"
                 loading={loading}

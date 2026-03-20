@@ -6,6 +6,10 @@ This file provides guidance to Claude Code when working with this repository.
 
 Stock Take Scheduler Web — React app for scheduling inventory stock takes across HK retail shops. Integrates with Microsoft SharePoint via Graph API for data persistence.
 
+## UI/UX Improvement Plan
+
+Full improvement plan (Tier 1–4, all pages): `C:\Users\user\.claude\plans\peppy-waddling-ritchie.md`
+
 ---
 
 ## ⚠️ After-Fix Protocol (MANDATORY)
@@ -43,6 +47,97 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Root Cause**: Incorrect field detection; used `segment.walking.steps` instead of `segment.transit.steps` with `transit_mode === 'WALK'`
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
+
+#### ⚠️ Known Issue: StatCard Duplication (T2-6)
+- **Date**: 2026-03-20
+- **Problem**: Dashboard, Generator, and Locations each had their own `SummaryCard` implementation with slight differences
+- **Root Cause**: Component copy-pasted as pages were built, never extracted
+- **Fix**: Created `components/StatCard.tsx` with `bgColor` prop. All 3 pages now import it. Dashboard cards now use explicit hex colors (#1E40AF, #10B981, #EF4444, #F59E0B) instead of `type`/CSS vars.
+- **Rule**: ALWAYS import `StatCard` from `components/StatCard.tsx`; NEVER define a local SummaryCard/StatCard
+
+#### ⚠️ Known Issue: Layout — Nav Item Order (T2-1)
+- **Date**: 2026-03-20
+- **Problem**: Calendar, Generator, Dashboard were scattered in nav with no visual grouping
+- **Root Cause**: Items added in creation order, not by functional relationship
+- **Fix**: Reordered to Dashboard→Calendar→Generator (schedule group) with thin separator, then Master List→Map View, then admin items. Three-group rendering with `isAdmin` guard.
+- **Rule**: Nav order in Layout.tsx: [Dashboard, Calendar, Generator] | [ShopList, Locations] | [Inventory, Permission]
+
+#### ⚠️ Known Issue: Locations — Raw window.AMap Access (T3-17)
+- **Date**: 2026-03-20
+- **Problem**: AMap used via `window.AMap` directly — no loading state, no error handling, race condition possible
+- **Root Cause**: AMap injected as static script tag; component guards with `!window.AMap` but no async handling
+- **Fix**: Created `utils/loadAMap.ts` with `loadAMap(): Promise<any>` (polls 50ms, 10s timeout) and `useAMap()` hook; Locations.tsx now uses `const { amap } = useAMap()`
+- **Rule**: ALWAYS use `useAMap()` hook for AMap access; NEVER access `window.AMap` directly in component code
+
+#### ⚠️ Known Issue: ShopList — Hidden Call Tracking Affordance (T3-11)
+- **Date**: 2026-03-20
+- **Problem**: Call tracking trigger was a rotating SVG icon with no label — users couldn't discover it
+- **Root Cause**: Decorative icon with `title="Log Call"` but no visible text
+- **Fix**: Replaced with Ant Design `Button` with `PhoneOutlined` icon and status-aware label ("Called"/"No Answer"/"Log Call") + color-coded border
+- **Rule**: NEVER use icon-only buttons for non-obvious features; always include a text label
+
+#### ⚠️ Known Issue: App — Dark Mode First Load (T3-16)
+- **Date**: 2026-03-20
+- **Problem**: Dark mode initialized from localStorage only; first-time visitors always got light mode
+- **Root Cause**: `useState<boolean>(localStorage.getItem('theme') === 'dark')` returns false when key is absent
+- **Fix**: Lazy initializer: check localStorage first; fall back to `window.matchMedia('(prefers-color-scheme: dark)').matches`
+- **Rule**: ALWAYS use lazy initializer for theme state; user preference (localStorage) takes priority over system
+
+#### ⚠️ Known Issue: Permission — Stale Generic Role Descriptions (T3-13)
+- **Date**: 2026-03-20
+- **Problem**: `rolePermissions` in Permission.tsx used generic CMS descriptions unrelated to the app
+- **Root Cause**: Was never updated after initial scaffold; descriptions referenced billing, media, etc.
+- **Fix**: Rewrote `rolePermissions` based on `ROLE_PERMISSIONS` in `types.ts` (actual permission actions)
+- **Rule**: ALWAYS keep `rolePermissions` in sync with `ROLE_PERMISSIONS` in `types.ts` when permissions change
+
+#### ⚠️ Known Issue: Generator — Vertical Wizard Sidebar (T2-7)
+- **Date**: 2026-03-20
+- **Problem**: Vertical sidebar wizard progress (Col span=4) competed with app sidebar, narrowing config area
+- **Root Cause**: `WizardProgressBarVertical` component rendered in its own right-column
+- **Fix**: Removed vertical sidebar entirely. Added Ant Design `Steps` horizontal stepper above the content area. Main content expanded to full 24 cols.
+- **Rule**: NEVER add a vertical wizard sidebar — use horizontal stepper (Ant Design Steps) at top of content
+
+#### ⚠️ Known Issue: Generator Wizard — Step 1 Color Was Red (T2-5)
+- **Date**: 2026-03-20
+- **Problem**: Step 1 Configure used red (#EF4444) — a danger/error signal — causing user hesitation
+- **Root Cause**: `DESIGN_COLORS.step1` in both Generator.tsx and SchedulingWizard.tsx set to red
+- **Fix**: Remapped step1 → teal #0D9488 (brand primary), step2 → amber #D97706, step3 green unchanged
+- **Rule**: NEVER use red for non-error states; wizard steps use teal→amber→green progression
+
+#### ⚠️ Known Issue: Schedule Generation Logic Duplicated (T1-6)
+- **Date**: 2026-03-20
+- **Problem**: `isWorkingDay`, `getNextWorkingDay`, pool filtering, and the generation loop were duplicated across Generator.tsx and SchedulingWizard.tsx with slight divergence
+- **Root Cause**: SchedulingWizard was built separately without extracting shared logic
+- **Fix**: Created `utils/scheduleGeneration.ts` with `isWorkingDay`, `getNextWorkingDay`, `filterSchedulePool`, `generateSchedule`. Both components now import from this module.
+- **Rule**: ALWAYS use `filterSchedulePool()` and `generateSchedule()` from `utils/scheduleGeneration.ts`; NEVER reimplement filtering or generation logic in components
+
+#### ⚠️ Known Issue: ShopList + Locations Were Separate Nav Items (T2-2)
+- **Date**: 2026-03-20
+- **Problem**: ShopList ("Master List") and Locations ("Map View") were two separate nav items showing the same shop data in different views
+- **Root Cause**: Built as independent components at different times, never unified
+- **Fix**: Created `components/Shops.tsx` wrapper with Table/Map `Segmented` toggle (session-persisted). `View.SHOP_LIST` and `View.LOCATIONS` replaced by `View.SHOPS` in enum, App.tsx, and Layout.tsx.
+- **Rule**: ALWAYS navigate to `View.SHOPS`; NEVER restore `View.SHOP_LIST` or `View.LOCATIONS` as separate nav items
+
+#### ⚠️ Known Issue: SchedulingWizard — Planned % Hidden (T2-11)
+- **Date**: 2026-03-20
+- **Problem**: Region card planned % was only visible on hover tooltip, not always-visible
+- **Root Cause**: `reg.plannedPct` was only in `Tooltip` title; no visible text in card body
+- **Fix**: Added footer row with `{reg.plannedPct}% done` label always rendered in card
+- **Rule**: Critical planning stats (fill %, counts) must be always-visible in card body; tooltips are supplemental only
+
+#### ⚠️ Known Issue: Dashboard — Pool Badge (T2-3)
+- **Date**: 2026-03-20
+- **Problem**: No visibility into how many shops are in the Reschedule Pool from the Dashboard
+- **Root Cause**: Pool count was not surfaced in the stats useMemo or the UI
+- **Fix**: Added `pool` to `stats` useMemo (filtered from `activeShops` by `status === 'Rescheduled' && !scheduledDate`). Added orange `<Tag>` with spinning `SyncOutlined` in the header when `pool > 0`.
+- **Rule**: Pool filter is `activeShops.filter(s => s.status === 'Rescheduled' && !s.scheduledDate)` — `activeShops` already excludes `masterStatus === 'Closed'`
+
+#### ⚠️ Known Issue: Calendar — Drag-and-Drop Removed
+- **Date**: 2026-03-20
+- **Problem**: DnD reschedule bypassed capacity/MTR/region validation; also had no visual affordance
+- **Root Cause**: Two separate interaction paths (drag for date, click for group) with inconsistent validation
+- **Fix**: Removed DnD entirely. Click any shop chip or sidebar card → combined modal (date + group in one action). `interactionPlugin` kept for `dateClick` (sidebar date selection) but `editable`/`droppable`/`eventDrop` props removed. ExcelJS/jsPDF moved to dynamic imports.
+- **Rule**: NEVER re-add DnD to Calendar without also adding shared validateReschedule utility (see peppy-waddling-ritchie.md T1-7)
 
 ---
 

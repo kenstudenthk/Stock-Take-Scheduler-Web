@@ -1,6 +1,6 @@
 // ShopList.tsx - Bento Grid Design
 
-import React, { useState, useMemo, memo } from "react";
+import React, { useState, useMemo, memo, useEffect } from "react";
 import {
   Table,
   Input,
@@ -37,6 +37,7 @@ import {
   CompassOutlined,
   TeamOutlined,
   ThunderboltOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
@@ -51,37 +52,6 @@ const { Title, Text } = Typography;
 const { confirm } = Modal;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
-
-// Bento Card Component for Statistics
-const BentoStatCard = memo(
-  ({
-    title,
-    value,
-    subtitle,
-    icon,
-    color,
-    size = "normal",
-  }: {
-    title: string;
-    value: number | string;
-    subtitle?: string;
-    icon: React.ReactNode;
-    color: string;
-    size?: "normal" | "large";
-  }) => (
-    <div
-      className={`bento-stat-card bento-${size}`}
-      style={{ "--accent-color": color } as React.CSSProperties}
-    >
-      <div className="bento-stat-icon">{icon}</div>
-      <div className="bento-stat-content">
-        <span className="bento-stat-value">{value}</span>
-        <span className="bento-stat-title">{title}</span>
-        {subtitle && <span className="bento-stat-subtitle">{subtitle}</span>}
-      </div>
-    </div>
-  ),
-);
 
 // Bento Filter Card Component
 const BentoFilterCard = memo(
@@ -120,6 +90,17 @@ const BentoFilterCard = memo(
   ),
 );
 
+const SHOPLIST_FILTER_KEY = "shoplist_filters";
+
+const getStoredFilterState = () => {
+  try {
+    const raw = sessionStorage.getItem(SHOPLIST_FILTER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const ShopList: React.FC<{
   shops: Shop[];
   graphToken: string;
@@ -127,27 +108,52 @@ export const ShopList: React.FC<{
   currentUser: User | null;
 }> = ({ shops, graphToken, onRefresh, currentUser }) => {
   // ... 你的狀態設定 (searchText, filters 等) ...
-  const [searchText, setSearchText] = useState("");
-  const [dateRange, setDateRange] = useState<[string | null, string | null]>([
-    null,
-    null,
-  ]);
+  const _stored = getStoredFilterState();
+  const [searchText, setSearchText] = useState<string>(
+    _stored?.searchText ?? "",
+  );
+  const [dateRange, setDateRange] = useState<[string | null, string | null]>(
+    _stored?.dateRange ?? [null, null],
+  );
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const [filters, setFilters] = useState({
-    brand: "All",
-    district: "All",
-    region: "All",
-    area: "All",
-    bu: "All",
-    callStatus: "All",
-    mtr: "All",
-    group: "All",
-    status: "All",
-  });
+  const [filters, setFilters] = useState<{
+    brand: string;
+    district: string;
+    region: string;
+    area: string;
+    bu: string;
+    callStatus: string;
+    mtr: string;
+    group: string;
+    status: string;
+  }>(
+    _stored?.filters ?? {
+      brand: "All",
+      district: "All",
+      region: "All",
+      area: "All",
+      bu: "All",
+      callStatus: "All",
+      mtr: "All",
+      group: "All",
+      status: "All",
+    },
+  );
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SHOPLIST_FILTER_KEY,
+        JSON.stringify({ searchText, dateRange, filters }),
+      );
+    } catch {
+      // sessionStorage not available
+    }
+  }, [searchText, dateRange, filters]);
 
   // 3. ✅ 級聯過濾邏輯 (你寫得很好)
   const options = useMemo(() => {
@@ -334,7 +340,7 @@ export const ShopList: React.FC<{
                 Authorization: `Bearer ${graphToken}`,
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ [SP_FIELDS.STATUS]: "CLOSED" }),
+              body: JSON.stringify({ [SP_FIELDS.STATUS]: "Closed" }),
             },
           );
           if (res.ok) {
@@ -361,49 +367,13 @@ export const ShopList: React.FC<{
     };
   }, [shops]);
 
-  // Bento Statistics Grid
-  const renderBentoStats = () => (
-    <div className="bento-stats-grid">
-      <BentoStatCard
-        title="Total Shops"
-        value={stats.total}
-        subtitle="Active locations"
-        icon={<ShopOutlined />}
-        color="#0d9488"
-        size="large"
-      />
-      <BentoStatCard
-        title="Planned"
-        value={stats.planned}
-        icon={<CalendarOutlined />}
-        color="#6366f1"
-      />
-      <BentoStatCard
-        title="Unplanned"
-        value={stats.unplanned}
-        icon={<ClockCircleOutlined />}
-        color="#f59e0b"
-      />
-      <BentoStatCard
-        title="Completed"
-        value={stats.done}
-        icon={<CheckCircleOutlined />}
-        color="#22c55e"
-      />
-      <BentoStatCard
-        title="MTR Shops"
-        value={stats.mtr}
-        icon={<ThunderboltOutlined />}
-        color="#8b5cf6"
-      />
-      <BentoStatCard
-        title="Regions"
-        value={stats.regions}
-        icon={<CompassOutlined />}
-        color="#ec4899"
-      />
-    </div>
-  );
+  const activeFilterCount = useMemo(() => {
+    return (
+      Object.values(filters).filter((v) => v !== "All").length +
+      (searchText.trim() ? 1 : 0) +
+      (dateRange[0] ? 1 : 0)
+    );
+  }, [filters, searchText, dateRange]);
 
   // Bento Filter Grid with Accordion
   const renderBentoFilters = () => {
@@ -486,7 +456,7 @@ export const ShopList: React.FC<{
 
     return (
       <Collapse
-        defaultActiveKey={["1"]}
+        defaultActiveKey={[]}
         className="custom-accordion"
         items={[
           {
@@ -499,7 +469,12 @@ export const ShopList: React.FC<{
                   </div>
                   <div>
                     <Text strong className="text-lg text-slate-800">
-                      Advanced Filters
+                      Filters{" "}
+                      {activeFilterCount > 0 && (
+                        <span className="text-sm font-normal text-teal-600 ml-1">
+                          ({activeFilterCount} active)
+                        </span>
+                      )}
                     </Text>
                     <Text className="text-xs text-slate-400 ml-3">
                       Showing{" "}
@@ -674,24 +649,31 @@ export const ShopList: React.FC<{
               trigger="click"
               placement="topRight"
             >
-              <button
-                className="tracking-log-btn group cursor-pointer outline-none transition-all duration-300"
-                title="Log Call"
+              <Button
+                size="small"
+                icon={<PhoneOutlined />}
+                style={{
+                  borderColor: record.callStatus === "Called"
+                    ? "#22c55e"
+                    : record.callStatus === "No Answer"
+                    ? "#f59e0b"
+                    : "#e2e8f0",
+                  color: record.callStatus === "Called"
+                    ? "#22c55e"
+                    : record.callStatus === "No Answer"
+                    ? "#f59e0b"
+                    : "#64748b",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  fontWeight: 600,
+                }}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="32"
-                  height="32"
-                  viewBox="0 0 256 256"
-                  className="group-hover:rotate-180 transition-transform duration-500"
-                >
-                  <g fill="#0d9488" fillRule="nonzero">
-                    <g transform="scale(4,4)">
-                      <path d="M12,4c-2.20703,0 -4,1.79297 -4,4v48c0,2.20703 1.79297,4 4,4h35c1.65234,0 3,-1.34766 3,-3v-3.18359c1.16016,-0.41406 2,-1.51562 2,-2.81641v-6.38281l2.89453,-1.44531c0.67969,-0.33984 1.10547,-1.02734 1.10547,-1.78906v-29.38281c0,-1.10156 -0.89844,-2 -2,-2h-2v-3c0,-1.65234 -1.34766,-3 -3,-3zM12,6h37c0.55078,0 1,0.44922 1,1v44c0,0.55078 -0.44922,1 -1,1h-29v-35c0,-0.55078 -0.44531,-1 -1,-1c-0.55469,0 -1,0.44922 -1,1v35h-6c-0.61719,0 -1.33984,0.22266 -2,0.63281v-44.63281c0,-1.10156 0.89844,-2 2,-2zM13,8c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM19,8c-0.55469,0 -1,0.44922 -1,1v4c0,0.55078 0.44531,1 1,1c0.55469,0 1,-0.44922 1,-1v-4c0,-0.55078 -0.44531,-1 -1,-1zM52,12h2v9.38281l-2,1zM13,13c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM13,18c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM35,18c-2.75781,0 -5,2.24219 -5,5v2c0,0.96094 0.28516,1.85156 0.76172,2.61328c-2.63281,1.01953 -4.71094,3.23828 -5.46484,6.08203c-0.14062,0.53516 0.17969,1.08203 0.71484,1.22266c0.53125,0.14063 1.07813,-0.17969 1.22266,-0.71484c0.66406,-2.51172 2.66406,-4.38281 5.11328,-4.98047c0.76953,0.48438 1.67578,0.77734 2.65234,0.77734c0.97656,0 1.88281,-0.29297 2.65234,-0.78125c2.44922,0.60156 4.45313,2.47266 5.11719,4.98828c0.11719,0.44922 0.52344,0.74609 0.96484,0.74609c0.08594,0 0.17188,-0.01172 0.25391,-0.03516c0.53516,-0.14062 0.85547,-0.6875 0.71484,-1.22266c-0.75391,-2.84766 -2.82812,-5.0625 -5.46094,-6.08203c0.47266,-0.76172 0.75781,-1.65234 0.75781,-2.61328v-2c0,-2.75781 -2.24219,-5 -5,-5zM35,19.83203c1.72266,0 3.125,1.40234 3.125,3.125v2.08594c0,1.72266 -1.40234,3.125 -3.125,3.125c-1.72266,0 -3.125,-1.40234 -3.125,-3.125v-2.08594c0,-1.72266 1.40234,-3.125 3.125,-3.125zM13,23c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM54,23.61719v7.76563l-2,1v-7.76562zM13,28c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM13,33c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM54,33.61719v7.76563l-2,1v-7.76562zM13,38c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM31,38c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h8c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM29,42c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h4c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM37,42c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h4c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM13,43c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM13,48c-0.55469,0 -1,0.44922 -1,1c0,0.55078 0.44531,1 1,1h2c0.55469,0 1,-0.44922 1,-1c0,-0.55078 -0.44531,-1 -1,-1zM12,54h36v3c0,0.55078 -0.44922,1 -1,1h-35c-1.10156,0 -2,-0.89844 -2,-2c0,-1.24609 1.39063,-2 2,-2z" />
-                    </g>
-                  </g>
-                </svg>
-              </button>
+                {record.callStatus === "Called"
+                  ? "Called"
+                  : record.callStatus === "No Answer"
+                  ? "No Answer"
+                  : "Log Call"}
+              </Button>
             </Popover>
           </div>
         );
@@ -751,61 +733,70 @@ export const ShopList: React.FC<{
       key: "actions",
       align: "left" as const,
       width: "12%",
-      render: (_: any, record: Shop) =>
-        /* Only show when row is selected and user has any permission */
-        selectedRowId === record.id &&
-        (hasPermission(currentUser, "close_shop") ||
-          hasPermission(currentUser, "edit_shop")) && (
-          <div
-            className="flex justify-end gap-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button - only visible for Admin/App Owner */}
-            {hasPermission(currentUser, "close_shop") && (
-              <button
-                className="Btn close-btn-styled scale-75 origin-right"
-                disabled={record.status?.toLowerCase() === "closed"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCloseAction(record);
-                }}
-              >
-                <div className="sign">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4">
-                    <path
-                      fill="white"
-                      d="M 20 10 L 20 12 L 22 12 L 22 10 L 23 10 C 23.328 10.000 23.636 9.839 23.823 9.570 C 24.010 9.300 24.053 8.955 23.937 8.648 L 20.937 0.648 C 20.790 0.258 20.417 -0.000 20 0 L 4 0 C 3.583 -0.000 3.210 0.258 3.063 0.648 L 0.063 8.648 C -0.053 8.955 -0.010 9.300 0.177 9.570 C 0.364 9.839 0.672 10.000 1 10 L 2 10 L 2 12 L 4 12 L 4 10 z M 11 2 L 11 8 L 7.28 8 L 8.78 2 z M 15.22 2 L 16.72 8 L 13 8 L 13 2 z M 21.557 8 L 18.78 8 L 17.28 2 L 19.307 2 z M 4.693 2 L 6.72 2 L 5.22 8 L 2.443 8 z M 2 23 C 2 23.552 2.448 24 3 24 L 21 24 C 21.552 24 22 23.552 22 23 L 22 22 L 2 22 z"
-                    />
-                  </svg>
-                </div>
-                <div className="btn-text text-[12px]">Close</div>
-              </button>
-            )}
+      render: (_: any, record: Shop) => {
+        const hasActions =
+          hasPermission(currentUser, "close_shop") ||
+          hasPermission(currentUser, "edit_shop");
+        if (!hasActions) return null;
+        if (selectedRowId === record.id) {
+          return (
+            <div
+              className="flex justify-end gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button - only visible for Admin/App Owner */}
+              {hasPermission(currentUser, "close_shop") && (
+                <button
+                  className="Btn close-btn-styled scale-75 origin-right"
+                  disabled={record.status?.toLowerCase() === "closed"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCloseAction(record);
+                  }}
+                >
+                  <div className="sign">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4">
+                      <path
+                        fill="white"
+                        d="M 20 10 L 20 12 L 22 12 L 22 10 L 23 10 C 23.328 10.000 23.636 9.839 23.823 9.570 C 24.010 9.300 24.053 8.955 23.937 8.648 L 20.937 0.648 C 20.790 0.258 20.417 -0.000 20 0 L 4 0 C 3.583 -0.000 3.210 0.258 3.063 0.648 L 0.063 8.648 C -0.053 8.955 -0.010 9.300 0.177 9.570 C 0.364 9.839 0.672 10.000 1 10 L 2 10 L 2 12 L 4 12 L 4 10 z M 11 2 L 11 8 L 7.28 8 L 8.78 2 z M 15.22 2 L 16.72 8 L 13 8 L 13 2 z M 21.557 8 L 18.78 8 L 17.28 2 L 19.307 2 z M 4.693 2 L 6.72 2 L 5.22 8 L 2.443 8 z M 2 23 C 2 23.552 2.448 24 3 24 L 21 24 C 21.552 24 22 23.552 22 23 L 22 22 L 2 22 z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="btn-text text-[12px]">Close</div>
+                </button>
+              )}
 
-            {/* Edit button - only visible for Admin/App Owner */}
-            {hasPermission(currentUser, "edit_shop") && (
-              <button
-                className="Btn edit-btn-styled scale-75 origin-right"
-                disabled={record.status?.toLowerCase() === "closed"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setTargetShop(record);
-                  setFormOpen(true);
-                }}
-              >
-                <div className="sign">
-                  <svg viewBox="0 0 512 512" className="w-4 h-4">
-                    <path
-                      fill="white"
-                      d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231z"
-                    />
-                  </svg>
-                </div>
-                <div className="btn-text text-[12px]">Edit</div>
-              </button>
-            )}
+              {/* Edit button - only visible for Admin/App Owner */}
+              {hasPermission(currentUser, "edit_shop") && (
+                <button
+                  className="Btn edit-btn-styled scale-75 origin-right"
+                  disabled={record.status?.toLowerCase() === "closed"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTargetShop(record);
+                    setFormOpen(true);
+                  }}
+                >
+                  <div className="sign">
+                    <svg viewBox="0 0 512 512" className="w-4 h-4">
+                      <path
+                        fill="white"
+                        d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="btn-text text-[12px]">Edit</div>
+                </button>
+              )}
+            </div>
+          );
+        }
+        return (
+          <div className="row-edit-hint flex justify-end">
+            <EditOutlined style={{ fontSize: 13, color: "#94a3b8" }} />
           </div>
-        ),
+        );
+      },
     },
   ];
   return (
@@ -828,6 +819,29 @@ export const ShopList: React.FC<{
           >
             Comprehensive store management with advanced filtering
           </Text>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[12px] text-slate-500">
+            <span>
+              <strong className="text-slate-700">{stats.total}</strong> active
+            </span>
+            <span className="text-slate-300">|</span>
+            <span>
+              <strong className="text-indigo-600">{stats.planned}</strong>{" "}
+              planned
+            </span>
+            <span className="text-slate-300">|</span>
+            <span>
+              <strong className="text-amber-500">{stats.unplanned}</strong>{" "}
+              unplanned
+            </span>
+            <span className="text-slate-300">|</span>
+            <span>
+              <strong className="text-emerald-600">{stats.done}</strong> done
+            </span>
+            <span className="text-slate-300">|</span>
+            <span>
+              <strong className="text-violet-600">{stats.mtr}</strong> MTR
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <div className="input-group" style={{ position: "relative" }}>
@@ -892,9 +906,6 @@ export const ShopList: React.FC<{
           )}
         </div>
       </div>
-
-      {/* Bento Statistics Grid */}
-      {renderBentoStats()}
 
       {/* Bento Filters Section */}
       {renderBentoFilters()}
@@ -1137,106 +1148,6 @@ export const ShopList: React.FC<{
   white-space: nowrap;
 }
 
-/* Bento Statistics Grid - 12-column layout with varied spans */
-.bento-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: var(--space-md);
-}
-
-.bento-stat-card {
-  background: white;
-  border-radius: 16px;
-  padding: var(--space-lg);
-  border: 1px solid #e2e8f0;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  transition: all 200ms ease;
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
-  grid-column: span 2;
-}
-
-.bento-stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--accent-color, var(--color-cta));
-  opacity: 0;
-  transition: opacity 200ms ease;
-}
-
-.bento-stat-card:hover {
-  transform: scale(1.02);
-  box-shadow: var(--shadow-lg);
-}
-
-.bento-stat-card:hover::before {
-  opacity: 1;
-}
-
-.bento-stat-card:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.bento-large {
-  grid-column: span 3;
-}
-
-.bento-stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--accent-color, var(--color-primary)) 0%, var(--accent-color, var(--color-secondary)) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: white;
-  transition: transform 200ms ease;
-}
-
-.bento-stat-card:hover .bento-stat-icon {
-  transform: scale(1.1);
-}
-
-.bento-stat-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.bento-stat-value {
-  font-family: 'Fira Code', monospace;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1;
-}
-
-.bento-stat-title {
-  font-family: 'Fira Sans', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-top: var(--space-xs);
-}
-
-.bento-stat-subtitle {
-  font-family: 'Fira Sans', sans-serif;
-  font-size: 11px;
-  color: #94a3b8;
-  margin-top: 2px;
-}
-
 /* Bento Filters Section */
 .bento-filters-section {
   background: white;
@@ -1387,7 +1298,7 @@ export const ShopList: React.FC<{
   }
 
   .st-master-table .ant-table {
-    font-size: 13px !important; 
+    font-size: 13px !important;
   }
 
   /* ✅ 修正 2：極致壓縮表格行高 */
@@ -1533,7 +1444,7 @@ export const ShopList: React.FC<{
     border: 1px solid #f1f5f9 !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     /* ✅ 加深陰影 (Darker Shadow) */
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.12) !important; 
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.12) !important;
     margin-bottom: 0px !important; /* ❗ 移除間隙，解決紅線問題 */
     position: relative;
     z-index: 2; /* 確保 Header 蓋在 Content 上方 */
@@ -1648,9 +1559,6 @@ export const ShopList: React.FC<{
      ACCESSIBILITY & REDUCED MOTION
      ============================================ */
   @media (prefers-reduced-motion: reduce) {
-    .bento-stat-card,
-    .bento-stat-card::before,
-    .bento-stat-icon,
     .bento-filter-card,
     .bento-filter-icon,
     .bento-filters-icon-wrapper,
@@ -1661,7 +1569,6 @@ export const ShopList: React.FC<{
       transform: none !important;
     }
 
-    .bento-stat-card:hover,
     .bento-filter-card:hover,
     .floating-cta-btn:hover {
       transform: none !important;
@@ -1678,7 +1585,6 @@ export const ShopList: React.FC<{
 
   /* All clickable elements must have cursor:pointer */
   .ant-table-tbody > tr,
-  .bento-stat-card,
   .bento-filter-card,
   button,
   .ant-btn,

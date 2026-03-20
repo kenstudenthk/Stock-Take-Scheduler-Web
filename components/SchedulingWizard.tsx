@@ -51,6 +51,7 @@ import {
   BatchResult,
   formatBatchResult,
 } from "../utils/batchOperations";
+import { isWorkingDay, getNextWorkingDay, filterSchedulePool } from "../utils/scheduleGeneration";
 
 dayjs.extend(isBetween);
 
@@ -501,32 +502,10 @@ export const SchedulingWizard: React.FC<SchedulingWizardProps> = ({
   const handleGenerate = useCallback(() => {
     setWizardStatus("generating");
 
-    const isWorkingDay = (date: dayjs.Dayjs) => {
-      const day = date.day();
-      const isWeekend = day === 0 || day === 6;
-      const dateStr = date.format("YYYY-MM-DD");
-      const isPublicHoliday = isHoliday(dateStr);
-      return !isWeekend && !isPublicHoliday;
-    };
-
-    const getNextWorkingDay = (date: dayjs.Dayjs) => {
-      let next = date;
-      while (!isWorkingDay(next)) {
-        next = next.add(1, "day");
-      }
-      return next;
-    };
-
-    let pool = activePool.filter((s) => {
-      const matchRegion =
-        selectedRegions.length === 0 || selectedRegions.includes(s.region);
-      const matchDistrict =
-        selectedDistricts.length === 0 ||
-        selectedDistricts.includes(s.district);
-      const matchMTR = includeMTR ? true : !s.is_mtr;
-      return (
-        s.status === "Unplanned" && matchRegion && matchDistrict && matchMTR
-      );
+    let pool = filterSchedulePool(activePool, {
+      selectedRegions,
+      selectedDistricts,
+      includeMTR,
     });
 
     if (pool.length === 0) {

@@ -54,13 +54,14 @@ import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import { Shop, User, hasPermission } from "../types";
 import { SP_FIELDS } from "../constants";
-import { isHoliday, getAllHolidays } from "../constants/holidays";
+import { getAllHolidays } from "../constants/holidays";
 import { GENERATOR_DEFAULTS, BATCH_CONFIG } from "../constants/config";
 import {
   executeBatch,
   BatchResult,
   formatBatchResult,
 } from "../utils/batchOperations";
+import { isWorkingDay, getNextWorkingDay, filterSchedulePool, generateSchedule } from "../utils/scheduleGeneration";
 import StatCard from "./StatCard";
 
 dayjs.extend(isBetween);
@@ -466,35 +467,11 @@ export const Generator: React.FC<{
     setWizardStep("generate");
 
     try {
-      // Helper: Check if date is a working day
-      const isWorkingDay = (date: dayjs.Dayjs) => {
-        const day = date.day();
-        const isWeekend = day === 0 || day === 6;
-        const dateStr = date.format("YYYY-MM-DD");
-        const isPublicHoliday = isHoliday(dateStr);
-        return !isWeekend && !isPublicHoliday;
-      };
-
-      // Helper: Get next working day
-      const getNextWorkingDay = (date: dayjs.Dayjs) => {
-        let next = date;
-        while (!isWorkingDay(next)) {
-          next = next.add(1, "day");
-        }
-        return next;
-      };
-
-      // Filter pool based on user selections
-      let pool = activePool.filter((s) => {
-        const matchRegion =
-          selectedRegions.length === 0 || selectedRegions.includes(s.region);
-        const matchDistrict =
-          selectedDistricts.length === 0 ||
-          selectedDistricts.includes(s.district);
-        const matchMTR = includeMTR ? true : !s.is_mtr;
-        return (
-          s.status === "Unplanned" && matchRegion && matchDistrict && matchMTR
-        );
+      // Filter pool using shared utility
+      const pool = filterSchedulePool(activePool, {
+        selectedRegions,
+        selectedDistricts,
+        includeMTR,
       });
 
       if (pool.length === 0) {
@@ -504,28 +481,13 @@ export const Generator: React.FC<{
         return;
       }
 
-      // Generate schedule
-      const scheduled: any[] = [];
-      let currentDate = dayjs(startDate);
-      let shopIndex = 0;
-
-      while (shopIndex < pool.length) {
-        currentDate = getNextWorkingDay(currentDate);
-
-        const shopsForDay = pool.slice(shopIndex, shopIndex + shopsPerDay);
-
-        shopsForDay.forEach((shop, idx) => {
-          const groupId = (idx % groupsPerDay) + 1;
-          scheduled.push({
-            ...shop,
-            scheduledDate: currentDate.format("YYYY-MM-DD"),
-            groupId: groupId,
-          });
-        });
-
-        shopIndex += shopsPerDay;
-        currentDate = currentDate.add(1, "day");
-      }
+      // Generate schedule using shared utility
+      const scheduled = generateSchedule({
+        pool,
+        startDate,
+        shopsPerDay,
+        groupsPerDay,
+      });
 
       setGeneratedResult(scheduled);
 
@@ -566,46 +528,13 @@ export const Generator: React.FC<{
     setWizardStep("generate");
 
     try {
-      const isWorkingDay = (date: dayjs.Dayjs) => {
-        const day = date.day();
-        const isWeekend = day === 0 || day === 6;
-        const dateStr = date.format("YYYY-MM-DD");
-        const isPublicHoliday = isHoliday(dateStr);
-        return !isWeekend && !isPublicHoliday;
-      };
-
-      const getNextWorkingDay = (date: dayjs.Dayjs) => {
-        let next = date;
-        while (!isWorkingDay(next)) {
-          next = next.add(1, "day");
-        }
-        return next;
-      };
-
-      const scheduled: any[] = [];
-      let currentDate = dayjs(startDate);
-      let shopIndex = 0;
-
-      while (shopIndex < reschedulePool.length) {
-        currentDate = getNextWorkingDay(currentDate);
-
-        const shopsForDay = reschedulePool.slice(
-          shopIndex,
-          shopIndex + shopsPerDay,
-        );
-
-        shopsForDay.forEach((shop, idx) => {
-          const groupId = (idx % groupsPerDay) + 1;
-          scheduled.push({
-            ...shop,
-            scheduledDate: currentDate.format("YYYY-MM-DD"),
-            groupId: groupId,
-          });
-        });
-
-        shopIndex += shopsPerDay;
-        currentDate = currentDate.add(1, "day");
-      }
+      // Generate schedule using shared utility
+      const scheduled = generateSchedule({
+        pool: reschedulePool,
+        startDate,
+        shopsPerDay,
+        groupsPerDay,
+      });
 
       setGeneratedResult(scheduled);
 

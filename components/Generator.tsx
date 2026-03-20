@@ -1945,6 +1945,18 @@ export const Generator: React.FC<{
             box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
           }
         }
+
+        /* QW-8 / T3-14: Reduced motion overrides */
+        @media (prefers-reduced-motion: reduce) {
+          .ghost-chaser,
+          .ghost-chaser .ghost,
+          .cube,
+          .dot-node,
+          .status-pulse,
+          .status-pulse--danger {
+            animation: none !important;
+          }
+        }
       `}</style>
     </div>
   );

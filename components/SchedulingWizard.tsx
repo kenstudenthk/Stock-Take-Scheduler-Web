@@ -66,8 +66,8 @@ const DESIGN_COLORS = {
   cta: "#F97316",
   background: "#F0FDFA",
   text: "#134E4A",
-  step1: "#EF4444", // Problem - Red
-  step2: "#F97316", // Process - Orange
+  step1: "#0D9488", // Configure - Teal
+  step2: "#D97706", // Generate - Amber
   step3: "#10B981", // Solution - Green
 };
 

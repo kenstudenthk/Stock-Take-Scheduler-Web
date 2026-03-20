@@ -72,8 +72,8 @@ const { Option } = Select;
 // DESIGN SYSTEM COLORS (Step-based)
 // ========================================
 const DESIGN_COLORS = {
-  step1: "#EF4444", // Red - Problem/Configure
-  step2: "#F97316", // Orange - Process/Generate
+  step1: "#0D9488", // Teal - Configure
+  step2: "#D97706", // Amber - Generate
   step3: "#22C55E", // Green - Solution/Sync
   cta: "#0D9488", // Teal - Brand CTA
   neutral: "#64748B", // Slate - Supporting
@@ -1676,7 +1676,7 @@ export const Generator: React.FC<{
         }
 
         /* Wizard Progress Styles */
-        
+
         /* Vertical Progress Bar Styles */
         .wizard-progress-vertical-container {
           background: white;

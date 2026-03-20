@@ -323,7 +323,33 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
 
       <div className="main-login-container">
         <div className="card-switch-area">
-          <label className="switch-label">
+          {/* Visible tab toggle */}
+          <div className="login-tab-toggle">
+            <button
+              type="button"
+              className={`login-tab-btn ${!isFlipped ? 'login-tab-btn--active' : ''}`}
+              onClick={() => {
+                setIsFlipped(false);
+                setMode('set');
+                resetFields();
+              }}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              className={`login-tab-btn ${isFlipped && mode === 'register' ? 'login-tab-btn--active' : ''}`}
+              onClick={() => {
+                setIsFlipped(true);
+                setMode('register');
+                resetFields();
+              }}
+            >
+              Register
+            </button>
+          </div>
+          {/* Keep the hidden checkbox so the 3D flip animation still works */}
+          <label className="switch-label" style={{ display: 'none' }}>
             <input
               type="checkbox"
               className="hidden-toggle"

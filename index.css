@@ -4831,3 +4831,33 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
 .ant-table-row:hover .row-edit-hint {
   opacity: 1;
 }
+
+/* T3-9: Login tab toggle */
+.login-tab-toggle {
+  display: flex;
+  background: rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.login-tab-btn {
+  flex: 1;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+  transition: all 200ms ease;
+}
+.login-tab-btn--active {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.login-tab-btn:not(.login-tab-btn--active):hover {
+  color: rgba(255,255,255,0.85);
+}

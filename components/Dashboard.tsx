@@ -427,10 +427,18 @@ export const Dashboard: React.FC<{
           ) : (
             filteredShops.map((shop) => {
               const isClosed = shop.status?.toLowerCase() === "closed";
+              const GROUP_BORDER: Record<number, string> = {
+                1: "#0369a1",
+                2: "#7e22ce",
+                3: "#c2410c",
+              };
               return (
                 <div
                   key={shop.id}
                   className={`p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-4 transition-all ${isClosed ? "opacity-40 grayscale bg-slate-50" : "bg-white hover:bg-slate-50/80 shadow-sm"}`}
+                  style={{
+                    borderLeft: `3px solid ${GROUP_BORDER[shop.groupId] ?? "#94a3b8"}`,
+                  }}
                 >
                   {/* 1. Shop Info & Brand */}
                   <div className="flex items-center gap-4 w-full md:flex-1">

@@ -37,6 +37,7 @@ import {
   CompassOutlined,
   TeamOutlined,
   ThunderboltOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
@@ -367,9 +368,11 @@ export const ShopList: React.FC<{
   }, [shops]);
 
   const activeFilterCount = useMemo(() => {
-    return Object.values(filters).filter((v) => v !== "All").length
-      + (searchText.trim() ? 1 : 0)
-      + (dateRange[0] ? 1 : 0);
+    return (
+      Object.values(filters).filter((v) => v !== "All").length +
+      (searchText.trim() ? 1 : 0) +
+      (dateRange[0] ? 1 : 0)
+    );
   }, [filters, searchText, dateRange]);
 
   // Bento Filter Grid with Accordion
@@ -466,8 +469,11 @@ export const ShopList: React.FC<{
                   </div>
                   <div>
                     <Text strong className="text-lg text-slate-800">
-                      Filters {activeFilterCount > 0 && (
-                        <span className="text-sm font-normal text-teal-600 ml-1">({activeFilterCount} active)</span>
+                      Filters{" "}
+                      {activeFilterCount > 0 && (
+                        <span className="text-sm font-normal text-teal-600 ml-1">
+                          ({activeFilterCount} active)
+                        </span>
                       )}
                     </Text>
                     <Text className="text-xs text-slate-400 ml-3">
@@ -720,61 +726,70 @@ export const ShopList: React.FC<{
       key: "actions",
       align: "left" as const,
       width: "12%",
-      render: (_: any, record: Shop) =>
-        /* Only show when row is selected and user has any permission */
-        selectedRowId === record.id &&
-        (hasPermission(currentUser, "close_shop") ||
-          hasPermission(currentUser, "edit_shop")) && (
-          <div
-            className="flex justify-end gap-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button - only visible for Admin/App Owner */}
-            {hasPermission(currentUser, "close_shop") && (
-              <button
-                className="Btn close-btn-styled scale-75 origin-right"
-                disabled={record.status?.toLowerCase() === "closed"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCloseAction(record);
-                }}
-              >
-                <div className="sign">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4">
-                    <path
-                      fill="white"
-                      d="M 20 10 L 20 12 L 22 12 L 22 10 L 23 10 C 23.328 10.000 23.636 9.839 23.823 9.570 C 24.010 9.300 24.053 8.955 23.937 8.648 L 20.937 0.648 C 20.790 0.258 20.417 -0.000 20 0 L 4 0 C 3.583 -0.000 3.210 0.258 3.063 0.648 L 0.063 8.648 C -0.053 8.955 -0.010 9.300 0.177 9.570 C 0.364 9.839 0.672 10.000 1 10 L 2 10 L 2 12 L 4 12 L 4 10 z M 11 2 L 11 8 L 7.28 8 L 8.78 2 z M 15.22 2 L 16.72 8 L 13 8 L 13 2 z M 21.557 8 L 18.78 8 L 17.28 2 L 19.307 2 z M 4.693 2 L 6.72 2 L 5.22 8 L 2.443 8 z M 2 23 C 2 23.552 2.448 24 3 24 L 21 24 C 21.552 24 22 23.552 22 23 L 22 22 L 2 22 z"
-                    />
-                  </svg>
-                </div>
-                <div className="btn-text text-[12px]">Close</div>
-              </button>
-            )}
+      render: (_: any, record: Shop) => {
+        const hasActions =
+          hasPermission(currentUser, "close_shop") ||
+          hasPermission(currentUser, "edit_shop");
+        if (!hasActions) return null;
+        if (selectedRowId === record.id) {
+          return (
+            <div
+              className="flex justify-end gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button - only visible for Admin/App Owner */}
+              {hasPermission(currentUser, "close_shop") && (
+                <button
+                  className="Btn close-btn-styled scale-75 origin-right"
+                  disabled={record.status?.toLowerCase() === "closed"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCloseAction(record);
+                  }}
+                >
+                  <div className="sign">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4">
+                      <path
+                        fill="white"
+                        d="M 20 10 L 20 12 L 22 12 L 22 10 L 23 10 C 23.328 10.000 23.636 9.839 23.823 9.570 C 24.010 9.300 24.053 8.955 23.937 8.648 L 20.937 0.648 C 20.790 0.258 20.417 -0.000 20 0 L 4 0 C 3.583 -0.000 3.210 0.258 3.063 0.648 L 0.063 8.648 C -0.053 8.955 -0.010 9.300 0.177 9.570 C 0.364 9.839 0.672 10.000 1 10 L 2 10 L 2 12 L 4 12 L 4 10 z M 11 2 L 11 8 L 7.28 8 L 8.78 2 z M 15.22 2 L 16.72 8 L 13 8 L 13 2 z M 21.557 8 L 18.78 8 L 17.28 2 L 19.307 2 z M 4.693 2 L 6.72 2 L 5.22 8 L 2.443 8 z M 2 23 C 2 23.552 2.448 24 3 24 L 21 24 C 21.552 24 22 23.552 22 23 L 22 22 L 2 22 z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="btn-text text-[12px]">Close</div>
+                </button>
+              )}
 
-            {/* Edit button - only visible for Admin/App Owner */}
-            {hasPermission(currentUser, "edit_shop") && (
-              <button
-                className="Btn edit-btn-styled scale-75 origin-right"
-                disabled={record.status?.toLowerCase() === "closed"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setTargetShop(record);
-                  setFormOpen(true);
-                }}
-              >
-                <div className="sign">
-                  <svg viewBox="0 0 512 512" className="w-4 h-4">
-                    <path
-                      fill="white"
-                      d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231z"
-                    />
-                  </svg>
-                </div>
-                <div className="btn-text text-[12px]">Edit</div>
-              </button>
-            )}
+              {/* Edit button - only visible for Admin/App Owner */}
+              {hasPermission(currentUser, "edit_shop") && (
+                <button
+                  className="Btn edit-btn-styled scale-75 origin-right"
+                  disabled={record.status?.toLowerCase() === "closed"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTargetShop(record);
+                    setFormOpen(true);
+                  }}
+                >
+                  <div className="sign">
+                    <svg viewBox="0 0 512 512" className="w-4 h-4">
+                      <path
+                        fill="white"
+                        d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="btn-text text-[12px]">Edit</div>
+                </button>
+              )}
+            </div>
+          );
+        }
+        return (
+          <div className="row-edit-hint flex justify-end">
+            <EditOutlined style={{ fontSize: 13, color: "#94a3b8" }} />
           </div>
-        ),
+        );
+      },
     },
   ];
   return (
@@ -798,15 +813,27 @@ export const ShopList: React.FC<{
             Comprehensive store management with advanced filtering
           </Text>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[12px] text-slate-500">
-            <span><strong className="text-slate-700">{stats.total}</strong> active</span>
+            <span>
+              <strong className="text-slate-700">{stats.total}</strong> active
+            </span>
             <span className="text-slate-300">|</span>
-            <span><strong className="text-indigo-600">{stats.planned}</strong> planned</span>
+            <span>
+              <strong className="text-indigo-600">{stats.planned}</strong>{" "}
+              planned
+            </span>
             <span className="text-slate-300">|</span>
-            <span><strong className="text-amber-500">{stats.unplanned}</strong> unplanned</span>
+            <span>
+              <strong className="text-amber-500">{stats.unplanned}</strong>{" "}
+              unplanned
+            </span>
             <span className="text-slate-300">|</span>
-            <span><strong className="text-emerald-600">{stats.done}</strong> done</span>
+            <span>
+              <strong className="text-emerald-600">{stats.done}</strong> done
+            </span>
             <span className="text-slate-300">|</span>
-            <span><strong className="text-violet-600">{stats.mtr}</strong> MTR</span>
+            <span>
+              <strong className="text-violet-600">{stats.mtr}</strong> MTR
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-4">

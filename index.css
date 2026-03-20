@@ -4822,3 +4822,12 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
 .pw-toggle-btn:hover {
   color: #475569;
 }
+
+/* T3-7: Row hover affordance */
+.ant-table-row .row-edit-hint {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.ant-table-row:hover .row-edit-hint {
+  opacity: 1;
+}

@@ -48,6 +48,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: SchedulingWizard — Planned % Hidden (T2-11)
+- **Date**: 2026-03-20
+- **Problem**: Region card planned % was only visible on hover tooltip, not always-visible
+- **Root Cause**: `reg.plannedPct` was only in `Tooltip` title; no visible text in card body
+- **Fix**: Added footer row with `{reg.plannedPct}% done` label always rendered in card
+- **Rule**: Critical planning stats (fill %, counts) must be always-visible in card body; tooltips are supplemental only
+
 #### ⚠️ Known Issue: Dashboard — Pool Badge (T2-3)
 - **Date**: 2026-03-20
 - **Problem**: No visibility into how many shops are in the Reschedule Pool from the Dashboard

@@ -48,6 +48,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: Dashboard — Pool Badge (T2-3)
+- **Date**: 2026-03-20
+- **Problem**: No visibility into how many shops are in the Reschedule Pool from the Dashboard
+- **Root Cause**: Pool count was not surfaced in the stats useMemo or the UI
+- **Fix**: Added `pool` to `stats` useMemo (filtered from `activeShops` by `status === 'Rescheduled' && !scheduledDate`). Added orange `<Tag>` with spinning `SyncOutlined` in the header when `pool > 0`.
+- **Rule**: Pool filter is `activeShops.filter(s => s.status === 'Rescheduled' && !s.scheduledDate)` — `activeShops` already excludes `masterStatus === 'Closed'`
+
 #### ⚠️ Known Issue: Calendar — Drag-and-Drop Removed
 - **Date**: 2026-03-20
 - **Problem**: DnD reschedule bypassed capacity/MTR/region validation; also had no visual affordance

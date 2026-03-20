@@ -27,47 +27,10 @@ import dayjs from "dayjs";
 import { Shop, User, hasPermission } from "../types";
 import { SP_FIELDS } from "../constants";
 import { isHoliday } from "../constants/holidays";
+import StatCard from "./StatCard";
 
 const { Text, Title } = Typography;
 const { confirm } = Modal;
-
-interface SummaryCardProps {
-  label: string;
-  value: number;
-  subtext: string;
-  type: "total" | "completed" | "closed" | "remain";
-  icon: React.ReactNode;
-  isPulsing?: boolean;
-}
-
-const SummaryCard: React.FC<SummaryCardProps> = ({
-  label,
-  value,
-  subtext,
-  type,
-  icon,
-  isPulsing = false,
-}) => (
-  <div
-    className={`summary-card-item ${isPulsing ? "status-pulse status-pulse--danger" : ""}`}
-    data-type={type}
-    aria-label={`${label}: ${value} ${subtext}`}
-  >
-    <div className="summary-card-icon-area">{icon}</div>
-    <div className="summary-card-body">
-      <div className="summary-card-header">
-        <div className="summary-card-title">{label}</div>
-        <div className="summary-card-menu" aria-hidden="true">
-          <div className="dot"></div>
-          <div className="dot"></div>
-          <div className="dot"></div>
-        </div>
-      </div>
-      <div className="summary-card-value">{value}</div>
-      <p className="summary-card-subtext">{subtext}</p>
-    </div>
-  </div>
-);
 
 export const Dashboard: React.FC<{
   shops: Shop[];
@@ -342,11 +305,11 @@ export const Dashboard: React.FC<{
 
       <Row gutter={[24, 24]}>
         <Col xs={12} sm={12} md={6} lg={6}>
-          <SummaryCard
+          <StatCard
             label="Total Shop"
             value={stats.total}
             subtext="Active Master List"
-            type="total"
+            bgColor="#1E40AF"
             icon={
               <ShopOutlined
                 style={{ fontSize: "40px", color: "rgba(255,255,255,0.85)" }}
@@ -355,11 +318,11 @@ export const Dashboard: React.FC<{
           />
         </Col>
         <Col xs={12} sm={12} md={6} lg={6}>
-          <SummaryCard
+          <StatCard
             label="Completed"
             value={stats.completed}
             subtext="Done this year"
-            type="completed"
+            bgColor="#10B981"
             icon={
               <CheckCircleOutlined
                 style={{ fontSize: "40px", color: "rgba(255,255,255,0.85)" }}
@@ -368,11 +331,11 @@ export const Dashboard: React.FC<{
           />
         </Col>
         <Col xs={12} sm={12} md={6} lg={6}>
-          <SummaryCard
+          <StatCard
             label="Closed"
             value={stats.closed}
             subtext="Closed this year"
-            type="closed"
+            bgColor="#EF4444"
             isPulsing={stats.closed > 0}
             icon={
               <CloseCircleOutlined
@@ -382,11 +345,11 @@ export const Dashboard: React.FC<{
           />
         </Col>
         <Col xs={12} sm={12} md={6} lg={6}>
-          <SummaryCard
+          <StatCard
             label="Remain"
             value={stats.remain}
             subtext="Pending action"
-            type="remain"
+            bgColor="#F59E0B"
             isPulsing={stats.remain > 10}
             icon={
               <HourglassOutlined

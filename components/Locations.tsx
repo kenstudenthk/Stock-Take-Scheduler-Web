@@ -9,6 +9,7 @@ import { Shop } from '../types';
 import { wgs84ToGcj02 } from '../utils/coordTransform';
 import { MobileMapView } from './MobileMapView';
 import { useAMap } from '../utils/loadAMap';
+import StatCard from "./StatCard";
 
 const { Title, Text } = Typography;
 
@@ -51,29 +52,6 @@ const OVERLAP_CONFIG = {
   PRECISION: 5,
   RADIUS: 0.00008,
 } as const;
-
-// --- SummaryCard (consistent with Generator page) ---
-const SummaryCard = ({ label, value, subtext, bgColor, icon }: {
-  label: string;
-  value: number;
-  subtext: string;
-  bgColor: string;
-  icon: React.ReactNode;
-}) => (
-  <div className="summary-card-item" style={{ borderLeft: `4px solid ${bgColor}` }}>
-    <div className="summary-card-icon-area" style={{ backgroundColor: bgColor }}>
-      {icon}
-    </div>
-    <div className="summary-card-body">
-      <div className="summary-card-header">
-        <div className="summary-card-title">{label}</div>
-        <div className="summary-card-menu"><div className="dot"></div><div className="dot"></div><div className="dot"></div></div>
-      </div>
-      <div className="summary-card-value">{value}</div>
-      <p className="summary-card-subtext">{subtext}</p>
-    </div>
-  </div>
-);
 
 // --- ShopBentoCard ---
 const ShopBentoCard = memo(({
@@ -390,7 +368,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
       {/* Stats Cards */}
       <Row gutter={[24, 24]}>
         <Col span={6}>
-          <SummaryCard
+          <StatCard
             label="Total on Map"
             value={stats.total}
             subtext="Visible markers"
@@ -399,7 +377,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           />
         </Col>
         <Col span={6}>
-          <SummaryCard
+          <StatCard
             label="Completed"
             value={stats.completed}
             subtext="Done this year"
@@ -408,7 +386,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           />
         </Col>
         <Col span={6}>
-          <SummaryCard
+          <StatCard
             label="Scheduled"
             value={stats.scheduled}
             subtext="Planned visits"
@@ -417,7 +395,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           />
         </Col>
         <Col span={6}>
-          <SummaryCard
+          <StatCard
             label="Closed"
             value={stats.closed}
             subtext="Permanently closed"

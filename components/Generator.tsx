@@ -61,6 +61,7 @@ import {
   BatchResult,
   formatBatchResult,
 } from "../utils/batchOperations";
+import StatCard from "./StatCard";
 
 dayjs.extend(isBetween);
 
@@ -283,51 +284,6 @@ const SyncGeometricLoader = ({
         style={{ width: "300px", marginTop: "20px" }}
       />
     )}
-  </div>
-);
-
-// ========================================
-// SUMMARY CARD COMPONENT
-// ========================================
-interface SummaryCardProps {
-  label: string;
-  value: number;
-  subtext: string;
-  bgColor: string;
-  icon: React.ReactNode;
-  isPulsing?: boolean;
-}
-
-const SummaryCard: React.FC<SummaryCardProps> = ({
-  label,
-  value,
-  subtext,
-  bgColor,
-  icon,
-  isPulsing = false,
-}) => (
-  <div
-    className={`summary-card-item ${isPulsing ? "status-pulse status-pulse--danger" : ""}`}
-    style={{ borderLeft: `4px solid ${bgColor}` }}
-  >
-    <div
-      className="summary-card-icon-area"
-      style={{ backgroundColor: bgColor }}
-    >
-      {icon}
-    </div>
-    <div className="summary-card-body">
-      <div className="summary-card-header">
-        <div className="summary-card-title">{label}</div>
-        <div className="summary-card-menu">
-          <div className="dot"></div>
-          <div className="dot"></div>
-          <div className="dot"></div>
-        </div>
-      </div>
-      <div className="summary-card-value">{value}</div>
-      <p className="summary-card-subtext">{subtext}</p>
-    </div>
   </div>
 );
 
@@ -1106,7 +1062,7 @@ export const Generator: React.FC<{
       {/* Summary Stats */}
       <Row gutter={[24, 24]} className="mb-8">
         <Col span={8}>
-          <SummaryCard
+          <StatCard
             label="Active Shops"
             value={stats.total}
             subtext="Operational units"
@@ -1119,7 +1075,7 @@ export const Generator: React.FC<{
           />
         </Col>
         <Col span={8}>
-          <SummaryCard
+          <StatCard
             label="Completed"
             value={stats.completed}
             subtext="Done this year"
@@ -1132,7 +1088,7 @@ export const Generator: React.FC<{
           />
         </Col>
         <Col span={8}>
-          <SummaryCard
+          <StatCard
             label="Remaining"
             value={stats.unplanned}
             subtext="Pending schedule"

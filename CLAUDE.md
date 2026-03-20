@@ -48,6 +48,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: Permission — Stale Generic Role Descriptions (T3-13)
+- **Date**: 2026-03-20
+- **Problem**: `rolePermissions` in Permission.tsx used generic CMS descriptions unrelated to the app
+- **Root Cause**: Was never updated after initial scaffold; descriptions referenced billing, media, etc.
+- **Fix**: Rewrote `rolePermissions` based on `ROLE_PERMISSIONS` in `types.ts` (actual permission actions)
+- **Rule**: ALWAYS keep `rolePermissions` in sync with `ROLE_PERMISSIONS` in `types.ts` when permissions change
+
 #### ⚠️ Known Issue: Generator — Vertical Wizard Sidebar (T2-7)
 - **Date**: 2026-03-20
 - **Problem**: Vertical sidebar wizard progress (Col span=4) competed with app sidebar, narrowing config area

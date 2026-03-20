@@ -48,6 +48,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: App — Dark Mode First Load (T3-16)
+- **Date**: 2026-03-20
+- **Problem**: Dark mode initialized from localStorage only; first-time visitors always got light mode
+- **Root Cause**: `useState<boolean>(localStorage.getItem('theme') === 'dark')` returns false when key is absent
+- **Fix**: Lazy initializer: check localStorage first; fall back to `window.matchMedia('(prefers-color-scheme: dark)').matches`
+- **Rule**: ALWAYS use lazy initializer for theme state; user preference (localStorage) takes priority over system
+
 #### ⚠️ Known Issue: Permission — Stale Generic Role Descriptions (T3-13)
 - **Date**: 2026-03-20
 - **Problem**: `rolePermissions` in Permission.tsx used generic CMS descriptions unrelated to the app

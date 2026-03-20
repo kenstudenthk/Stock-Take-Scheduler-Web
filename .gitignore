@@ -76,3 +76,6 @@ test-token.js
 .gemini/
 gha-creds-*.json
 NUL
+
+# Worktrees
+.worktrees/

@@ -20,6 +20,7 @@ import {
   Switch,
   Select,
   InputNumber,
+  Input,
   Table,
   Tag,
   message,
@@ -445,6 +446,9 @@ export const Generator: React.FC<{
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resetRange, setResetRange] = useState<any>(null);
 
+  const [resetAllModalOpen, setResetAllModalOpen] = useState(false);
+  const [resetAllConfirmText, setResetAllConfirmText] = useState("");
+
   const [saveProgress, setSaveProgress] = useState<{
     current: number;
     total: number;
@@ -835,83 +839,77 @@ export const Generator: React.FC<{
   }, [lastBatchResult, saveToSharePoint]);
 
   const handleResetAll = useCallback(() => {
-    confirm({
-      title: "Reset All Schedules?",
-      icon: <WarningOutlined style={{ color: DESIGN_COLORS.step1 }} />,
-      content:
-        'This will reset ALL planned schedules back to "Unplanned" status.',
-      okText: "Yes, Reset All",
-      okType: "danger",
-      cancelText: "Cancel",
-      onOk: async () => {
-        setLoadingType("reset");
-        setIsSaving(true);
+    setResetAllConfirmText("");
+    setResetAllModalOpen(true);
+  }, []);
 
-        const plannedShops = shops.filter((s) => s.status === "Planned");
+  const handleResetAllConfirm = useCallback(async () => {
+    setLoadingType("reset");
+    setIsSaving(true);
+    setResetAllModalOpen(false);
 
-        if (plannedShops.length === 0) {
-          message.warning("No planned schedules to reset.");
-          setIsSaving(false);
-          return;
-        }
+    const plannedShops = shops.filter((s) => s.status === "Planned");
 
-        setSaveProgress({ current: 0, total: plannedShops.length });
+    if (plannedShops.length === 0) {
+      message.warning("No planned schedules to reset.");
+      setIsSaving(false);
+      return;
+    }
 
-        try {
-          const result = await executeBatch(
-            plannedShops,
-            async (shop) => {
-              const response = await fetch(
-                `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
-                {
-                  method: "PATCH",
-                  headers: {
-                    Authorization: `Bearer ${graphToken}`,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    [SP_FIELDS.STATUS]: "Unplanned",
-                    [SP_FIELDS.SCHEDULE_DATE]: null,
-                    [SP_FIELDS.SCHEDULE_GROUP]: null,
-                  }),
-                },
-              );
+    setSaveProgress({ current: 0, total: plannedShops.length });
 
-              if (!response.ok) {
-                throw new Error(`Failed to reset ${shop.name}`);
-              }
-            },
+    try {
+      const result = await executeBatch(
+        plannedShops,
+        async (shop) => {
+          const response = await fetch(
+            `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
             {
-              onProgress: (current, total) =>
-                setSaveProgress({ current, total }),
-              getItemName: (shop) => shop.name,
+              method: "PATCH",
+              headers: {
+                Authorization: `Bearer ${graphToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                [SP_FIELDS.STATUS]: "Unplanned",
+                [SP_FIELDS.SCHEDULE_DATE]: null,
+                [SP_FIELDS.SCHEDULE_GROUP]: null,
+              }),
             },
           );
 
-          if (result.successCount === result.totalProcessed) {
-            message.success(
-              `✅ All ${result.successCount} schedules reset successfully!`,
-            );
-          } else if (result.successCount > 0) {
-            message.warning(
-              `⚠️ ${result.successCount} reset, ${result.failureCount} failed.`,
-            );
-          } else {
-            message.error(
-              `❌ Failed to reset all ${result.failureCount} schedules.`,
-            );
+          if (!response.ok) {
+            throw new Error(`Failed to reset ${shop.name}`);
           }
+        },
+        {
+          onProgress: (current, total) => setSaveProgress({ current, total }),
+          getItemName: (shop) => shop.name,
+        },
+      );
 
-          onRefresh();
-        } catch (error) {
-          console.error("Reset error:", error);
-          message.error("Reset failed. Please try again.");
-        } finally {
-          setIsSaving(false);
-          setSaveProgress(null);
-        }
-      },
-    });
+      if (result.successCount === result.totalProcessed) {
+        message.success(
+          `✅ All ${result.successCount} schedules reset successfully!`,
+        );
+      } else if (result.successCount > 0) {
+        message.warning(
+          `⚠️ ${result.successCount} reset, ${result.failureCount} failed.`,
+        );
+      } else {
+        message.error(
+          `❌ Failed to reset all ${result.failureCount} schedules.`,
+        );
+      }
+
+      onRefresh();
+    } catch (error) {
+      console.error("Reset error:", error);
+      message.error("Reset failed. Please try again.");
+    } finally {
+      setIsSaving(false);
+      setSaveProgress(null);
+    }
   }, [shops, graphToken, onRefresh]);
 
   const handleResetByPeriod = useCallback(async () => {
@@ -1104,6 +1102,48 @@ export const Generator: React.FC<{
           <RangePicker
             className="w-full h-12 rounded-xl"
             onChange={(dates) => setResetRange(dates)}
+          />
+        </div>
+      </Modal>
+
+      {/* Reset All confirmation modal — requires typing RESET ALL */}
+      <Modal
+        title={
+          <Space>
+            <WarningOutlined style={{ color: DESIGN_COLORS.step1 }} />
+            Reset All Schedules?
+          </Space>
+        }
+        open={resetAllModalOpen}
+        onCancel={() => setResetAllModalOpen(false)}
+        onOk={handleResetAllConfirm}
+        okText="Reset All"
+        okButtonProps={{
+          danger: true,
+          disabled: resetAllConfirmText !== "RESET ALL",
+        }}
+        centered
+      >
+        <div className="py-4">
+          <p className="text-slate-600 mb-2">
+            You are about to reset{" "}
+            <strong>
+              {shops.filter((s) => s.status === "Planned").length} planned shops
+            </strong>{" "}
+            back to Unplanned. This cannot be undone.
+          </p>
+          <p className="text-slate-500 text-sm mb-4">
+            Type <strong>RESET ALL</strong> to confirm:
+          </p>
+          <Input
+            value={resetAllConfirmText}
+            onChange={(e) => setResetAllConfirmText(e.target.value)}
+            placeholder="RESET ALL"
+            status={
+              resetAllConfirmText && resetAllConfirmText !== "RESET ALL"
+                ? "error"
+                : undefined
+            }
           />
         </div>
       </Modal>

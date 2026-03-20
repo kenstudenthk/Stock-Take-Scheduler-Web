@@ -104,6 +104,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Remapped step1 → teal #0D9488 (brand primary), step2 → amber #D97706, step3 green unchanged
 - **Rule**: NEVER use red for non-error states; wizard steps use teal→amber→green progression
 
+#### ⚠️ Known Issue: Schedule Generation Logic Duplicated (T1-6)
+- **Date**: 2026-03-20
+- **Problem**: `isWorkingDay`, `getNextWorkingDay`, pool filtering, and the generation loop were duplicated across Generator.tsx and SchedulingWizard.tsx with slight divergence
+- **Root Cause**: SchedulingWizard was built separately without extracting shared logic
+- **Fix**: Created `utils/scheduleGeneration.ts` with `isWorkingDay`, `getNextWorkingDay`, `filterSchedulePool`, `generateSchedule`. Both components now import from this module.
+- **Rule**: ALWAYS use `filterSchedulePool()` and `generateSchedule()` from `utils/scheduleGeneration.ts`; NEVER reimplement filtering or generation logic in components
+
 #### ⚠️ Known Issue: SchedulingWizard — Planned % Hidden (T2-11)
 - **Date**: 2026-03-20
 - **Problem**: Region card planned % was only visible on hover tooltip, not always-visible

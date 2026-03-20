@@ -48,6 +48,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: Generator Wizard — Step 1 Color Was Red (T2-5)
+- **Date**: 2026-03-20
+- **Problem**: Step 1 Configure used red (#EF4444) — a danger/error signal — causing user hesitation
+- **Root Cause**: `DESIGN_COLORS.step1` in both Generator.tsx and SchedulingWizard.tsx set to red
+- **Fix**: Remapped step1 → teal #0D9488 (brand primary), step2 → amber #D97706, step3 green unchanged
+- **Rule**: NEVER use red for non-error states; wizard steps use teal→amber→green progression
+
 #### ⚠️ Known Issue: SchedulingWizard — Planned % Hidden (T2-11)
 - **Date**: 2026-03-20
 - **Problem**: Region card planned % was only visible on hover tooltip, not always-visible

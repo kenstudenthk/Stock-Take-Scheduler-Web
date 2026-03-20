@@ -44,6 +44,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: Calendar — Drag-and-Drop Removed
+- **Date**: 2026-03-20
+- **Problem**: DnD reschedule bypassed capacity/MTR/region validation; also had no visual affordance
+- **Root Cause**: Two separate interaction paths (drag for date, click for group) with inconsistent validation
+- **Fix**: Removed DnD entirely. Click any shop chip or sidebar card → combined modal (date + group in one action). `interactionPlugin` kept for `dateClick` (sidebar date selection) but `editable`/`droppable`/`eventDrop` props removed. ExcelJS/jsPDF moved to dynamic imports.
+- **Rule**: NEVER re-add DnD to Calendar without also adding shared validateReschedule utility (see peppy-waddling-ritchie.md T1-7)
+
 ---
 
 ## Development Commands

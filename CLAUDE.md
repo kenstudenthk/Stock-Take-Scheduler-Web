@@ -48,6 +48,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: StatCard Duplication (T2-6)
+- **Date**: 2026-03-20
+- **Problem**: Dashboard, Generator, and Locations each had their own `SummaryCard` implementation with slight differences
+- **Root Cause**: Component copy-pasted as pages were built, never extracted
+- **Fix**: Created `components/StatCard.tsx` with `bgColor` prop. All 3 pages now import it. Dashboard cards now use explicit hex colors (#1E40AF, #10B981, #EF4444, #F59E0B) instead of `type`/CSS vars.
+- **Rule**: ALWAYS import `StatCard` from `components/StatCard.tsx`; NEVER define a local SummaryCard/StatCard
+
 #### ⚠️ Known Issue: Layout — Nav Item Order (T2-1)
 - **Date**: 2026-03-20
 - **Problem**: Calendar, Generator, Dashboard were scattered in nav with no visual grouping

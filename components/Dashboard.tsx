@@ -51,15 +51,13 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
   <div
     className={`summary-card-item ${isPulsing ? "status-pulse status-pulse--danger" : ""}`}
     data-type={type}
-    tabIndex={0}
-    role="button"
     aria-label={`${label}: ${value} ${subtext}`}
   >
     <div className="summary-card-icon-area">{icon}</div>
     <div className="summary-card-body">
       <div className="summary-card-header">
         <div className="summary-card-title">{label}</div>
-        <div className="summary-card-menu">
+        <div className="summary-card-menu" aria-hidden="true">
           <div className="dot"></div>
           <div className="dot"></div>
           <div className="dot"></div>

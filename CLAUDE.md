@@ -111,6 +111,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Created `utils/scheduleGeneration.ts` with `isWorkingDay`, `getNextWorkingDay`, `filterSchedulePool`, `generateSchedule`. Both components now import from this module.
 - **Rule**: ALWAYS use `filterSchedulePool()` and `generateSchedule()` from `utils/scheduleGeneration.ts`; NEVER reimplement filtering or generation logic in components
 
+#### ⚠️ Known Issue: ShopList + Locations Were Separate Nav Items (T2-2)
+- **Date**: 2026-03-20
+- **Problem**: ShopList ("Master List") and Locations ("Map View") were two separate nav items showing the same shop data in different views
+- **Root Cause**: Built as independent components at different times, never unified
+- **Fix**: Created `components/Shops.tsx` wrapper with Table/Map `Segmented` toggle (session-persisted). `View.SHOP_LIST` and `View.LOCATIONS` replaced by `View.SHOPS` in enum, App.tsx, and Layout.tsx.
+- **Rule**: ALWAYS navigate to `View.SHOPS`; NEVER restore `View.SHOP_LIST` or `View.LOCATIONS` as separate nav items
+
 #### ⚠️ Known Issue: SchedulingWizard — Planned % Hidden (T2-11)
 - **Date**: 2026-03-20
 - **Problem**: Region card planned % was only visible on hover tooltip, not always-visible

@@ -10,10 +10,9 @@ import { Layout } from './components/Layout';
 import { SP_FIELDS } from './constants';
 import { Dashboard } from './components/Dashboard';
 import { Calendar } from './components/Calendar';
-import { Locations } from './components/Locations';
+import { Shops } from './components/Shops';
 import { Settings } from './components/Settings';
 import { Shop, View, User, hasAdminAccess } from './types';
-import { ShopList } from './components/ShopList';
 import { Generator } from './components/Generator';
 import { Inventory } from './components/Inventory';
 import { Permission } from './components/Permission';
@@ -208,7 +207,7 @@ function App() {
 
     switch (selectedMenuKey) {
       case View.DASHBOARD: return <Dashboard shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} onUpdateShop={undefined} currentUser={currentUser} />;
-      case View.SHOP_LIST: return <ShopList shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
+      case View.SHOPS: return <Shops shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
       case View.CALENDAR: return (
         <Calendar
           shops={allShops}
@@ -217,7 +216,6 @@ function App() {
         />
       );
       case View.GENERATOR: return <Generator shops={allShops} graphToken={graphToken} onRefresh={() => fetchAllData(graphToken)} currentUser={currentUser} />;
-      case View.LOCATIONS: return <Locations shops={allShops} />;
       case View.INVENTORY: return <Inventory token={graphToken} shops={allShops} />;
       case View.PERMISSION: return <Permission graphToken={graphToken} currentUser={currentUser} />;
       default: return null;

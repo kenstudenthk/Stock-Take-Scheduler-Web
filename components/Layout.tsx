@@ -76,15 +76,9 @@ export const Layout: React.FC<any> = ({
       requiresAdmin: true,
     },
     {
-      key: View.SHOP_LIST,
-      label: "Master List",
-      icon: <DatabaseOutlined />,
-      requiresAdmin: false,
-    },
-    {
-      key: View.LOCATIONS,
-      label: "Map View",
-      icon: <EnvironmentOutlined />,
+      key: View.SHOPS,
+      label: "Shops",
+      icon: <AppstoreOutlined />,
       requiresAdmin: false,
     },
     {
@@ -151,10 +145,10 @@ export const Layout: React.FC<any> = ({
           {/* Separator between schedule and data groups */}
           <li className="nav-group-sep" aria-hidden="true" style={{ margin: '4px 12px', borderTop: '1px solid rgba(255,255,255,0.1)', padding: 0, height: 0 }} />
 
-          {/* Data group: Master List, Map View */}
+          {/* Data group: Shops */}
           {menuItems
             .filter((item) =>
-              [View.SHOP_LIST, View.LOCATIONS].includes(item.key)
+              [View.SHOPS].includes(item.key)
             )
             .map((item) => (
               <li key={item.key}>
@@ -238,9 +232,8 @@ export const Layout: React.FC<any> = ({
       <nav className="mobile-bottom-nav">
         {[
           View.DASHBOARD,
-          View.SHOP_LIST,
+          View.SHOPS,
           View.CALENDAR,
-          View.LOCATIONS,
         ].map((viewKey) => {
           const item = menuItems.find((i) => i.key === viewKey);
           if (!item) return null;

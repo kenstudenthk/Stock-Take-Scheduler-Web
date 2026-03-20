@@ -52,37 +52,6 @@ const { confirm } = Modal;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-// Bento Card Component for Statistics
-const BentoStatCard = memo(
-  ({
-    title,
-    value,
-    subtitle,
-    icon,
-    color,
-    size = "normal",
-  }: {
-    title: string;
-    value: number | string;
-    subtitle?: string;
-    icon: React.ReactNode;
-    color: string;
-    size?: "normal" | "large";
-  }) => (
-    <div
-      className={`bento-stat-card bento-${size}`}
-      style={{ "--accent-color": color } as React.CSSProperties}
-    >
-      <div className="bento-stat-icon">{icon}</div>
-      <div className="bento-stat-content">
-        <span className="bento-stat-value">{value}</span>
-        <span className="bento-stat-title">{title}</span>
-        {subtitle && <span className="bento-stat-subtitle">{subtitle}</span>}
-      </div>
-    </div>
-  ),
-);
-
 // Bento Filter Card Component
 const BentoFilterCard = memo(
   ({
@@ -397,49 +366,11 @@ export const ShopList: React.FC<{
     };
   }, [shops]);
 
-  // Bento Statistics Grid
-  const renderBentoStats = () => (
-    <div className="bento-stats-grid">
-      <BentoStatCard
-        title="Total Shops"
-        value={stats.total}
-        subtitle="Active locations"
-        icon={<ShopOutlined />}
-        color="#0d9488"
-        size="large"
-      />
-      <BentoStatCard
-        title="Planned"
-        value={stats.planned}
-        icon={<CalendarOutlined />}
-        color="#6366f1"
-      />
-      <BentoStatCard
-        title="Unplanned"
-        value={stats.unplanned}
-        icon={<ClockCircleOutlined />}
-        color="#f59e0b"
-      />
-      <BentoStatCard
-        title="Completed"
-        value={stats.done}
-        icon={<CheckCircleOutlined />}
-        color="#22c55e"
-      />
-      <BentoStatCard
-        title="MTR Shops"
-        value={stats.mtr}
-        icon={<ThunderboltOutlined />}
-        color="#8b5cf6"
-      />
-      <BentoStatCard
-        title="Regions"
-        value={stats.regions}
-        icon={<CompassOutlined />}
-        color="#ec4899"
-      />
-    </div>
-  );
+  const activeFilterCount = useMemo(() => {
+    return Object.values(filters).filter((v) => v !== "All").length
+      + (searchText.trim() ? 1 : 0)
+      + (dateRange[0] ? 1 : 0);
+  }, [filters, searchText, dateRange]);
 
   // Bento Filter Grid with Accordion
   const renderBentoFilters = () => {
@@ -522,7 +453,7 @@ export const ShopList: React.FC<{
 
     return (
       <Collapse
-        defaultActiveKey={["1"]}
+        defaultActiveKey={[]}
         className="custom-accordion"
         items={[
           {
@@ -535,7 +466,9 @@ export const ShopList: React.FC<{
                   </div>
                   <div>
                     <Text strong className="text-lg text-slate-800">
-                      Advanced Filters
+                      Filters {activeFilterCount > 0 && (
+                        <span className="text-sm font-normal text-teal-600 ml-1">({activeFilterCount} active)</span>
+                      )}
                     </Text>
                     <Text className="text-xs text-slate-400 ml-3">
                       Showing{" "}
@@ -864,6 +797,17 @@ export const ShopList: React.FC<{
           >
             Comprehensive store management with advanced filtering
           </Text>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[12px] text-slate-500">
+            <span><strong className="text-slate-700">{stats.total}</strong> active</span>
+            <span className="text-slate-300">|</span>
+            <span><strong className="text-indigo-600">{stats.planned}</strong> planned</span>
+            <span className="text-slate-300">|</span>
+            <span><strong className="text-amber-500">{stats.unplanned}</strong> unplanned</span>
+            <span className="text-slate-300">|</span>
+            <span><strong className="text-emerald-600">{stats.done}</strong> done</span>
+            <span className="text-slate-300">|</span>
+            <span><strong className="text-violet-600">{stats.mtr}</strong> MTR</span>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <div className="input-group" style={{ position: "relative" }}>
@@ -928,9 +872,6 @@ export const ShopList: React.FC<{
           )}
         </div>
       </div>
-
-      {/* Bento Statistics Grid */}
-      {renderBentoStats()}
 
       {/* Bento Filters Section */}
       {renderBentoFilters()}
@@ -1171,106 +1112,6 @@ export const ShopList: React.FC<{
 
 .new-btn-styled .btn-text {
   white-space: nowrap;
-}
-
-/* Bento Statistics Grid - 12-column layout with varied spans */
-.bento-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: var(--space-md);
-}
-
-.bento-stat-card {
-  background: white;
-  border-radius: 16px;
-  padding: var(--space-lg);
-  border: 1px solid #e2e8f0;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  transition: all 200ms ease;
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
-  grid-column: span 2;
-}
-
-.bento-stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--accent-color, var(--color-cta));
-  opacity: 0;
-  transition: opacity 200ms ease;
-}
-
-.bento-stat-card:hover {
-  transform: scale(1.02);
-  box-shadow: var(--shadow-lg);
-}
-
-.bento-stat-card:hover::before {
-  opacity: 1;
-}
-
-.bento-stat-card:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.bento-large {
-  grid-column: span 3;
-}
-
-.bento-stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--accent-color, var(--color-primary)) 0%, var(--accent-color, var(--color-secondary)) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: white;
-  transition: transform 200ms ease;
-}
-
-.bento-stat-card:hover .bento-stat-icon {
-  transform: scale(1.1);
-}
-
-.bento-stat-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.bento-stat-value {
-  font-family: 'Fira Code', monospace;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1;
-}
-
-.bento-stat-title {
-  font-family: 'Fira Sans', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-top: var(--space-xs);
-}
-
-.bento-stat-subtitle {
-  font-family: 'Fira Sans', sans-serif;
-  font-size: 11px;
-  color: #94a3b8;
-  margin-top: 2px;
 }
 
 /* Bento Filters Section */
@@ -1684,9 +1525,6 @@ export const ShopList: React.FC<{
      ACCESSIBILITY & REDUCED MOTION
      ============================================ */
   @media (prefers-reduced-motion: reduce) {
-    .bento-stat-card,
-    .bento-stat-card::before,
-    .bento-stat-icon,
     .bento-filter-card,
     .bento-filter-icon,
     .bento-filters-icon-wrapper,
@@ -1697,7 +1535,6 @@ export const ShopList: React.FC<{
       transform: none !important;
     }
 
-    .bento-stat-card:hover,
     .bento-filter-card:hover,
     .floating-cta-btn:hover {
       transform: none !important;
@@ -1714,7 +1551,6 @@ export const ShopList: React.FC<{
 
   /* All clickable elements must have cursor:pointer */
   .ant-table-tbody > tr,
-  .bento-stat-card,
   .bento-filter-card,
   button,
   .ant-btn,

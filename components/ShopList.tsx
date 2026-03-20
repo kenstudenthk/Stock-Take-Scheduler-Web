@@ -1,6 +1,6 @@
 // ShopList.tsx - Bento Grid Design
 
-import React, { useState, useMemo, memo } from "react";
+import React, { useState, useMemo, memo, useEffect } from "react";
 import {
   Table,
   Input,
@@ -120,6 +120,17 @@ const BentoFilterCard = memo(
   ),
 );
 
+const SHOPLIST_FILTER_KEY = "shoplist_filters";
+
+const getStoredFilterState = () => {
+  try {
+    const raw = sessionStorage.getItem(SHOPLIST_FILTER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const ShopList: React.FC<{
   shops: Shop[];
   graphToken: string;
@@ -127,27 +138,52 @@ export const ShopList: React.FC<{
   currentUser: User | null;
 }> = ({ shops, graphToken, onRefresh, currentUser }) => {
   // ... 你的狀態設定 (searchText, filters 等) ...
-  const [searchText, setSearchText] = useState("");
-  const [dateRange, setDateRange] = useState<[string | null, string | null]>([
-    null,
-    null,
-  ]);
+  const _stored = getStoredFilterState();
+  const [searchText, setSearchText] = useState<string>(
+    _stored?.searchText ?? "",
+  );
+  const [dateRange, setDateRange] = useState<[string | null, string | null]>(
+    _stored?.dateRange ?? [null, null],
+  );
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const [filters, setFilters] = useState({
-    brand: "All",
-    district: "All",
-    region: "All",
-    area: "All",
-    bu: "All",
-    callStatus: "All",
-    mtr: "All",
-    group: "All",
-    status: "All",
-  });
+  const [filters, setFilters] = useState<{
+    brand: string;
+    district: string;
+    region: string;
+    area: string;
+    bu: string;
+    callStatus: string;
+    mtr: string;
+    group: string;
+    status: string;
+  }>(
+    _stored?.filters ?? {
+      brand: "All",
+      district: "All",
+      region: "All",
+      area: "All",
+      bu: "All",
+      callStatus: "All",
+      mtr: "All",
+      group: "All",
+      status: "All",
+    },
+  );
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SHOPLIST_FILTER_KEY,
+        JSON.stringify({ searchText, dateRange, filters }),
+      );
+    } catch {
+      // sessionStorage not available
+    }
+  }, [searchText, dateRange, filters]);
 
   // 3. ✅ 級聯過濾邏輯 (你寫得很好)
   const options = useMemo(() => {

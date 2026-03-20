@@ -4796,3 +4796,29 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
     font-size: 11px;
   }
 }
+
+/* QW-6: Password field with eye toggle */
+.pw-field-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pw-field-wrapper input {
+  flex: 1;
+  padding-right: 32px;
+}
+.pw-toggle-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 14px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+.pw-toggle-btn:hover {
+  color: #475569;
+}

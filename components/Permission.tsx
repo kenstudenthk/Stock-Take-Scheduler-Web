@@ -12,61 +12,59 @@ import SharePointService from '../services/SharePointService';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// Role Permission Descriptions
+// Role Permission Descriptions — derived from ROLE_PERMISSIONS in types.ts
 const rolePermissions = {
   Admin: {
     title: "Administrator",
-    description: "Full system access with all privileges",
+    description: "Full access: all scheduling, inventory, user, and system operations",
     can: [
-      "Manage all users and permissions",
-      "Create, edit, and delete all content",
-      "Access and modify system settings",
-      "View all reports and analytics",
-      "Configure security settings",
-      "Manage billing and subscriptions"
+      "View dashboard and all shop schedules",
+      "Reschedule shops and move to pool",
+      "Close and re-open shops",
+      "Edit shop master list data",
+      "Generate and reset schedules",
+      "Manage inventory records",
+      "Manage users and permissions",
+      "Access settings and token management"
     ],
     cannot: [
-      "Cannot be deleted if only admin exists",
-      "All actions are logged for audit"
+      "All destructive actions are logged for audit"
     ],
     color: "#ef4444"
   },
   "App Owner": {
     title: "App Owner",
-    description: "Application management with elevated permissions",
+    description: "Elevated access: all scheduling and inventory operations, including user management",
     can: [
-      "Manage application content",
-      "Configure app settings",
-      "View analytics and reports",
-      "Manage user roles (except Admin)",
-      "Access app-specific features",
-      "Upload and manage media"
+      "View dashboard and all shop schedules",
+      "Reschedule shops and move to pool",
+      "Close and re-open shops",
+      "Edit shop master list data",
+      "Generate and reset schedules",
+      "Manage inventory records",
+      "Manage users and permissions",
+      "Access settings and token management"
     ],
     cannot: [
-      "Cannot modify system settings",
-      "Cannot create or delete Admin users",
-      "Cannot access billing information",
-      "Cannot configure security settings"
+      "Role is equivalent to Admin in current permission model"
     ],
     color: "#a855f7"
   },
   User: {
     title: "User",
-    description: "Standard access for regular users",
+    description: "Read-only access: view dashboard and daily schedules only",
     can: [
-      "View assigned content",
-      "Edit own profile",
-      "Comment on posts",
-      "Download available resources",
-      "Submit requests"
+      "View dashboard with today's scheduled shops",
+      "View daily schedules and shop status"
     ],
     cannot: [
-      "Cannot create or delete users",
-      "Cannot modify any settings",
-      "Cannot access admin areas",
-      "Cannot change permissions",
-      "Cannot view other users' data",
-      "Cannot access analytics"
+      "Cannot reschedule or move shops to pool",
+      "Cannot close or re-open shops",
+      "Cannot edit shop master list",
+      "Cannot generate or reset schedules",
+      "Cannot access inventory management",
+      "Cannot manage users or permissions",
+      "Cannot access settings"
     ],
     color: "#3b82f6"
   }
@@ -75,7 +73,7 @@ const rolePermissions = {
 // Tooltip Component for Role Permissions
 const RolePermissionTooltip = ({ role }: { role: UserRole }) => {
   const info = rolePermissions[role];
-  
+
   return (
     <div style={{ maxWidth: '320px', fontFamily: "'Fira Sans', sans-serif" }}>
       <div style={{
@@ -83,23 +81,23 @@ const RolePermissionTooltip = ({ role }: { role: UserRole }) => {
         paddingLeft: '12px',
         marginBottom: '12px'
       }}>
-        <div style={{ 
-          fontWeight: 700, 
-          fontSize: '14px', 
+        <div style={{
+          fontWeight: 700,
+          fontSize: '14px',
           color: '#1e293b',
           marginBottom: '4px'
         }}>
           {info.title}
         </div>
-        <div style={{ 
-          fontSize: '12px', 
+        <div style={{
+          fontSize: '12px',
           color: '#64748b',
           lineHeight: '1.4'
         }}>
           {info.description}
         </div>
       </div>
-      
+
       <div style={{ marginBottom: '12px' }}>
         <div style={{
           fontSize: '11px',
@@ -124,7 +122,7 @@ const RolePermissionTooltip = ({ role }: { role: UserRole }) => {
           ))}
         </ul>
       </div>
-      
+
       <div>
         <div style={{
           fontSize: '11px',
@@ -288,7 +286,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
           <div className="flex flex-col">
             <Text strong className="text-[14px] text-slate-800">{record.Name}</Text>
             <div className="flex items-center gap-1">
-              <Tooltip 
+              <Tooltip
                 title={<RolePermissionTooltip role={record.UserRole || 'User'} />}
                 placement="right"
                 overlayClassName="role-tooltip"
@@ -321,7 +319,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
       title: () => (
         <Space>
           Role
-          <Tooltip 
+          <Tooltip
             title={
               <div style={{ fontFamily: "'Fira Sans', sans-serif", fontSize: '12px' }}>
                 <div style={{ fontWeight: 700, marginBottom: '8px' }}>Role Permissions Guide</div>
@@ -345,7 +343,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
           disabled={updatingId === record.id || record.id === currentUser?.id}
         >
           <Option value="Admin">
-            <Tooltip 
+            <Tooltip
               title={<RolePermissionTooltip role="Admin" />}
               placement="right"
               overlayClassName="role-tooltip"
@@ -357,7 +355,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
             </Tooltip>
           </Option>
           <Option value="App Owner">
-            <Tooltip 
+            <Tooltip
               title={<RolePermissionTooltip role="App Owner" />}
               placement="right"
               overlayClassName="role-tooltip"
@@ -369,7 +367,7 @@ export const Permission: React.FC<PermissionProps> = ({ graphToken, currentUser 
             </Tooltip>
           </Option>
           <Option value="User">
-            <Tooltip 
+            <Tooltip
               title={<RolePermissionTooltip role="User" />}
               placement="right"
               overlayClassName="role-tooltip"

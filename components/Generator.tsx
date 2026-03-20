@@ -28,6 +28,7 @@ import {
   DatePicker,
   Progress,
   Tooltip,
+  Steps,
 } from "antd";
 import {
   ControlOutlined,
@@ -331,89 +332,6 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
 );
 
 // ========================================
-// WIZARD PROGRESS BAR COMPONENT (Vertical Version)
-// ========================================
-interface WizardProgressBarVerticalProps {
-  currentStep: WizardStep;
-}
-
-const WizardProgressBarVertical: React.FC<WizardProgressBarVerticalProps> = ({
-  currentStep,
-}) => {
-  const currentStepIndex = WIZARD_STEPS.findIndex((s) => s.key === currentStep);
-
-  return (
-    <div className="wizard-progress-vertical-container">
-      <div className="wizard-steps-vertical-track">
-        {WIZARD_STEPS.map((step, index) => {
-          const isActive = step.key === currentStep;
-          const isCompleted = index < currentStepIndex;
-          const isPending = index > currentStepIndex;
-
-          return (
-            <React.Fragment key={step.key}>
-              {/* Step Item */}
-              <div
-                className={`wizard-step-vertical ${isActive ? "active" : ""} ${isCompleted ? "completed" : ""} ${isPending ? "pending" : ""}`}
-                style={
-                  {
-                    "--step-color": isCompleted
-                      ? DESIGN_COLORS.step3
-                      : step.color,
-                  } as React.CSSProperties
-                }
-              >
-                <div className="wizard-step-vertical-circle">
-                  {isCompleted ? (
-                    <CheckCircleFilled
-                      style={{ fontSize: 24, color: DESIGN_COLORS.step3 }}
-                    />
-                  ) : (
-                    <div
-                      className="wizard-step-vertical-icon"
-                      style={{
-                        color: isActive ? step.color : DESIGN_COLORS.neutral,
-                      }}
-                    >
-                      {step.icon}
-                    </div>
-                  )}
-                </div>
-                <div className="wizard-step-vertical-content">
-                  <div className="wizard-step-vertical-number">
-                    Step {step.number}
-                  </div>
-                  <div className="wizard-step-vertical-title">{step.title}</div>
-                  <div className="wizard-step-vertical-description">
-                    {step.description}
-                  </div>
-                </div>
-              </div>
-
-              {/* Vertical Connector */}
-              {index < WIZARD_STEPS.length - 1 && (
-                <div className="wizard-connector-vertical">
-                  <div className="wizard-connector-vertical-track"></div>
-                  <div
-                    className="wizard-connector-vertical-fill"
-                    style={{
-                      height: isCompleted ? "100%" : isActive ? "50%" : "0%",
-                      backgroundColor: isCompleted
-                        ? DESIGN_COLORS.step3
-                        : DESIGN_COLORS.step2,
-                    }}
-                  ></div>
-                </div>
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// ========================================
 // MAIN COMPONENT
 // ========================================
 export const Generator: React.FC<{
@@ -537,6 +455,8 @@ export const Generator: React.FC<{
       ),
     [shops],
   );
+
+  const currentStepIndex = WIZARD_STEPS.findIndex((s) => s.key === wizardStep);
 
   // ========================================
   // WIZARD STEP AUTO-UPDATE
@@ -1227,10 +1147,42 @@ export const Generator: React.FC<{
         </Col>
       </Row>
 
+      {/* Horizontal Wizard Stepper */}
+      <div
+        className="mb-6 bg-white rounded-2xl px-6 py-4 shadow-sm"
+        style={{ border: `2px solid ${DESIGN_COLORS.border}` }}
+      >
+        <Steps
+          current={currentStepIndex}
+          items={WIZARD_STEPS.map((step, i) => ({
+            title: step.title,
+            description: step.description,
+            icon:
+              i < currentStepIndex ? (
+                <CheckCircleFilled
+                  style={{ fontSize: 20, color: DESIGN_COLORS.step3 }}
+                />
+              ) : (
+                <span
+                  style={{
+                    color:
+                      i === currentStepIndex
+                        ? step.color
+                        : DESIGN_COLORS.neutral,
+                    fontSize: 18,
+                  }}
+                >
+                  {step.icon}
+                </span>
+              ),
+          }))}
+        />
+      </div>
+
       {/* Main Content: Step 1 (Configure) */}
       <Row gutter={[24, 24]}>
-        {/* Left: Main Content Area (20 cols) */}
-        <Col span={20}>
+        {/* Main Content Area */}
+        <Col span={24}>
           <Row gutter={[24, 24]}>
             {/* Unplanned Pool */}
             <Col span={9}>
@@ -1460,13 +1412,6 @@ export const Generator: React.FC<{
             </Col>
           </Row>
         </Col>
-
-        {/* Right: Vertical Progress Bar (4 cols) */}
-        <Col span={4}>
-          <div className="vertical-wizard-progress">
-            <WizardProgressBarVertical currentStep={wizardStep} />
-          </div>
-        </Col>
       </Row>
 
       {/* Reschedule Pool Section */}
@@ -1673,133 +1618,6 @@ export const Generator: React.FC<{
           background-color: #f8fafc !important;
           border: 1px solid #e2e8f0 !important;
           border-radius: 12px !important;
-        }
-
-        /* Wizard Progress Styles */
-
-        /* Vertical Progress Bar Styles */
-        .wizard-progress-vertical-container {
-          background: white;
-          padding: 24px 16px;
-          border-radius: 24px;
-          border: 2px solid ${DESIGN_COLORS.border};
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-          height: 100%;
-          position: sticky;
-          top: 20px;
-        }
-
-        .wizard-steps-vertical-track {
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-        }
-
-        .wizard-step-vertical {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          transition: all 0.3s ease;
-        }
-
-        .wizard-step-vertical.pending {
-          opacity: 0.5;
-        }
-
-        .wizard-step-vertical-circle {
-          width: 48px;
-          height: 48px;
-          min-width: 48px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: white;
-          border: 3px solid #e2e8f0;
-          transition: all 0.3s ease;
-        }
-
-        .wizard-step-vertical.active .wizard-step-vertical-circle {
-          border-color: var(--step-color);
-          box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
-          transform: scale(1.1);
-        }
-
-        .wizard-step-vertical.completed .wizard-step-vertical-circle {
-          border-color: ${DESIGN_COLORS.step3};
-          background: ${DESIGN_COLORS.step3};
-        }
-
-        .wizard-step-vertical-icon {
-          font-size: 22px;
-        }
-
-        .wizard-step-vertical-content {
-          flex: 1;
-          padding-top: 4px;
-        }
-
-        .wizard-step-vertical-number {
-          font-size: 9px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          color: #94a3b8;
-          margin-bottom: 2px;
-        }
-
-        .wizard-step-vertical.active .wizard-step-vertical-number,
-        .wizard-step-vertical.completed .wizard-step-vertical-number {
-          color: var(--step-color);
-        }
-
-        .wizard-step-vertical-title {
-          font-size: 13px;
-          font-weight: 700;
-          color: #334155;
-          margin-bottom: 2px;
-        }
-
-        .wizard-step-vertical.pending .wizard-step-vertical-title {
-          color: #94a3b8;
-        }
-
-        .wizard-step-vertical-description {
-          font-size: 10px;
-          color: #64748b;
-          line-height: 1.4;
-        }
-
-        .wizard-step-vertical.pending .wizard-step-vertical-description {
-          color: #cbd5e1;
-        }
-
-        .wizard-connector-vertical {
-          width: 48px;
-          height: 40px;
-          position: relative;
-          display: flex;
-          justify-content: center;
-        }
-
-        .wizard-connector-vertical-track {
-          position: absolute;
-          width: 4px;
-          height: 100%;
-          background: #e2e8f0;
-          border-radius: 2px;
-          left: 50%;
-          transform: translateX(-50%);
-        }
-
-        .wizard-connector-vertical-fill {
-          position: absolute;
-          width: 4px;
-          border-radius: 2px;
-          transition: height 0.5s ease;
-          left: 50%;
-          transform: translateX(-50%);
-          top: 0;
         }
 
         /* Unplanned Pool Layout - 2 rows (3 top, 2 bottom) */

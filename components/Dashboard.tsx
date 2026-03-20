@@ -98,11 +98,15 @@ export const Dashboard: React.FC<{
     const closedThisYear = activeShops.filter(
       (s) => s.status === "Closed",
     ).length;
+    const pool = activeShops.filter(
+      (s) => s.status === "Rescheduled" && !s.scheduledDate,
+    ).length;
     return {
       total,
       completed,
       closed: closedThisYear,
       remain: total - completed - closedThisYear,
+      pool,
     };
   }, [activeShops]);
 
@@ -316,6 +320,15 @@ export const Dashboard: React.FC<{
           >
             Manage daily schedule (Active Shops Only).
           </Text>
+          {stats.pool > 0 && (
+            <Tag
+              icon={<SyncOutlined spin />}
+              color="orange"
+              style={{ marginTop: 4, fontFamily: "'Fira Sans', sans-serif" }}
+            >
+              Pool: {stats.pool} shops awaiting reschedule
+            </Tag>
+          )}
         </div>
         <Button
           icon={<PrinterOutlined />}

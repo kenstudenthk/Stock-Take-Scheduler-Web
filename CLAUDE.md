@@ -48,6 +48,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: Locations — Raw window.AMap Access (T3-17)
+- **Date**: 2026-03-20
+- **Problem**: AMap used via `window.AMap` directly — no loading state, no error handling, race condition possible
+- **Root Cause**: AMap injected as static script tag; component guards with `!window.AMap` but no async handling
+- **Fix**: Created `utils/loadAMap.ts` with `loadAMap(): Promise<any>` (polls 50ms, 10s timeout) and `useAMap()` hook; Locations.tsx now uses `const { amap } = useAMap()`
+- **Rule**: ALWAYS use `useAMap()` hook for AMap access; NEVER access `window.AMap` directly in component code
+
 #### ⚠️ Known Issue: ShopList — Hidden Call Tracking Affordance (T3-11)
 - **Date**: 2026-03-20
 - **Problem**: Call tracking trigger was a rotating SVG icon with no label — users couldn't discover it

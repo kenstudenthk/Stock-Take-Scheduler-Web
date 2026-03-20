@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   HomeOutlined,
   EnvironmentOutlined,
@@ -13,6 +13,35 @@ import {
 } from "@ant-design/icons";
 import { View, User, hasAdminAccess } from "../types";
 
+type TokenHealth = "valid" | "warning" | "expired";
+
+const TOKEN_DOT_COLOR: Record<TokenHealth, string> = {
+  valid: "#22c55e",
+  warning: "#f59e0b",
+  expired: "#ef4444",
+};
+
+function useTokenHealth(): TokenHealth {
+  const [health, setHealth] = useState<TokenHealth>("expired");
+
+  useEffect(() => {
+    const check = () => {
+      const token = localStorage.getItem("graphToken");
+      const ts = localStorage.getItem("graphTokenTimestamp");
+      if (!token || !ts) { setHealth("expired"); return; }
+      const minutesLeft = Math.floor((60 * 60 * 1000 - (Date.now() - Number(ts))) / 60000);
+      if (minutesLeft <= 0) setHealth("expired");
+      else if (minutesLeft <= 15) setHealth("warning");
+      else setHealth("valid");
+    };
+    check();
+    const id = setInterval(check, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  return health;
+}
+
 export const Layout: React.FC<any> = ({
   children,
   onLogout,
@@ -22,6 +51,7 @@ export const Layout: React.FC<any> = ({
   onReportError,
 }) => {
   const isAdmin = hasAdminAccess(user as User | null);
+  const tokenHealth = useTokenHealth();
 
   const allMenuItems = [
     {
@@ -73,6 +103,23 @@ export const Layout: React.FC<any> = ({
     (item) => !item.requiresAdmin || isAdmin,
   );
 
+  const tokenDot = (
+    <span
+      style={{
+        display: "inline-block",
+        width: 7,
+        height: 7,
+        borderRadius: "50%",
+        background: TOKEN_DOT_COLOR[tokenHealth],
+        position: "absolute",
+        top: 8,
+        right: 8,
+        boxShadow: `0 0 4px ${TOKEN_DOT_COLOR[tokenHealth]}`,
+      }}
+      aria-label={`Token status: ${tokenHealth}`}
+    />
+  );
+
   return (
     <div className="custom-app-layout">
       <aside className="uiverse-sidebar-wrapper">
@@ -99,11 +146,13 @@ export const Layout: React.FC<any> = ({
             <a
               onClick={() => onViewChange(View.SETTINGS)}
               className={currentView === View.SETTINGS ? "active" : ""}
+              style={{ position: "relative" }}
             >
               <i className="nav-icon-slot">
                 <SettingOutlined />
               </i>
               <span className="nav-label-tooltip">Settings</span>
+              {tokenDot}
             </a>
           </li>
 
@@ -159,8 +208,10 @@ export const Layout: React.FC<any> = ({
             key={item.key}
             className={`mobile-nav-item ${currentView === item.key ? "active" : ""}`}
             onClick={() => onViewChange(item.key)}
+            style={item.key === View.SETTINGS ? { position: "relative" } : undefined}
           >
             {item.icon}
+            {item.key === View.SETTINGS && tokenDot}
             <span>{item.label}</span>
           </button>
         ))}

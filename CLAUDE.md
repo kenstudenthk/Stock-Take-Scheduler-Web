@@ -48,6 +48,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: Layout — Nav Item Order (T2-1)
+- **Date**: 2026-03-20
+- **Problem**: Calendar, Generator, Dashboard were scattered in nav with no visual grouping
+- **Root Cause**: Items added in creation order, not by functional relationship
+- **Fix**: Reordered to Dashboard→Calendar→Generator (schedule group) with thin separator, then Master List→Map View, then admin items. Three-group rendering with `isAdmin` guard.
+- **Rule**: Nav order in Layout.tsx: [Dashboard, Calendar, Generator] | [ShopList, Locations] | [Inventory, Permission]
+
 #### ⚠️ Known Issue: Locations — Raw window.AMap Access (T3-17)
 - **Date**: 2026-03-20
 - **Problem**: AMap used via `window.AMap` directly — no loading state, no error handling, race condition possible

@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import { Shop } from '../types';
 import { wgs84ToGcj02 } from '../utils/coordTransform';
 import { MobileMapView } from './MobileMapView';
+import { useAMap } from '../utils/loadAMap';
 
 const { Title, Text } = Typography;
 
@@ -130,6 +131,7 @@ const useIsMobile = (breakpoint: number = 640) => {
 // --- Main component ---
 export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
   const isMobile = useIsMobile();
+  const { amap } = useAMap();
   const mapRef = useRef<any>(null);
   const infoWindowRef = useRef<any>(null);
   const markersRef = useRef<{ [key: string]: any }>({});
@@ -236,20 +238,20 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
 
   // --- Map init (desktop only) ---
   useEffect(() => {
-    if (isMobile || !window.AMap || mapRef.current) return;
+    if (isMobile || !amap || mapRef.current) return;
 
-    mapRef.current = new window.AMap.Map('map-container', {
+    mapRef.current = new amap.Map('map-container', {
       center: [114.177216, 22.303719],
       zoom: 11,
     });
 
-    window.AMap.plugin(['AMap.ToolBar', 'AMap.Scale'], () => {
-      mapRef.current.addControl(new window.AMap.ToolBar({ position: 'RB', offset: new window.AMap.Pixel(20, 40) }));
-      mapRef.current.addControl(new window.AMap.Scale());
+    amap.plugin(['AMap.ToolBar', 'AMap.Scale'], () => {
+      mapRef.current.addControl(new amap.ToolBar({ position: 'RB', offset: new amap.Pixel(20, 40) }));
+      mapRef.current.addControl(new amap.Scale());
     });
 
-    infoWindowRef.current = new window.AMap.InfoWindow({ offset: new window.AMap.Pixel(0, -20) });
-  }, [isMobile]);
+    infoWindowRef.current = new amap.InfoWindow({ offset: new amap.Pixel(0, -20) });
+  }, [isMobile, amap]);
 
   // --- Shop click → smooth pan ---
   const handleShopClick = useCallback((shop: Shop) => {
@@ -324,7 +326,7 @@ export const Locations: React.FC<{ shops: Shop[] }> = ({ shops }) => {
           </div>
         `;
 
-        const marker = new window.AMap.Marker({
+        const marker = new amap.Marker({
           position: [lng, lat],
           content: markerContent,
         });

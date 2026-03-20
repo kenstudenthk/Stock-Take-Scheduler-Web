@@ -4780,3 +4780,19 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
     display: none;
   }
 }
+
+/* QW-11: Group switcher — extra-small screens (≤380px) */
+@media (max-width: 380px) {
+  .customCheckBoxHolder {
+    gap: 0;
+  }
+  .customCheckBox {
+    height: 30px;
+    padding: 2px 4px;
+    font-size: 11px;
+    min-width: 0;
+  }
+  .customCheckBox .inner {
+    font-size: 11px;
+  }
+}

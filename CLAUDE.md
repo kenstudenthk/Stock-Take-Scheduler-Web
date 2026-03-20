@@ -48,6 +48,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: ShopList — Hidden Call Tracking Affordance (T3-11)
+- **Date**: 2026-03-20
+- **Problem**: Call tracking trigger was a rotating SVG icon with no label — users couldn't discover it
+- **Root Cause**: Decorative icon with `title="Log Call"` but no visible text
+- **Fix**: Replaced with Ant Design `Button` with `PhoneOutlined` icon and status-aware label ("Called"/"No Answer"/"Log Call") + color-coded border
+- **Rule**: NEVER use icon-only buttons for non-obvious features; always include a text label
+
 #### ⚠️ Known Issue: App — Dark Mode First Load (T3-16)
 - **Date**: 2026-03-20
 - **Problem**: Dark mode initialized from localStorage only; first-time visitors always got light mode

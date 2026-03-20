@@ -10,7 +10,9 @@ import {
   ThunderboltOutlined,
   BugOutlined,
   TeamOutlined,
+  AppstoreOutlined,
 } from "@ant-design/icons";
+import { Popover } from "antd";
 import { View, User, hasAdminAccess } from "../types";
 
 type TokenHealth = "valid" | "warning" | "expired";
@@ -52,6 +54,7 @@ export const Layout: React.FC<any> = ({
 }) => {
   const isAdmin = hasAdminAccess(user as User | null);
   const tokenHealth = useTokenHealth();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const allMenuItems = [
     {
@@ -194,27 +197,89 @@ export const Layout: React.FC<any> = ({
       {/* Mobile Bottom Navigation - Hidden by default via CSS, shown only on mobile */}
       <nav className="mobile-bottom-nav">
         {[
-          ...menuItems.filter((i) =>
-            [
-              View.DASHBOARD,
-              View.SHOP_LIST,
-              View.CALENDAR,
-              View.LOCATIONS,
-            ].includes(i.key),
-          ),
-          { key: View.SETTINGS, label: "Settings", icon: <SettingOutlined /> },
-        ].map((item) => (
-          <button
-            key={item.key}
-            className={`mobile-nav-item ${currentView === item.key ? "active" : ""}`}
-            onClick={() => onViewChange(item.key)}
-            style={item.key === View.SETTINGS ? { position: "relative" } : undefined}
+          View.DASHBOARD,
+          View.SHOP_LIST,
+          View.CALENDAR,
+          View.LOCATIONS,
+        ].map((viewKey) => {
+          const item = menuItems.find((i) => i.key === viewKey);
+          if (!item) return null;
+          return (
+            <button
+              key={item.key}
+              className={`mobile-nav-item ${currentView === item.key ? "active" : ""}`}
+              onClick={() => onViewChange(item.key)}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+
+        {isAdmin ? (
+          <Popover
+            open={moreOpen}
+            onOpenChange={setMoreOpen}
+            placement="topRight"
+            trigger="click"
+            content={
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 140 }}>
+                {[
+                  { key: View.GENERATOR, label: "Generator", icon: <ThunderboltOutlined /> },
+                  { key: View.INVENTORY, label: "Inventory", icon: <DatabaseOutlined /> },
+                  { key: View.PERMISSION, label: "Permission", icon: <TeamOutlined /> },
+                  { key: View.SETTINGS, label: "Settings", icon: <SettingOutlined /> },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 12px",
+                      border: "none",
+                      background: currentView === item.key ? "#f0fdfa" : "transparent",
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      color: currentView === item.key ? "#0d9488" : "#334155",
+                      fontWeight: currentView === item.key ? 700 : 500,
+                      fontSize: 13,
+                      width: "100%",
+                      textAlign: "left",
+                    }}
+                    onClick={() => {
+                      onViewChange(item.key);
+                      setMoreOpen(false);
+                    }}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                    {item.key === View.SETTINGS && tokenDot}
+                  </button>
+                ))}
+              </div>
+            }
           >
-            {item.icon}
-            {item.key === View.SETTINGS && tokenDot}
-            <span>{item.label}</span>
+            <button
+              className={`mobile-nav-item ${[View.GENERATOR, View.INVENTORY, View.PERMISSION, View.SETTINGS].includes(currentView) ? "active" : ""}`}
+              style={{ position: "relative" }}
+            >
+              <AppstoreOutlined />
+              <span>More</span>
+              {[View.SETTINGS].includes(currentView) && tokenDot}
+            </button>
+          </Popover>
+        ) : (
+          <button
+            className={`mobile-nav-item ${currentView === View.SETTINGS ? "active" : ""}`}
+            onClick={() => onViewChange(View.SETTINGS)}
+            style={{ position: "relative" }}
+          >
+            <SettingOutlined />
+            {tokenDot}
+            <span>Settings</span>
           </button>
-        ))}
+        )}
       </nav>
     </div>
   );

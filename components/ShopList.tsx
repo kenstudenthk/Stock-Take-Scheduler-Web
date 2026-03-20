@@ -334,7 +334,7 @@ export const ShopList: React.FC<{
                 Authorization: `Bearer ${graphToken}`,
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ [SP_FIELDS.STATUS]: "CLOSED" }),
+              body: JSON.stringify({ [SP_FIELDS.STATUS]: "Closed" }),
             },
           );
           if (res.ok) {
@@ -1387,7 +1387,7 @@ export const ShopList: React.FC<{
   }
 
   .st-master-table .ant-table {
-    font-size: 13px !important; 
+    font-size: 13px !important;
   }
 
   /* ✅ 修正 2：極致壓縮表格行高 */
@@ -1533,7 +1533,7 @@ export const ShopList: React.FC<{
     border: 1px solid #f1f5f9 !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     /* ✅ 加深陰影 (Darker Shadow) */
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.12) !important; 
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.12) !important;
     margin-bottom: 0px !important; /* ❗ 移除間隙，解決紅線問題 */
     position: relative;
     z-index: 2; /* 確保 Header 蓋在 Content 上方 */

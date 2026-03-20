@@ -48,6 +48,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Corrected field path to `segment.transit.steps` and detection to `transit_mode === 'WALK'`
 - **Rule**: ALWAYS check AMap API response shape in browser devtools before accessing nested fields; do NOT assume field names match documentation
 
+#### ⚠️ Known Issue: Generator — Vertical Wizard Sidebar (T2-7)
+- **Date**: 2026-03-20
+- **Problem**: Vertical sidebar wizard progress (Col span=4) competed with app sidebar, narrowing config area
+- **Root Cause**: `WizardProgressBarVertical` component rendered in its own right-column
+- **Fix**: Removed vertical sidebar entirely. Added Ant Design `Steps` horizontal stepper above the content area. Main content expanded to full 24 cols.
+- **Rule**: NEVER add a vertical wizard sidebar — use horizontal stepper (Ant Design Steps) at top of content
+
 #### ⚠️ Known Issue: Generator Wizard — Step 1 Color Was Red (T2-5)
 - **Date**: 2026-03-20
 - **Problem**: Step 1 Configure used red (#EF4444) — a danger/error signal — causing user hesitation

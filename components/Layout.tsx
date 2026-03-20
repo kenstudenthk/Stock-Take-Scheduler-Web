@@ -64,12 +64,6 @@ export const Layout: React.FC<any> = ({
       requiresAdmin: false,
     },
     {
-      key: View.SHOP_LIST,
-      label: "Master List",
-      icon: <DatabaseOutlined />,
-      requiresAdmin: false,
-    },
-    {
       key: View.CALENDAR,
       label: "Schedules",
       icon: <CalendarOutlined />,
@@ -80,6 +74,12 @@ export const Layout: React.FC<any> = ({
       label: "Generator",
       icon: <ThunderboltOutlined />,
       requiresAdmin: true,
+    },
+    {
+      key: View.SHOP_LIST,
+      label: "Master List",
+      icon: <DatabaseOutlined />,
+      requiresAdmin: false,
     },
     {
       key: View.LOCATIONS,
@@ -131,19 +131,59 @@ export const Layout: React.FC<any> = ({
 
         {/* ✅ 2. 獨立選單條：負責垂直置中 */}
         <ul className="uiverse-nav-ul">
-          {menuItems.map((item) => (
-            <li key={item.key}>
-              <a
-                onClick={() => onViewChange(item.key)}
-                className={currentView === item.key ? "active" : ""}
-              >
-                {/* ❗ 這裡就是紅圈位置 (圖標) */}
-                <i className="nav-icon-slot">{item.icon}</i>
-                {/* ❗ 這裡就是紅框位置 (文字)，CSS 會將其移至右側避免重疊 */}
-                <span className="nav-label-tooltip">{item.label}</span>
-              </a>
-            </li>
-          ))}
+          {/* Schedule group: Dashboard, Schedules, Generator */}
+          {menuItems
+            .filter((item) =>
+              [View.DASHBOARD, View.CALENDAR, View.GENERATOR].includes(item.key)
+            )
+            .map((item) => (
+              <li key={item.key}>
+                <a
+                  onClick={() => onViewChange(item.key)}
+                  className={currentView === item.key ? "active" : ""}
+                >
+                  <i className="nav-icon-slot">{item.icon}</i>
+                  <span className="nav-label-tooltip">{item.label}</span>
+                </a>
+              </li>
+            ))}
+
+          {/* Separator between schedule and data groups */}
+          <li className="nav-group-sep" aria-hidden="true" style={{ margin: '4px 12px', borderTop: '1px solid rgba(255,255,255,0.1)', padding: 0, height: 0 }} />
+
+          {/* Data group: Master List, Map View */}
+          {menuItems
+            .filter((item) =>
+              [View.SHOP_LIST, View.LOCATIONS].includes(item.key)
+            )
+            .map((item) => (
+              <li key={item.key}>
+                <a
+                  onClick={() => onViewChange(item.key)}
+                  className={currentView === item.key ? "active" : ""}
+                >
+                  <i className="nav-icon-slot">{item.icon}</i>
+                  <span className="nav-label-tooltip">{item.label}</span>
+                </a>
+              </li>
+            ))}
+
+          {/* Admin group: Inventory, Permission */}
+          {isAdmin && menuItems
+            .filter((item) =>
+              [View.INVENTORY, View.PERMISSION].includes(item.key)
+            )
+            .map((item) => (
+              <li key={item.key}>
+                <a
+                  onClick={() => onViewChange(item.key)}
+                  className={currentView === item.key ? "active" : ""}
+                >
+                  <i className="nav-icon-slot">{item.icon}</i>
+                  <span className="nav-label-tooltip">{item.label}</span>
+                </a>
+              </li>
+            ))}
 
           <li className="nav-item-sep">
             <a

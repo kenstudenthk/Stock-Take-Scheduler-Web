@@ -287,6 +287,18 @@ export const Dashboard: React.FC<{
       .sort((a, b) => (a.groupId || 0) - (b.groupId || 0)); // 👈 這裡實施按組別排序
   }, [activeShops, selectedDate, groupFilter]);
 
+  const dateStats = useMemo(() => {
+    const dayShops = activeShops.filter(
+      (s) => dayjs(s.scheduledDate).format("YYYY-MM-DD") === selectedDate,
+    );
+    return {
+      total: dayShops.length,
+      a: dayShops.filter((s) => s.groupId === 1).length,
+      b: dayShops.filter((s) => s.groupId === 2).length,
+      c: dayShops.filter((s) => s.groupId === 3).length,
+    };
+  }, [activeShops, selectedDate]);
+
   return (
     <div className="flex flex-col gap-8 pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0">
@@ -420,6 +432,20 @@ export const Dashboard: React.FC<{
             ))}
           </div>
         </div>
+
+        {/* T3-6: Date-contextual micro-stats */}
+        {dateStats.total > 0 && (
+          <div className="px-8 py-2 flex items-center gap-3 border-b border-slate-50 text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
+            <span>{selectedDate} —</span>
+            <span>{dateStats.total} shops</span>
+            <span className="text-slate-200">·</span>
+            <span style={{ color: "#0369a1" }}>A: {dateStats.a}</span>
+            <span className="text-slate-200">·</span>
+            <span style={{ color: "#7e22ce" }}>B: {dateStats.b}</span>
+            <span className="text-slate-200">·</span>
+            <span style={{ color: "#c2410c" }}>C: {dateStats.c}</span>
+          </div>
+        )}
 
         <div className="p-4 flex flex-col gap-2">
           {filteredShops.length === 0 ? (

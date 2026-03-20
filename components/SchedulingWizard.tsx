@@ -750,6 +750,10 @@ export const SchedulingWizard: React.FC<SchedulingWizardProps> = ({
                       <div className="relative z-10 text-2xl font-black text-slate-800">
                         {reg.count}
                       </div>
+                      <div className="relative z-10 flex items-center justify-between mt-1">
+                        <span className="text-[10px] text-slate-400">unplanned</span>
+                        <span className="text-[10px] font-semibold text-teal-600">{reg.plannedPct}% done</span>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -35,6 +35,9 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showOldPassword, setShowOldPassword] = useState(false);
 
+  // --- Email validation state ---
+  const [emailError, setEmailError] = useState<string>("");
+
   // 檢查 SharePoint 連線狀態
   useEffect(() => {
     const checkConnection = async () => {
@@ -56,6 +59,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
     setShowPassword(false);
     setShowConfirmPassword(false);
     setShowOldPassword(false);
+    setEmailError('');
   };
 
   const handleModeSwitch = (e: React.MouseEvent, targetMode: Mode) => {
@@ -246,7 +250,23 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
         <div className="form-content-area">
           <div className="field-group">
             <label className="field-label">Alias Email</label>
-            <input type="text" placeholder="kilson.km.li@pccw.com" value={aliasemail} onChange={e => setAliasemail(e.target.value)} autoComplete="username" />
+            <input
+              type="text"
+              placeholder="kilson.km.li@pccw.com"
+              value={aliasemail}
+              onChange={e => setAliasemail(e.target.value)}
+              onBlur={() => {
+                if (aliasemail && !aliasemail.endsWith('@pccw.com')) {
+                  setEmailError('Email must end with @pccw.com');
+                } else {
+                  setEmailError('');
+                }
+              }}
+              autoComplete="username"
+            />
+            {emailError && (
+              <span className="text-[10px] text-red-500 mt-0.5 block">{emailError}</span>
+            )}
           </div>
 
           {mode === 'change' && (
@@ -330,7 +350,23 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, sharePointService,
               <div className="form-content-area">
                 <div className="field-group">
                   <label className="field-label">Alias Email</label>
-                  <input type="text" placeholder="kilson.km.li@pccw.com" value={aliasemail} onChange={e => setAliasemail(e.target.value)} autoComplete="username" />
+                  <input
+                    type="text"
+                    placeholder="kilson.km.li@pccw.com"
+                    value={aliasemail}
+                    onChange={e => setAliasemail(e.target.value)}
+                    onBlur={() => {
+                      if (aliasemail && !aliasemail.endsWith('@pccw.com')) {
+                        setEmailError('Email must end with @pccw.com');
+                      } else {
+                        setEmailError('');
+                      }
+                    }}
+                    autoComplete="username"
+                  />
+                  {emailError && (
+                    <span className="text-[10px] text-red-500 mt-0.5 block">{emailError}</span>
+                  )}
                 </div>
                 <div className="field-group">
                   <label className="field-label">Password</label>

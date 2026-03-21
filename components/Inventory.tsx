@@ -41,10 +41,11 @@ const { Option } = Select;
 interface Props {
   token: string;
   shops: Shop[];
+  data: InventoryItem[];
+  onRefresh: () => void;
 }
 
-export const Inventory = ({ token, shops }: Props) => {
-  const [data, setData] = useState<InventoryItem[]>([]);
+export const Inventory = ({ token, shops, data, onRefresh }: Props) => {
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
@@ -63,51 +64,10 @@ export const Inventory = ({ token, shops }: Props) => {
   });
 
   const fetchInventory = async () => {
-    if (!token) return;
     setLoading(true);
-    try {
-      const url = `${API_URLS.inventoryList}/items?$expand=fields($select=*)&$top=999`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json();
-
-      if (json.value) {
-        const mapped = json.value.map((item: any) => {
-          const f = item.fields || {};
-          return {
-            id: item.id,
-            shopCode: f[INV_FIELDS.SHOP_CODE] || "",
-            businessUnit: f[INV_FIELDS.BUSINESS_UNIT] || "",
-            shopBrand: f[INV_FIELDS.SHOP_BRAND] || "",
-            shopName: f[INV_FIELDS.SHOP_NAME] || "",
-            productTypeEng: f[INV_FIELDS.PRODUCT_TYPE_ENG] || "",
-            productTypeChi: f[INV_FIELDS.PRODUCT_TYPE_CHI] || "",
-            stockTakeStatus: f[INV_FIELDS.STOCK_TAKE_STATUS] || "Unverified",
-            assetItemId: f[INV_FIELDS.ASSET_ITEM_ID] || "",
-            brand: f[INV_FIELDS.BRAND] || "",
-            assetName: f[INV_FIELDS.ASSET_NAME] || "",
-            cmdb: f[INV_FIELDS.CMDB] || "",
-            serialNo: f[INV_FIELDS.SERIAL_NO] || "",
-            ipAddress: f[INV_FIELDS.IP_ADDRESS] || "",
-            inUseStatus: f[INV_FIELDS.IN_USE_STATUS] || "N/A",
-            remarks: f[INV_FIELDS.REMARKS] || "",
-            wToW: f[INV_FIELDS.W_TO_W] || "",
-            createdBy: f[INV_FIELDS.CREATED_BY] || "",
-            recordTimeAlt: f[INV_FIELDS.RECORD_TIME_ALT] || "",
-          };
-        });
-        setData(mapped);
-      }
-    } catch (err) {
-      message.error("Sync Failed");
-    }
+    await onRefresh();
     setLoading(false);
   };
-
-  useEffect(() => {
-    fetchInventory();
-  }, [token]);
 
   // 智慧商店選擇聯動
   const handleShopSelect = (value: string) => {
@@ -517,12 +477,33 @@ export const Inventory = ({ token, shops }: Props) => {
                 >
                   <PictureOutlined /> Asset Photo
                 </Text>
-                <div className="photo-placeholder">
-                  <PictureOutlined style={{ fontSize: "32px" }} />
-                  <span className="text-[10px] font-bold mt-2 uppercase">
-                    Coming Soon
-                  </span>
-                </div>
+                {selectedItem.productImage || selectedItem.productImage2 ? (
+                  <div className="flex flex-col gap-2">
+                    {selectedItem.productImage && (
+                      <img
+                        src={selectedItem.productImage}
+                        alt="Product Photo 1"
+                        className="w-full rounded-xl border border-slate-200 object-cover"
+                        style={{ maxHeight: 160 }}
+                      />
+                    )}
+                    {selectedItem.productImage2 && (
+                      <img
+                        src={selectedItem.productImage2}
+                        alt="Product Photo 2"
+                        className="w-full rounded-xl border border-slate-200 object-cover"
+                        style={{ maxHeight: 160 }}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="photo-placeholder">
+                    <PictureOutlined style={{ fontSize: "32px" }} />
+                    <span className="text-[10px] font-bold mt-2 uppercase">
+                      No Photo
+                    </span>
+                  </div>
+                )}
                 <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
                   <Text
                     strong

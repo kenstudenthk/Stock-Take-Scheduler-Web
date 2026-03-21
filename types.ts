@@ -175,5 +175,7 @@ export interface InventoryItem {
   remarks: string;
   wToW: string;
   uploadPhoto?: string;
+  productImage?: string;
+  productImage2?: string;
   createdBy: string;
 }

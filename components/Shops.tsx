@@ -3,7 +3,7 @@ import { Segmented } from "antd";
 import { TableOutlined, EnvironmentOutlined } from "@ant-design/icons";
 import { ShopList } from "./ShopList";
 import { Locations } from "./Locations";
-import { Shop, User } from "../types";
+import { Shop, User, InventoryItem } from "../types";
 
 type ShopsView = "table" | "map";
 
@@ -12,6 +12,7 @@ interface ShopsProps {
   graphToken: string;
   onRefresh: () => void;
   currentUser: User | null;
+  allInventory: InventoryItem[];
 }
 
 /**
@@ -23,6 +24,7 @@ export const Shops: React.FC<ShopsProps> = ({
   graphToken,
   onRefresh,
   currentUser,
+  allInventory,
 }) => {
   const [activeView, setActiveView] = useState<ShopsView>(() => {
     return (sessionStorage.getItem("shops-view") as ShopsView) ?? "table";
@@ -63,6 +65,7 @@ export const Shops: React.FC<ShopsProps> = ({
             graphToken={graphToken}
             onRefresh={onRefresh}
             currentUser={currentUser}
+            allInventory={allInventory}
           />
         ) : (
           <Locations shops={shops} />

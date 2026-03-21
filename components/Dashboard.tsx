@@ -24,10 +24,11 @@ import {
   SyncOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { Shop, User, hasPermission } from "../types";
+import { Shop, User, hasPermission, InventoryItem } from "../types";
 import { SP_FIELDS } from "../constants";
 import { isHoliday } from "../constants/holidays";
 import StatCard from "./StatCard";
+import { ShopDetailModal } from "./ShopDetailModal";
 
 const { Text, Title } = Typography;
 const { confirm } = Modal;
@@ -38,11 +39,20 @@ export const Dashboard: React.FC<{
   graphToken: string;
   onRefresh: () => void;
   currentUser: User | null;
-}> = ({ shops, onUpdateShop, graphToken, onRefresh, currentUser }) => {
+  allInventory: InventoryItem[];
+}> = ({
+  shops,
+  onUpdateShop,
+  graphToken,
+  onRefresh,
+  currentUser,
+  allInventory,
+}) => {
   const [selectedDate, setSelectedDate] = useState<string>(
     dayjs().format("YYYY-MM-DD"),
   );
   const [groupFilter, setGroupFilter] = useState<number | "all">("all");
+  const [detailShop, setDetailShop] = useState<Shop | null>(null);
 
   const [isReschedOpen, setIsReschedOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
@@ -451,7 +461,8 @@ export const Dashboard: React.FC<{
                     />
                     <div className="flex flex-col min-w-0">
                       <h4
-                        className={`m-0 font-bold text-slate-800 text-[15px] truncate ${isClosed ? "line-through decoration-red-500" : ""}`}
+                        className={`m-0 font-bold text-[15px] truncate cursor-pointer hover:text-teal-600 transition-colors ${isClosed ? "line-through decoration-red-500 text-slate-400" : "text-slate-800"}`}
+                        onClick={() => setDetailShop(shop)}
                       >
                         {shop.name}
                       </h4>
@@ -657,6 +668,19 @@ export const Dashboard: React.FC<{
           )}
         </div>
       </Modal>
+      <ShopDetailModal
+        visible={!!detailShop}
+        shop={detailShop}
+        onCancel={() => setDetailShop(null)}
+        graphToken={graphToken}
+        shops={shops}
+        currentUser={currentUser}
+        allInventory={allInventory}
+        onRefreshShop={() => {
+          setDetailShop(null);
+          onRefresh();
+        }}
+      />
     </div>
   );
 };

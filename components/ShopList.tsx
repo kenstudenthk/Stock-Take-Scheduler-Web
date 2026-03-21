@@ -37,15 +37,15 @@ import {
   CompassOutlined,
   TeamOutlined,
   ThunderboltOutlined,
-  EditOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
-import { Shop, View, User, hasPermission } from "../types";
+import { Shop, User, hasPermission, InventoryItem } from "../types";
 import { ShopFormModal } from "./ShopFormModal";
+import { ShopDetailModal } from "./ShopDetailModal";
 import { SP_FIELDS } from "../constants";
 
 const { Title, Text } = Typography;
@@ -106,7 +106,8 @@ export const ShopList: React.FC<{
   graphToken: string;
   onRefresh: () => void;
   currentUser: User | null;
-}> = ({ shops, graphToken, onRefresh, currentUser }) => {
+  allInventory: InventoryItem[];
+}> = ({ shops, graphToken, onRefresh, currentUser, allInventory }) => {
   // ... 你的狀態設定 (searchText, filters 等) ...
   const _stored = getStoredFilterState();
   const [searchText, setSearchText] = useState<string>(
@@ -115,9 +116,10 @@ export const ShopList: React.FC<{
   const [dateRange, setDateRange] = useState<[string | null, string | null]>(
     _stored?.dateRange ?? [null, null],
   );
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [targetShop, setTargetShop] = useState<Shop | null>(null);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [inventoryShop, setInventoryShop] = useState<Shop | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<{
@@ -325,35 +327,6 @@ export const ShopList: React.FC<{
     }
   };
 
-  const handleCloseAction = (shop: Shop) => {
-    confirm({
-      title: "Confirm Closing Shop",
-      icon: <ExclamationCircleOutlined style={{ color: "#ff4d4f" }} />,
-      content: `Are you sure you want to set ${shop.name} to CLOSED?`,
-      onOk: async () => {
-        try {
-          const res = await fetch(
-            `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
-            {
-              method: "PATCH",
-              headers: {
-                Authorization: `Bearer ${graphToken}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ [SP_FIELDS.STATUS]: "Closed" }),
-            },
-          );
-          if (res.ok) {
-            message.success("Shop status updated successfully.");
-            onRefresh();
-          }
-        } catch (err) {
-          message.error("Update failed");
-        }
-      },
-    });
-  };
-
   // Statistics calculations
   const stats = useMemo(() => {
     const active = shops.filter((s) => s.masterStatus !== "Closed");
@@ -523,10 +496,14 @@ export const ShopList: React.FC<{
             </div>
           )}
           <div className="flex flex-col min-w-0">
-            {/* ✅ 文字變大：使用 text-[14px] 或 15px */}
             <Text
               strong
-              className={`text-[14px] block truncate ${record.status?.toLowerCase() === "closed" ? "line-through opacity-50" : "text-slate-800"}`}
+              className={`text-[14px] block truncate cursor-pointer transition-colors ${record.status?.toLowerCase() === "closed" ? "line-through opacity-50" : "text-teal-700 hover:text-teal-500 hover:underline"}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setInventoryShop(record);
+                setInventoryOpen(true);
+              }}
             >
               {record.name}
             </Text>
@@ -653,16 +630,18 @@ export const ShopList: React.FC<{
                 size="small"
                 icon={<PhoneOutlined />}
                 style={{
-                  borderColor: record.callStatus === "Called"
-                    ? "#22c55e"
-                    : record.callStatus === "No Answer"
-                    ? "#f59e0b"
-                    : "#e2e8f0",
-                  color: record.callStatus === "Called"
-                    ? "#22c55e"
-                    : record.callStatus === "No Answer"
-                    ? "#f59e0b"
-                    : "#64748b",
+                  borderColor:
+                    record.callStatus === "Called"
+                      ? "#22c55e"
+                      : record.callStatus === "No Answer"
+                        ? "#f59e0b"
+                        : "#e2e8f0",
+                  color:
+                    record.callStatus === "Called"
+                      ? "#22c55e"
+                      : record.callStatus === "No Answer"
+                        ? "#f59e0b"
+                        : "#64748b",
                   borderRadius: 8,
                   fontSize: 11,
                   fontWeight: 600,
@@ -671,8 +650,8 @@ export const ShopList: React.FC<{
                 {record.callStatus === "Called"
                   ? "Called"
                   : record.callStatus === "No Answer"
-                  ? "No Answer"
-                  : "Log Call"}
+                    ? "No Answer"
+                    : "Log Call"}
               </Button>
             </Popover>
           </div>
@@ -725,76 +704,6 @@ export const ShopList: React.FC<{
           >
             {status}
           </Tag>
-        );
-      },
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      align: "left" as const,
-      width: "12%",
-      render: (_: any, record: Shop) => {
-        const hasActions =
-          hasPermission(currentUser, "close_shop") ||
-          hasPermission(currentUser, "edit_shop");
-        if (!hasActions) return null;
-        if (selectedRowId === record.id) {
-          return (
-            <div
-              className="flex justify-end gap-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close button - only visible for Admin/App Owner */}
-              {hasPermission(currentUser, "close_shop") && (
-                <button
-                  className="Btn close-btn-styled scale-75 origin-right"
-                  disabled={record.status?.toLowerCase() === "closed"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloseAction(record);
-                  }}
-                >
-                  <div className="sign">
-                    <svg viewBox="0 0 24 24" className="w-4 h-4">
-                      <path
-                        fill="white"
-                        d="M 20 10 L 20 12 L 22 12 L 22 10 L 23 10 C 23.328 10.000 23.636 9.839 23.823 9.570 C 24.010 9.300 24.053 8.955 23.937 8.648 L 20.937 0.648 C 20.790 0.258 20.417 -0.000 20 0 L 4 0 C 3.583 -0.000 3.210 0.258 3.063 0.648 L 0.063 8.648 C -0.053 8.955 -0.010 9.300 0.177 9.570 C 0.364 9.839 0.672 10.000 1 10 L 2 10 L 2 12 L 4 12 L 4 10 z M 11 2 L 11 8 L 7.28 8 L 8.78 2 z M 15.22 2 L 16.72 8 L 13 8 L 13 2 z M 21.557 8 L 18.78 8 L 17.28 2 L 19.307 2 z M 4.693 2 L 6.72 2 L 5.22 8 L 2.443 8 z M 2 23 C 2 23.552 2.448 24 3 24 L 21 24 C 21.552 24 22 23.552 22 23 L 22 22 L 2 22 z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="btn-text text-[12px]">Close</div>
-                </button>
-              )}
-
-              {/* Edit button - only visible for Admin/App Owner */}
-              {hasPermission(currentUser, "edit_shop") && (
-                <button
-                  className="Btn edit-btn-styled scale-75 origin-right"
-                  disabled={record.status?.toLowerCase() === "closed"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTargetShop(record);
-                    setFormOpen(true);
-                  }}
-                >
-                  <div className="sign">
-                    <svg viewBox="0 0 512 512" className="w-4 h-4">
-                      <path
-                        fill="white"
-                        d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="btn-text text-[12px]">Edit</div>
-                </button>
-              )}
-            </div>
-          );
-        }
-        return (
-          <div className="row-edit-hint flex justify-end">
-            <EditOutlined style={{ fontSize: 13, color: "#94a3b8" }} />
-          </div>
         );
       },
     },
@@ -973,16 +882,12 @@ export const ShopList: React.FC<{
                   showTotal: (total) => `Total ${total} shops`,
                 }}
                 onRow={(record) => ({
-                  onClick: () =>
-                    setSelectedRowId(
-                      record.id === selectedRowId ? null : record.id,
-                    ),
+                  onClick: () => {
+                    setInventoryShop(record);
+                    setInventoryOpen(true);
+                  },
                 })}
-                rowClassName={(record) =>
-                  record.id === selectedRowId
-                    ? "selected-row cursor-pointer"
-                    : "cursor-pointer"
-                }
+                rowClassName={() => "cursor-pointer hover:bg-teal-50"}
               />
             </div>
           </div>
@@ -999,6 +904,21 @@ export const ShopList: React.FC<{
         }}
         graphToken={graphToken}
         shops={shops}
+        currentUser={currentUser}
+      />
+
+      <ShopDetailModal
+        visible={inventoryOpen}
+        shop={inventoryShop}
+        onCancel={() => setInventoryOpen(false)}
+        graphToken={graphToken}
+        shops={shops}
+        currentUser={currentUser}
+        allInventory={allInventory}
+        onRefreshShop={() => {
+          setInventoryOpen(false);
+          onRefresh();
+        }}
       />
 
       {/* Floating Sticky CTA - only visible for Admin/App Owner */}
@@ -1427,6 +1347,58 @@ export const ShopList: React.FC<{
 
   .edit-btn-styled .sign svg path {
     fill: var(--color-primary);
+  }
+
+  /* Enhanced action buttons for row actions */
+  .shop-action-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .ant-table-tbody > tr:hover .shop-action-buttons,
+  .ant-table-tbody > tr.selected-row .shop-action-buttons {
+    opacity: 1 !important;
+    transform: translateX(0);
+  }
+
+  .shop-action-btn {
+    width: 36px;
+    height: 36px;
+    border: 2px solid #000;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    box-shadow: 2px 2px 0 #000;
+    font-size: 14px;
+  }
+
+  .shop-action-btn:hover:not(:disabled) {
+    transform: translateY(-2px) rotate(-5deg);
+    box-shadow: 3px 3px 0 #000;
+  }
+
+  .shop-action-btn:active:not(:disabled) {
+    transform: translateY(0) rotate(0deg);
+    box-shadow: 1px 1px 0 #000;
+  }
+
+  .shop-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .shop-action-btn-edit {
+    color: #0d9488;
+  }
+
+  .shop-action-btn-edit:hover:not(:disabled) {
+    background: #f0fdfa;
   }
 
   /* --- 1. Accordion (Collapse) 整體容器 --- */

@@ -1,7 +1,7 @@
-import bcrypt from 'bcryptjs';
-import { SHAREPOINT_CONFIG, API_URLS } from '../constants/config';
-import { SP_FIELDS } from '../constants';
-import { User, UserRole } from '../types';
+import bcrypt from "bcryptjs";
+import { SHAREPOINT_CONFIG, API_URLS } from "../constants/config";
+import { SP_FIELDS } from "../constants";
+import { User, UserRole } from "../types";
 
 interface SaveSchedulePayload {
   shopId: string;
@@ -47,7 +47,7 @@ class SharePointService {
     try {
       const url = API_URLS.memberList;
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${this.graphToken}` }
+        headers: { Authorization: `Bearer ${this.graphToken}` },
       });
       return response.ok;
     } catch (error) {
@@ -61,18 +61,21 @@ class SharePointService {
       const url = `${API_URLS.memberList}/items?$filter=fields/AliasEmail eq '${sanitizedEmail}'&$expand=fields`;
 
       const response = await fetch(url, {
-        headers: { 
-          'Authorization': `Bearer ${this.graphToken}`,
+        headers: {
+          Authorization: `Bearer ${this.graphToken}`,
           // ✅ 修正 3：加入這兩個 Header 可以解決 90% 的 400 錯誤
-          'Prefer': 'HonorNonIndexedQueriesWarningMayFailOverTime',
-          'ConsistencyLevel': 'eventual' 
-        }
+          Prefer: "HonorNonIndexedQueriesWarningMayFailOverTime",
+          ConsistencyLevel: "eventual",
+        },
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         // ✅ 修正 4：直接印出詳細 message，方便診斷
-        console.error("❌ Graph API 錯誤原因:", errorData.error?.message || errorData);
+        console.error(
+          "❌ Graph API 錯誤原因:",
+          errorData.error?.message || errorData,
+        );
         return null;
       }
 
@@ -82,7 +85,7 @@ class SharePointService {
         // Map SharePoint field 'Role' to 'UserRole' expected by the app
         return {
           ...fields,
-          UserRole: fields.Role || 'User'
+          UserRole: fields.Role || "User",
         };
       }
       return null;
@@ -93,144 +96,196 @@ class SharePointService {
   }
 
   /**
- * 🆕 註冊新成員
- */
-async registerMember(data: {
-  name: string,
-  userEmail: string,
-  aliasEmail: string,
-  passwordHash: string
-}) {
-  try {
-    const payload = {
-      fields: {
-        Title: data.name, // SharePoint List 的主標題通常存 Name
-        Name: data.name,
-        UserEmail: data.userEmail,
-        AliasEmail: data.aliasEmail,
-        PasswordHash: data.passwordHash,
-        Role: "User", // Default Role
-        AccountStatus: "Active", // Default Status
-        AccountCreateDate: new Date().toISOString(), // Include time
-        // 針對 Person 欄位 "User"：在 Graph API 中通常需要使用電子郵件進行聲明
-        "User@Claims": `i:0#.f|membership|${data.aliasEmail}` 
+   * 🆕 註冊新成員
+   */
+  async registerMember(data: {
+    name: string;
+    userEmail: string;
+    aliasEmail: string;
+    passwordHash: string;
+  }) {
+    try {
+      const payload = {
+        fields: {
+          Title: data.name, // SharePoint List 的主標題通常存 Name
+          Name: data.name,
+          UserEmail: data.userEmail,
+          AliasEmail: data.aliasEmail,
+          PasswordHash: data.passwordHash,
+          Role: "User", // Default Role
+          AccountStatus: "Active", // Default Status
+          AccountCreateDate: new Date().toISOString(), // Include time
+          // 針對 Person 欄位 "User"：在 Graph API 中通常需要使用電子郵件進行聲明
+          "User@Claims": `i:0#.f|membership|${data.aliasEmail}`,
+        },
+      };
+
+      const url = `${API_URLS.memberList}/items`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.graphToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        console.error("SharePoint 註冊失敗:", err.error?.message);
+        return false;
       }
-    };
-
-    const url = `${API_URLS.memberList}/items`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.graphToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      console.error("SharePoint 註冊失敗:", err.error?.message);
+      return true;
+    } catch (error) {
+      console.error("註冊連線錯誤:", error);
       return false;
     }
-    return true;
-  } catch (error) {
-    console.error("註冊連線錯誤:", error);
-    return false;
   }
-}
 
   // 在你的 sharePointService 內增加：
-// sharePointService.ts
+  // sharePointService.ts
 
-// SharePointService.ts 內的修復版本
+  // SharePointService.ts 內的修復版本
 
-// SharePointService.ts
+  // SharePointService.ts
 
-async updatePasswordByEmail(email: string, hash: string) {
-  try {
-    // Sanitize email input
-    const sanitizedEmail = this.sanitizeFilterValue(email);
-    const searchUrl = `${API_URLS.memberList}/items?$filter=fields/AliasEmail eq '${sanitizedEmail}'&$expand=fields`;
-    
-    const searchRes = await fetch(searchUrl, {
-      headers: { 
-        'Authorization': `Bearer ${this.graphToken}`,
-        'Prefer': 'HonorNonIndexedQueriesWarningMayFail',
-        'ConsistencyLevel': 'eventual'
+  async updatePasswordByEmail(email: string, hash: string) {
+    try {
+      // Sanitize email input
+      const sanitizedEmail = this.sanitizeFilterValue(email);
+      const searchUrl = `${API_URLS.memberList}/items?$filter=fields/AliasEmail eq '${sanitizedEmail}'&$expand=fields`;
+
+      const searchRes = await fetch(searchUrl, {
+        headers: {
+          Authorization: `Bearer ${this.graphToken}`,
+          Prefer: "HonorNonIndexedQueriesWarningMayFail",
+          ConsistencyLevel: "eventual",
+        },
+      });
+
+      if (!searchRes.ok) {
+        const errorData = await searchRes.json();
+        console.error("❌ 搜尋用戶失敗:", errorData.error?.message);
+        return false;
       }
-    });
 
-    if (!searchRes.ok) {
-      const errorData = await searchRes.json();
-      console.error("❌ 搜尋用戶失敗:", errorData.error?.message);
+      const searchData = await searchRes.json();
+      if (!searchData.value || searchData.value.length === 0) {
+        console.warn(`⚠️ 找不到成員: ${email}`);
+        return false;
+      }
+
+      // 取得該成員的項目 ID
+      const itemId = searchData.value[0].id;
+
+      const updateUrl = `${API_URLS.memberList}/items/${itemId}/fields`;
+
+      const updateRes = await fetch(updateUrl, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${this.graphToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          // ⚠️ 這裡直接寫 Internal Name，不加 fields 前綴
+          PasswordHash: hash,
+        }),
+      });
+
+      if (updateRes.ok) {
+        console.log(`✅ ${email} 的密碼已成功寫回 SharePoint`);
+        return true;
+      } else {
+        const errorDetail = await updateRes.json();
+        console.error("❌ PATCH 寫入失敗:", errorDetail.error?.message);
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ SharePoint 連線嚴重錯誤:", error);
       return false;
     }
-
-    const searchData = await searchRes.json();
-    if (!searchData.value || searchData.value.length === 0) {
-      console.warn(`⚠️ 找不到成員: ${email}`);
-      return false;
-    }
-
-    // 取得該成員的項目 ID
-    const itemId = searchData.value[0].id; 
-
-    const updateUrl = `${API_URLS.memberList}/items/${itemId}/fields`;
-    
-    const updateRes = await fetch(updateUrl, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${this.graphToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        // ⚠️ 這裡直接寫 Internal Name，不加 fields 前綴
-        PasswordHash: hash 
-      })
-    });
-
-    if (updateRes.ok) {
-      console.log(`✅ ${email} 的密碼已成功寫回 SharePoint`);
-      return true;
-    } else {
-      const errorDetail = await updateRes.json();
-      console.error("❌ PATCH 寫入失敗:", errorDetail.error?.message);
-      return false;
-    }
-
-  } catch (error) {
-    console.error("❌ SharePoint 連線嚴重錯誤:", error);
-    return false;
   }
-}
   // ... 之後保留你原本嘅 updateShopScheduleStatus, batchUpdateSchedules 等方法 ...
-  
-  async updateShopScheduleStatus(itemId: string, scheduleStatus: string, scheduledDate?: string, groupId?: number): Promise<void> {
+
+  private async updateShopFields(
+    itemId: string,
+    fields: Record<string, any>,
+  ): Promise<void> {
+    const response = await fetch(`${API_URLS.shopList}/items/${itemId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${this.graphToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ fields }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData?.error?.message || `Update failed: ${response.status}`,
+      );
+    }
+  }
+
+  async rescheduleShop(
+    itemId: string,
+    date: string,
+    groupId: number,
+  ): Promise<void> {
+    await this.updateShopFields(itemId, {
+      [SP_FIELDS.STATUS]: "Rescheduled",
+      [SP_FIELDS.SCHEDULE_DATE]: date,
+      [SP_FIELDS.SCHEDULE_GROUP]: groupId.toString(),
+    });
+  }
+
+  async closeShop(itemId: string): Promise<void> {
+    await this.updateShopFields(itemId, { [SP_FIELDS.STATUS]: "Closed" });
+  }
+
+  async resumeShop(itemId: string): Promise<void> {
+    await this.updateShopFields(itemId, { [SP_FIELDS.STATUS]: "Pending" });
+  }
+
+  async moveShopToPool(itemId: string): Promise<void> {
+    await this.updateShopFields(itemId, {
+      [SP_FIELDS.STATUS]: "Rescheduled",
+      [SP_FIELDS.SCHEDULE_DATE]: null,
+      [SP_FIELDS.SCHEDULE_GROUP]: null,
+    });
+  }
+
+  async updateShopScheduleStatus(
+    itemId: string,
+    scheduleStatus: string,
+    scheduledDate?: string,
+    groupId?: number,
+  ): Promise<void> {
     const fields: Record<string, any> = { [SP_FIELDS.STATUS]: scheduleStatus };
     if (scheduledDate) fields[SP_FIELDS.SCHEDULE_DATE] = scheduledDate;
-    if (groupId !== undefined) fields[SP_FIELDS.SCHEDULE_GROUP] = groupId.toString();
+    if (groupId !== undefined)
+      fields[SP_FIELDS.SCHEDULE_GROUP] = groupId.toString();
 
-    console.log('🔄 Updating shop schedule:', { itemId, fields });
+    console.log("🔄 Updating shop schedule:", { itemId, fields });
 
-    const response = await fetch(
-      `${API_URLS.shopList}/items/${itemId}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${this.graphToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fields }),
-      }
-    );
+    const response = await fetch(`${API_URLS.shopList}/items/${itemId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${this.graphToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ fields }),
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Update failed:', response.status, errorData);
-      throw new Error(errorData?.error?.message || `Update failed: ${response.status}`);
+      console.error("❌ Update failed:", response.status, errorData);
+      throw new Error(
+        errorData?.error?.message || `Update failed: ${response.status}`,
+      );
     }
 
-    console.log('✅ Update successful');
+    console.log("✅ Update successful");
   }
 
   /**
@@ -243,8 +298,11 @@ async updatePasswordByEmail(email: string, hash: string) {
       groupId: number;
       status: string;
     }>,
-    onProgress?: (processed: number, total: number) => void
-  ): Promise<{ success: number; failed: Array<{ itemId: string; error: string }> }> {
+    onProgress?: (processed: number, total: number) => void,
+  ): Promise<{
+    success: number;
+    failed: Array<{ itemId: string; error: string }>;
+  }> {
     const results = {
       success: 0,
       failed: [] as Array<{ itemId: string; error: string }>,
@@ -257,13 +315,13 @@ async updatePasswordByEmail(email: string, hash: string) {
           update.itemId,
           update.status,
           update.scheduledDate,
-          update.groupId
+          update.groupId,
         );
         results.success++;
       } catch (error) {
         results.failed.push({
           itemId: update.itemId,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         });
       }
 
@@ -275,13 +333,45 @@ async updatePasswordByEmail(email: string, hash: string) {
     return results;
   }
 
+  async createInventoryItem(fields: Record<string, any>): Promise<void> {
+    const res = await fetch(`${API_URLS.inventoryList}/items`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.graphToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ fields }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+  }
+
+  async updateInventoryItem(
+    itemId: string,
+    fields: Record<string, any>,
+  ): Promise<void> {
+    const res = await fetch(
+      `${API_URLS.inventoryList}/items/${itemId}/fields`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${this.graphToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(fields),
+      },
+    );
+    if (!res.ok) throw new Error(await res.text());
+  }
+
   async validateConnection(): Promise<boolean> {
     try {
       const response = await fetch(API_URLS.sites, {
-        headers: { 'Authorization': `Bearer ${this.graphToken}` }
+        headers: { Authorization: `Bearer ${this.graphToken}` },
       });
       return response.ok;
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -292,10 +382,10 @@ async updatePasswordByEmail(email: string, hash: string) {
       const url = `${API_URLS.memberList}/items?$expand=fields($select=*)&$top=999`;
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${this.graphToken}`,
-          'Prefer': 'HonorNonIndexedQueriesWarningMayFailOverTime',
-          'ConsistencyLevel': 'eventual'
-        }
+          Authorization: `Bearer ${this.graphToken}`,
+          Prefer: "HonorNonIndexedQueriesWarningMayFailOverTime",
+          ConsistencyLevel: "eventual",
+        },
       });
 
       if (!response.ok) {
@@ -307,12 +397,12 @@ async updatePasswordByEmail(email: string, hash: string) {
       if (data.value && data.value.length > 0) {
         return data.value.map((item: any) => ({
           id: item.id,
-          Name: item.fields?.Name || item.fields?.Title || '',
-          UserEmail: item.fields?.UserEmail || '',
-          AliasEmail: item.fields?.AliasEmail || '',
-          UserRole: item.fields?.Role as UserRole || 'User',
-          AccountStatus: item.fields?.AccountStatus || 'Active',
-          AccountCreateDate: item.fields?.AccountCreateDate || ''
+          Name: item.fields?.Name || item.fields?.Title || "",
+          UserEmail: item.fields?.UserEmail || "",
+          AliasEmail: item.fields?.AliasEmail || "",
+          UserRole: (item.fields?.Role as UserRole) || "User",
+          AccountStatus: item.fields?.AccountStatus || "Active",
+          AccountCreateDate: item.fields?.AccountCreateDate || "",
         }));
       }
       return [];
@@ -329,12 +419,12 @@ async updatePasswordByEmail(email: string, hash: string) {
     try {
       const url = `${API_URLS.memberList}/items/${itemId}/fields`;
       const response = await fetch(url, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Authorization': `Bearer ${this.graphToken}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${this.graphToken}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ Role: newRole })
+        body: JSON.stringify({ Role: newRole }),
       });
 
       if (response.ok) {
@@ -354,16 +444,19 @@ async updatePasswordByEmail(email: string, hash: string) {
   /**
    * Update a member's account status
    */
-  async updateMemberStatus(itemId: string, status: 'Active' | 'Inactive'): Promise<boolean> {
+  async updateMemberStatus(
+    itemId: string,
+    status: "Active" | "Inactive",
+  ): Promise<boolean> {
     try {
       const url = `${API_URLS.memberList}/items/${itemId}/fields`;
       const response = await fetch(url, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Authorization': `Bearer ${this.graphToken}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${this.graphToken}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ AccountStatus: status })
+        body: JSON.stringify({ AccountStatus: status }),
       });
 
       if (response.ok) {
@@ -371,7 +464,10 @@ async updatePasswordByEmail(email: string, hash: string) {
         return true;
       } else {
         const errorDetail = await response.json();
-        console.error("❌ Failed to update status:", errorDetail.error?.message);
+        console.error(
+          "❌ Failed to update status:",
+          errorDetail.error?.message,
+        );
         return false;
       }
     } catch (error) {

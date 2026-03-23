@@ -13,6 +13,8 @@ interface ShopsProps {
   onRefresh: () => void;
   currentUser: User | null;
   allInventory: InventoryItem[];
+  loading?: boolean;
+  onNavigateToInventory?: (shopName: string) => void;
 }
 
 /**
@@ -25,6 +27,8 @@ export const Shops: React.FC<ShopsProps> = ({
   onRefresh,
   currentUser,
   allInventory,
+  loading,
+  onNavigateToInventory,
 }) => {
   const [activeView, setActiveView] = useState<ShopsView>(() => {
     return (sessionStorage.getItem("shops-view") as ShopsView) ?? "table";
@@ -66,6 +70,8 @@ export const Shops: React.FC<ShopsProps> = ({
             onRefresh={onRefresh}
             currentUser={currentUser}
             allInventory={allInventory}
+            loading={loading}
+            onNavigateToInventory={onNavigateToInventory}
           />
         ) : (
           <Locations shops={shops} />

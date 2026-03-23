@@ -107,7 +107,17 @@ export const ShopList: React.FC<{
   onRefresh: () => void;
   currentUser: User | null;
   allInventory: InventoryItem[];
-}> = ({ shops, graphToken, onRefresh, currentUser, allInventory }) => {
+  loading?: boolean;
+  onNavigateToInventory?: (shopName: string) => void;
+}> = ({
+  shops,
+  graphToken,
+  onRefresh,
+  currentUser,
+  allInventory,
+  loading,
+  onNavigateToInventory,
+}) => {
   // ... 你的狀態設定 (searchText, filters 等) ...
   const _stored = getStoredFilterState();
   const [searchText, setSearchText] = useState<string>(
@@ -919,6 +929,8 @@ export const ShopList: React.FC<{
           setInventoryOpen(false);
           onRefresh();
         }}
+        loading={loading}
+        onNavigateToInventory={onNavigateToInventory}
       />
 
       {/* Floating Sticky CTA - only visible for Admin/App Owner */}

@@ -43,9 +43,16 @@ interface Props {
   shops: Shop[];
   data: InventoryItem[];
   onRefresh: () => void;
+  initialShopFilter?: string;
 }
 
-export const Inventory = ({ token, shops, data, onRefresh }: Props) => {
+export const Inventory = ({
+  token,
+  shops,
+  data,
+  onRefresh,
+  initialShopFilter,
+}: Props) => {
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
@@ -56,12 +63,18 @@ export const Inventory = ({ token, shops, data, onRefresh }: Props) => {
   const [formMode, setFormMode] = useState<"new" | "edit">("new");
 
   const [filters, setFilters] = useState({
-    shopName: "",
+    shopName: initialShopFilter ?? "",
     status: "All",
     serialNo: "",
     cmdb: "",
     assetItemId: "",
   });
+
+  useEffect(() => {
+    if (initialShopFilter !== undefined) {
+      setFilters((f) => ({ ...f, shopName: initialShopFilter }));
+    }
+  }, [initialShopFilter]);
 
   const fetchInventory = async () => {
     setLoading(true);

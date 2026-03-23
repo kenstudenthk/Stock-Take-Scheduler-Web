@@ -40,6 +40,8 @@ export const Dashboard: React.FC<{
   onRefresh: () => void;
   currentUser: User | null;
   allInventory: InventoryItem[];
+  loading?: boolean;
+  onNavigateToInventory?: (shopName: string) => void;
 }> = ({
   shops,
   onUpdateShop,
@@ -47,6 +49,8 @@ export const Dashboard: React.FC<{
   onRefresh,
   currentUser,
   allInventory,
+  loading,
+  onNavigateToInventory,
 }) => {
   const [selectedDate, setSelectedDate] = useState<string>(
     dayjs().format("YYYY-MM-DD"),
@@ -680,6 +684,8 @@ export const Dashboard: React.FC<{
           setDetailShop(null);
           onRefresh();
         }}
+        loading={loading}
+        onNavigateToInventory={onNavigateToInventory}
       />
     </div>
   );

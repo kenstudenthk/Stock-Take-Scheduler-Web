@@ -8,13 +8,14 @@ import {
   Button,
   Divider,
   Empty,
+  Spin,
 } from "antd";
 import {
   ShopOutlined,
-  EditOutlined,
   DatabaseOutlined,
+  SyncOutlined,
 } from "@ant-design/icons";
-import { Shop, InventoryItem, User, hasPermission } from "../types";
+import { Shop, InventoryItem, User } from "../types";
 import { ShopFormModal } from "./ShopFormModal";
 
 const { Title, Text } = Typography;
@@ -28,6 +29,8 @@ interface Props {
   currentUser: User | null;
   allInventory: InventoryItem[];
   onRefreshShop: () => void;
+  loading?: boolean;
+  onNavigateToInventory?: (shopName: string) => void;
 }
 
 export const ShopInventoryModal: React.FC<Props> = ({
@@ -39,6 +42,8 @@ export const ShopInventoryModal: React.FC<Props> = ({
   currentUser,
   allInventory,
   onRefreshShop,
+  loading,
+  onNavigateToInventory,
 }) => {
   const [editFormOpen, setEditFormOpen] = useState(false);
 
@@ -149,14 +154,17 @@ export const ShopInventoryModal: React.FC<Props> = ({
               {items.length} inventory item{items.length !== 1 ? "s" : ""}
             </Text>
             <Space>
-              {hasPermission(currentUser, "edit_shop") && shop && (
+              {shop && onNavigateToInventory && (
                 <Button
                   type="primary"
-                  icon={<EditOutlined />}
-                  onClick={() => setEditFormOpen(true)}
+                  icon={<DatabaseOutlined />}
+                  onClick={() => {
+                    onNavigateToInventory(shop.name);
+                    onCancel();
+                  }}
                   style={{ background: "#0d9488" }}
                 >
-                  Edit Shop Profile
+                  Inventory Detail
                 </Button>
               )}
               <Button onClick={onCancel}>Close</Button>
@@ -196,6 +204,12 @@ export const ShopInventoryModal: React.FC<Props> = ({
           <Tag color="cyan" className="border-none font-bold">
             {items.length}
           </Tag>
+          {loading && (
+            <Spin
+              indicator={<SyncOutlined spin style={{ color: "#0d9488" }} />}
+              size="small"
+            />
+          )}
         </div>
         <Table
           columns={columns}

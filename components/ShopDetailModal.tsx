@@ -32,6 +32,8 @@ interface Props {
   currentUser: User | null;
   allInventory: InventoryItem[];
   onRefreshShop: () => void;
+  loading?: boolean;
+  onNavigateToInventory?: (shopName: string) => void;
 }
 
 const statusColor = (status: string) => {
@@ -53,6 +55,8 @@ export const ShopDetailModal: React.FC<Props> = ({
   currentUser,
   allInventory,
   onRefreshShop,
+  loading,
+  onNavigateToInventory,
 }) => {
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -228,6 +232,8 @@ export const ShopDetailModal: React.FC<Props> = ({
           setInventoryOpen(false);
           onRefreshShop();
         }}
+        loading={loading}
+        onNavigateToInventory={onNavigateToInventory}
       />
 
       <ShopFormModal

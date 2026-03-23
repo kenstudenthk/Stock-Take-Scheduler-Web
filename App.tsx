@@ -121,6 +121,7 @@ function App() {
   const [hasTokenError, setHasTokenError] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [inventoryShopFilter, setInventoryShopFilter] = useState<string>("");
 
   // ✅ 使用 User 型別
   const [currentUser, setCurrentUser] = useState<User | null>(
@@ -327,6 +328,11 @@ function App() {
             onUpdateShop={undefined}
             currentUser={currentUser}
             allInventory={allInventory}
+            loading={loading}
+            onNavigateToInventory={(shopName) => {
+              setInventoryShopFilter(shopName);
+              setSelectedMenuKey(View.INVENTORY);
+            }}
           />
         );
       case View.SHOPS:
@@ -337,6 +343,11 @@ function App() {
             onRefresh={() => fetchAllData(graphToken)}
             currentUser={currentUser}
             allInventory={allInventory}
+            loading={loading}
+            onNavigateToInventory={(shopName) => {
+              setInventoryShopFilter(shopName);
+              setSelectedMenuKey(View.INVENTORY);
+            }}
           />
         );
       case View.CALENDAR:
@@ -363,6 +374,7 @@ function App() {
             shops={allShops}
             data={allInventory}
             onRefresh={() => fetchAllData(graphToken)}
+            initialShopFilter={inventoryShopFilter}
           />
         );
       case View.PERMISSION:

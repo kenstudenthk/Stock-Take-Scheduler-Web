@@ -1138,13 +1138,12 @@ export const Calendar: React.FC<CalendarProps> = ({
 
         /* Day number custom */
         .cc-day-top {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
+          display: block;
+          text-align: right;
           padding: 2px 4px 0;
-          gap: 1px;
         }
         .cc-day-num {
+          display: block;
           font-family: monospace;
           font-size: 12px;
           font-weight: 600;
@@ -1192,6 +1191,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         /* name — readable dark */
         .cc-chip-name {
           color: #cbd5e1;
+          font-size: 12px;
           overflow: hidden;
           white-space: nowrap;
           text-overflow: ellipsis;

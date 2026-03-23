@@ -542,7 +542,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               <div className="cc-stat-value">{stats.completed}</div>
             </div>
             <div className="cc-stat-card cc-stat-3">
-              <div className="cc-stat-label">POOL</div>
+              <div className="cc-stat-label">RESCHEDULE POOL</div>
               <div className="cc-stat-value">{stats.pool}</div>
             </div>
             <div className="cc-stat-card cc-stat-4">
@@ -1039,7 +1039,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         .cc-stat-4::after { --i: 3; }
         .cc-stat-label {
           color: #475569;
-          font-size: 9px;
+          font-size: 11px;
           text-transform: uppercase;
           letter-spacing: 1.5px;
           font-family: monospace;

@@ -1,37 +1,31 @@
-// Calendar.tsx - Click-to-Reschedule Redesign (DnD removed)
+// Calendar.tsx - Command-Center Redesign
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import dayjs from "dayjs";
 import {
-  Button,
-  Space,
-  Typography,
   Avatar,
   Tag,
-  Empty,
-  Badge,
-  Card,
   Modal,
   DatePicker,
   Divider,
   message,
   Radio,
   Spin,
+  Typography,
+  Button,
 } from "antd";
 import {
   ShopOutlined,
-  DownOutlined,
   ExportOutlined,
   FileExcelOutlined,
   FilePdfOutlined,
   LockOutlined,
-  EditOutlined,
 } from "@ant-design/icons";
 import { Shop } from "../types";
 import SharePointService from "../services/SharePointService";
 import { HK_HOLIDAYS, isHoliday } from "../constants/holidays";
 
-// FullCalendar imports (interactionPlugin kept for dateClick only — DnD removed)
+// FullCalendar (interactionPlugin kept for dateClick — DnD removed)
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -41,19 +35,15 @@ import type {
   EventInput,
 } from "@fullcalendar/core";
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
-// Group colors - matching design system
-const GROUP_COLORS: Record<
-  number,
-  { bg: string; text: string; border: string }
-> = {
-  1: { bg: "#e0f2fe", text: "#0369a1", border: "#7dd3fc" }, // Group A - Blue
-  2: { bg: "#f3e8ff", text: "#7e22ce", border: "#d8b4fe" }, // Group B - Purple
-  3: { bg: "#ffedd5", text: "#c2410c", border: "#fdba74" }, // Group C - Orange
+// Group color tokens
+const GROUP_COLORS: Record<number, { border: string; text: string }> = {
+  1: { border: "#0ea5e9", text: "#7dd3fc" }, // Group A – Sky
+  2: { border: "#7c3aed", text: "#c4b5fd" }, // Group B – Violet
+  3: { border: "#ea580c", text: "#fb923c" }, // Group C – Orange
 };
 
-// Holiday names for tooltips
 const HOLIDAY_NAMES: Record<string, string> = {
   "2025-01-01": "New Year's Day",
   "2025-01-29": "Lunar New Year",
@@ -95,8 +85,14 @@ export const Calendar: React.FC<CalendarProps> = ({
   onRefresh,
 }) => {
   const [selectedDate, setSelectedDate] = useState(dayjs());
-  const [expandedGroupId, setExpandedGroupId] = useState<number | null>(1);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [currentView, setCurrentView] = useState<
+    "dayGridMonth" | "dayGridWeek"
+  >("dayGridMonth");
+  const [currentMonthStr, setCurrentMonthStr] = useState(() =>
+    dayjs().format("MMMM YYYY").toUpperCase(),
+  );
 
   // Export modal state
   const [exportModalVisible, setExportModalVisible] = useState(false);
@@ -104,7 +100,7 @@ export const Calendar: React.FC<CalendarProps> = ({
     [dayjs.Dayjs | null, dayjs.Dayjs | null]
   >([null, null]);
 
-  // Reschedule modal state (replaces selectedGroupRef + Modal.confirm)
+  // Reschedule modal state
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [rescheduleTarget, setRescheduleTarget] =
     useState<RescheduleTarget | null>(null);
@@ -115,14 +111,35 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   const calendarRef = useRef<FullCalendar>(null);
 
+  // ESC closes the floating panel
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPanelOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Stats for header bar
+  const stats = useMemo(() => {
+    const active = shops.filter((s) => s.masterStatus !== "Closed");
+    return {
+      total: active.length,
+      completed: active.filter((s) => s.status === "Completed").length,
+      pool: active.filter((s) => s.status === "Rescheduled" && !s.scheduledDate)
+        .length,
+      today: active.filter(
+        (s) => s.scheduledDate && dayjs(s.scheduledDate).isSame(dayjs(), "day"),
+      ).length,
+    };
+  }, [shops]);
+
   // Helper: check if a date can be edited
   const isDateEditable = (date: dayjs.Dayjs | Date | string): boolean => {
     const today = dayjs().startOf("day");
     const targetDate = dayjs(date).startOf("day");
-
     if (targetDate.isBefore(today) || targetDate.isSame(today, "day"))
       return false;
-
     const currentWeekEnd = today.endOf("week");
     const nextWeekEnd = currentWeekEnd.add(1, "day").endOf("week");
     if (
@@ -130,11 +147,10 @@ export const Calendar: React.FC<CalendarProps> = ({
       targetDate.isBefore(nextWeekEnd.add(1, "day"))
     )
       return false;
-
     return true;
   };
 
-  // Helper: disabled dates for the reschedule DatePicker
+  // Helper: disabled dates for DatePicker
   const disabledDateFn = (current: dayjs.Dayjs): boolean => {
     const today = dayjs().startOf("day");
     if (current.isBefore(today) || current.isSame(today, "day")) return true;
@@ -149,7 +165,7 @@ export const Calendar: React.FC<CalendarProps> = ({
     return false;
   };
 
-  // Helper: open reschedule modal (used by both chip click and sidebar card click)
+  // Helper: open reschedule modal
   const openRescheduleModal = (params: {
     shopId: string;
     sharePointItemId: string;
@@ -181,7 +197,7 @@ export const Calendar: React.FC<CalendarProps> = ({
     setRescheduleModalOpen(true);
   };
 
-  // Save reschedule changes
+  // Save reschedule
   const handleRescheduleConfirm = async () => {
     if (!rescheduleTarget || !rescheduleDate) return;
     const newDate = rescheduleDate.format("YYYY-MM-DD");
@@ -211,20 +227,13 @@ export const Calendar: React.FC<CalendarProps> = ({
     }
   };
 
-  // Convert shops to FullCalendar events (no DnD editable flag)
+  // FullCalendar events
   const shopEvents = useMemo(() => {
     return shops
       .filter((shop) => shop.scheduledDate)
       .map((shop) => {
         const editable = isDateEditable(shop.scheduledDate!);
         const groupColor = GROUP_COLORS[shop.groupId];
-        const groupName =
-          shop.groupId === 1
-            ? "Group A"
-            : shop.groupId === 2
-              ? "Group B"
-              : "Group C";
-
         return {
           id: shop.sharePointItemId || shop.id,
           title: shop.name,
@@ -237,12 +246,11 @@ export const Calendar: React.FC<CalendarProps> = ({
             address: shop.address,
             brandIcon: shop.brandIcon,
             isEditable: editable,
-            groupName: groupName,
-            tooltip: `${shop.name}\n${shop.id}\nBrand: ${shop.brand}\nGroup: ${groupName}\nAddress: ${shop.address}`,
+            tooltip: `${shop.name}\n${shop.id}\nGroup: ${shop.groupId === 1 ? "A" : shop.groupId === 2 ? "B" : "C"}\n${shop.address}`,
           },
-          backgroundColor: groupColor?.bg || "#e2e8f0",
-          borderColor: groupColor?.border || "#cbd5e1",
-          textColor: groupColor?.text || "#475569",
+          backgroundColor: "transparent",
+          borderColor: "transparent",
+          textColor: groupColor?.text || "#94a3b8",
           classNames: editable ? [] : ["fc-event-locked"],
         };
       });
@@ -257,7 +265,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         holidays.push({
           start: date,
           display: "background",
-          backgroundColor: "rgba(239, 68, 68, 0.12)",
+          backgroundColor: "rgba(239,68,68,0.1)",
           classNames: ["fc-holiday"],
         });
       });
@@ -270,7 +278,7 @@ export const Calendar: React.FC<CalendarProps> = ({
     [shopEvents, holidayEvents],
   );
 
-  // Daily data for sidebar
+  // Daily data for floating panel
   const dailyData = useMemo(() => {
     const dateStr = selectedDate.format("YYYY-MM-DD");
     const dayShops = shops.filter(
@@ -282,20 +290,20 @@ export const Calendar: React.FC<CalendarProps> = ({
       groups: [
         {
           id: 1,
-          name: "Group A",
-          color: "#0369a1",
+          name: "GROUP A",
+          color: "#0ea5e9",
           items: dayShops.filter((s) => s.groupId === 1),
         },
         {
           id: 2,
-          name: "Group B",
-          color: "#7e22ce",
+          name: "GROUP B",
+          color: "#7c3aed",
           items: dayShops.filter((s) => s.groupId === 2),
         },
         {
           id: 3,
-          name: "Group C",
-          color: "#c2410c",
+          name: "GROUP C",
+          color: "#ea580c",
           items: dayShops.filter((s) => s.groupId === 3),
         },
       ],
@@ -304,7 +312,7 @@ export const Calendar: React.FC<CalendarProps> = ({
     };
   }, [shops, selectedDate]);
 
-  // Handle calendar chip click → open reschedule modal
+  // Calendar event chip click → reschedule modal
   const handleEventClick = (info: EventClickArg) => {
     const props = info.event.extendedProps;
     openRescheduleModal({
@@ -317,58 +325,62 @@ export const Calendar: React.FC<CalendarProps> = ({
     });
   };
 
-  // Handle date cell click → update sidebar date
+  // Date cell click → update selected date + open floating panel
   const handleDateClick = (arg: { date: Date }) => {
     setSelectedDate(dayjs(arg.date));
+    setPanelOpen(true);
   };
 
-  // Render event chip: left border, brand icon, name, edit/lock icon
+  // Custom toolbar nav handlers
+  const handlePrev = () => calendarRef.current?.getApi().prev();
+  const handleNext = () => calendarRef.current?.getApi().next();
+  const handleToday = () => calendarRef.current?.getApi().today();
+  const handleMonthView = () => {
+    calendarRef.current?.getApi().changeView("dayGridMonth");
+    setCurrentView("dayGridMonth");
+  };
+  const handleWeekView = () => {
+    calendarRef.current?.getApi().changeView("dayGridWeek");
+    setCurrentView("dayGridWeek");
+  };
+
+  // Render ultra-dense monospace chip
   const renderEventContent = (eventInfo: {
     event: { title: string; extendedProps: Record<string, any> };
   }) => {
     const { event } = eventInfo;
     const isLocked = !event.extendedProps.isEditable;
-    const groupBorder =
-      GROUP_COLORS[event.extendedProps.groupId]?.border || "#cbd5e1";
+    const groupColor = GROUP_COLORS[event.extendedProps.groupId];
+    const id: string = event.extendedProps.shopId || "";
+    const prefix = id.slice(0, 2).toUpperCase();
+    const code = id.slice(2);
 
     return (
       <div
-        className={`fc-event-content flex items-center gap-1 px-1 py-0.5 overflow-hidden w-full ${isLocked ? "opacity-60" : ""}`}
-        style={{ borderLeft: `3px solid ${groupBorder}`, paddingLeft: "5px" }}
+        className={`cc-chip grp-${event.extendedProps.groupId}${isLocked ? " locked" : ""}`}
+        title={event.extendedProps.tooltip}
+        style={{ borderLeftColor: groupColor?.border || "#475569" }}
       >
-        {event.extendedProps.brandIcon && (
-          <Avatar
-            size={14}
-            src={event.extendedProps.brandIcon}
-            className="flex-shrink-0 bg-white"
-          />
-        )}
-        <span className="truncate font-semibold text-xs flex-1">
-          {event.title}
-        </span>
-        {isLocked ? (
-          <LockOutlined style={{ fontSize: 10, opacity: 0.5, flexShrink: 0 }} />
-        ) : (
-          <EditOutlined
-            className="edit-hint"
-            style={{ fontSize: 10, flexShrink: 0 }}
-          />
+        <span className="cc-chip-prefix">{prefix}·</span>
+        <span className="cc-chip-code">{code || id}</span>
+        <span className="cc-chip-name">{event.title}</span>
+        {isLocked && (
+          <LockOutlined style={{ fontSize: 8, opacity: 0.5, flexShrink: 0 }} />
         )}
       </div>
     );
   };
 
-  // Render day cell with holiday badge
+  // Render day cell (holiday badge)
   const renderDayCellContent = (arg: DayCellContentArg) => {
     const dateStr = dayjs(arg.date).format("YYYY-MM-DD");
     const holiday = isHoliday(dateStr);
     const holidayName = HOLIDAY_NAMES[dateStr];
-
     return (
-      <div className="fc-daygrid-day-top-custom">
-        <span className="fc-daygrid-day-number">{arg.dayNumberText}</span>
+      <div className="cc-day-top">
+        <span className="cc-day-num">{arg.dayNumberText}</span>
         {holiday && (
-          <span className="fc-holiday-badge" title={holidayName}>
+          <span className="cc-ph-badge" title={holidayName}>
             PH
           </span>
         )}
@@ -376,7 +388,7 @@ export const Calendar: React.FC<CalendarProps> = ({
     );
   };
 
-  // Export functions — dynamic imports for bundle size
+  // Export helpers
   const handleSetAllDates = () => {
     const scheduledShops = shops.filter((s) => s.scheduledDate);
     if (scheduledShops.length === 0)
@@ -391,10 +403,8 @@ export const Calendar: React.FC<CalendarProps> = ({
   const handleExport = async (type: "excel" | "pdf") => {
     if (!exportDateRange[0] || !exportDateRange[1])
       return message.error("Please select a range!");
-
     const start = exportDateRange[0].startOf("day");
     const end = exportDateRange[1].endOf("day");
-
     const dataToExport = shops
       .filter(
         (s) =>
@@ -416,11 +426,9 @@ export const Calendar: React.FC<CalendarProps> = ({
         (s as any).contactName || "-",
         s.groupId ? `Group ${String.fromCharCode(64 + s.groupId)}` : "-",
       ]);
-
     if (dataToExport.length === 0)
       return message.warning("No data found in range.");
     const hide = message.loading(`Generating ${type.toUpperCase()}...`, 0);
-
     try {
       if (type === "excel") {
         const [{ default: ExcelJS }, { saveAs }] = await Promise.all([
@@ -482,14 +490,13 @@ export const Calendar: React.FC<CalendarProps> = ({
         doc.save(`Schedules_${dayjs().format("YYYYMMDD")}.pdf`);
       }
       message.success(`${type.toUpperCase()} exported!`);
-    } catch (err) {
+    } catch {
       message.error("Export failed");
     }
     hide();
     setExportModalVisible(false);
   };
 
-  // Compute whether Save is disabled (no changes made)
   const isSaveDisabled = (() => {
     if (!rescheduleTarget || !rescheduleDate) return true;
     const newDate = rescheduleDate.format("YYYY-MM-DD");
@@ -501,56 +508,125 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   return (
     <Spin spinning={isUpdating} tip="Updating...">
-      <div className="flex flex-col lg:flex-row gap-8 bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 min-h-[700px] dark:bg-slate-900 dark:border-slate-700">
-        {/* Main Calendar Area */}
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="mb-6 flex justify-between items-start">
+      {/* ── COMMAND CENTER WRAPPER ── */}
+      <div className="cc-page">
+        {/* ── HEADER / STATS BAR ── */}
+        <div className="cc-header">
+          <div className="cc-header-top">
             <div>
-              <Title level={3} className="m-0 text-slate-900 dark:text-white">
-                Schedule Overview
-              </Title>
-              <Text className="text-slate-400 font-medium text-lg">
-                {selectedDate.format("dddd, MMMM D, YYYY")}
-              </Text>
-              {dailyData.isHoliday && (
-                <Tag color="red" className="ml-2 font-bold">
-                  PUBLIC HOLIDAY
-                </Tag>
-              )}
+              <div className="cc-title">
+                SCHEDULE OVERVIEW —{" "}
+                <span className="cc-month-cursor">{currentMonthStr}</span>
+              </div>
+              <div className="cc-sub">
+                {selectedDate.format("ddd").toUpperCase()} ·{" "}
+                {selectedDate.format("DD")} · {selectedDate.format("YYYY")} · WK{" "}
+                {selectedDate.week()}
+              </div>
             </div>
             <button
-              className="uiverse-export-btn"
+              className="cc-export-btn"
               onClick={() => setExportModalVisible(true)}
             >
-              <span>EXPORT DATA</span>
+              ⚡ EXPORT DATA
             </button>
           </div>
 
-          {/* FullCalendar */}
-          <div className="fc-wrapper">
+          <div className="cc-stats-row">
+            <div className="cc-stat-card cc-stat-1">
+              <div className="cc-stat-label">TOTAL SHOPS</div>
+              <div className="cc-stat-value">{stats.total}</div>
+            </div>
+            <div className="cc-stat-card cc-stat-2">
+              <div className="cc-stat-label">COMPLETED</div>
+              <div className="cc-stat-value">{stats.completed}</div>
+            </div>
+            <div className="cc-stat-card cc-stat-3">
+              <div className="cc-stat-label">POOL</div>
+              <div className="cc-stat-value">{stats.pool}</div>
+            </div>
+            <div className="cc-stat-card cc-stat-4">
+              <div className="cc-stat-label">TODAY</div>
+              <div className="cc-stat-value">{stats.today}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── TOOLBAR ── */}
+        <div className="cc-toolbar">
+          <div className="cc-nav-btns">
+            <button className="cc-nav-btn" onClick={handlePrev}>
+              ◀ PREV
+            </button>
+            <button className="cc-nav-btn cc-nav-active" onClick={handleToday}>
+              TODAY
+            </button>
+            <button className="cc-nav-btn" onClick={handleNext}>
+              NEXT ▶
+            </button>
+          </div>
+          <div className="cc-legend">
+            <span className="cc-legend-item">
+              <span
+                className="cc-legend-dot"
+                style={{ background: "#0ea5e9" }}
+              />
+              GROUP A
+            </span>
+            <span className="cc-legend-item">
+              <span
+                className="cc-legend-dot"
+                style={{ background: "#7c3aed" }}
+              />
+              GROUP B
+            </span>
+            <span className="cc-legend-item">
+              <span
+                className="cc-legend-dot"
+                style={{ background: "#ea580c" }}
+              />
+              GROUP C
+            </span>
+            <span className="cc-legend-item cc-legend-ph">▪ PH = HOLIDAY</span>
+          </div>
+          <div className="cc-nav-btns">
+            <button
+              className={`cc-nav-btn ${currentView === "dayGridMonth" ? "cc-nav-active" : ""}`}
+              onClick={handleMonthView}
+            >
+              MONTH
+            </button>
+            <button
+              className={`cc-nav-btn ${currentView === "dayGridWeek" ? "cc-nav-active" : ""}`}
+              onClick={handleWeekView}
+            >
+              WEEK
+            </button>
+          </div>
+        </div>
+
+        {/* ── CALENDAR BODY ── */}
+        <div className="cc-body">
+          <div className="cc-fc-wrapper">
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,dayGridWeek",
-              }}
-              buttonText={{
-                today: "Today",
-                month: "Month",
-                week: "Week",
-              }}
+              headerToolbar={false}
               events={allEvents}
               eventClick={handleEventClick}
               dateClick={handleDateClick}
               eventContent={renderEventContent}
               dayCellContent={renderDayCellContent}
-              dayCellClassNames={(arg) =>
-                isDateEditable(arg.date) ? [] : ["fc-day-locked"]
-              }
+              dayCellClassNames={(arg) => {
+                const classes: string[] = [];
+                if (!isDateEditable(arg.date)) classes.push("cc-day-locked");
+                if (dayjs(arg.date).isSame(dayjs(), "day"))
+                  classes.push("cc-day-today");
+                if (isHoliday(dayjs(arg.date).format("YYYY-MM-DD")))
+                  classes.push("cc-day-holiday");
+                return classes;
+              }}
               eventDidMount={(info) => {
                 if (info.event.extendedProps.tooltip) {
                   info.el.setAttribute(
@@ -559,452 +635,752 @@ export const Calendar: React.FC<CalendarProps> = ({
                   );
                 }
               }}
+              datesSet={(dateInfo) => {
+                setCurrentMonthStr(
+                  dayjs(dateInfo.start)
+                    .add(15, "day")
+                    .format("MMMM YYYY")
+                    .toUpperCase(),
+                );
+              }}
               height="auto"
-              aspectRatio={1.8}
               locale="en"
               firstDay={0}
-              dayMaxEvents={3}
+              dayMaxEvents={4}
               moreLinkText={(num) => `+${num} more`}
               eventDisplay="block"
               nowIndicator={true}
             />
           </div>
-        </div>
 
-        {/* Sidebar - Selected Date Details */}
-        <div className="w-full lg:w-[320px] lg:border-l lg:border-slate-100 lg:pl-8 dark:lg:border-slate-700">
-          <div className="sticky top-0">
-            {/* Date Header */}
-            <div className="mb-6">
-              <Title level={4} className="m-0 dark:text-white">
-                {selectedDate.format("MMMM D, YYYY")}
-              </Title>
-              <Text className="text-slate-400">
-                {selectedDate.format("dddd")}
-              </Text>
-              {dailyData.isHoliday && (
-                <div className="mt-2">
-                  <Tag color="red" className="font-bold text-xs">
-                    {HOLIDAY_NAMES[selectedDate.format("YYYY-MM-DD")] ||
-                      "Public Holiday"}
-                  </Tag>
+          {/* ── FLOATING DATE PANEL ── */}
+          {panelOpen && (
+            <div className="cc-float-panel">
+              <div className="cc-fp-header">
+                <div className="cc-fp-date">
+                  {selectedDate.format("ddd").toUpperCase()} ·{" "}
+                  {selectedDate.format("DD MMM YYYY").toUpperCase()}
                 </div>
-              )}
-            </div>
-
-            {/* Group Cards */}
-            {dailyData.total > 0 ? (
-              <div className="flex flex-col gap-4">
-                {dailyData.groups.map((group) => (
-                  <div
-                    key={group.id}
-                    className={`group-expand-card ${expandedGroupId === group.id ? "active" : ""}`}
-                  >
-                    <div
-                      className="group-card-header"
-                      onClick={() =>
-                        setExpandedGroupId(
-                          expandedGroupId === group.id ? null : group.id,
-                        )
-                      }
-                    >
-                      <Space size="middle">
-                        <Badge color={group.color} />
-                        <Text
-                          strong
-                          className="text-lg text-slate-700 dark:text-slate-200"
-                        >
-                          {group.name}
-                        </Text>
-                      </Space>
-                      <div className="flex items-center gap-4">
-                        <Tag className="rounded-full border-none bg-slate-100 text-slate-500 font-black px-3 dark:bg-slate-700 dark:text-slate-300">
-                          {group.items.length} SHOPS
-                        </Tag>
-                        <DownOutlined
-                          className={`transform transition-transform text-slate-400 ${expandedGroupId === group.id ? "rotate-180" : ""}`}
-                        />
-                      </div>
-                    </div>
-                    <div className="group-card-detail">
-                      <div className="flex flex-col gap-3 p-6 pt-2">
-                        {group.items.map((shop) => {
-                          const shopLocked = !isDateEditable(
-                            shop.scheduledDate!,
-                          );
-                          return (
-                            <div
-                              key={shop.id}
-                              className={`flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-600 transition-colors ${shopLocked ? "cursor-default opacity-70" : "cursor-pointer hover:border-teal-200 hover:bg-teal-50/30 dark:hover:border-teal-700 dark:hover:bg-teal-900/10"}`}
-                              onClick={() =>
-                                openRescheduleModal({
-                                  shopId: shop.id,
-                                  sharePointItemId: shop.sharePointItemId || "",
-                                  shopName: shop.name,
-                                  brandIcon: shop.brandIcon,
-                                  scheduledDate: shop.scheduledDate!,
-                                  groupId: shop.groupId,
-                                })
-                              }
-                            >
-                              <Avatar
-                                size={32}
-                                shape="square"
-                                src={shop.brandIcon}
-                                icon={<ShopOutlined />}
-                                className="bg-white border border-slate-100 flex-shrink-0 dark:bg-slate-700 dark:border-slate-600"
-                                style={{ objectFit: "contain" }}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-semibold text-slate-800 m-0 text-sm leading-tight dark:text-white">
-                                    {shop.name}
-                                  </h4>
-                                  {shopLocked && (
-                                    <Tag
-                                      icon={<LockOutlined />}
-                                      color="default"
-                                      className="text-[10px] m-0"
-                                    >
-                                      Locked
-                                    </Tag>
-                                  )}
-                                </div>
-                                <Text
-                                  type="secondary"
-                                  className="text-[10px] block mt-0.5"
-                                >
-                                  {shop.id}
-                                </Text>
-                                <Text className="text-slate-400 text-[10px] block mt-1 leading-tight">
-                                  {shop.address}
-                                </Text>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 text-center bg-slate-50 rounded-[24px] border border-dashed border-slate-200 dark:bg-slate-800 dark:border-slate-600">
-                <Empty
-                  description={
-                    <span className="text-slate-400">
-                      No schedules for this day
+                <div className="cc-fp-count">
+                  {dailyData.total > 0
+                    ? `${dailyData.total} SHOPS · ${dailyData.groups.filter((g) => g.items.length > 0).length} GROUPS`
+                    : "NO SHOPS SCHEDULED"}
+                  {dailyData.isHoliday && (
+                    <span className="cc-fp-ph">
+                      {" "}
+                      ·{" "}
+                      {HOLIDAY_NAMES[selectedDate.format("YYYY-MM-DD")] ||
+                        "PUBLIC HOLIDAY"}
                     </span>
-                  }
-                />
-              </div>
-            )}
-
-            {/* Month Summary */}
-            <Card
-              className="rounded-2xl border-none bg-teal-50/50 mt-6 dark:bg-teal-900/20"
-              bodyStyle={{ padding: "16px" }}
-            >
-              <div className="flex justify-between items-center">
-                <Text
-                  strong
-                  className="text-[10px] text-teal-700 uppercase dark:text-teal-300"
-                >
-                  Month Summary
-                </Text>
-                <Badge
-                  count={
-                    shops.filter((s) =>
-                      dayjs(s.scheduledDate).isSame(selectedDate, "month"),
-                    ).length
-                  }
-                  color="#0d9488"
-                />
-              </div>
-            </Card>
-          </div>
-        </div>
-
-        {/* Reschedule Modal */}
-        <Modal
-          title={
-            <div className="font-bold text-slate-800 dark:text-white">
-              Edit Schedule
-            </div>
-          }
-          open={rescheduleModalOpen}
-          onCancel={() => {
-            setRescheduleModalOpen(false);
-            setRescheduleDate(null);
-          }}
-          onOk={handleRescheduleConfirm}
-          okText="Save Changes"
-          okButtonProps={{
-            disabled: isSaveDisabled,
-            loading: isUpdating,
-            style: { background: "#0d9488", borderColor: "#0d9488" },
-          }}
-          cancelText="Cancel"
-          width={480}
-          centered
-          destroyOnClose
-        >
-          {rescheduleTarget && (
-            <>
-              {/* Shop identity */}
-              <div className="flex items-center gap-3 py-2">
-                <Avatar
-                  size={36}
-                  shape="square"
-                  src={rescheduleTarget.brandIcon}
-                  icon={<ShopOutlined />}
-                  className="bg-white border border-slate-200 flex-shrink-0"
-                />
-                <div>
-                  <Text strong className="block text-sm">
-                    {rescheduleTarget.shopName}
-                  </Text>
-                  <Text type="secondary" className="text-xs">
-                    {rescheduleTarget.shopId}
-                  </Text>
+                  )}
                 </div>
               </div>
-              <Divider className="my-4" />
 
-              {/* Date picker */}
-              <div className="mb-5">
-                <Text className="block text-xs text-slate-500 uppercase font-semibold mb-2 tracking-wide">
-                  Scheduled Date
-                </Text>
-                <DatePicker
-                  className="w-full"
-                  value={rescheduleDate}
-                  onChange={(date) => setRescheduleDate(date)}
-                  disabledDate={disabledDateFn}
-                  format="YYYY-MM-DD"
-                  placeholder="Select new date"
-                />
-              </div>
+              {dailyData.total > 0 ? (
+                <div className="cc-fp-groups">
+                  {dailyData.groups.map((group) =>
+                    group.items.length === 0 ? null : (
+                      <div key={group.id} className="cc-fp-group">
+                        <div
+                          className="cc-fp-group-header"
+                          style={{ borderLeftColor: group.color }}
+                        >
+                          <span
+                            className="cc-fp-group-label"
+                            style={{ color: group.color }}
+                          >
+                            {group.name}
+                          </span>
+                          <span className="cc-fp-group-count">
+                            {group.items.length} SHOPS
+                          </span>
+                        </div>
+                        <div className="cc-fp-shops">
+                          {group.items.map((shop) => {
+                            const shopLocked = !isDateEditable(
+                              shop.scheduledDate!,
+                            );
+                            return (
+                              <div
+                                key={shop.id}
+                                className={`cc-fp-shop${shopLocked ? " locked" : ""}`}
+                                onClick={() =>
+                                  openRescheduleModal({
+                                    shopId: shop.id,
+                                    sharePointItemId:
+                                      shop.sharePointItemId || "",
+                                    shopName: shop.name,
+                                    brandIcon: shop.brandIcon,
+                                    scheduledDate: shop.scheduledDate!,
+                                    groupId: shop.groupId,
+                                  })
+                                }
+                              >
+                                <span
+                                  className="cc-fp-dot"
+                                  style={{ background: group.color }}
+                                />
+                                <span className="cc-fp-shop-name">
+                                  {shop.name}
+                                </span>
+                                <span className="cc-fp-shop-id">{shop.id}</span>
+                                {shopLocked && (
+                                  <LockOutlined
+                                    style={{ fontSize: 8, opacity: 0.4 }}
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <div className="cc-fp-empty">NO SHOPS SCHEDULED</div>
+              )}
 
-              {/* Group picker */}
-              <div>
-                <Text className="block text-xs text-slate-500 uppercase font-semibold mb-3 tracking-wide">
-                  Group Assignment
-                </Text>
-                <Radio.Group
-                  value={rescheduleGroupId}
-                  onChange={(e) => setRescheduleGroupId(e.target.value)}
-                  className="flex gap-4"
-                >
-                  <Radio value={1}>
-                    <Tag color="#0369a1" className="font-bold">
-                      Group A
-                    </Tag>
-                  </Radio>
-                  <Radio value={2}>
-                    <Tag color="#7e22ce" className="font-bold">
-                      Group B
-                    </Tag>
-                  </Radio>
-                  <Radio value={3}>
-                    <Tag color="#c2410c" className="font-bold">
-                      Group C
-                    </Tag>
-                  </Radio>
-                </Radio.Group>
+              <div className="cc-fp-footer">
+                CLICK SHOP TO RESCHEDULE · ESC TO CLOSE
               </div>
-            </>
+            </div>
           )}
-        </Modal>
-
-        {/* Export Modal */}
-        <Modal
-          title={
-            <div className="font-black">
-              <ExportOutlined className="text-teal-600 mr-2" />
-              EXPORT SCHEDULES
-            </div>
-          }
-          open={exportModalVisible}
-          onCancel={() => setExportModalVisible(false)}
-          footer={null}
-          centered
-          width={450}
-        >
-          <div className="py-4">
-            <div className="flex gap-2 mb-6">
-              <DatePicker.RangePicker
-                className="flex-1 h-12 rounded-xl"
-                value={exportDateRange}
-                onChange={(v) => setExportDateRange(v as any)}
-              />
-              <Button
-                className="h-12 rounded-xl font-black px-6"
-                onClick={handleSetAllDates}
-              >
-                ALL
-              </Button>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                block
-                className="h-14 rounded-2xl bg-green-600 text-white font-black hover:bg-green-700"
-                onClick={() => handleExport("excel")}
-              >
-                <FileExcelOutlined /> EXCEL
-              </Button>
-              <Button
-                block
-                className="h-14 rounded-2xl bg-rose-500 text-white font-black hover:bg-rose-600"
-                onClick={() => handleExport("pdf")}
-              >
-                <FilePdfOutlined /> PDF
-              </Button>
-            </div>
-            <Button
-              block
-              type="text"
-              className="mt-4 font-bold text-slate-400"
-              onClick={() => setExportModalVisible(false)}
-            >
-              CANCEL
-            </Button>
-          </div>
-        </Modal>
+        </div>
       </div>
 
+      {/* ── RESCHEDULE MODAL (unchanged) ── */}
+      <Modal
+        title={
+          <div className="font-bold text-slate-800 dark:text-white">
+            Edit Schedule
+          </div>
+        }
+        open={rescheduleModalOpen}
+        onCancel={() => {
+          setRescheduleModalOpen(false);
+          setRescheduleDate(null);
+        }}
+        onOk={handleRescheduleConfirm}
+        okText="Save Changes"
+        okButtonProps={{
+          disabled: isSaveDisabled,
+          loading: isUpdating,
+          style: { background: "#0d9488", borderColor: "#0d9488" },
+        }}
+        cancelText="Cancel"
+        width={480}
+        centered
+        destroyOnClose
+      >
+        {rescheduleTarget && (
+          <>
+            <div className="flex items-center gap-3 py-2">
+              <Avatar
+                size={36}
+                shape="square"
+                src={rescheduleTarget.brandIcon}
+                icon={<ShopOutlined />}
+                className="bg-white border border-slate-200 flex-shrink-0"
+              />
+              <div>
+                <Text strong className="block text-sm">
+                  {rescheduleTarget.shopName}
+                </Text>
+                <Text type="secondary" className="text-xs">
+                  {rescheduleTarget.shopId}
+                </Text>
+              </div>
+            </div>
+            <Divider className="my-4" />
+            <div className="mb-5">
+              <Text className="block text-xs text-slate-500 uppercase font-semibold mb-2 tracking-wide">
+                Scheduled Date
+              </Text>
+              <DatePicker
+                className="w-full"
+                value={rescheduleDate}
+                onChange={(date) => setRescheduleDate(date)}
+                disabledDate={disabledDateFn}
+                format="YYYY-MM-DD"
+                placeholder="Select new date"
+              />
+            </div>
+            <div>
+              <Text className="block text-xs text-slate-500 uppercase font-semibold mb-3 tracking-wide">
+                Group Assignment
+              </Text>
+              <Radio.Group
+                value={rescheduleGroupId}
+                onChange={(e) => setRescheduleGroupId(e.target.value)}
+                className="flex gap-4"
+              >
+                <Radio value={1}>
+                  <Tag color="#0369a1" className="font-bold">
+                    Group A
+                  </Tag>
+                </Radio>
+                <Radio value={2}>
+                  <Tag color="#7e22ce" className="font-bold">
+                    Group B
+                  </Tag>
+                </Radio>
+                <Radio value={3}>
+                  <Tag color="#c2410c" className="font-bold">
+                    Group C
+                  </Tag>
+                </Radio>
+              </Radio.Group>
+            </div>
+          </>
+        )}
+      </Modal>
+
+      {/* ── EXPORT MODAL (unchanged) ── */}
+      <Modal
+        title={
+          <div className="font-black">
+            <ExportOutlined className="text-teal-600 mr-2" />
+            EXPORT SCHEDULES
+          </div>
+        }
+        open={exportModalVisible}
+        onCancel={() => setExportModalVisible(false)}
+        footer={null}
+        centered
+        width={450}
+      >
+        <div className="py-4">
+          <div className="flex gap-2 mb-6">
+            <DatePicker.RangePicker
+              className="flex-1 h-12 rounded-xl"
+              value={exportDateRange}
+              onChange={(v) => setExportDateRange(v as any)}
+            />
+            <Button
+              className="h-12 rounded-xl font-black px-6"
+              onClick={handleSetAllDates}
+            >
+              ALL
+            </Button>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              block
+              className="h-14 rounded-2xl bg-green-600 text-white font-black hover:bg-green-700"
+              onClick={() => handleExport("excel")}
+            >
+              <FileExcelOutlined /> EXCEL
+            </Button>
+            <Button
+              block
+              className="h-14 rounded-2xl bg-rose-500 text-white font-black hover:bg-rose-600"
+              onClick={() => handleExport("pdf")}
+            >
+              <FilePdfOutlined /> PDF
+            </Button>
+          </div>
+          <Button
+            block
+            type="text"
+            className="mt-4 font-bold text-slate-400"
+            onClick={() => setExportModalVisible(false)}
+          >
+            CANCEL
+          </Button>
+        </div>
+      </Modal>
+
+      {/* ── STYLES ── */}
       <style>{`
-        /* Editable events: pointer cursor, hover reveals edit icon */
-        .fc-event:not(.fc-event-locked) {
-          cursor: pointer !important;
+        /* ── KEYFRAMES ── */
+        @keyframes cc-shimmer {
+          0%   { transform: translateX(-150%); }
+          100% { transform: translateX(400%); }
         }
-        .edit-hint {
-          opacity: 0;
-          transition: opacity 150ms ease;
+        @keyframes cc-blink {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0; }
         }
-        .fc-event:not(.fc-event-locked):hover .edit-hint {
-          opacity: 0.6;
+        @keyframes cc-pulse-glow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(14,165,233,0.4); }
+          50%       { box-shadow: 0 0 0 8px rgba(14,165,233,0); }
+        }
+        @keyframes cc-float-in {
+          from { opacity: 0; transform: translateY(10px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0)   scale(1);    }
+        }
+        @keyframes cc-chip-in {
+          from { opacity: 0; transform: translateX(-4px); }
+          to   { opacity: 1; transform: translateX(0);    }
+        }
+        @keyframes cc-count-up {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0);   }
         }
 
-        /* Locked events: default cursor */
-        .fc-event-locked {
-          cursor: default !important;
-          opacity: 0.7;
-        }
-        .fc-event-locked .fc-event-main {
-          cursor: default !important;
-        }
+        /* ══════════════════════════════
+           DARK MODE  (body.dark — default)
+           ══════════════════════════════ */
 
-        /* Locked day cells: subtle grey wash */
-        .fc-day-locked {
-          background: rgba(148, 163, 184, 0.06) !important;
-        }
-
-        /* Group expand card animations */
-        .group-expand-card {
-          background: #f8fafc;
-          border: 1px solid #f1f5f9;
+        /* Page wrapper */
+        .cc-page {
+          background: #0f172a;
           border-radius: 20px;
           overflow: hidden;
-          transition: all 0.4s ease;
-          height: 72px;
-          margin-bottom: 12px;
+          border: 1px solid #1e293b;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         }
-        .group-expand-card.active {
-          height: auto;
-          max-height: 2000px;
-          background: #fff;
-          border-color: #e2e8f0;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+
+        /* Header */
+        .cc-header {
+          position: relative;
+          background: linear-gradient(180deg, #0f172a 0%, #0c1526 100%);
+          border-bottom: 1px solid #1e293b;
+          padding: 18px 24px 16px;
+          overflow: hidden;
         }
-        .group-card-header {
-          padding: 20px 24px;
+        .cc-header::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: repeating-linear-gradient(
+            0deg,
+            transparent, transparent 3px,
+            rgba(14,165,233,0.025) 3px, rgba(14,165,233,0.025) 6px
+          );
+          pointer-events: none;
+        }
+        .cc-header-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 16px;
+          position: relative;
+          z-index: 1;
+        }
+        .cc-title {
+          font-size: 17px;
+          font-weight: 900;
+          color: #f1f5f9;
+          letter-spacing: -0.3px;
+          font-family: monospace;
+        }
+        .cc-month-cursor::after {
+          content: '|';
+          color: #0ea5e9;
+          animation: cc-blink 1s step-end infinite;
+          margin-left: 2px;
+          font-weight: 300;
+        }
+        .cc-sub {
+          color: #475569;
+          font-size: 10px;
+          margin-top: 3px;
+          font-family: monospace;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+        }
+        .cc-export-btn {
+          position: relative;
+          background: rgba(220,38,38,0.12);
+          border: 1px solid rgba(220,38,38,0.35);
+          color: #f87171;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 7px 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          font-family: monospace;
+          transition: all 0.2s;
+          z-index: 1;
+        }
+        .cc-export-btn:hover {
+          background: rgba(220,38,38,0.22);
+          border-color: rgba(220,38,38,0.6);
+        }
+
+        /* Stats cards */
+        .cc-stats-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 8px;
+          position: relative;
+          z-index: 1;
+        }
+        .cc-stat-card {
+          background: #1e293b;
+          border: 1px solid #334155;
+          border-radius: 8px;
+          padding: 10px 14px;
+          position: relative;
+          overflow: hidden;
+          animation: cc-count-up 0.5s ease both;
+        }
+        .cc-stat-card::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0;
+          width: 35%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+          animation: cc-shimmer 2.8s ease-in-out infinite;
+        }
+        .cc-stat-1 { border-top: 2px solid #0ea5e9; animation-delay: 0.05s; }
+        .cc-stat-2 { border-top: 2px solid #10b981; animation-delay: 0.15s; }
+        .cc-stat-3 { border-top: 2px solid #f59e0b; animation-delay: 0.25s; }
+        .cc-stat-4 { border-top: 2px solid #818cf8; animation-delay: 0.35s; }
+        .cc-stat-card::after { animation-delay: calc(var(--i, 0) * 0.3s); }
+        .cc-stat-1::after { --i: 0; }
+        .cc-stat-2::after { --i: 1; }
+        .cc-stat-3::after { --i: 2; }
+        .cc-stat-4::after { --i: 3; }
+        .cc-stat-label {
+          color: #475569;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          font-family: monospace;
+        }
+        .cc-stat-value {
+          font-size: 24px;
+          font-weight: 900;
+          font-family: monospace;
+          margin-top: 2px;
+        }
+        .cc-stat-1 .cc-stat-value { color: #7dd3fc; }
+        .cc-stat-2 .cc-stat-value { color: #34d399; }
+        .cc-stat-3 .cc-stat-value { color: #fbbf24; }
+        .cc-stat-4 .cc-stat-value { color: #a5b4fc; }
+
+        /* Toolbar */
+        .cc-toolbar {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          cursor: pointer;
+          padding: 10px 24px;
+          background: #0c1526;
+          border-bottom: 1px solid #1e293b;
+          flex-wrap: wrap;
+          gap: 8px;
         }
-        .group-card-detail {
-          opacity: 0;
-          transition: opacity 0.3s;
-        }
-        .group-expand-card.active .group-card-detail {
-          opacity: 1;
-        }
-
-        /* Dark mode group cards */
-        body.dark .group-expand-card {
+        .cc-nav-btns { display: flex; gap: 4px; }
+        .cc-nav-btn {
           background: #1e293b;
-          border-color: #334155;
+          border: 1px solid #334155;
+          color: #64748b;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 5px 12px;
+          border-radius: 5px;
+          cursor: pointer;
+          font-family: monospace;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          transition: all 0.15s;
         }
-        body.dark .group-expand-card.active {
+        .cc-nav-btn:hover { background: #0ea5e915; border-color: #0ea5e940; color: #7dd3fc; }
+        .cc-nav-active { background: #0ea5e920 !important; border-color: #0ea5e950 !important; color: #7dd3fc !important; }
+        .cc-legend { display: flex; gap: 14px; align-items: center; }
+        .cc-legend-item {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 9px;
+          color: #475569;
+          font-family: monospace;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+        }
+        .cc-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+        .cc-legend-ph { color: #ef4444 !important; }
+
+        /* Calendar body */
+        .cc-body {
+          padding: 16px 24px 24px;
           background: #0f172a;
-          border-color: #475569;
+          position: relative;
+        }
+        .cc-fc-wrapper .fc-theme-standard td,
+        .cc-fc-wrapper .fc-theme-standard th {
+          border-color: #1e293b;
+        }
+        .cc-fc-wrapper .fc-col-header-cell-cushion {
+          color: #475569;
+          font-size: 11px;
+          font-weight: 700;
+          font-family: monospace;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        }
+        .cc-fc-wrapper .fc-daygrid-day {
+          background: transparent;
+        }
+        .cc-fc-wrapper .fc-daygrid-day:hover {
+          background: rgba(30,41,59,0.6);
+        }
+        .cc-fc-wrapper .fc-day-other { opacity: 0.3; }
+        .cc-fc-wrapper .fc-day-today {
+          background: rgba(14,165,233,0.06) !important;
+          animation: cc-pulse-glow 2s ease-in-out infinite;
+        }
+        .cc-fc-wrapper .fc-day-today .fc-daygrid-day-frame { border-top: 2px solid #0ea5e9; }
+        .cc-fc-wrapper .cc-day-holiday { background: rgba(239,68,68,0.06) !important; }
+        .cc-fc-wrapper .cc-day-locked { opacity: 0.55; }
+        .cc-fc-wrapper .fc-daygrid-more-link {
+          color: #334155;
+          font-size: 9px;
+          font-family: monospace;
+        }
+        .cc-fc-wrapper .fc-daygrid-more-link:hover { color: #0ea5e9; }
+
+        /* Day number custom */
+        .cc-day-top {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          padding: 2px 4px 0;
+          gap: 1px;
+        }
+        .cc-day-num {
+          font-family: monospace;
+          font-size: 12px;
+          font-weight: 600;
+          color: #64748b;
+          line-height: 1.2;
+        }
+        .fc-day-today .cc-day-num { color: #0ea5e9; font-weight: 900; }
+        .cc-ph-badge {
+          display: block;
+          font-size: 7px;
+          font-weight: 700;
+          color: #ef4444;
+          font-family: monospace;
+          letter-spacing: 0.5px;
+          line-height: 1;
         }
 
-        /* Export button animation */
-        .uiverse-export-btn {
-          position: relative;
-          margin: 0;
-          padding: 0.8em 1.5em;
-          outline: none;
-          text-decoration: none;
+        /* Event chips — dense monospace */
+        .cc-chip {
           display: flex;
-          justify-content: center;
           align-items: center;
+          gap: 3px;
+          background: #0a111f;
+          border-left: 3px solid #475569;
+          border-radius: 3px;
+          padding: 3px 5px;
+          margin: 0 2px 2px;
+          font-family: monospace;
+          font-size: 10px;
           cursor: pointer;
-          border: none;
-          text-transform: uppercase;
-          background-color: #333;
-          border-radius: 10px;
-          color: #fff;
-          font-weight: 700;
-          font-size: 14px;
-          font-family: inherit;
-          z-index: 0;
           overflow: hidden;
-          transition: all 0.3s cubic-bezier(0.02, 0.01, 0.47, 1);
+          animation: cc-chip-in 0.25s ease both;
+          transition: background 0.12s;
+          line-height: 1.4;
         }
-        .uiverse-export-btn:hover {
-          animation: sh0 0.5s ease-in-out both;
+        .cc-chip:hover { background: #142035; }
+        .cc-chip.locked { opacity: 0.45; cursor: default; }
+        /* prefix */
+        .cc-chip-prefix { color: #64748b; flex-shrink: 0; font-size: 9px; }
+        /* code — group color (dark mode) */
+        .cc-chip-code { font-weight: 800; flex-shrink: 0; }
+        .cc-chip.grp-1 .cc-chip-code { color: #38bdf8; }
+        .cc-chip.grp-2 .cc-chip-code { color: #a78bfa; }
+        .cc-chip.grp-3 .cc-chip-code { color: #fb923c; }
+        /* name — readable dark */
+        .cc-chip-name {
+          color: #cbd5e1;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          flex: 1;
+          margin-left: 1px;
         }
-        @keyframes sh0 {
-          0% { transform: rotate(0deg) translate3d(0, 0, 0); }
-          25% { transform: rotate(7deg) translate3d(0, 0, 0); }
-          50% { transform: rotate(-7deg) translate3d(0, 0, 0); }
-          75% { transform: rotate(1deg) translate3d(0, 0, 0); }
-          100% { transform: rotate(0deg) translate3d(0, 0, 0); }
-        }
-        .uiverse-export-btn:hover span {
-          animation: storm 0.7s ease-in-out both;
-          animation-delay: 0.06s;
-        }
-        .uiverse-export-btn::before,
-        .uiverse-export-btn::after {
-          content: '';
+
+        /* Floating date panel */
+        .cc-float-panel {
           position: absolute;
-          right: 0;
-          bottom: 0;
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
+          top: 16px;
+          right: 24px;
+          width: 230px;
+          background: #0a111f;
+          border: 1px solid rgba(14,165,233,0.3);
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(14,165,233,0.08);
+          animation: cc-float-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          overflow: hidden;
+          z-index: 20;
+        }
+        .cc-fp-header {
+          padding: 10px 14px 8px;
+          border-bottom: 1px solid #1e293b;
+          background: linear-gradient(135deg, #0c2544 0%, #0a111f 100%);
+        }
+        .cc-fp-date {
+          color: #0ea5e9;
+          font-size: 11px;
+          font-weight: 900;
+          font-family: monospace;
+          letter-spacing: 1px;
+        }
+        .cc-fp-count {
+          color: #64748b;
+          font-size: 10px;
+          font-family: monospace;
+          margin-top: 2px;
+        }
+        .cc-fp-ph { color: #ef4444; }
+        .cc-fp-groups { padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
+        .cc-fp-group {
+          background: #1e293b;
+          border-radius: 6px;
+          overflow: hidden;
+        }
+        .cc-fp-group-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 5px 8px;
+          border-left: 3px solid;
+        }
+        .cc-fp-group-label {
+          font-size: 10px;
+          font-weight: 800;
+          font-family: monospace;
+          letter-spacing: 1px;
+        }
+        .cc-fp-group-count { font-size: 9px; font-family: monospace; color: #64748b; }
+        .cc-fp-shops { padding: 0 8px 6px; }
+        .cc-fp-shop {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 4px;
+          border-radius: 3px;
+          cursor: pointer;
+          transition: background 0.12s;
+          font-family: monospace;
+        }
+        .cc-fp-shop:hover { background: #0f172a; }
+        .cc-fp-shop.locked { opacity: 0.45; cursor: default; }
+        .cc-fp-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .cc-fp-shop-name { font-size: 10px; color: #cbd5e1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; }
+        .cc-fp-shop-id { font-size: 9px; color: #475569; flex-shrink: 0; }
+        .cc-fp-empty { padding: 16px; text-align: center; color: #334155; font-size: 10px; font-family: monospace; letter-spacing: 1px; }
+        .cc-fp-footer {
+          padding: 6px 14px;
+          border-top: 1px solid #1e293b;
+          text-align: center;
+          font-size: 8px;
+          color: #334155;
+          font-family: monospace;
+          letter-spacing: 0.5px;
+        }
+
+        /* ══════════════════════════════
+           LIGHT MODE  (body:not(.dark))
+           ══════════════════════════════ */
+        body:not(.dark) .cc-page {
           background: #fff;
-          opacity: 0;
-          transition: transform 0.15s cubic-bezier(0.02, 0.01, 0.47, 1), opacity 0.15s cubic-bezier(0.02, 0.01, 0.47, 1);
-          z-index: -1;
-          transform: translate(100%, -25%) translate3d(0, 0, 0);
+          border-color: #e2e8f0;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.08);
         }
-        .uiverse-export-btn:hover::before,
-        .uiverse-export-btn:hover::after {
-          opacity: 0.15;
-          transition: transform 0.2s cubic-bezier(0.02, 0.01, 0.47, 1), opacity 0.2s cubic-bezier(0.02, 0.01, 0.47, 1);
+        body:not(.dark) .cc-header {
+          background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+          border-bottom-color: #e2e8f0;
         }
-        .uiverse-export-btn:hover::before {
-          transform: translate3d(50%, 0, 0) scale(0.9);
+        body:not(.dark) .cc-header::before {
+          background: repeating-linear-gradient(
+            0deg,
+            transparent, transparent 3px,
+            rgba(13,148,136,0.025) 3px, rgba(13,148,136,0.025) 6px
+          );
         }
-        .uiverse-export-btn:hover::after {
-          transform: translate(50%, 0) scale(1.1);
+        body:not(.dark) .cc-title { color: #0f172a; }
+        body:not(.dark) .cc-month-cursor::after { color: #0d9488; }
+        body:not(.dark) .cc-sub { color: #94a3b8; }
+        body:not(.dark) .cc-export-btn {
+          background: rgba(239,68,68,0.07);
+          border-color: rgba(239,68,68,0.25);
+          color: #dc2626;
         }
+        body:not(.dark) .cc-stat-card {
+          background: #fff;
+          border-color: #e2e8f0;
+        }
+        body:not(.dark) .cc-stat-card::after {
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+        }
+        body:not(.dark) .cc-stat-label { color: #94a3b8; }
+        body:not(.dark) .cc-stat-1 .cc-stat-value { color: #0369a1; }
+        body:not(.dark) .cc-stat-2 .cc-stat-value { color: #059669; }
+        body:not(.dark) .cc-stat-3 .cc-stat-value { color: #d97706; }
+        body:not(.dark) .cc-stat-4 .cc-stat-value { color: #4f46e5; }
+        body:not(.dark) .cc-toolbar {
+          background: #f8fafc;
+          border-bottom-color: #e2e8f0;
+        }
+        body:not(.dark) .cc-nav-btn {
+          background: #fff;
+          border-color: #e2e8f0;
+          color: #64748b;
+        }
+        body:not(.dark) .cc-nav-btn:hover { background: #f0fdf9; border-color: #0d9488; color: #0d9488; }
+        body:not(.dark) .cc-nav-active { background: #f0fdf9 !important; border-color: #0d9488 !important; color: #0d9488 !important; }
+        body:not(.dark) .cc-legend-item { color: #94a3b8; }
+        body:not(.dark) .cc-body { background: #fff; }
+        body:not(.dark) .cc-fc-wrapper .fc-theme-standard td,
+        body:not(.dark) .cc-fc-wrapper .fc-theme-standard th { border-color: #f1f5f9; }
+        body:not(.dark) .cc-fc-wrapper .fc-col-header-cell-cushion { color: #94a3b8; }
+        body:not(.dark) .cc-fc-wrapper .fc-daygrid-day:hover { background: rgba(248,250,252,0.8); }
+        body:not(.dark) .cc-fc-wrapper .fc-day-today {
+          background: rgba(13,148,136,0.04) !important;
+          animation: none;
+          box-shadow: none;
+        }
+        body:not(.dark) .cc-fc-wrapper .fc-day-today .fc-daygrid-day-frame { border-top-color: #0d9488; }
+        body:not(.dark) .cc-day-num { color: #374151; }
+        body:not(.dark) .fc-day-today .cc-day-num { color: #0d9488; }
+        body:not(.dark) .cc-chip {
+          background: #f8fafc;
+          border-color: #e2e8f0;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+        }
+        body:not(.dark) .cc-chip:hover { background: #f1f5f9; }
+        body:not(.dark) .cc-chip-prefix { color: #94a3b8; }
+        body:not(.dark) .cc-chip-name { color: #374151; font-weight: 500; }
+        /* light mode chip code — darker group colors */
+        body:not(.dark) .cc-chip.grp-1 .cc-chip-code { color: #0369a1; }
+        body:not(.dark) .cc-chip.grp-2 .cc-chip-code { color: #6d28d9; }
+        body:not(.dark) .cc-chip.grp-3 .cc-chip-code { color: #c2410c; }
+        body:not(.dark) .cc-float-panel {
+          background: #fff;
+          border-color: #e2e8f0;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        }
+        body:not(.dark) .cc-fp-header {
+          background: linear-gradient(135deg, #f0fdf9 0%, #fff 100%);
+          border-bottom-color: #f1f5f9;
+        }
+        body:not(.dark) .cc-fp-date { color: #0d9488; }
+        body:not(.dark) .cc-fp-count { color: #64748b; }
+        body:not(.dark) .cc-fp-group { background: #f8fafc; border: 1px solid #e2e8f0; }
+        body:not(.dark) .cc-fp-group-count { color: #64748b; }
+        body:not(.dark) .cc-fp-shop:hover { background: #f1f5f9; }
+        body:not(.dark) .cc-fp-shop-name { color: #1e293b; font-weight: 500; }
+        body:not(.dark) .cc-fp-shop-id { color: #64748b; }
+        body:not(.dark) .cc-fp-empty { color: #94a3b8; }
+        body:not(.dark) .cc-fp-footer { border-top-color: #e2e8f0; color: #94a3b8; }
+
+        /* FullCalendar overrides — shared */
+        .cc-fc-wrapper .fc-event { background: transparent !important; border: none !important; }
+        .cc-fc-wrapper .fc-event:focus { box-shadow: none !important; }
+        .cc-fc-wrapper .fc-daygrid-event-harness { margin: 0 !important; }
+        .cc-fc-wrapper .fc-button { display: none !important; }
+        .cc-fc-wrapper .fc-toolbar { display: none !important; }
+        .cc-fc-wrapper .fc-scrollgrid { border-radius: 0 !important; }
       `}</style>
     </Spin>
   );

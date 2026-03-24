@@ -208,6 +208,15 @@ function App() {
 
       // Fetch inventory list — paginated to load all items beyond the 999 limit
       try {
+        // SPO image/hyperlink columns return either a plain URL string or
+        // an object like { Url: "https://..." } — extract the URL from either
+        const extractUrl = (val: any): string => {
+          if (!val) return "";
+          if (typeof val === "string") return val;
+          if (typeof val === "object" && val.Url) return val.Url;
+          return "";
+        };
+
         const mapInvItem = (item: any): InventoryItem => {
           const f = item.fields || {};
           return {
@@ -234,13 +243,16 @@ function App() {
             appSyncStatus: f[INV_FIELDS.APP_SYNC_STATUS] || "",
             remarks: f[INV_FIELDS.REMARKS] || "",
             wToW: f[INV_FIELDS.W_TO_W] || "",
-            uploadPhoto: f[INV_FIELDS.UPLOAD_PHOTO] || "",
+            uploadPhoto: extractUrl(f[INV_FIELDS.UPLOAD_PHOTO]),
+            productImage: extractUrl(f[INV_FIELDS.PRODUCT_IMAGE]),
+            productImage2: extractUrl(f[INV_FIELDS.PRODUCT_IMAGE2]),
             createdBy: f[INV_FIELDS.CREATED_BY] || "",
           } as InventoryItem;
         };
 
         const allInvItems: InventoryItem[] = [];
-        let nextUrl: string | undefined = `${API_URLS.inventoryList}/items?$expand=fields($select=*)&$top=999`;
+        let nextUrl: string | undefined =
+          `${API_URLS.inventoryList}/items?$expand=fields($select=*)&$top=999`;
         while (nextUrl) {
           const invRes = await fetch(nextUrl, {
             headers: {

@@ -228,6 +228,8 @@ function App() {
           if (obj.serverUrl && obj.serverRelativeUrl)
             return `${obj.serverUrl}${obj.serverRelativeUrl}`;
           if (obj.url) return obj.url;
+          // SharePoint Image column: { fileName, originalImageName }
+          if (obj.fileName) return obj.fileName;
           return "";
         };
 

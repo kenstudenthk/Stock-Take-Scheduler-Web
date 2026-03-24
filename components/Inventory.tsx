@@ -34,30 +34,73 @@ import {
   RightOutlined,
 } from "@ant-design/icons";
 import { INV_FIELDS } from "../constants";
-import { API_URLS } from "../constants/config";
+import { API_URLS, TOKEN_CONFIG } from "../constants/config";
 import { Shop, InventoryItem } from "../types";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 // ── Photo carousel ──────────────────────────────────────────────────────────
-const PhotoCarousel = ({ photos }: { photos: string[] }) => {
+// photos: direct URLs or SP Image column fileNames (fetched via Graph API attachments)
+const PhotoCarousel = ({ photos, itemId }: { photos: string[]; itemId: string }) => {
   const [idx, setIdx] = useState(0);
+  // resolved[i]: object URL (blob) | direct URL | null (loading) | "" (error)
+  const [resolved, setResolved] = useState<(string | null)[]>(photos.map(() => null));
+
+  useEffect(() => {
+    let cancelled = false;
+    const loaded: (string | null)[] = photos.map(() => null);
+    setResolved(photos.map(() => null));
+
+    photos.forEach((photo, i) => {
+      if (!photo) { loaded[i] = ""; if (!cancelled) setResolved([...loaded]); return; }
+
+      if (photo.startsWith("http")) {
+        loaded[i] = photo;
+        if (!cancelled) setResolved([...loaded]);
+        return;
+      }
+
+      // SP Image column filename → Graph API list item attachment
+      const graphToken = localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken) || "";
+      fetch(
+        `${API_URLS.inventoryList}/items/${itemId}/attachments/${encodeURIComponent(photo)}/$value`,
+        { headers: { Authorization: `Bearer ${graphToken}` } },
+      )
+        .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.blob(); })
+        .then((blob) => { if (!cancelled) { loaded[i] = URL.createObjectURL(blob); setResolved([...loaded]); } })
+        .catch(() => { if (!cancelled) { loaded[i] = ""; setResolved([...loaded]); } });
+    });
+
+    return () => { cancelled = true; };
+  }, [photos, itemId]);
+
   const prev = () => setIdx((i) => (i - 1 + photos.length) % photos.length);
   const next = () => setIdx((i) => (i + 1) % photos.length);
+
+  const allLoading = resolved.every((r) => r === null);
+  const currentSrc = resolved[idx];
+
   return (
     <div className="relative select-none">
-      <img
-        key={photos[idx]}
-        src={photos[idx]}
-        alt={`Product Photo ${idx + 1}`}
-        className="w-full rounded-xl border border-slate-200 object-cover"
-        style={{ maxHeight: 180 }}
-        onError={(e) => {
-          const el = e.target as HTMLImageElement;
-          el.style.display = "none";
-        }}
-      />
+      {allLoading ? (
+        <div className="w-full h-32 bg-slate-100 rounded-xl flex items-center justify-center">
+          <span className="text-slate-400 text-[11px]">Loading…</span>
+        </div>
+      ) : currentSrc ? (
+        <img
+          key={currentSrc}
+          src={currentSrc}
+          alt={`Product Photo ${idx + 1}`}
+          className="w-full rounded-xl border border-slate-200 object-cover"
+          style={{ maxHeight: 180 }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+      ) : (
+        <div className="w-full h-32 bg-slate-100 rounded-xl flex items-center justify-center">
+          <span className="text-slate-400 text-[11px]">Photo unavailable</span>
+        </div>
+      )}
       {photos.length > 1 && (
         <>
           <button
@@ -549,6 +592,7 @@ export const Inventory = ({
                 {[selectedItem.productImage, selectedItem.productImage2].some(Boolean) ? (
                   <PhotoCarousel
                     photos={[selectedItem.productImage, selectedItem.productImage2].filter(Boolean) as string[]}
+                    itemId={String(selectedItem.id)}
                   />
                 ) : (
                   <div className="photo-placeholder">

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Get SharePoint Cookie</title>
+  <style>
+    body { font-family: monospace; padding: 24px; background: #0f172a; color: #e2e8f0; max-width: 720px; }
+    h2 { color: #38bdf8; }
+    .step { background: #1e293b; border-radius: 8px; padding: 16px; margin: 12px 0; }
+    .step h3 { margin: 0 0 8px; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .ok { color: #4ade80; }
+    .warn { color: #fb923c; }
+    .err { color: #f87171; }
+    img { max-width: 100%; border-radius: 6px; border: 1px solid #334155; margin-top: 8px; }
+    button { background: #0284c7; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 8px; }
+    button.green { background: #0d9488; }
+    button:hover { opacity: 0.85; }
+    a { color: #38bdf8; }
+    code { background: #334155; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+    textarea { width: 100%; box-sizing: border-box; background: #0f172a; color: #e2e8f0; border: 1px solid #334155; padding: 10px; border-radius: 6px; font-size: 11px; min-height: 80px; margin-top: 8px; font-family: monospace; }
+    #result { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 6px; font-size: 11px; margin-top: 8px; word-break: break-all; min-height: 40px; }
+    ol { padding-left: 20px; line-height: 2; font-size: 13px; color: #cbd5e1; }
+  </style>
+</head>
+<body>
+  <h2>Get Your SharePoint Cookie</h2>
+  <p class="warn">SharePoint uses session cookies (not Bearer tokens) for authentication.</p>
+
+  <div class="step">
+    <h3>Step 1 — Open the SharePoint list in Network tab</h3>
+    <ol>
+      <li>Open <a href="https://pccw0.sharepoint.com/sites/BonniesTeam/Lists/Stock%20Take%20Record%202025/" target="_blank">Stock Take Record 2025 ↗</a></li>
+      <li>Press <code>F12</code> → click <b>Network</b> tab</li>
+      <li>In the filter box, type <code>RenderListData</code></li>
+      <li>Press <code>F5</code> to reload the page</li>
+      <li>Click any <b>POST</b> request that appears</li>
+      <li>Click <b>Headers</b> → scroll to <b>Request Headers</b></li>
+      <li>Find the <code>cookie</code> row — click the value to select all, then <b>Ctrl+C</b> to copy</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <h3>Step 2 — Paste the cookie header value here</h3>
+    <p style="font-size:12px;color:#94a3b8">Paste the full cookie string below. This page will extract just the <code>rtFa</code> and <code>FedAuth</code> values needed.</p>
+    <textarea id="cookieInput" placeholder="Paste the full cookie header value here (rtFa=...; FedAuth=...; ...)"></textarea>
+    <br/>
+    <button onclick="extractCookie()">🔍 Extract & Save</button>
+    <div id="result" style="color:#94a3b8">Result will appear here…</div>
+  </div>
+
+  <div class="step">
+    <h3>Step 3 — Use in the app</h3>
+    <p style="font-size:13px;color:#cbd5e1">
+      Once saved, open the app → Inventory → click any item with a photo →
+      the <b>Asset Photo</b> section will automatically load the image.
+    </p>
+    <p style="font-size:12px;color:#94a3b8">
+      ⚠️ SharePoint cookies expire after ~8 hours. If photos stop loading, repeat this process.
+    </p>
+  </div>
+
+  <script>
+    function extractCookie() {
+      const raw = document.getElementById('cookieInput').value.trim();
+      const result = document.getElementById('result');
+
+      if (!raw) {
+        result.innerHTML = '<span class="err">❌ Please paste the cookie header value first.</span>';
+        return;
+      }
+
+      // Extract rtFa value
+      const rtFaMatch = raw.match(/rtFa=([^;]+)/);
+      const fedAuthMatch = raw.match(/FedAuth=([^;]+)/);
+
+      if (!rtFaMatch || !fedAuthMatch) {
+        result.innerHTML = `<span class="err">❌ Could not find rtFa or FedAuth in the pasted value.</span><br>
+          Make sure you copied the full <code>cookie</code> header value from the Network tab.<br><br>
+          rtFa found: <b>${rtFaMatch ? '✅' : '❌'}</b> &nbsp;
+          FedAuth found: <b>${fedAuthMatch ? '✅' : '❌'}</b>`;
+        return;
+      }
+
+      const cookieStr = `rtFa=${rtFaMatch[1]}; FedAuth=${fedAuthMatch[1]}`;
+      localStorage.setItem('stockTakeSPCookie', cookieStr);
+
+      result.innerHTML = `<span class="ok">✅ Saved! Cookie extracted and stored.</span><br><br>
+        <span style="color:#94a3b8">rtFa: </span><span style="color:#4ade80">${rtFaMatch[1].substring(0, 20)}…</span><br>
+        <span style="color:#94a3b8">FedAuth: </span><span style="color:#4ade80">${fedAuthMatch[1].substring(0, 20)}…</span><br><br>
+        <span style="color:#94a3b8">You can now close this page and open the app.</span>`;
+    }
+  </script>
+</body>
+</html>

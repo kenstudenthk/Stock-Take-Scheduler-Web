@@ -206,51 +206,57 @@ function App() {
         }
       }
 
-      // Fetch inventory list
+      // Fetch inventory list — paginated to load all items beyond the 999 limit
       try {
-        const invUrl = `${API_URLS.inventoryList}/items?$expand=fields($select=*)&$top=999`;
-        const invRes = await fetch(invUrl, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Prefer: "HonorNonIndexedQueriesWarningMayFail",
-          },
-        });
-        if (invRes.ok) {
+        const mapInvItem = (item: any): InventoryItem => {
+          const f = item.fields || {};
+          return {
+            id: item.id,
+            mirrorId: f[INV_FIELDS.MIRROR_ID] || "",
+            shopCode: (f[INV_FIELDS.SHOP_CODE] || "").trim(),
+            businessUnit: f[INV_FIELDS.BUSINESS_UNIT] || "",
+            shopBrand: f[INV_FIELDS.SHOP_BRAND] || "",
+            shopName: (f[INV_FIELDS.SHOP_NAME] || "").trim(),
+            productTypeEng: f[INV_FIELDS.PRODUCT_TYPE_ENG] || "",
+            productTypeChi: f[INV_FIELDS.PRODUCT_TYPE_CHI] || "",
+            stockTakeStatus: f[INV_FIELDS.STOCK_TAKE_STATUS] || "",
+            recordTime: f[INV_FIELDS.RECORD_TIME] || "",
+            recordTimeAlt: f[INV_FIELDS.RECORD_TIME_ALT] || "",
+            assetItemId: f[INV_FIELDS.ASSET_ITEM_ID] || "",
+            brand: f[INV_FIELDS.BRAND] || "",
+            assetName: f[INV_FIELDS.ASSET_NAME] || "",
+            cmdb: f[INV_FIELDS.CMDB] || "",
+            serialNo: f[INV_FIELDS.SERIAL_NO] || "",
+            ipAddress: f[INV_FIELDS.IP_ADDRESS] || "",
+            inUseStatus: f[INV_FIELDS.IN_USE_STATUS] || "",
+            productStatus: f[INV_FIELDS.PRODUCT_STATUS] || "",
+            stockTake2026Status: f[INV_FIELDS.STOCK_TAKE_2026_STATUS] || "",
+            appSyncStatus: f[INV_FIELDS.APP_SYNC_STATUS] || "",
+            remarks: f[INV_FIELDS.REMARKS] || "",
+            wToW: f[INV_FIELDS.W_TO_W] || "",
+            uploadPhoto: f[INV_FIELDS.UPLOAD_PHOTO] || "",
+            createdBy: f[INV_FIELDS.CREATED_BY] || "",
+          } as InventoryItem;
+        };
+
+        const allInvItems: InventoryItem[] = [];
+        let nextUrl: string | undefined = `${API_URLS.inventoryList}/items?$expand=fields($select=*)&$top=999`;
+        while (nextUrl) {
+          const invRes = await fetch(nextUrl, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Prefer: "HonorNonIndexedQueriesWarningMayFail",
+            },
+          });
+          if (!invRes.ok) break;
           const invData = await invRes.json();
-          if (invData.value) {
-            const mapped = invData.value.map((item: any) => {
-              const f = item.fields || {};
-              return {
-                id: item.id,
-                mirrorId: f[INV_FIELDS.MIRROR_ID] || "",
-                shopCode: f[INV_FIELDS.SHOP_CODE] || "",
-                businessUnit: f[INV_FIELDS.BUSINESS_UNIT] || "",
-                shopBrand: f[INV_FIELDS.SHOP_BRAND] || "",
-                shopName: f[INV_FIELDS.SHOP_NAME] || "",
-                productTypeEng: f[INV_FIELDS.PRODUCT_TYPE_ENG] || "",
-                productTypeChi: f[INV_FIELDS.PRODUCT_TYPE_CHI] || "",
-                stockTakeStatus: f[INV_FIELDS.STOCK_TAKE_STATUS] || "",
-                recordTime: f[INV_FIELDS.RECORD_TIME] || "",
-                recordTimeAlt: f[INV_FIELDS.RECORD_TIME_ALT] || "",
-                assetItemId: f[INV_FIELDS.ASSET_ITEM_ID] || "",
-                brand: f[INV_FIELDS.BRAND] || "",
-                assetName: f[INV_FIELDS.ASSET_NAME] || "",
-                cmdb: f[INV_FIELDS.CMDB] || "",
-                serialNo: f[INV_FIELDS.SERIAL_NO] || "",
-                ipAddress: f[INV_FIELDS.IP_ADDRESS] || "",
-                inUseStatus: f[INV_FIELDS.IN_USE_STATUS] || "",
-                productStatus: f[INV_FIELDS.PRODUCT_STATUS] || "",
-                stockTake2026Status: f[INV_FIELDS.STOCK_TAKE_2026_STATUS] || "",
-                appSyncStatus: f[INV_FIELDS.APP_SYNC_STATUS] || "",
-                remarks: f[INV_FIELDS.REMARKS] || "",
-                wToW: f[INV_FIELDS.W_TO_W] || "",
-                uploadPhoto: f[INV_FIELDS.UPLOAD_PHOTO] || "",
-                createdBy: f[INV_FIELDS.CREATED_BY] || "",
-              } as InventoryItem;
-            });
-            setAllInventory(mapped);
-          }
+          (invData.value || []).forEach((item: any) =>
+            allInvItems.push(mapInvItem(item)),
+          );
+          nextUrl = invData["@odata.nextLink"];
         }
+        setAllInventory(allInvItems);
+        console.log(`[Inventory] Loaded ${allInvItems.length} items`);
       } catch (invErr) {
         console.error("Inventory Fetch Error:", invErr);
       }

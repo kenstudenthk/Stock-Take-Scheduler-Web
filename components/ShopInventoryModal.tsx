@@ -48,16 +48,31 @@ export const ShopInventoryModal: React.FC<Props> = ({
   const [editFormOpen, setEditFormOpen] = useState(false);
 
   const items = useMemo(() => {
-    const sid = shop?.id;
-    const sname = shop?.name ?? "";
+    const sid = (shop?.id ?? "").trim().toLowerCase();
+    const sname = (shop?.name ?? "").trim().toLowerCase();
     const namePrefix = sname.split("-")[0]?.trim();
-    const byId = allInventory.filter((i) => i.shopCode === sid);
-    const byPrefix = allInventory.filter((i) => i.shopCode === namePrefix);
-    const byName = allInventory.filter((i) => i.shopName === sname);
-    console.log(
-      `[ShopInventory] sid:"${sid}" prefix:"${namePrefix}" byId:${byId.length} byPrefix:${byPrefix.length} byName:${byName.length}`,
+
+    const byId = allInventory.filter(
+      (i) => i.shopCode.trim().toLowerCase() === sid,
     );
-    return byId.length ? byId : byPrefix.length ? byPrefix : byName;
+    const byPrefix = allInventory.filter(
+      (i) => i.shopCode.trim().toLowerCase() === namePrefix,
+    );
+    const byName = allInventory.filter(
+      (i) => i.shopName.trim().toLowerCase() === sname,
+    );
+    // Fallback: shopName contains the shop code
+    const byContains = allInventory.filter(
+      (i) => sid && i.shopName.trim().toLowerCase().includes(sid),
+    );
+
+    console.log(
+      `[ShopInventory] sid:"${sid}" prefix:"${namePrefix}" byId:${byId.length} byPrefix:${byPrefix.length} byName:${byName.length} byContains:${byContains.length} total:${allInventory.length}`,
+    );
+    if (byId.length) return byId;
+    if (byPrefix.length) return byPrefix;
+    if (byName.length) return byName;
+    return byContains;
   }, [allInventory, shop?.id, shop?.name]);
 
   const statusColor = (status: string) => {

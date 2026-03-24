@@ -208,12 +208,26 @@ function App() {
 
       // Fetch inventory list — paginated to load all items beyond the 999 limit
       try {
-        // SPO image/hyperlink columns return either a plain URL string or
-        // an object like { Url: "https://..." } — extract the URL from either
+        // SPO image/hyperlink columns can return:
+        // - plain URL string
+        // - JSON string containing an object
+        // - { Url: "..." } hyperlink object
+        // - { serverUrl: "...", serverRelativeUrl: "..." } thumbnail object
         const extractUrl = (val: any): string => {
           if (!val) return "";
-          if (typeof val === "string") return val;
-          if (typeof val === "object" && val.Url) return val.Url;
+          let obj = val;
+          if (typeof val === "string") {
+            try {
+              obj = JSON.parse(val);
+            } catch {
+              return val; // plain URL string
+            }
+          }
+          if (typeof obj === "string") return obj;
+          if (obj.Url) return obj.Url;
+          if (obj.serverUrl && obj.serverRelativeUrl)
+            return `${obj.serverUrl}${obj.serverRelativeUrl}`;
+          if (obj.url) return obj.url;
           return "";
         };
 

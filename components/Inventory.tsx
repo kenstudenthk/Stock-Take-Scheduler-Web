@@ -30,6 +30,8 @@ import {
   HistoryOutlined,
   UserOutlined,
   PlusOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
 import { INV_FIELDS } from "../constants";
 import { API_URLS } from "../constants/config";
@@ -37,6 +39,59 @@ import { Shop, InventoryItem } from "../types";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+// ── Photo carousel ──────────────────────────────────────────────────────────
+const PhotoCarousel = ({ photos }: { photos: string[] }) => {
+  const [idx, setIdx] = useState(0);
+  const prev = () => setIdx((i) => (i - 1 + photos.length) % photos.length);
+  const next = () => setIdx((i) => (i + 1) % photos.length);
+  return (
+    <div className="relative select-none">
+      <img
+        key={photos[idx]}
+        src={photos[idx]}
+        alt={`Product Photo ${idx + 1}`}
+        className="w-full rounded-xl border border-slate-200 object-cover"
+        style={{ maxHeight: 180 }}
+        onError={(e) => {
+          const el = e.target as HTMLImageElement;
+          el.style.display = "none";
+        }}
+      />
+      {photos.length > 1 && (
+        <>
+          <button
+            onClick={prev}
+            className="absolute left-1 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-7 h-7 flex items-center justify-center shadow border border-slate-200 transition"
+          >
+            <LeftOutlined style={{ fontSize: 11 }} />
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-1 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-7 h-7 flex items-center justify-center shadow border border-slate-200 transition"
+          >
+            <RightOutlined style={{ fontSize: 11 }} />
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {photos.map((_, i) => (
+              <span
+                key={i}
+                onClick={() => setIdx(i)}
+                className={`block w-1.5 h-1.5 rounded-full cursor-pointer transition ${
+                  i === idx ? "bg-teal-600" : "bg-slate-300"
+                }`}
+              />
+            ))}
+          </div>
+          <span className="absolute top-2 right-2 text-[10px] font-bold bg-black/40 text-white rounded px-1.5 py-0.5">
+            {idx + 1} / {photos.length}
+          </span>
+        </>
+      )}
+    </div>
+  );
+};
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
   token: string;
@@ -262,6 +317,7 @@ export const Inventory = ({
             <Input
               prefix={<SearchOutlined />}
               placeholder="Name..."
+              value={filters.shopName}
               onChange={(e) =>
                 setFilters({ ...filters, shopName: e.target.value })
               }
@@ -490,25 +546,10 @@ export const Inventory = ({
                 >
                   <PictureOutlined /> Asset Photo
                 </Text>
-                {selectedItem.productImage || selectedItem.productImage2 ? (
-                  <div className="flex flex-col gap-2">
-                    {selectedItem.productImage && (
-                      <img
-                        src={selectedItem.productImage}
-                        alt="Product Photo 1"
-                        className="w-full rounded-xl border border-slate-200 object-cover"
-                        style={{ maxHeight: 160 }}
-                      />
-                    )}
-                    {selectedItem.productImage2 && (
-                      <img
-                        src={selectedItem.productImage2}
-                        alt="Product Photo 2"
-                        className="w-full rounded-xl border border-slate-200 object-cover"
-                        style={{ maxHeight: 160 }}
-                      />
-                    )}
-                  </div>
+                {[selectedItem.productImage, selectedItem.productImage2].some(Boolean) ? (
+                  <PhotoCarousel
+                    photos={[selectedItem.productImage, selectedItem.productImage2].filter(Boolean) as string[]}
+                  />
                 ) : (
                   <div className="photo-placeholder">
                     <PictureOutlined style={{ fontSize: "32px" }} />

@@ -199,6 +199,13 @@ function App() {
               brandIcon: f[SP_FIELDS.BRAND_ICON] || "",
               phone: f[SP_FIELDS.PHONE] || "",
               contactName: f[SP_FIELDS.CONTACT] || "",
+              startTime: f[SP_FIELDS.START_TIME] || "",
+              endTime: f[SP_FIELDS.END_TIME] || "",
+              timeUse: f[SP_FIELDS.TIME_USE] || "",
+              mainFE: f[SP_FIELDS.MAIN_FE] || "",
+              assistantFE: f[SP_FIELDS.ASSISTANT_FE] || "",
+              staffNo: f[SP_FIELDS.STAFF_NO] || "",
+              staffName: f[SP_FIELDS.STAFF_NAME] || "",
             } as Shop;
           });
           setAllShops(mapped);

@@ -28,6 +28,13 @@ export const SP_FIELDS = {
   CALL_STATUS: "field_39", // Choice Column
   CALL_DATE: "field_40", // Date Column
   CALL_REMARK: "CallRemark", // Text Column
+  START_TIME: "field_30",
+  END_TIME: "field_31",
+  TIME_USE: "Timeuse",
+  MAIN_FE: "MainFE",
+  ASSISTANT_FE: "AssistantFE",
+  STAFF_NO: "StaffNo_x002e_",
+  STAFF_NAME: "StaffName",
 };
 
 // --- Inventory List 欄位對照表 ---

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Tag,
@@ -7,6 +7,7 @@ import {
   Button,
   Divider,
   Descriptions,
+  Spin,
 } from "antd";
 import {
   ShopOutlined,
@@ -16,10 +17,16 @@ import {
   PhoneOutlined,
   UserOutlined,
   BankOutlined,
+  ClockCircleOutlined,
+  FileProtectOutlined,
+  PaperClipOutlined,
+  FilePdfOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import { Shop, User, hasPermission, InventoryItem } from "../types";
 import { ShopFormModal } from "./ShopFormModal";
 import { ShopInventoryModal } from "./ShopInventoryModal";
+import { API_URLS } from "../constants/config";
 
 const { Title, Text } = Typography;
 
@@ -60,6 +67,22 @@ export const ShopDetailModal: React.FC<Props> = ({
 }) => {
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [attachments, setAttachments] = useState<{id: string; name: string; url: string}[]>([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!visible || !shop?.sharePointItemId) return;
+    setAttachments([]);
+    setAttachmentsLoading(true);
+    fetch(
+      `${API_URLS.shopList}/items/${shop.sharePointItemId}/attachments`,
+      { headers: { Authorization: `Bearer ${graphToken}` } }
+    )
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => setAttachments(data.value ?? []))
+      .catch(() => setAttachments([]))
+      .finally(() => setAttachmentsLoading(false));
+  }, [visible, shop?.sharePointItemId]);
 
   if (!shop) return null;
 
@@ -68,7 +91,7 @@ export const ShopDetailModal: React.FC<Props> = ({
       <Modal
         open={visible}
         onCancel={onCancel}
-        width={680}
+        width={720}
         centered
         footer={
           <div className="flex justify-between items-center">
@@ -217,6 +240,68 @@ export const ShopDetailModal: React.FC<Props> = ({
               )}
             </Descriptions>
           </>
+        )}
+
+        {/* Stock Take Info Section */}
+        {(shop.startTime || shop.endTime || shop.timeUse || shop.mainFE || shop.assistantFE) && (
+          <>
+            <Divider className="my-3" />
+            <div className="flex items-center gap-2 mb-2">
+              <ClockCircleOutlined style={{ color: "#0d9488" }} />
+              <Text strong className="text-sm">Stock Take Info</Text>
+            </div>
+            <Descriptions size="small" column={2} className="mb-4">
+              <Descriptions.Item label="Start Time">{shop.startTime || "—"}</Descriptions.Item>
+              <Descriptions.Item label="End Time">{shop.endTime || "—"}</Descriptions.Item>
+              <Descriptions.Item label="Time Use">{shop.timeUse || "—"}</Descriptions.Item>
+              <Descriptions.Item label="Main FE">{shop.mainFE || "—"}</Descriptions.Item>
+              <Descriptions.Item label="Assistant FE">{shop.assistantFE || "—"}</Descriptions.Item>
+            </Descriptions>
+          </>
+        )}
+
+        {/* Stock Take Shop Agreement Section */}
+        <Divider className="my-3" />
+        <div className="flex items-center gap-2 mb-2">
+          <FileProtectOutlined style={{ color: "#0d9488" }} />
+          <Text strong className="text-sm">Stock Take Shop Agreement</Text>
+        </div>
+        <Descriptions size="small" column={2} className="mb-3">
+          <Descriptions.Item label="Staff No.">{shop.staffNo || "—"}</Descriptions.Item>
+          <Descriptions.Item label="Staff Name">{shop.staffName || "—"}</Descriptions.Item>
+        </Descriptions>
+
+        <div className="flex items-center gap-1.5 mb-2">
+          <PaperClipOutlined style={{ color: "#6b7280", fontSize: 12 }} />
+          <Text type="secondary" className="text-xs">Attachments</Text>
+        </div>
+
+        {attachmentsLoading ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
+            background: "#f9fafb", borderRadius: 6, border: "1px dashed #e5e7eb" }}>
+            <Spin size="small" />
+            <Text type="secondary" className="text-xs">Loading attachments…</Text>
+          </div>
+        ) : attachments.length === 0 ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
+            background: "#f9fafb", borderRadius: 6, border: "1px dashed #e5e7eb" }}>
+            <PaperClipOutlined style={{ color: "#d1d5db" }} />
+            <Text type="secondary" className="text-xs italic">No attachments</Text>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {attachments.map(att => (
+              <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer"
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px",
+                  borderRadius: 6, border: "1px solid #e5e7eb", background: "#fff",
+                  color: "#0d9488", fontSize: 13, textDecoration: "none" }}>
+                <FilePdfOutlined style={{ color: "#ef4444", fontSize: 15 }} />
+                <Text ellipsis={{ tooltip: att.name }}
+                  style={{ flex: 1, color: "#0d9488", fontSize: 13 }}>{att.name}</Text>
+                <DownloadOutlined style={{ color: "#9ca3af", fontSize: 12 }} />
+              </a>
+            ))}
+          </div>
         )}
       </Modal>
 

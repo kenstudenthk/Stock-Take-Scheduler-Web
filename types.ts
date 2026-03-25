@@ -122,6 +122,13 @@ export interface Shop {
   businessUnit?: string;
   callStatus?: string;
   callRemark?: string;
+  startTime?: string;
+  endTime?: string;
+  timeUse?: string;
+  mainFE?: string;
+  assistantFE?: string;
+  staffNo?: string;
+  staffName?: string;
 }
 
 export interface ShopCluster {

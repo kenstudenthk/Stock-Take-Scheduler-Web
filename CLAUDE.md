@@ -139,6 +139,20 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Removed DnD entirely. Click any shop chip or sidebar card → combined modal (date + group in one action). `interactionPlugin` kept for `dateClick` (sidebar date selection) but `editable`/`droppable`/`eventDrop` props removed. ExcelJS/jsPDF moved to dynamic imports.
 - **Rule**: NEVER re-add DnD to Calendar without also adding shared validateReschedule utility (see peppy-waddling-ritchie.md T1-7)
 
+#### ⚠️ Known Issue: Generator — Pool Generation Shared generatedResult State
+- **Date**: 2026-03-25
+- **Problem**: `handleGeneratePool` wrote into `generatedResult`, causing the wizard stepper to auto-advance to step 2 when a pool schedule was generated — even with no regular schedule
+- **Root Cause**: Both regular and pool generation used the same `generatedResult` state; the wizard auto-step `useEffect` reads `generatedResult.length > 0`
+- **Fix**: Added separate `poolGeneratedResult` state. `handleGeneratePool` now calls `setPoolGeneratedResult`. Pool preview renders from `poolGeneratedResult`. Regular wizard flow reads only `generatedResult`.
+- **Rule**: ALWAYS use `poolGeneratedResult` for pool generation output; NEVER write pool results into `generatedResult`
+
+#### ⚠️ Known Issue: Generator — Configure Step Left-Side Region Cards Cluttered Layout
+- **Date**: 2026-03-25
+- **Problem**: Configure step used a Row/Col split (span=9 region cards + span=15 settings), narrowing the settings area and duplicating region info already shown in the stats banner
+- **Root Cause**: Original design rendered animated region cards alongside the form fields
+- **Fix**: Removed left-side region card panel entirely. Settings form now renders in a centered `maxWidth: 720` wrapper. `UnplannedStatsBanner` above the stepper shows the same region breakdown compactly.
+- **Rule**: NEVER restore the left-side region card panel in Configure step; use `UnplannedStatsBanner` + centered form instead
+
 ---
 
 ## Development Commands

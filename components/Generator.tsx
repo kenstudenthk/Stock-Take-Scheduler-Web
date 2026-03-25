@@ -49,6 +49,7 @@ import {
   CheckCircleFilled,
   ClockCircleOutlined,
   ReloadOutlined,
+  LeftOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
@@ -65,6 +66,17 @@ import { isWorkingDay, getNextWorkingDay, filterSchedulePool, generateSchedule }
 import StatCard from "./StatCard";
 
 dayjs.extend(isBetween);
+
+// ========================================
+// REGION PILL STYLES
+// ========================================
+const REGION_PILL_STYLES: Record<string, { bg: string; border: string; text: string; svgPath: string }> = {
+  HK:      { bg: '#EFF6FF', border: '#BFDBFE', text: '#1D4ED8', svgPath: 'M2 18 L6 10 L8 13 L10 8 L13 12 L15 9 L18 14 L22 10 L22 18 Z' },
+  KN:      { bg: '#FDF4FF', border: '#E9D5FF', text: '#7E22CE', svgPath: 'M1 18 L1 12 L4 12 L4 10 L6 10 L6 8 L8 8 L8 11 L10 11 L10 7 L12 7 L12 9 L14 9 L14 6 L16 6 L16 10 L18 10 L18 13 L20 13 L20 18 Z' },
+  NT:      { bg: '#F0FDF4', border: '#BBF7D0', text: '#15803D', svgPath: 'M1 18 L5 9 L8 14 L11 5 L14 11 L17 7 L21 13 L23 18 Z' },
+  Islands: { bg: '#FFF7ED', border: '#FED7AA', text: '#C2410C', svgPath: 'M12 4 L12 13 M8 13 L16 13 M6 16 Q12 13 18 16 L20 19 L4 19 Z' },
+  MO:      { bg: '#FFF1F2', border: '#FECDD3', text: '#BE123C', svgPath: 'M12 18 L12 11 M12 11 C10 11 7 10 7 7 C9 7 11 9 12 11 M12 11 C14 11 17 10 17 7 C15 7 13 9 12 11 M12 11 C10 7 12 5 12 5 C12 5 14 7 12 11' },
+};
 
 const { Text, Title } = Typography;
 const { confirm } = Modal;
@@ -289,6 +301,52 @@ const SyncGeometricLoader = ({
 );
 
 // ========================================
+// UNPLANNED STATS BANNER
+// ========================================
+interface StatsBannerProps {
+  regionStats: { key: string; displayName: string; count: number }[];
+  total: number;
+}
+
+const UnplannedStatsBanner: React.FC<StatsBannerProps> = ({ regionStats, total }) => (
+  <div style={{ background: '#f8fafc', borderBottom: '1px solid #e5e7eb', padding: '12px 20px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginRight: 4, whiteSpace: 'nowrap' }}>
+        Unplanned Shops
+      </span>
+      {regionStats.map(({ key, displayName, count }) => {
+        const style = REGION_PILL_STYLES[key];
+        if (!style) return null;
+        return (
+          <span
+            key={key}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '4px 12px', borderRadius: 9999,
+              background: style.bg, border: `1px solid ${style.border}`,
+              fontSize: 12, fontWeight: 600, color: style.text, whiteSpace: 'nowrap',
+            }}
+          >
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d={style.svgPath} />
+            </svg>
+            {displayName} <span style={{ opacity: 0.5, fontWeight: 400, margin: '0 1px' }}>·</span> {count}
+          </span>
+        );
+      })}
+      <span style={{
+        marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6,
+        padding: '4px 14px', borderRadius: 9999,
+        background: '#0D9488', color: 'white', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+      }}>
+        {total} unplanned
+      </span>
+    </div>
+  </div>
+);
+
+// ========================================
 // MAIN COMPONENT
 // ========================================
 export const Generator: React.FC<{
@@ -314,6 +372,7 @@ export const Generator: React.FC<{
   const [includeMTR, setIncludeMTR] = useState(true);
 
   const [generatedResult, setGeneratedResult] = useState<any[]>([]);
+  const [poolGeneratedResult, setPoolGeneratedResult] = useState<Shop[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loadingType, setLoadingType] = useState<"reset" | "sync">("sync");
@@ -414,6 +473,12 @@ export const Generator: React.FC<{
   );
 
   const currentStepIndex = WIZARD_STEPS.findIndex((s) => s.key === wizardStep);
+
+  const filteredCount = useMemo(
+    () => filterSchedulePool(activePool, { selectedRegions, selectedDistricts, includeMTR }).length,
+    [activePool, selectedRegions, selectedDistricts, includeMTR],
+  );
+  const estimatedDays = shopsPerDay >= 1 ? Math.ceil(filteredCount / shopsPerDay) : null;
 
   // ========================================
   // WIZARD STEP AUTO-UPDATE
@@ -525,7 +590,6 @@ export const Generator: React.FC<{
     }
 
     setIsCalculating(true);
-    setWizardStep("generate");
 
     try {
       // Generate schedule using shared utility
@@ -536,7 +600,7 @@ export const Generator: React.FC<{
         groupsPerDay,
       });
 
-      setGeneratedResult(scheduled);
+      setPoolGeneratedResult(scheduled);
 
       const totalDays = [...new Set(scheduled.map((s) => s.scheduledDate))]
         .length;
@@ -550,7 +614,6 @@ export const Generator: React.FC<{
     } catch (error) {
       console.error("Pool generation error:", error);
       message.error("Failed to generate pool schedule. Please try again.");
-      setWizardStep("configure");
     } finally {
       setIsCalculating(false);
     }
@@ -1032,6 +1095,9 @@ export const Generator: React.FC<{
         </Col>
       </Row>
 
+      {/* Unplanned Stats Banner */}
+      <UnplannedStatsBanner regionStats={regionRemainStats} total={stats.unplanned} />
+
       {/* Horizontal Wizard Stepper */}
       <div
         className="mb-6 bg-white rounded-2xl px-6 py-4 shadow-sm"
@@ -1065,239 +1131,179 @@ export const Generator: React.FC<{
       </div>
 
       {/* Main Content: Step 1 (Configure) */}
-      <Row gutter={[24, 24]}>
-        {/* Main Content Area */}
-        <Col span={24}>
-          <Row gutter={[24, 24]}>
-            {/* Unplanned Pool */}
-            <Col span={9}>
-              <div
-                className="bg-white p-8 rounded-[40px] shadow-sm h-full flex flex-col"
-                style={{
-                  border: `2px solid ${DESIGN_COLORS.border}`,
-                  borderLeft: `6px solid ${DESIGN_COLORS.step1}`,
-                }}
-              >
-                <div className="flex items-center gap-2 mb-8">
-                  <div
-                    className="w-3 h-3 rounded-full animate-pulse"
-                    style={{ backgroundColor: DESIGN_COLORS.step1 }}
-                  ></div>
-                  <Text
-                    strong
-                    className="text-[14px] text-slate-400 uppercase tracking-widest"
-                  >
-                    Step 1: Unplanned Pool
-                  </Text>
-                </div>
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 0' }}>
+        <div className="flex justify-between items-center mb-10">
+          <Space className="text-[18px] font-bold uppercase text-slate-800">
+            <ControlOutlined style={{ color: DESIGN_COLORS.step2 }} />
+            Configure
+          </Space>
 
-                <ul className="example-2 unplanned-pool-layout w-full list-none p-0 m-0">
-                  {regionRemainStats.map((reg) => (
-                    <li
-                      key={reg.key}
-                      className="icon-content flex justify-center w-full"
-                    >
-                      <a
-                        href="#"
-                        data-social={reg.socialKey}
-                        style={{
-                          width: "100%",
-                          height: "100px",
-                          borderRadius: "20px",
-                          flexDirection: "column",
-                          gap: "4px",
-                          margin: "0 auto",
-                        }}
-                      >
-                        <div className="filled"></div>
-                        <div style={{ position: "relative", zIndex: 10 }}>
-                          {reg.icon}
-                        </div>
-                        <span
-                          style={{
-                            position: "relative",
-                            zIndex: 10,
-                            fontSize: "10px",
-                            fontWeight: 900,
-                            textAlign: "center",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {reg.displayName}
-                        </span>
-                        <div
-                          className="font-black text-lg"
-                          style={{ position: "relative", zIndex: 10 }}
-                        >
-                          {reg.count}
-                        </div>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Col>
+          <Tooltip
+            title={
+              includeMTR ? "MTR shops included" : "MTR shops excluded"
+            }
+          >
+            <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
+              <Switch
+                checked={includeMTR}
+                onChange={setIncludeMTR}
+                size="small"
+              />
+              <Text className="text-[11px] font-black uppercase text-slate-500">
+                Include MTR
+              </Text>
+            </div>
+          </Tooltip>
+        </div>
 
-            {/* Right: Generation Settings (Step 2 Preview) */}
-            <Col span={15}>
-              <div
-                className="bg-white rounded-[40px] p-8 shadow-sm h-full"
-                style={{
-                  border: `2px solid ${DESIGN_COLORS.border}`,
-                  borderLeft: `6px solid ${DESIGN_COLORS.step2}`,
-                }}
-              >
-                <div className="flex justify-between items-center mb-10">
-                  <Space className="text-[18px] font-bold uppercase text-slate-800">
-                    <ControlOutlined style={{ color: DESIGN_COLORS.step2 }} />
-                    Step 2: Settings
-                  </Space>
+        <Row gutter={[16, 24]}>
+          <Col span={12}>
+            <Text
+              strong
+              className="text-slate-400 block mb-2 uppercase text-[10px] ml-1"
+            >
+              Filter Regions
+            </Text>
+            <Select
+              mode="multiple"
+              className="w-full h-11 custom-select"
+              placeholder="All Regions"
+              value={selectedRegions}
+              onChange={(v) => { setSelectedRegions(v); setSelectedDistricts([]); }}
+              allowClear
+              maxTagCount="responsive"
+            >
+              {regionOptions.map((r) => (
+                <Option key={r} value={r}>
+                  {r}
+                </Option>
+              ))}
+            </Select>
+          </Col>
 
-                  <Tooltip
-                    title={
-                      includeMTR ? "MTR shops included" : "MTR shops excluded"
-                    }
-                  >
-                    <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
-                      <Switch
-                        checked={includeMTR}
-                        onChange={setIncludeMTR}
-                        size="small"
-                      />
-                      <Text className="text-[11px] font-black uppercase text-slate-500">
-                        Include MTR
-                      </Text>
-                    </div>
-                  </Tooltip>
-                </div>
+          <Col span={12}>
+            <Text
+              strong
+              className="text-slate-400 block mb-2 uppercase text-[10px] ml-1"
+            >
+              Filter Districts
+            </Text>
+            <Select
+              mode="multiple"
+              className="w-full h-11 custom-select"
+              placeholder="All Districts"
+              value={selectedDistricts}
+              onChange={setSelectedDistricts}
+              allowClear
+              maxTagCount="responsive"
+            >
+              {availableDistricts.map((d) => (
+                <Option key={d} value={d}>
+                  {d}
+                </Option>
+              ))}
+            </Select>
+          </Col>
 
-                <Row gutter={[16, 24]}>
-                  <Col span={12}>
-                    <Text
-                      strong
-                      className="text-slate-400 block mb-2 uppercase text-[10px] ml-1"
-                    >
-                      Filter Regions
-                    </Text>
-                    <Select
-                      mode="multiple"
-                      className="w-full h-11 custom-select"
-                      placeholder="All Regions"
-                      value={selectedRegions}
-                      onChange={setSelectedRegions}
-                      allowClear
-                      maxTagCount="responsive"
-                    >
-                      {regionOptions.map((r) => (
-                        <Option key={r} value={r}>
-                          {r}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Col>
+          <Col span={8}>
+            <Text
+              strong
+              className="text-slate-400 block mb-2 uppercase text-xs ml-1"
+            >
+              Start Date
+            </Text>
+            <DatePicker
+              value={startDate ? dayjs(startDate) : null}
+              onChange={(date) =>
+                setStartDate(date ? date.format("YYYY-MM-DD") : "")
+              }
+              disabledDate={disabledDate}
+              format="YYYY/MM/DD"
+              placeholder="Select Start Date"
+              className="bg-slate-50 border border-slate-200 h-11 rounded-xl w-full px-4 font-bold text-slate-700"
+              allowClear={false}
+            />
+          </Col>
 
-                  <Col span={12}>
-                    <Text
-                      strong
-                      className="text-slate-400 block mb-2 uppercase text-[10px] ml-1"
-                    >
-                      Filter Districts
-                    </Text>
-                    <Select
-                      mode="multiple"
-                      className="w-full h-11 custom-select"
-                      placeholder="All Districts"
-                      value={selectedDistricts}
-                      onChange={setSelectedDistricts}
-                      allowClear
-                      maxTagCount="responsive"
-                    >
-                      {availableDistricts.map((d) => (
-                        <Option key={d} value={d}>
-                          {d}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Col>
+          <Col span={8}>
+            <Text
+              strong
+              className="text-slate-400 block mb-2 uppercase text-xs ml-1"
+            >
+              Shops Per Day
+            </Text>
+            <InputNumber
+              value={shopsPerDay}
+              onChange={(v) =>
+                setShopsPerDay(v || GENERATOR_DEFAULTS.shopsPerDay)
+              }
+              min={1}
+              className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
+            />
+          </Col>
 
-                  <Col span={8}>
-                    <Text
-                      strong
-                      className="text-slate-400 block mb-2 uppercase text-xs ml-1"
-                    >
-                      Start Date
-                    </Text>
-                    <DatePicker
-                      value={startDate ? dayjs(startDate) : null}
-                      onChange={(date) =>
-                        setStartDate(date ? date.format("YYYY-MM-DD") : "")
-                      }
-                      disabledDate={disabledDate}
-                      format="YYYY/MM/DD"
-                      placeholder="Select Start Date"
-                      className="bg-slate-50 border border-slate-200 h-11 rounded-xl w-full px-4 font-bold text-slate-700"
-                      allowClear={false}
-                    />
-                  </Col>
+          <Col span={8}>
+            <Text
+              strong
+              className="text-slate-400 block mb-2 uppercase text-xs ml-1"
+            >
+              Groups Per Day
+            </Text>
+            <InputNumber
+              value={groupsPerDay}
+              onChange={(v) =>
+                setGroupsPerDay(v || GENERATOR_DEFAULTS.groupsPerDay)
+              }
+              min={1}
+              className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
+            />
+          </Col>
+        </Row>
 
-                  <Col span={8}>
-                    <Text
-                      strong
-                      className="text-slate-400 block mb-2 uppercase text-xs ml-1"
-                    >
-                      Shops Per Day
-                    </Text>
-                    <InputNumber
-                      value={shopsPerDay}
-                      onChange={(v) =>
-                        setShopsPerDay(v || GENERATOR_DEFAULTS.shopsPerDay)
-                      }
-                      min={1}
-                      className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
-                    />
-                  </Col>
+        {/* Live match bar (Step G) */}
+        {filteredCount > 0 ? (
+          <div style={{
+            background: '#f0fdfa', border: '1px dashed #0D9488', borderRadius: 8,
+            padding: '10px 14px', marginBottom: 14, marginTop: 16,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span style={{ fontSize: 13, color: '#0D9488', fontWeight: 600 }}>
+              {filteredCount} shops match current filters
+            </span>
+            <span style={{ fontSize: 12, color: '#6b7280' }}>
+              {estimatedDays !== null ? `Est. ~${estimatedDays} working days` : '—'}
+            </span>
+          </div>
+        ) : (
+          <div style={{
+            background: '#fffbeb', border: '1px dashed #D97706', borderRadius: 8,
+            padding: '10px 14px', marginBottom: 14, marginTop: 16, textAlign: 'center',
+          }}>
+            <span style={{ fontSize: 13, color: '#92400e', fontWeight: 500 }}>
+              No shops match these filters
+            </span>
+          </div>
+        )}
 
-                  <Col span={8}>
-                    <Text
-                      strong
-                      className="text-slate-400 block mb-2 uppercase text-xs ml-1"
-                    >
-                      Groups Per Day
-                    </Text>
-                    <InputNumber
-                      value={groupsPerDay}
-                      onChange={(v) =>
-                        setGroupsPerDay(v || GENERATOR_DEFAULTS.groupsPerDay)
-                      }
-                      min={1}
-                      className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
-                    />
-                  </Col>
-                </Row>
-
-                {/* CTA: Generate Button */}
-                <div className="flex justify-end mt-10">
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<ThunderboltOutlined />}
-                    onClick={handleGenerate}
-                    loading={isCalculating}
-                    disabled={isCalculating}
-                    className="h-12 px-16 rounded-xl font-black shadow-lg"
-                    style={{
-                      background: `linear-gradient(135deg, ${DESIGN_COLORS.step2} 0%, ${DESIGN_COLORS.step1} 100%)`,
-                      border: "none",
-                    }}
-                  >
-                    {isCalculating ? "Generating..." : "GENERATE SCHEDULE"}
-                  </Button>
-                </div>
-              </div>
-            </Col>
-          </Row>
-        </Col>
-      </Row>
+        {/* CTA: Generate Button */}
+        <div className="flex justify-end mt-6">
+          <Button
+            type="primary"
+            size="large"
+            icon={<ThunderboltOutlined />}
+            onClick={handleGenerate}
+            loading={isCalculating}
+            disabled={filteredCount === 0 || shopsPerDay < 1}
+            className="h-12 px-16 rounded-xl font-black shadow-lg"
+            style={{
+              background: `linear-gradient(135deg, ${DESIGN_COLORS.step2} 0%, ${DESIGN_COLORS.step1} 100%)`,
+              border: "none",
+            }}
+          >
+            {isCalculating ? "Generating..." : `⚡ Generate Schedule for ${filteredCount} shops`}
+          </Button>
+        </div>
+      </div>
 
       {/* Reschedule Pool Section */}
       {reschedulePool.length > 0 && (
@@ -1375,6 +1381,81 @@ export const Generator: React.FC<{
           />
         </Card>
       )}
+
+      {/* Pool Preview Table */}
+      {poolGeneratedResult.length > 0 && (
+        <Card
+          className="mt-8 rounded-[40px] border-none shadow-sm overflow-hidden"
+          style={{ borderLeft: `6px solid ${DESIGN_COLORS.step2}` }}
+          title={
+            <Space className="text-slate-700 font-bold">
+              <ClockCircleOutlined
+                style={{ color: DESIGN_COLORS.step2 }}
+              />
+              Pool Schedule Preview ({poolGeneratedResult.length} shops)
+            </Space>
+          }
+        >
+          <Button
+            icon={<LeftOutlined />}
+            onClick={() => setPoolGeneratedResult([])}
+            style={{ marginBottom: 12 }}
+          >
+            Back
+          </Button>
+          <Table
+            dataSource={poolGeneratedResult}
+            pagination={{ pageSize: 15, showSizeChanger: false }}
+            rowKey="id"
+            columns={[
+              {
+                title: "Date",
+                dataIndex: "scheduledDate",
+                key: "date",
+                render: (d: string) => (
+                  <b className="text-slate-700">
+                    {dayjs(d).format("YYYY-MM-DD (ddd)")}
+                  </b>
+                ),
+              },
+              {
+                title: "Group",
+                dataIndex: "groupId",
+                key: "group",
+                render: (g: number) => (
+                  <Tag
+                    className={`font-black px-3 rounded-md border-none tag-group-${g}`}
+                    color={g === 1 ? "blue" : g === 2 ? "purple" : "orange"}
+                  >
+                    {`Group ${String.fromCharCode(64 + g)}`}
+                  </Tag>
+                ),
+              },
+              {
+                title: "Shop Name",
+                dataIndex: "name",
+                key: "name",
+                render: (n: string, r: any) => (
+                  <Space>
+                    <img
+                      src={r.brandIcon}
+                      className="w-6 h-6 object-contain"
+                      alt={r.brand}
+                    />
+                    <span>{n}</span>
+                  </Space>
+                ),
+              },
+              {
+                title: "District",
+                dataIndex: "district",
+                key: "district",
+              },
+            ]}
+          />
+        </Card>
+      )}
+
       {/* Preview Table (Step 3 Preview) */}
       {generatedResult.length > 0 && (
         <Card
@@ -1390,6 +1471,13 @@ export const Generator: React.FC<{
             </Space>
           }
         >
+          <Button
+            icon={<LeftOutlined />}
+            onClick={() => setGeneratedResult([])}
+            style={{ marginBottom: 12 }}
+          >
+            Back to Configure
+          </Button>
           <Table
             dataSource={generatedResult}
             pagination={{ pageSize: 15, showSizeChanger: false }}

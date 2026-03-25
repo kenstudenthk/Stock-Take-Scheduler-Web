@@ -52,25 +52,37 @@ const PhotoCarousel = ({ photos, itemId }: { photos: string[]; itemId: string })
     const loaded: (string | null)[] = photos.map(() => null);
     setResolved(photos.map(() => null));
 
+    // Resolve direct URLs immediately
     photos.forEach((photo, i) => {
-      if (!photo) { loaded[i] = ""; if (!cancelled) setResolved([...loaded]); return; }
-
-      if (photo.startsWith("http")) {
-        loaded[i] = photo;
-        if (!cancelled) setResolved([...loaded]);
-        return;
-      }
-
-      // SP Image column filename → Graph API list item attachment
-      const graphToken = localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken) || "";
-      fetch(
-        `${API_URLS.inventoryList}/items/${itemId}/attachments/${encodeURIComponent(photo)}/$value`,
-        { headers: { Authorization: `Bearer ${graphToken}` } },
-      )
-        .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.blob(); })
-        .then((blob) => { if (!cancelled) { loaded[i] = URL.createObjectURL(blob); setResolved([...loaded]); } })
-        .catch(() => { if (!cancelled) { loaded[i] = ""; setResolved([...loaded]); } });
+      if (!photo) { loaded[i] = ""; if (!cancelled) setResolved([...loaded]); }
+      else if (photo.startsWith("http")) { loaded[i] = photo; if (!cancelled) setResolved([...loaded]); }
     });
+
+    const spPhotos = photos.map((p, i) => ({ p, i })).filter(({ p }) => p && !p.startsWith("http"));
+    if (spPhotos.length === 0) return;
+
+    // SP Image column filenames: list attachments first (1 call) to get correct IDs,
+    // then download each by ID (Graph API rejects filename-in-path due to special chars)
+    const graphToken = localStorage.getItem(TOKEN_CONFIG.storageKeys.graphToken) || "";
+    fetch(`${API_URLS.inventoryList}/items/${itemId}/attachments`, {
+      headers: { Authorization: `Bearer ${graphToken}` },
+    })
+      .then((r) => { if (!r.ok) throw new Error(`List ${r.status}`); return r.json(); })
+      .then(({ value: atts }: { value: Array<{ id: string; name: string }> }) => {
+        spPhotos.forEach(({ p: photo, i }) => {
+          const att = atts.find((a) => a.name === photo);
+          if (!att) { if (!cancelled) { loaded[i] = ""; setResolved([...loaded]); } return; }
+          fetch(`${API_URLS.inventoryList}/items/${itemId}/attachments/${encodeURIComponent(att.id)}/$value`, {
+            headers: { Authorization: `Bearer ${graphToken}` },
+          })
+            .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.blob(); })
+            .then((blob) => { if (!cancelled) { loaded[i] = URL.createObjectURL(blob); setResolved([...loaded]); } })
+            .catch(() => { if (!cancelled) { loaded[i] = ""; setResolved([...loaded]); } });
+        });
+      })
+      .catch(() => {
+        spPhotos.forEach(({ i }) => { if (!cancelled) { loaded[i] = ""; setResolved([...loaded]); } });
+      });
 
     return () => { cancelled = true; };
   }, [photos, itemId]);

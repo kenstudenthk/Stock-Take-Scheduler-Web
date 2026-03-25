@@ -29,6 +29,7 @@ import {
   Progress,
   Tooltip,
   Steps,
+  Tabs,
 } from "antd";
 import {
   ControlOutlined,
@@ -396,6 +397,7 @@ export const Generator: React.FC<{
 
   const [wizardStep, setWizardStep] = useState<WizardStep>("configure");
   const [syncCompleted, setSyncCompleted] = useState(false);
+  const [activeTab, setActiveTab] = useState<"unplanned" | "reschedule">("unplanned");
 
   // Get all holidays for validation
   const ALL_HOLIDAYS = getAllHolidays();
@@ -1195,466 +1197,239 @@ export const Generator: React.FC<{
         />
       </div>
 
-      {/* Main Content: Step 1 (Configure) */}
-      {generatedResult.length === 0 && (
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 0' }}>
-        <div className="flex justify-between items-center mb-10">
-          <Space className="text-[18px] font-bold uppercase text-slate-800">
-            <ControlOutlined style={{ color: DESIGN_COLORS.step2 }} />
-            Configure
-          </Space>
-
-          <Tooltip
-            title={
-              includeMTR ? "MTR shops included" : "MTR shops excluded"
-            }
-          >
-            <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
-              <Switch
-                checked={includeMTR}
-                onChange={setIncludeMTR}
-                size="small"
-              />
-              <Text className="text-[11px] font-black uppercase text-slate-500">
-                Include MTR
-              </Text>
-            </div>
-          </Tooltip>
-        </div>
-
-        <Row gutter={[16, 24]}>
-          <Col span={12}>
-            <Text
-              strong
-              className="text-slate-400 block mb-2 uppercase text-[10px] ml-1"
-            >
-              Filter Regions
-            </Text>
-            <Select
-              mode="multiple"
-              className="w-full h-11 custom-select"
-              placeholder="All Regions"
-              value={selectedRegions}
-              onChange={(v) => { setSelectedRegions(v); setSelectedDistricts([]); }}
-              allowClear
-              maxTagCount="responsive"
-            >
-              {regionOptions.map((r) => (
-                <Option key={r} value={r}>
-                  {r}
-                </Option>
-              ))}
-            </Select>
-          </Col>
-
-          <Col span={12}>
-            <Text
-              strong
-              className="text-slate-400 block mb-2 uppercase text-[10px] ml-1"
-            >
-              Filter Districts
-            </Text>
-            <Select
-              mode="multiple"
-              className="w-full h-11 custom-select"
-              placeholder="All Districts"
-              value={selectedDistricts}
-              onChange={setSelectedDistricts}
-              allowClear
-              maxTagCount="responsive"
-            >
-              {availableDistricts.map((d) => (
-                <Option key={d} value={d}>
-                  {d}
-                </Option>
-              ))}
-            </Select>
-          </Col>
-
-          <Col span={8}>
-            <Text
-              strong
-              className="text-slate-400 block mb-2 uppercase text-xs ml-1"
-            >
-              Start Date
-            </Text>
-            <DatePicker
-              value={startDate ? dayjs(startDate) : null}
-              onChange={(date) =>
-                setStartDate(date ? date.format("YYYY-MM-DD") : "")
-              }
-              disabledDate={disabledDate}
-              format="YYYY/MM/DD"
-              placeholder="Select Start Date"
-              className="bg-slate-50 border border-slate-200 h-11 rounded-xl w-full px-4 font-bold text-slate-700"
-              allowClear={false}
-            />
-          </Col>
-
-          <Col span={8}>
-            <Text
-              strong
-              className="text-slate-400 block mb-2 uppercase text-xs ml-1"
-            >
-              Shops Per Day
-            </Text>
-            <InputNumber
-              value={shopsPerDay}
-              onChange={(v) =>
-                setShopsPerDay(v || GENERATOR_DEFAULTS.shopsPerDay)
-              }
-              min={1}
-              className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
-            />
-          </Col>
-
-          <Col span={8}>
-            <Text
-              strong
-              className="text-slate-400 block mb-2 uppercase text-xs ml-1"
-            >
-              Groups Per Day
-            </Text>
-            <InputNumber
-              value={groupsPerDay}
-              onChange={(v) =>
-                setGroupsPerDay(v || GENERATOR_DEFAULTS.groupsPerDay)
-              }
-              min={1}
-              className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
-            />
-          </Col>
-        </Row>
-
-        {/* Live match bar (Step G) */}
-        {filteredCount > 0 ? (
-          <div style={{
-            background: '#f0fdfa', border: '1px dashed #0D9488', borderRadius: 8,
-            padding: '10px 14px', marginBottom: 14, marginTop: 16,
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <span style={{ fontSize: 13, color: '#0D9488', fontWeight: 600 }}>
-              {filteredCount} shops match current filters
-            </span>
-            <span style={{ fontSize: 12, color: '#6b7280' }}>
-              {estimatedDays !== null ? `Est. ~${estimatedDays} working days` : '—'}
-            </span>
-          </div>
-        ) : (
-          <div style={{
-            background: '#fffbeb', border: '1px dashed #D97706', borderRadius: 8,
-            padding: '10px 14px', marginBottom: 14, marginTop: 16, textAlign: 'center',
-          }}>
-            <span style={{ fontSize: 13, color: '#92400e', fontWeight: 500 }}>
-              No shops match these filters
-            </span>
-          </div>
-        )}
-
-        {/* CTA: Generate Button */}
-        <div className="flex justify-end mt-6">
-          <Button
-            type="primary"
-            size="large"
-            icon={<ThunderboltOutlined />}
-            onClick={handleGenerate}
-            loading={isCalculating}
-            disabled={filteredCount === 0 || shopsPerDay < 1}
-            className="h-12 px-16 rounded-xl font-black shadow-lg"
-            style={{
-              background: `linear-gradient(135deg, ${DESIGN_COLORS.step2} 0%, ${DESIGN_COLORS.step1} 100%)`,
-              border: "none",
-            }}
-          >
-            {isCalculating ? "Generating..." : `⚡ Generate Schedule for ${filteredCount} shops`}
-          </Button>
-        </div>
-      </div>
-      )}
-
-      {/* Reschedule Pool Section */}
-      {reschedulePool.length > 0 && (
-        <Card
-          className="mt-8 rounded-[40px] border-none shadow-sm overflow-hidden"
-          style={{ borderLeft: `6px solid ${DESIGN_COLORS.step2}` }}
-          title={
-            <Space className="text-slate-700 font-bold">
-              <ReloadOutlined style={{ color: DESIGN_COLORS.step2 }} />
-              Reschedule Pool ({reschedulePool.length} shops awaiting
-              rescheduling)
-            </Space>
-          }
-          extra={
-            hasPermission(currentUser, "generate_schedule") && (
-              <Button
-                type="primary"
-                icon={<ThunderboltOutlined />}
-                onClick={handleGeneratePool}
-                loading={isCalculating}
-                disabled={isCalculating}
-                style={{
-                  backgroundColor: DESIGN_COLORS.step2,
-                  borderColor: DESIGN_COLORS.step2,
-                }}
-                className="rounded-xl font-black"
-              >
-                Generate Pool Schedule
-              </Button>
-            )
-          }
-        >
-          <Table
-            dataSource={reschedulePool}
-            pagination={{ pageSize: 10, showSizeChanger: false }}
-            rowKey="id"
-            columns={[
-              {
-                title: "Shop Name",
-                dataIndex: "name",
-                key: "name",
-                render: (n, r: any) => (
-                  <Space>
-                    <img
-                      src={r.brandIcon}
-                      className="w-6 h-6 object-contain"
-                      alt={r.brand}
-                    />
-                    <span>{n}</span>
-                  </Space>
-                ),
-              },
-              {
-                title: "Region",
-                dataIndex: "region",
-                key: "region",
-              },
-              {
-                title: "District",
-                dataIndex: "district",
-                key: "district",
-              },
-              {
-                title: "MTR",
-                dataIndex: "is_mtr",
-                key: "is_mtr",
-                render: (v: boolean) =>
-                  v ? (
-                    <Tag color="purple" className="border-none font-bold">
-                      MTR
-                    </Tag>
-                  ) : null,
-              },
-            ]}
-          />
-        </Card>
-      )}
-
-      {/* Pool Preview Table */}
-      {poolGeneratedResult.length > 0 && (
-        <Card
-          className="mt-8 rounded-[40px] border-none shadow-sm overflow-hidden"
-          style={{ borderLeft: `6px solid ${DESIGN_COLORS.step2}` }}
-          title={
-            <Space className="text-slate-700 font-bold">
-              <ClockCircleOutlined
-                style={{ color: DESIGN_COLORS.step2 }}
-              />
-              Pool Schedule Preview ({poolGeneratedResult.length} shops)
-            </Space>
-          }
-        >
-          <Space style={{ marginBottom: 12 }}>
-            <Button
-              icon={<LeftOutlined />}
-              onClick={() => setPoolGeneratedResult([])}
-            >
-              Back
-            </Button>
-            <Button
-              type="primary"
-              icon={<CloudUploadOutlined />}
-              onClick={handleConfirmSyncPool}
-              disabled={isSaving}
-              style={{ background: '#0D9488', borderColor: '#0D9488' }}
-            >
-              Confirm & Sync Pool Schedule
-            </Button>
-          </Space>
-          <Table
-            dataSource={poolGeneratedResult}
-            pagination={{ pageSize: 15, showSizeChanger: false }}
-            rowKey="id"
-            columns={[
-              {
-                title: "Date",
-                dataIndex: "scheduledDate",
-                key: "date",
-                render: (d: string) => (
-                  <b className="text-slate-700">
-                    {dayjs(d).format("YYYY-MM-DD (ddd)")}
-                  </b>
-                ),
-              },
-              {
-                title: "Group",
-                dataIndex: "groupId",
-                key: "group",
-                render: (g: number) => (
-                  <Tag
-                    className={`font-black px-3 rounded-md border-none tag-group-${g}`}
-                    color={g === 1 ? "blue" : g === 2 ? "purple" : "orange"}
+      {/* Tabbed content: Unplanned and Reschedule */}
+      <Tabs
+        activeKey={activeTab}
+        onChange={(k) => setActiveTab(k as "unplanned" | "reschedule")}
+        style={{ marginTop: 8 }}
+        items={[
+          {
+            key: "unplanned",
+            label: "Unplanned",
+            children: (
+              <>
+                {generatedResult.length === 0 && (
+                <div style={{ padding: "24px 0" }}>
+                  <div className="flex justify-between items-center mb-10">
+                    <Space className="text-[18px] font-bold uppercase text-slate-800">
+                      <ControlOutlined style={{ color: DESIGN_COLORS.step2 }} />
+                      Configure
+                    </Space>
+                    <Tooltip title={includeMTR ? "MTR shops included" : "MTR shops excluded"}>
+                      <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
+                        <Switch checked={includeMTR} onChange={setIncludeMTR} size="small" />
+                        <Text className="text-[11px] font-black uppercase text-slate-500">Include MTR</Text>
+                      </div>
+                    </Tooltip>
+                  </div>
+                  <Row gutter={[16, 24]}>
+                    <Col span={12}>
+                      <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">Filter Regions</Text>
+                      <Select
+                        mode="multiple" className="w-full h-11 custom-select"
+                        placeholder="All Regions" value={selectedRegions}
+                        onChange={(v) => { setSelectedRegions(v); setSelectedDistricts([]); }}
+                        allowClear maxTagCount="responsive"
+                      >
+                        {regionOptions.map((r) => <Option key={r} value={r}>{r}</Option>)}
+                      </Select>
+                    </Col>
+                    <Col span={12}>
+                      <Text strong className="text-slate-400 block mb-2 uppercase text-[10px] ml-1">Filter Districts</Text>
+                      <Select
+                        mode="multiple" className="w-full h-11 custom-select"
+                        placeholder="All Districts" value={selectedDistricts}
+                        onChange={setSelectedDistricts} allowClear maxTagCount="responsive"
+                      >
+                        {availableDistricts.map((d) => <Option key={d} value={d}>{d}</Option>)}
+                      </Select>
+                    </Col>
+                    <Col span={8}>
+                      <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Start Date</Text>
+                      <DatePicker
+                        value={startDate ? dayjs(startDate) : null}
+                        onChange={(date) => setStartDate(date ? date.format("YYYY-MM-DD") : "")}
+                        disabledDate={disabledDate} format="YYYY/MM/DD"
+                        placeholder="Select Start Date"
+                        className="bg-slate-50 border border-slate-200 h-11 rounded-xl w-full px-4 font-bold text-slate-700"
+                        allowClear={false}
+                      />
+                    </Col>
+                    <Col span={8}>
+                      <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Shops Per Day</Text>
+                      <InputNumber
+                        value={shopsPerDay}
+                        onChange={(v) => setShopsPerDay(v || GENERATOR_DEFAULTS.shopsPerDay)}
+                        min={1}
+                        className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
+                      />
+                    </Col>
+                    <Col span={8}>
+                      <Text strong className="text-slate-400 block mb-2 uppercase text-xs ml-1">Groups Per Day</Text>
+                      <InputNumber
+                        value={groupsPerDay}
+                        onChange={(v) => setGroupsPerDay(v || GENERATOR_DEFAULTS.groupsPerDay)}
+                        min={1}
+                        className="w-full h-11 bg-slate-50 border-slate-200 rounded-xl font-bold flex items-center"
+                      />
+                    </Col>
+                  </Row>
+                  {filteredCount > 0 ? (
+                    <div style={{ background: "#f0fdfa", border: "1px dashed #0D9488", borderRadius: 8, padding: "10px 14px", marginBottom: 14, marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 13, color: "#0D9488", fontWeight: 600 }}>{filteredCount} shops match current filters</span>
+                      <span style={{ fontSize: 12, color: "#6b7280" }}>{estimatedDays !== null ? `Est. ~${estimatedDays} working days` : "—"}</span>
+                    </div>
+                  ) : (
+                    <div style={{ background: "#fffbeb", border: "1px dashed #D97706", borderRadius: 8, padding: "10px 14px", marginBottom: 14, marginTop: 16, textAlign: "center" }}>
+                      <span style={{ fontSize: 13, color: "#92400e", fontWeight: 500 }}>No shops match these filters</span>
+                    </div>
+                  )}
+                  <div className="flex justify-end mt-6">
+                    <Button
+                      type="primary" size="large" icon={<ThunderboltOutlined />}
+                      onClick={handleGenerate} loading={isCalculating}
+                      disabled={filteredCount === 0 || shopsPerDay < 1}
+                      className="h-12 px-16 rounded-xl font-black shadow-lg"
+                      style={{ background: `linear-gradient(135deg, ${DESIGN_COLORS.step2} 0%, ${DESIGN_COLORS.step1} 100%)`, border: "none" }}
+                    >
+                      {isCalculating ? "Generating..." : `⚡ Generate Schedule for ${filteredCount} shops`}
+                    </Button>
+                  </div>
+                </div>
+                )}
+                {generatedResult.length > 0 && (
+                  <Card
+                    className="mt-4 rounded-[40px] border-none shadow-sm overflow-hidden"
+                    style={{ borderLeft: `6px solid ${DESIGN_COLORS.step3}` }}
+                    title={
+                      <Space className="text-slate-700 font-bold">
+                        <ClockCircleOutlined spin={!syncCompleted} style={{ color: DESIGN_COLORS.step3 }} />
+                        Step 3: Schedule Preview ({generatedResult.length} shops)
+                      </Space>
+                    }
                   >
-                    {`Group ${String.fromCharCode(64 + g)}`}
-                  </Tag>
-                ),
-              },
-              {
-                title: "Shop Name",
-                dataIndex: "name",
-                key: "name",
-                render: (n: string, r: any) => (
-                  <Space>
-                    <img
-                      src={r.brandIcon}
-                      className="w-6 h-6 object-contain"
-                      alt={r.brand}
+                    <Button icon={<LeftOutlined />} onClick={() => setGeneratedResult([])} style={{ marginBottom: 12 }}>
+                      Back to Configure
+                    </Button>
+                    <Table
+                      dataSource={generatedResult}
+                      pagination={{ pageSize: 15, showSizeChanger: false }}
+                      rowKey="id"
+                      columns={[
+                        { title: "Date", dataIndex: "scheduledDate", key: "date", render: (d: string) => <b className="text-slate-700">{dayjs(d).format("YYYY-MM-DD (ddd)")}</b> },
+                        { title: "Group", dataIndex: "groupId", key: "group", render: (g: number) => <Tag className={`font-black px-3 rounded-md border-none tag-group-${g}`} color={g === 1 ? "blue" : g === 2 ? "purple" : "orange"}>{`Group ${String.fromCharCode(64 + g)}`}</Tag> },
+                        { title: "Shop Name", dataIndex: "name", key: "name", render: (n: string, r: Shop) => <Space><img src={r.brandIcon} className="w-6 h-6 object-contain" alt={r.brand} /><span>{n}</span></Space> },
+                        { title: "District", dataIndex: "district", key: "district" },
+                      ]}
                     />
-                    <span>{n}</span>
-                  </Space>
-                ),
-              },
-              {
-                title: "District",
-                dataIndex: "district",
-                key: "district",
-              },
-            ]}
-          />
-        </Card>
-      )}
-
-      {/* Preview Table (Step 3 Preview) */}
-      {generatedResult.length > 0 && (
-        <Card
-          className="mt-8 rounded-[40px] border-none shadow-sm overflow-hidden"
-          style={{ borderLeft: `6px solid ${DESIGN_COLORS.step3}` }}
-          title={
-            <Space className="text-slate-700 font-bold">
-              <ClockCircleOutlined
-                spin={!syncCompleted}
-                style={{ color: DESIGN_COLORS.step3 }}
-              />
-              Step 3: Schedule Preview ({generatedResult.length} shops)
-            </Space>
-          }
-        >
-          <Button
-            icon={<LeftOutlined />}
-            onClick={() => setGeneratedResult([])}
-            style={{ marginBottom: 12 }}
-          >
-            Back to Configure
-          </Button>
-          <Table
-            dataSource={generatedResult}
-            pagination={{ pageSize: 15, showSizeChanger: false }}
-            rowKey="id"
-            columns={[
-              {
-                title: "Date",
-                dataIndex: "scheduledDate",
-                key: "date",
-                render: (d: string) => (
-                  <b className="text-slate-700">
-                    {dayjs(d).format("YYYY-MM-DD (ddd)")}
-                  </b>
-                ),
-              },
-              {
-                title: "Group",
-                dataIndex: "groupId",
-                key: "group",
-                render: (g: number) => (
-                  <Tag
-                    className={`font-black px-3 rounded-md border-none tag-group-${g}`}
-                    color={g === 1 ? "blue" : g === 2 ? "purple" : "orange"}
+                    {hasPermission(currentUser, "generate_schedule") && !syncCompleted && (
+                      <div className="flex justify-end p-8 border-t bg-slate-50">
+                        <Button
+                          type="primary" size="large"
+                          icon={syncCompleted ? <CheckCircleFilled /> : <SaveOutlined />}
+                          onClick={saveToSharePoint} loading={isSaving}
+                          disabled={isSaving || syncCompleted}
+                          className="h-12 px-16 rounded-xl font-black shadow-lg"
+                          style={{ backgroundColor: syncCompleted ? DESIGN_COLORS.step3 : DESIGN_COLORS.cta, borderColor: syncCompleted ? DESIGN_COLORS.step3 : DESIGN_COLORS.cta }}
+                        >
+                          {syncCompleted ? "SYNCED ✓" : "CONFIRM & SYNC TO SHAREPOINT"}
+                        </Button>
+                      </div>
+                    )}
+                    {syncCompleted && (
+                      <div className="p-8 text-center border-t bg-green-50">
+                        <Space direction="vertical" size="small">
+                          <CheckCircleFilled style={{ fontSize: 48, color: DESIGN_COLORS.step3 }} />
+                          <Title level={4} style={{ color: DESIGN_COLORS.step3, margin: 0 }}>Schedule Synced Successfully!</Title>
+                          <Text type="secondary">All {generatedResult.length} shops have been saved to SharePoint.</Text>
+                        </Space>
+                      </div>
+                    )}
+                  </Card>
+                )}
+              </>
+            ),
+          },
+          {
+            key: "reschedule",
+            label: reschedulePool.length > 0 ? `Reschedule (${reschedulePool.length})` : "Reschedule",
+            children: (
+              <>
+                {reschedulePool.length > 0 ? (
+                  <Card
+                    className="rounded-[40px] border-none shadow-sm overflow-hidden"
+                    style={{ borderLeft: `6px solid ${DESIGN_COLORS.step2}` }}
+                    title={
+                      <Space className="text-slate-700 font-bold">
+                        <ReloadOutlined style={{ color: DESIGN_COLORS.step2 }} />
+                        Reschedule Pool ({reschedulePool.length} shops awaiting rescheduling)
+                      </Space>
+                    }
+                    extra={
+                      hasPermission(currentUser, "generate_schedule") && (
+                        <Button
+                          type="primary" icon={<ThunderboltOutlined />}
+                          onClick={handleGeneratePool} loading={isCalculating} disabled={isCalculating}
+                          style={{ backgroundColor: DESIGN_COLORS.step2, borderColor: DESIGN_COLORS.step2 }}
+                          className="rounded-xl font-black"
+                        >
+                          Generate Pool Schedule
+                        </Button>
+                      )
+                    }
                   >
-                    {`Group ${String.fromCharCode(64 + g)}`}
-                  </Tag>
-                ),
-              },
-              {
-                title: "Shop Name",
-                dataIndex: "name",
-                key: "name",
-                render: (n: string, r: Shop) => (
-                  <Space>
-                    <img
-                      src={r.brandIcon}
-                      className="w-6 h-6 object-contain"
-                      alt={r.brand}
+                    <Table
+                      dataSource={reschedulePool}
+                      pagination={{ pageSize: 10, showSizeChanger: false }}
+                      rowKey="id"
+                      columns={[
+                        { title: "Shop Name", dataIndex: "name", key: "name", render: (n: any, r: any) => <Space><img src={r.brandIcon} className="w-6 h-6 object-contain" alt={r.brand} /><span>{n}</span></Space> },
+                        { title: "Region", dataIndex: "region", key: "region" },
+                        { title: "District", dataIndex: "district", key: "district" },
+                        { title: "MTR", dataIndex: "is_mtr", key: "is_mtr", render: (v: boolean) => v ? <Tag color="purple" className="border-none font-bold">MTR</Tag> : null },
+                      ]}
                     />
-                    <span>{n}</span>
-                  </Space>
-                ),
-              },
-              {
-                title: "District",
-                dataIndex: "district",
-                key: "district",
-              },
-            ]}
-          />
-
-          {/* Final CTA: Confirm & Sync */}
-          {hasPermission(currentUser, "generate_schedule") &&
-            !syncCompleted && (
-              <div className="flex justify-end p-8 border-t bg-slate-50">
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={
-                    syncCompleted ? <CheckCircleFilled /> : <SaveOutlined />
-                  }
-                  onClick={saveToSharePoint}
-                  loading={isSaving}
-                  disabled={isSaving || syncCompleted}
-                  className="h-12 px-16 rounded-xl font-black shadow-lg"
-                  style={{
-                    backgroundColor: syncCompleted
-                      ? DESIGN_COLORS.step3
-                      : DESIGN_COLORS.cta,
-                    borderColor: syncCompleted
-                      ? DESIGN_COLORS.step3
-                      : DESIGN_COLORS.cta,
-                  }}
-                >
-                  {syncCompleted ? "SYNCED ✓" : "CONFIRM & SYNC TO SHAREPOINT"}
-                </Button>
-              </div>
-            )}
-
-          {syncCompleted && (
-            <div className="p-8 text-center border-t bg-green-50">
-              <Space direction="vertical" size="small">
-                <CheckCircleFilled
-                  style={{ fontSize: 48, color: DESIGN_COLORS.step3 }}
-                />
-                <Title
-                  level={4}
-                  style={{ color: DESIGN_COLORS.step3, margin: 0 }}
-                >
-                  Schedule Synced Successfully!
-                </Title>
-                <Text type="secondary">
-                  All {generatedResult.length} shops have been saved to
-                  SharePoint.
-                </Text>
-              </Space>
-            </div>
-          )}
-        </Card>
-      )}
+                  </Card>
+                ) : (
+                  <div style={{ textAlign: "center", color: "#9ca3af", padding: "48px 0", fontSize: 14 }}>
+                    No shops in the reschedule pool.
+                  </div>
+                )}
+                {poolGeneratedResult.length > 0 && (
+                  <Card
+                    className="mt-8 rounded-[40px] border-none shadow-sm overflow-hidden"
+                    style={{ borderLeft: `6px solid ${DESIGN_COLORS.step2}` }}
+                    title={
+                      <Space className="text-slate-700 font-bold">
+                        <ClockCircleOutlined style={{ color: DESIGN_COLORS.step2 }} />
+                        Pool Schedule Preview ({poolGeneratedResult.length} shops)
+                      </Space>
+                    }
+                  >
+                    <Space style={{ marginBottom: 12 }}>
+                      <Button icon={<LeftOutlined />} onClick={() => setPoolGeneratedResult([])}>Back</Button>
+                      <Button type="primary" icon={<CloudUploadOutlined />} onClick={handleConfirmSyncPool} disabled={isSaving} style={{ background: "#0D9488", borderColor: "#0D9488" }}>
+                        Confirm & Sync Pool Schedule
+                      </Button>
+                    </Space>
+                    <Table
+                      dataSource={poolGeneratedResult}
+                      pagination={{ pageSize: 15, showSizeChanger: false }}
+                      rowKey="id"
+                      columns={[
+                        { title: "Date", dataIndex: "scheduledDate", key: "date", render: (d: string) => <b className="text-slate-700">{dayjs(d).format("YYYY-MM-DD (ddd)")}</b> },
+                        { title: "Group", dataIndex: "groupId", key: "group", render: (g: number) => <Tag className={`font-black px-3 rounded-md border-none tag-group-${g}`} color={g === 1 ? "blue" : g === 2 ? "purple" : "orange"}>{`Group ${String.fromCharCode(64 + g)}`}</Tag> },
+                        { title: "Shop Name", dataIndex: "name", key: "name", render: (n: string, r: any) => <Space><img src={r.brandIcon} className="w-6 h-6 object-contain" alt={r.brand} /><span>{n}</span></Space> },
+                        { title: "District", dataIndex: "district", key: "district" },
+                      ]}
+                    />
+                  </Card>
+                )}
+              </>
+            ),
+          },
+        ]}
+      />
 
       {/* Custom Styles */}
       <style>{`

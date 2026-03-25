@@ -139,6 +139,41 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Removed DnD entirely. Click any shop chip or sidebar card → combined modal (date + group in one action). `interactionPlugin` kept for `dateClick` (sidebar date selection) but `editable`/`droppable`/`eventDrop` props removed. ExcelJS/jsPDF moved to dynamic imports.
 - **Rule**: NEVER re-add DnD to Calendar without also adding shared validateReschedule utility (see peppy-waddling-ritchie.md T1-7)
 
+#### ⚠️ Known Issue: Generator — Pool Generation Shared generatedResult State
+- **Date**: 2026-03-25
+- **Problem**: `handleGeneratePool` wrote into `generatedResult`, causing the wizard stepper to auto-advance to step 2 when a pool schedule was generated — even with no regular schedule
+- **Root Cause**: Both regular and pool generation used the same `generatedResult` state; the wizard auto-step `useEffect` reads `generatedResult.length > 0`
+- **Fix**: Added separate `poolGeneratedResult` state. `handleGeneratePool` now calls `setPoolGeneratedResult`. Pool preview renders from `poolGeneratedResult`. Regular wizard flow reads only `generatedResult`.
+- **Rule**: ALWAYS use `poolGeneratedResult` for pool generation output; NEVER write pool results into `generatedResult`
+
+#### ⚠️ Known Issue: Generator — Configure Step Left-Side Region Cards Cluttered Layout
+- **Date**: 2026-03-25
+- **Problem**: Configure step used a Row/Col split (span=9 region cards + span=15 settings), narrowing the settings area and duplicating region info already shown in the stats banner
+- **Root Cause**: Original design rendered animated region cards alongside the form fields
+- **Fix**: Removed left-side region card panel entirely. Settings form now renders in a centered `maxWidth: 720` wrapper. `UnplannedStatsBanner` above the stepper shows the same region breakdown compactly.
+- **Rule**: NEVER restore the left-side region card panel in Configure step; use `UnplannedStatsBanner` + centered form instead
+
+#### ⚠️ Known Issue: Generator — Configure Form Visible During Preview (pre-fix)
+- **Date**: 2026-03-25
+- **Problem**: Configure form and Preview table were both visible simultaneously after generation, causing layout confusion
+- **Root Cause**: The Configure `<div>` block rendered unconditionally regardless of `generatedResult.length`
+- **Fix**: Wrapped Configure block with `{generatedResult.length === 0 && (...)}` guard
+- **Rule**: ALWAYS guard Configure step content with `generatedResult.length === 0`; NEVER render form and preview table simultaneously
+
+#### ⚠️ Known Issue: Generator — Pool Preview Had No Sync Button
+- **Date**: 2026-03-25
+- **Problem**: Pool Schedule Preview card showed results but had no way to commit them to SharePoint
+- **Root Cause**: `handleConfirmSyncPool` function and its button were never added when the pool preview was built
+- **Fix**: Added `handleConfirmSyncPool` (mirrors `saveToSharePoint` but reads `poolGeneratedResult`); added "Confirm & Sync Pool Schedule" button in pool preview card alongside Back button
+- **Rule**: ALWAYS add a Confirm & Sync button to any schedule preview card; NEVER show a preview without a save action
+
+#### ⚠️ Known Issue: Generator — Stale Docblock Step 1 Color Annotation
+- **Date**: 2026-03-25
+- **Problem**: File-level JSDoc said `Step 1 (紅色/Problem)` after step colors were remapped to teal
+- **Root Cause**: Docblock not updated when `DESIGN_COLORS.step1` was changed from red to teal
+- **Fix**: Changed annotation to `Step 1 (青色/Configure)` matching actual `DESIGN_COLORS.step1 = "#0D9488"`
+- **Rule**: ALWAYS update JSDoc step annotations when `DESIGN_COLORS` step values change
+
 ---
 
 ## Development Commands

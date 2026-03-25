@@ -4,7 +4,7 @@
  * 設計系統準則遵循: design-system/stock-take-scheduler/pages/generator.md
  *
  * 三步驟流程:
- * - Step 1 (紅色/Problem): Configure - 設定篩選器和參數
+ * - Step 1 (青色/Configure): Configure - 設定篩選器和參數
  * - Step 2 (橙色/Process): Generate - 創建排程
  * - Step 3 (綠色/Solution): Sync - 儲存到 SharePoint
  */
@@ -622,7 +622,69 @@ export const Generator: React.FC<{
     }
   }, [reschedulePool, startDate, shopsPerDay, groupsPerDay]);
 
-  const saveToSharePoint = useCallback(async () => {
+  const handleConfirmSyncPool = useCallback(async () => {
+    if (poolGeneratedResult.length === 0) {
+      message.warning("No pool schedule to save!");
+      return;
+    }
+
+    setIsSaving(true);
+    setLoadingType("sync");
+    setSaveProgress({ current: 0, total: poolGeneratedResult.length });
+
+    try {
+      const result = await executeBatch(
+        poolGeneratedResult,
+        async (shop) => {
+          const response = await fetch(
+            `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+            {
+              method: "PATCH",
+              headers: {
+                Authorization: `Bearer ${graphToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                [SP_FIELDS.STATUS]: "Planned",
+                [SP_FIELDS.SCHEDULE_DATE]: shop.scheduledDate,
+                [SP_FIELDS.SCHEDULE_GROUP]: shop.groupId.toString(),
+              }),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error(`Failed to save ${shop.name}`);
+          }
+        },
+        {
+          onProgress: (current, total) => setSaveProgress({ current, total }),
+          getItemName: (shop) => shop.name,
+        },
+      );
+
+      if (result.successCount === result.totalProcessed) {
+        message.success(
+          `✅ All ${result.successCount} pool shops synced successfully!`,
+        );
+        setPoolGeneratedResult([]);
+        onRefresh();
+      } else if (result.successCount > 0) {
+        message.warning(
+          `⚠️ ${result.successCount} synced, ${result.failureCount} failed.`,
+        );
+      } else {
+        message.error(`❌ Failed to sync all ${result.failureCount} pool shops.`);
+      }
+    } catch (error) {
+      console.error("Pool sync error:", error);
+      message.error("Pool sync failed. Please try again.");
+    } finally {
+      setIsSaving(false);
+      setSaveProgress(null);
+    }
+  }, [poolGeneratedResult, graphToken, onRefresh]);
+
+    const saveToSharePoint = useCallback(async () => {
     if (generatedResult.length === 0) {
       message.warning("No schedule to save!");
       return;
@@ -1134,6 +1196,7 @@ export const Generator: React.FC<{
       </div>
 
       {/* Main Content: Step 1 (Configure) */}
+      {generatedResult.length === 0 && (
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 0' }}>
         <div className="flex justify-between items-center mb-10">
           <Space className="text-[18px] font-bold uppercase text-slate-800">
@@ -1307,6 +1370,7 @@ export const Generator: React.FC<{
           </Button>
         </div>
       </div>
+      )}
 
       {/* Reschedule Pool Section */}
       {reschedulePool.length > 0 && (
@@ -1399,13 +1463,23 @@ export const Generator: React.FC<{
             </Space>
           }
         >
-          <Button
-            icon={<LeftOutlined />}
-            onClick={() => setPoolGeneratedResult([])}
-            style={{ marginBottom: 12 }}
-          >
-            Back
-          </Button>
+          <Space style={{ marginBottom: 12 }}>
+            <Button
+              icon={<LeftOutlined />}
+              onClick={() => setPoolGeneratedResult([])}
+            >
+              Back
+            </Button>
+            <Button
+              type="primary"
+              icon={<CloudUploadOutlined />}
+              onClick={handleConfirmSyncPool}
+              disabled={isSaving}
+              style={{ background: '#0D9488', borderColor: '#0D9488' }}
+            >
+              Confirm & Sync Pool Schedule
+            </Button>
+          </Space>
           <Table
             dataSource={poolGeneratedResult}
             pagination={{ pageSize: 15, showSizeChanger: false }}

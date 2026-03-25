@@ -153,6 +153,27 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Removed left-side region card panel entirely. Settings form now renders in a centered `maxWidth: 720` wrapper. `UnplannedStatsBanner` above the stepper shows the same region breakdown compactly.
 - **Rule**: NEVER restore the left-side region card panel in Configure step; use `UnplannedStatsBanner` + centered form instead
 
+#### ⚠️ Known Issue: Generator — Configure Form Visible During Preview (pre-fix)
+- **Date**: 2026-03-25
+- **Problem**: Configure form and Preview table were both visible simultaneously after generation, causing layout confusion
+- **Root Cause**: The Configure `<div>` block rendered unconditionally regardless of `generatedResult.length`
+- **Fix**: Wrapped Configure block with `{generatedResult.length === 0 && (...)}` guard
+- **Rule**: ALWAYS guard Configure step content with `generatedResult.length === 0`; NEVER render form and preview table simultaneously
+
+#### ⚠️ Known Issue: Generator — Pool Preview Had No Sync Button
+- **Date**: 2026-03-25
+- **Problem**: Pool Schedule Preview card showed results but had no way to commit them to SharePoint
+- **Root Cause**: `handleConfirmSyncPool` function and its button were never added when the pool preview was built
+- **Fix**: Added `handleConfirmSyncPool` (mirrors `saveToSharePoint` but reads `poolGeneratedResult`); added "Confirm & Sync Pool Schedule" button in pool preview card alongside Back button
+- **Rule**: ALWAYS add a Confirm & Sync button to any schedule preview card; NEVER show a preview without a save action
+
+#### ⚠️ Known Issue: Generator — Stale Docblock Step 1 Color Annotation
+- **Date**: 2026-03-25
+- **Problem**: File-level JSDoc said `Step 1 (紅色/Problem)` after step colors were remapped to teal
+- **Root Cause**: Docblock not updated when `DESIGN_COLORS.step1` was changed from red to teal
+- **Fix**: Changed annotation to `Step 1 (青色/Configure)` matching actual `DESIGN_COLORS.step1 = "#0D9488"`
+- **Rule**: ALWAYS update JSDoc step annotations when `DESIGN_COLORS` step values change
+
 ---
 
 ## Development Commands

@@ -308,7 +308,9 @@ interface StatsBannerProps {
   total: number;
 }
 
-const UnplannedStatsBanner: React.FC<StatsBannerProps> = ({ regionStats, total }) => (
+const UnplannedStatsBanner: React.FC<StatsBannerProps> = ({ regionStats, total }) => {
+  if (total === 0) return null;
+  return (
   <div style={{ background: '#f8fafc', borderBottom: '1px solid #e5e7eb', padding: '12px 20px' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginRight: 4, whiteSpace: 'nowrap' }}>
@@ -344,7 +346,8 @@ const UnplannedStatsBanner: React.FC<StatsBannerProps> = ({ regionStats, total }
       </span>
     </div>
   </div>
-);
+  );
+};
 
 // ========================================
 // MAIN COMPONENT
@@ -371,7 +374,7 @@ export const Generator: React.FC<{
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [includeMTR, setIncludeMTR] = useState(true);
 
-  const [generatedResult, setGeneratedResult] = useState<any[]>([]);
+  const [generatedResult, setGeneratedResult] = useState<Shop[]>([]);
   const [poolGeneratedResult, setPoolGeneratedResult] = useState<Shop[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -1487,7 +1490,7 @@ export const Generator: React.FC<{
                 title: "Date",
                 dataIndex: "scheduledDate",
                 key: "date",
-                render: (d) => (
+                render: (d: string) => (
                   <b className="text-slate-700">
                     {dayjs(d).format("YYYY-MM-DD (ddd)")}
                   </b>
@@ -1497,7 +1500,7 @@ export const Generator: React.FC<{
                 title: "Group",
                 dataIndex: "groupId",
                 key: "group",
-                render: (g) => (
+                render: (g: number) => (
                   <Tag
                     className={`font-black px-3 rounded-md border-none tag-group-${g}`}
                     color={g === 1 ? "blue" : g === 2 ? "purple" : "orange"}
@@ -1510,7 +1513,7 @@ export const Generator: React.FC<{
                 title: "Shop Name",
                 dataIndex: "name",
                 key: "name",
-                render: (n, r) => (
+                render: (n: string, r: Shop) => (
                   <Space>
                     <img
                       src={r.brandIcon}

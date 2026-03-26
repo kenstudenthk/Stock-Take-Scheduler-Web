@@ -11,6 +11,7 @@ import {
   BugOutlined,
   TeamOutlined,
   AppstoreOutlined,
+  BarChartOutlined,
 } from "@ant-design/icons";
 import { Popover } from "antd";
 import { View, User, hasAdminAccess } from "../types";
@@ -30,8 +31,13 @@ function useTokenHealth(): TokenHealth {
     const check = () => {
       const token = localStorage.getItem("graphToken");
       const ts = localStorage.getItem("graphTokenTimestamp");
-      if (!token || !ts) { setHealth("expired"); return; }
-      const minutesLeft = Math.floor((60 * 60 * 1000 - (Date.now() - Number(ts))) / 60000);
+      if (!token || !ts) {
+        setHealth("expired");
+        return;
+      }
+      const minutesLeft = Math.floor(
+        (60 * 60 * 1000 - (Date.now() - Number(ts))) / 60000,
+      );
       if (minutesLeft <= 0) setHealth("expired");
       else if (minutesLeft <= 15) setHealth("warning");
       else setHealth("valid");
@@ -82,6 +88,12 @@ export const Layout: React.FC<any> = ({
       requiresAdmin: false,
     },
     {
+      key: View.REPORTS,
+      label: "Reports",
+      icon: <BarChartOutlined />,
+      requiresAdmin: false,
+    },
+    {
       key: View.INVENTORY,
       label: "Inventory",
       icon: <DatabaseOutlined />,
@@ -128,7 +140,9 @@ export const Layout: React.FC<any> = ({
           {/* Schedule group: Dashboard, Schedules, Generator */}
           {menuItems
             .filter((item) =>
-              [View.DASHBOARD, View.CALENDAR, View.GENERATOR].includes(item.key)
+              [View.DASHBOARD, View.CALENDAR, View.GENERATOR].includes(
+                item.key,
+              ),
             )
             .map((item) => (
               <li key={item.key}>
@@ -143,13 +157,35 @@ export const Layout: React.FC<any> = ({
             ))}
 
           {/* Separator between schedule and data groups */}
-          <li className="nav-group-sep" aria-hidden="true" style={{ margin: '4px 12px', borderTop: '1px solid rgba(255,255,255,0.1)', padding: 0, height: 0 }} />
+          <li
+            className="nav-group-sep"
+            aria-hidden="true"
+            style={{
+              margin: "4px 12px",
+              borderTop: "1px solid rgba(255,255,255,0.1)",
+              padding: 0,
+              height: 0,
+            }}
+          />
 
           {/* Data group: Shops */}
           {menuItems
-            .filter((item) =>
-              [View.SHOPS].includes(item.key)
-            )
+            .filter((item) => [View.SHOPS].includes(item.key))
+            .map((item) => (
+              <li key={item.key}>
+                <a
+                  onClick={() => onViewChange(item.key)}
+                  className={currentView === item.key ? "active" : ""}
+                >
+                  <i className="nav-icon-slot">{item.icon}</i>
+                  <span className="nav-label-tooltip">{item.label}</span>
+                </a>
+              </li>
+            ))}
+
+          {/* Reports group */}
+          {menuItems
+            .filter((item) => [View.REPORTS].includes(item.key))
             .map((item) => (
               <li key={item.key}>
                 <a
@@ -163,21 +199,22 @@ export const Layout: React.FC<any> = ({
             ))}
 
           {/* Admin group: Inventory, Permission */}
-          {isAdmin && menuItems
-            .filter((item) =>
-              [View.INVENTORY, View.PERMISSION].includes(item.key)
-            )
-            .map((item) => (
-              <li key={item.key}>
-                <a
-                  onClick={() => onViewChange(item.key)}
-                  className={currentView === item.key ? "active" : ""}
-                >
-                  <i className="nav-icon-slot">{item.icon}</i>
-                  <span className="nav-label-tooltip">{item.label}</span>
-                </a>
-              </li>
-            ))}
+          {isAdmin &&
+            menuItems
+              .filter((item) =>
+                [View.INVENTORY, View.PERMISSION].includes(item.key),
+              )
+              .map((item) => (
+                <li key={item.key}>
+                  <a
+                    onClick={() => onViewChange(item.key)}
+                    className={currentView === item.key ? "active" : ""}
+                  >
+                    <i className="nav-icon-slot">{item.icon}</i>
+                    <span className="nav-label-tooltip">{item.label}</span>
+                  </a>
+                </li>
+              ))}
 
           <li className="nav-item-sep">
             <a
@@ -230,11 +267,7 @@ export const Layout: React.FC<any> = ({
 
       {/* Mobile Bottom Navigation - Hidden by default via CSS, shown only on mobile */}
       <nav className="mobile-bottom-nav">
-        {[
-          View.DASHBOARD,
-          View.SHOPS,
-          View.CALENDAR,
-        ].map((viewKey) => {
+        {[View.DASHBOARD, View.SHOPS, View.CALENDAR].map((viewKey) => {
           const item = menuItems.find((i) => i.key === viewKey);
           if (!item) return null;
           return (
@@ -256,12 +289,40 @@ export const Layout: React.FC<any> = ({
             placement="topRight"
             trigger="click"
             content={
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 140 }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  minWidth: 140,
+                }}
+              >
                 {[
-                  { key: View.GENERATOR, label: "Generator", icon: <ThunderboltOutlined /> },
-                  { key: View.INVENTORY, label: "Inventory", icon: <DatabaseOutlined /> },
-                  { key: View.PERMISSION, label: "Permission", icon: <TeamOutlined /> },
-                  { key: View.SETTINGS, label: "Settings", icon: <SettingOutlined /> },
+                  {
+                    key: View.REPORTS,
+                    label: "Reports",
+                    icon: <BarChartOutlined />,
+                  },
+                  {
+                    key: View.GENERATOR,
+                    label: "Generator",
+                    icon: <ThunderboltOutlined />,
+                  },
+                  {
+                    key: View.INVENTORY,
+                    label: "Inventory",
+                    icon: <DatabaseOutlined />,
+                  },
+                  {
+                    key: View.PERMISSION,
+                    label: "Permission",
+                    icon: <TeamOutlined />,
+                  },
+                  {
+                    key: View.SETTINGS,
+                    label: "Settings",
+                    icon: <SettingOutlined />,
+                  },
                 ].map((item) => (
                   <button
                     key={item.key}
@@ -271,7 +332,8 @@ export const Layout: React.FC<any> = ({
                       gap: 8,
                       padding: "8px 12px",
                       border: "none",
-                      background: currentView === item.key ? "#f0fdfa" : "transparent",
+                      background:
+                        currentView === item.key ? "#f0fdfa" : "transparent",
                       borderRadius: 8,
                       cursor: "pointer",
                       color: currentView === item.key ? "#0d9488" : "#334155",

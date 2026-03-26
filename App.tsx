@@ -21,6 +21,7 @@ import { INV_FIELDS } from "./constants";
 import { Generator } from "./components/Generator";
 import { Inventory } from "./components/Inventory";
 import { Permission } from "./components/Permission";
+import { Reports } from "./components/Reports";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ErrorReport } from "./components/ErrorReport";
 import { Login } from "./components/Login";
@@ -420,6 +421,8 @@ function App() {
         );
       case View.PERMISSION:
         return <Permission graphToken={graphToken} currentUser={currentUser} />;
+      case View.REPORTS:
+        return <Reports shops={allShops} currentUser={currentUser} />;
       default:
         return null;
     }

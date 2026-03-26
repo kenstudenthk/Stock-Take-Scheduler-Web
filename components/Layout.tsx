@@ -12,6 +12,7 @@ import {
   TeamOutlined,
   AppstoreOutlined,
   BarChartOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { Popover } from "antd";
 import { View, User, hasAdminAccess } from "../types";
@@ -94,6 +95,12 @@ export const Layout: React.FC<any> = ({
       requiresAdmin: false,
     },
     {
+      key: View.TIME_CARD,
+      label: "Time Card",
+      icon: <ClockCircleOutlined />,
+      requiresAdmin: false,
+    },
+    {
       key: View.INVENTORY,
       label: "Inventory",
       icon: <DatabaseOutlined />,
@@ -168,24 +175,11 @@ export const Layout: React.FC<any> = ({
             }}
           />
 
-          {/* Data group: Shops */}
+          {/* Data group: Shops, Reports, Time Card */}
           {menuItems
-            .filter((item) => [View.SHOPS].includes(item.key))
-            .map((item) => (
-              <li key={item.key}>
-                <a
-                  onClick={() => onViewChange(item.key)}
-                  className={currentView === item.key ? "active" : ""}
-                >
-                  <i className="nav-icon-slot">{item.icon}</i>
-                  <span className="nav-label-tooltip">{item.label}</span>
-                </a>
-              </li>
-            ))}
-
-          {/* Reports group */}
-          {menuItems
-            .filter((item) => [View.REPORTS].includes(item.key))
+            .filter((item) =>
+              [View.SHOPS, View.REPORTS, View.TIME_CARD].includes(item.key),
+            )
             .map((item) => (
               <li key={item.key}>
                 <a
@@ -304,6 +298,11 @@ export const Layout: React.FC<any> = ({
                     icon: <BarChartOutlined />,
                   },
                   {
+                    key: View.TIME_CARD,
+                    label: "Time Card",
+                    icon: <ClockCircleOutlined />,
+                  },
+                  {
                     key: View.GENERATOR,
                     label: "Generator",
                     icon: <ThunderboltOutlined />,
@@ -356,7 +355,7 @@ export const Layout: React.FC<any> = ({
             }
           >
             <button
-              className={`mobile-nav-item ${[View.GENERATOR, View.INVENTORY, View.PERMISSION, View.SETTINGS].includes(currentView) ? "active" : ""}`}
+              className={`mobile-nav-item ${[View.GENERATOR, View.INVENTORY, View.PERMISSION, View.SETTINGS, View.TIME_CARD].includes(currentView) ? "active" : ""}`}
               style={{ position: "relative" }}
             >
               <AppstoreOutlined />

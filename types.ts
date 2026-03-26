@@ -4,6 +4,7 @@ export enum View {
   GENERATOR = "generator",
   SHOPS = "shops",
   REPORTS = "reports",
+  TIME_CARD = "timecard",
   SETTINGS = "settings",
   INVENTORY = "inventory",
   PERMISSION = "permission",
@@ -185,4 +186,13 @@ export interface InventoryItem {
   productImage?: string;
   productImage2?: string;
   createdBy: string;
+}
+
+export interface TimeCardEntry {
+  id: string;
+  feName: string;
+  actionTime: string;
+  action: "Check In" | "Check Out";
+  shopName: string;
+  role: "Main" | "Assistant";
 }

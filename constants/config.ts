@@ -19,6 +19,9 @@ export const SHAREPOINT_CONFIG = {
   errorLogListId:
     import.meta.env.VITE_ERROR_LOG_LIST_ID ||
     "5d722abb-ab79-4fc5-b03c-099580db85ba",
+  timeCardListId:
+    import.meta.env.VITE_TIME_CARD_LIST_ID ||
+    "3e44f050-b344-4ca7-9e44-34f0be6be04e",
 } as const;
 
 // API Base URLs
@@ -38,6 +41,9 @@ export const API_URLS = {
   },
   get errorLogList() {
     return `${this.sites}/lists/${SHAREPOINT_CONFIG.errorLogListId}`;
+  },
+  get timeCardList() {
+    return `${this.sites}/lists/${SHAREPOINT_CONFIG.timeCardListId}`;
   },
 } as const;
 

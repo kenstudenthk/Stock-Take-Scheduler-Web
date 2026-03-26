@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { SHAREPOINT_CONFIG, API_URLS } from "../constants/config";
 import { SP_FIELDS } from "../constants";
-import { User, UserRole } from "../types";
+import { User, UserRole, TimeCardEntry } from "../types";
 
 interface SaveSchedulePayload {
   shopId: string;
@@ -63,7 +63,6 @@ class SharePointService {
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${this.graphToken}`,
-          // ✅ 修正 3：加入這兩個 Header 可以解決 90% 的 400 錯誤
           Prefer: "HonorNonIndexedQueriesWarningMayFailOverTime",
           ConsistencyLevel: "eventual",
         },
@@ -71,7 +70,6 @@ class SharePointService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        // ✅ 修正 4：直接印出詳細 message，方便診斷
         console.error(
           "❌ Graph API 錯誤原因:",
           errorData.error?.message || errorData,
@@ -95,9 +93,6 @@ class SharePointService {
     }
   }
 
-  /**
-   * 🆕 註冊新成員
-   */
   async registerMember(data: {
     name: string;
     userEmail: string;
@@ -107,15 +102,14 @@ class SharePointService {
     try {
       const payload = {
         fields: {
-          Title: data.name, // SharePoint List 的主標題通常存 Name
+          Title: data.name,
           Name: data.name,
           UserEmail: data.userEmail,
           AliasEmail: data.aliasEmail,
           PasswordHash: data.passwordHash,
-          Role: "User", // Default Role
-          AccountStatus: "Active", // Default Status
-          AccountCreateDate: new Date().toISOString(), // Include time
-          // 針對 Person 欄位 "User"：在 Graph API 中通常需要使用電子郵件進行聲明
+          Role: "User",
+          AccountStatus: "Active",
+          AccountCreateDate: new Date().toISOString(),
           "User@Claims": `i:0#.f|membership|${data.aliasEmail}`,
         },
       };
@@ -142,16 +136,8 @@ class SharePointService {
     }
   }
 
-  // 在你的 sharePointService 內增加：
-  // sharePointService.ts
-
-  // SharePointService.ts 內的修復版本
-
-  // SharePointService.ts
-
   async updatePasswordByEmail(email: string, hash: string) {
     try {
-      // Sanitize email input
       const sanitizedEmail = this.sanitizeFilterValue(email);
       const searchUrl = `${API_URLS.memberList}/items?$filter=fields/AliasEmail eq '${sanitizedEmail}'&$expand=fields`;
 
@@ -175,9 +161,7 @@ class SharePointService {
         return false;
       }
 
-      // 取得該成員的項目 ID
       const itemId = searchData.value[0].id;
-
       const updateUrl = `${API_URLS.memberList}/items/${itemId}/fields`;
 
       const updateRes = await fetch(updateUrl, {
@@ -186,10 +170,7 @@ class SharePointService {
           Authorization: `Bearer ${this.graphToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          // ⚠️ 這裡直接寫 Internal Name，不加 fields 前綴
-          PasswordHash: hash,
-        }),
+        body: JSON.stringify({ PasswordHash: hash }),
       });
 
       if (updateRes.ok) {
@@ -205,7 +186,6 @@ class SharePointService {
       return false;
     }
   }
-  // ... 之後保留你原本嘅 updateShopScheduleStatus, batchUpdateSchedules 等方法 ...
 
   private async updateShopFields(
     itemId: string,
@@ -288,9 +268,6 @@ class SharePointService {
     console.log("✅ Update successful");
   }
 
-  /**
-   * Batch update multiple shop schedules with progress tracking
-   */
   async batchUpdateShopSchedules(
     updates: Array<{
       itemId: string;
@@ -374,9 +351,6 @@ class SharePointService {
     }
   }
 
-  /**
-   * Get all members from Member List
-   */
   async getAllMembers(): Promise<User[]> {
     try {
       const url = `${API_URLS.memberList}/items?$expand=fields($select=*)&$top=999`;
@@ -412,9 +386,6 @@ class SharePointService {
     }
   }
 
-  /**
-   * Update a member's role
-   */
   async updateMemberRole(itemId: string, newRole: UserRole): Promise<boolean> {
     try {
       const url = `${API_URLS.memberList}/items/${itemId}/fields`;
@@ -441,9 +412,6 @@ class SharePointService {
     }
   }
 
-  /**
-   * Update a member's account status
-   */
   async updateMemberStatus(
     itemId: string,
     status: "Active" | "Inactive",
@@ -474,6 +442,37 @@ class SharePointService {
       console.error("❌ Error updating member status:", error);
       return false;
     }
+  }
+
+  async getTimeCardEntries(): Promise<TimeCardEntry[]> {
+    const url = `${API_URLS.timeCardList}/items?$expand=fields($select=FEName,ActionTime,Action,ShopName,Role)&$top=999&$orderby=fields/ActionTime desc`;
+    const entries: TimeCardEntry[] = [];
+    let nextLink: string | undefined = url;
+
+    while (nextLink) {
+      const response = await fetch(nextLink, {
+        headers: {
+          Authorization: `Bearer ${this.graphToken}`,
+          Prefer: "HonorNonIndexedQueriesWarningMayFailOverTime",
+          ConsistencyLevel: "eventual",
+        },
+      });
+      if (!response.ok) break;
+      const data = await response.json();
+      (data.value || []).forEach((item: any) => {
+        const f = item.fields;
+        entries.push({
+          id: item.id,
+          feName: f.FEName || "",
+          actionTime: f.ActionTime || "",
+          action: f.Action || "Check In",
+          shopName: f.ShopName || "",
+          role: f.Role || "Main",
+        });
+      });
+      nextLink = data["@odata.nextLink"];
+    }
+    return entries;
   }
 }
 

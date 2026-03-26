@@ -16,12 +16,13 @@ import { Dashboard } from "./components/Dashboard";
 import { Calendar } from "./components/Calendar";
 import { Shops } from "./components/Shops";
 import { Settings } from "./components/Settings";
-import { Shop, View, User, hasAdminAccess, InventoryItem } from "./types";
+import { Shop, View, User, hasAdminAccess, InventoryItem, TimeCardEntry } from "./types";
 import { INV_FIELDS } from "./constants";
 import { Generator } from "./components/Generator";
 import { Inventory } from "./components/Inventory";
 import { Permission } from "./components/Permission";
 import { Reports } from "./components/Reports";
+import { TimeCard } from "./components/TimeCard";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ErrorReport } from "./components/ErrorReport";
 import { Login } from "./components/Login";
@@ -118,6 +119,7 @@ function App() {
 
   const [allShops, setAllShops] = useState<Shop[]>([]);
   const [allInventory, setAllInventory] = useState<InventoryItem[]>([]);
+  const [allTimeCards, setAllTimeCards] = useState<TimeCardEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasTokenError, setHasTokenError] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -296,6 +298,16 @@ function App() {
       } catch (invErr) {
         console.error("Inventory Fetch Error:", invErr);
       }
+
+      // Fetch time card entries (non-blocking)
+      try {
+        const spService = new SharePointService(token);
+        const timeCards = await spService.getTimeCardEntries();
+        setAllTimeCards(timeCards);
+        console.log(`[TimeCard] Loaded ${timeCards.length} entries`);
+      } catch (tcErr) {
+        console.error("TimeCard Fetch Error:", tcErr);
+      }
     } catch (err) {
       console.error("Fetch Error:", err);
       setHasTokenError(true);
@@ -423,6 +435,14 @@ function App() {
         return <Permission graphToken={graphToken} currentUser={currentUser} />;
       case View.REPORTS:
         return <Reports shops={allShops} currentUser={currentUser} />;
+      case View.TIME_CARD:
+        return (
+          <TimeCard
+            entries={allTimeCards}
+            loading={loading}
+            graphToken={graphToken}
+          />
+        );
       default:
         return null;
     }

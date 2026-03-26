@@ -445,7 +445,7 @@ class SharePointService {
   }
 
   async getTimeCardEntries(): Promise<TimeCardEntry[]> {
-    const url = `${API_URLS.timeCardList}/items?$expand=fields($select=FEName,ActionTime,Action,ShopName,Role)&$top=999&$orderby=fields/ActionTime desc`;
+    const url = `${API_URLS.timeCardList}/items?$expand=fields($select=FEName,ActionTime,Action,ShopName,Role)&$top=999`;
     const entries: TimeCardEntry[] = [];
     let nextLink: string | undefined = url;
 

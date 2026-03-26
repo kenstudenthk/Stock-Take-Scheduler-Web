@@ -137,7 +137,24 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
   }
 
   if (!walking && !transit) {
-    return null;
+    return (
+      <div className="mobile-route-panel">
+        <div
+          className="mobile-route-drag-header"
+          onClick={() => {/* no-op when empty */}}
+        >
+          <div className="mobile-route-drag-handle"></div>
+          <div className="mobile-route-header-content">
+            <span className="mobile-route-to">To: {shopName}</span>
+          </div>
+        </div>
+        <div className="mobile-route-content" style={{ padding: '20px 16px', textAlign: 'center', color: '#94a3b8' }}>
+          <Route className="w-8 h-8 mx-auto mb-2 opacity-40" />
+          <p style={{ fontSize: 14, marginBottom: 4 }}>Route unavailable</p>
+          <p style={{ fontSize: 12 }}>Make sure GPS is on, then tap Route again.</p>
+        </div>
+      </div>
+    );
   }
 
   const activeRouteInfo = activeRoute === 'walking' ? walking : activeRoute === 'transit' ? transit : null;

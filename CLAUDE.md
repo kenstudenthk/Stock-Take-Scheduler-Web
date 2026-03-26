@@ -190,6 +190,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Removed `$orderby` from the URL — the table's `defaultSortOrder: "descend"` handles client-side sorting
 - **Rule**: NEVER use `$orderby=fields/<Column>` in Graph API list queries unless that column is indexed in SharePoint. Sort client-side instead
 
+#### ⚠️ Known Issue: MobileMapView — Route Button Discoverability & Panel Not Showing
+- **Date**: 2026-03-26
+- **Problem**: (1) Navigate button was icon-only — users didn't know it opened a route. (2) Route panel never appeared because `handleNavigate` returned early before setting `showRoutePanel=true` when GPS was unavailable. (3) `RoutePanel` returned `null` (invisible) when both walking and transit routes failed. (4) No route entry point when user tapped a map pin directly.
+- **Root Cause**: `handleNavigate` had an early-return guard before `setShowRoutePanel(true)`. `RoutePanel` lacked a fallback UI for the no-route state. No floating Route button existed for pin-tap flow.
+- **Fix**: (1) Added "Route" text label to navigate button in `TopShopPanel`. (2) Moved `setSelectedShopId`, `setShowRoutePanel(true)`, `setIsPanelExpanded(false)` BEFORE the GPS guard in `handleNavigate` so panel always opens. (3) `RoutePanel` now renders a "Route unavailable" message instead of `null`. (4) Added `.mobile-route-fab` floating button (centered, bottom) in `MobileMapView` that shows when a shop is selected but the route panel is closed.
+- **Rule**: ALWAYS call `setShowRoutePanel(true)` before any early-return guards in `handleNavigate`; NEVER let `RoutePanel` return null — always render a visible fallback state
+
 ---
 
 ## Development Commands

@@ -4138,6 +4138,33 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
   height: 100%;
 }
 
+/* Route Floating Action Button - shows when shop selected, route panel closed */
+.mobile-route-fab {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: #3B82F6;
+  color: #fff;
+  border: none;
+  border-radius: 32px;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 6px 24px rgba(59,130,246,0.45);
+  cursor: pointer;
+  z-index: 150;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+
+.mobile-route-fab:active {
+  transform: translateX(-50%) scale(0.96);
+}
+
 /* GPS Floating Action Button */
 .mobile-gps-fab {
   position: absolute;

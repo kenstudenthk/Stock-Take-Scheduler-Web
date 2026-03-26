@@ -8,6 +8,7 @@ export enum View {
   SETTINGS = "settings",
   INVENTORY = "inventory",
   PERMISSION = "permission",
+  MOBILE_MAP = "mobilemap",
 }
 
 /**

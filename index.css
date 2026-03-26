@@ -2362,6 +2362,70 @@ body.dark .custom-main-content {
 @keyframes loginFadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ============================================================
+   LOGIN — MOBILE RESPONSIVE (≤640px)
+   ============================================================ */
+@media (max-width: 640px) {
+  .login-viewport-wrapper {
+    padding-top: 0;
+    align-items: center;
+    min-height: 100dvh;
+    background: #f8fafc;
+  }
+
+  .status-indicator {
+    top: 12px;
+    right: 12px;
+  }
+
+  .main-login-container {
+    width: 100%;
+    padding: 0 16px;
+    perspective: 1000px;
+  }
+
+  .login-tab-toggle {
+    width: 100%;
+    display: flex;
+  }
+
+  .login-tab-btn {
+    flex: 1;
+  }
+
+  .flip-card-container {
+    width: 100%;
+    height: auto;
+    min-height: 500px;
+  }
+
+  .flip-card-front-side,
+  .flip-card-back-side {
+    padding: 24px 20px;
+    border-radius: 18px;
+    box-shadow: 6px 6px #323232;
+    position: relative;
+  }
+
+  .brand-title {
+    font-size: 1.25rem;
+  }
+
+  .form-content-area {
+    gap: 10px;
+  }
+
+  .inner-form input {
+    padding: 0.75rem;
+    font-size: 13px;
+  }
+
+  .main-submit-btn {
+    font-size: 1rem;
+    padding: 0.75rem;
+  }
+}
+
+/* ============================================================
    SCHEDULING WIZARD PROGRESS BAR
    Design System: Progress teal + achievement orange
    Pattern: 3-Step Funnel (Configure → Generate → Sync)

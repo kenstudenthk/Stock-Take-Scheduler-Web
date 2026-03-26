@@ -23,6 +23,7 @@ import { Inventory } from "./components/Inventory";
 import { Permission } from "./components/Permission";
 import { Reports } from "./components/Reports";
 import { TimeCard } from "./components/TimeCard";
+import { MobileMapView } from "./components/MobileMapView";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ErrorReport } from "./components/ErrorReport";
 import { Login } from "./components/Login";
@@ -443,6 +444,8 @@ function App() {
             graphToken={graphToken}
           />
         );
+      case View.MOBILE_MAP:
+        return <MobileMapView shops={allShops} />;
       default:
         return null;
     }
@@ -465,6 +468,9 @@ function App() {
             onLoginSuccess={(user) => {
               setCurrentUser(user);
               sessionStorage.setItem("currentUser", JSON.stringify(user));
+              if (window.innerWidth <= 640) {
+                setSelectedMenuKey(View.MOBILE_MAP);
+              }
               // ✅ 登入成功後再次檢查資料
               if (graphToken) fetchAllData(graphToken);
             }}

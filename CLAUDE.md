@@ -6,6 +6,8 @@ This file provides guidance to Claude Code when working with this repository.
 
 Stock Take Scheduler Web — React app for scheduling inventory stock takes across HK retail shops. Integrates with Microsoft SharePoint via Graph API for data persistence.
 
+> **Update history:** See [`UPDATE.md`](./UPDATE.md) for a full changelog of all features and bug fixes.
+
 ## UI/UX Improvement Plan
 
 Full improvement plan (Tier 1–4, all pages): `C:\Users\user\.claude\plans\peppy-waddling-ritchie.md`

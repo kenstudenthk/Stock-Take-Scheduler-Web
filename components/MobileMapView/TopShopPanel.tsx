@@ -118,13 +118,14 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
                       {formatDistance(shop.distance)}
                     </span>
                     <button
-                      className="p-1.5 bg-blue-50 text-blue-600 rounded-lg active:scale-95 transition-transform"
+                      className="flex items-center gap-1 px-2 py-1.5 bg-blue-500 text-white rounded-lg active:scale-95 transition-transform text-xs font-semibold shadow-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         onNavigate(shop);
                       }}
                     >
-                      <Navigation className="w-4 h-4" />
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>Route</span>
                     </button>
                   </div>
                 </div>

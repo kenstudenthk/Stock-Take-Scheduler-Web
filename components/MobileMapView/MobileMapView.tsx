@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { message } from 'antd';
-import { Locate, AlertCircle, X } from 'lucide-react';
+import { Locate, AlertCircle, X, Navigation } from 'lucide-react';
 import dayjs from 'dayjs';
 import { Shop } from '../../types';
 import { wgs84ToGcj02 } from '../../utils/coordTransform';
@@ -232,8 +232,12 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
 
   // Handle navigation request
   const handleNavigate = useCallback((shop: Shop) => {
+    setSelectedShopId(shop.id);
+    setShowRoutePanel(true);
+    setIsPanelExpanded(false); // Collapse list to show map and route
+
     if (!userPosition) {
-      message.info('Tap the GPS button to get your location first');
+      message.info('Tap the GPS button (bottom-right) to get your location, then Route will load');
       getCurrentPosition();
       return;
     }
@@ -247,10 +251,6 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
       { lng: shopLng, lat: shopLat },
       mapRef.current
     );
-
-    setSelectedShopId(shop.id);
-    setShowRoutePanel(true);
-    setIsPanelExpanded(false); // Collapse list to show map and route
   }, [userPosition, getCurrentPosition, planRoute, clearRoute]);
 
   const handleGpsClick = useCallback(() => {
@@ -291,6 +291,18 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
 
       {/* Map Container */}
       <div id="mobile-map-container" className="mobile-map-container" />
+
+      {/* Route FAB - visible when shop is selected and route panel is closed */}
+      {selectedShop && !showRoutePanel && (
+        <button
+          className="mobile-route-fab"
+          onClick={() => handleNavigate(selectedShop)}
+          aria-label="Plan route to selected shop"
+        >
+          <Navigation className="w-5 h-5" />
+          <span>Route</span>
+        </button>
+      )}
 
       {/* GPS Floating Action Button */}
       <button

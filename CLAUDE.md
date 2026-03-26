@@ -174,6 +174,20 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Changed annotation to `Step 1 (青色/Configure)` matching actual `DESIGN_COLORS.step1 = "#0D9488"`
 - **Rule**: ALWAYS update JSDoc step annotations when `DESIGN_COLORS` step values change
 
+#### ⚠️ Known Issue: Linter Hook Clears Files on Edit
+- **Date**: 2026-03-26
+- **Problem**: Using the Edit tool on certain files (types.ts, SharePointService.ts) caused the linter hook to clear the file to 0 bytes, losing all content
+- **Root Cause**: The linter hook triggers on file edits and wipes the file if it detects an error mid-edit (e.g. partial content during a failed edit)
+- **Fix**: Used Write tool with full file content instead of Edit for all modified files in the session
+- **Rule**: ALWAYS use the Write tool (never Edit) when modifying `types.ts`, `services/SharePointService.ts`, or any file that has been wiped before. If a file reads as 0 lines after an Edit, restore from `git show HEAD:<file>` and rewrite with Write tool
+
+#### ⚠️ Known Issue: TimeCard — $orderby on Non-Indexed Column
+- **Date**: 2026-03-26
+- **Problem**: Time Card page loaded no data after release
+- **Root Cause**: `$orderby=fields/ActionTime desc` in the Graph API URL causes a 400 error for non-indexed SharePoint columns; the `if (!response.ok) break` silently returned an empty array with no UI error
+- **Fix**: Removed `$orderby` from the URL — the table's `defaultSortOrder: "descend"` handles client-side sorting
+- **Rule**: NEVER use `$orderby=fields/<Column>` in Graph API list queries unless that column is indexed in SharePoint. Sort client-side instead
+
 ---
 
 ## Development Commands

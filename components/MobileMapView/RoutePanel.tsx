@@ -167,10 +167,17 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
         className="mobile-route-drag-header"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
-        <div className="mobile-route-drag-handle"></div>
+        {isCollapsed ? (
+          <div className="mobile-route-expand-hint" aria-label="Expand route panel">
+            <ChevronUp className="mobile-route-expand-arrow" />
+            <span className="mobile-route-expand-label">Tap to expand</span>
+          </div>
+        ) : (
+          <div className="mobile-route-drag-handle"></div>
+        )}
         <div className="mobile-route-header-content">
           <span className="mobile-route-to">To: {shopName}</span>
-          {isCollapsed ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {!isCollapsed && <ChevronDown className="w-4 h-4 text-slate-400" />}
         </div>
       </div>
 
@@ -293,6 +300,11 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
       )}
       </div>
       <style>{`
+        @keyframes routeBounceUp {
+          0%, 100% { transform: translateY(0); opacity: 0.7; }
+          50% { transform: translateY(-5px); opacity: 1; }
+        }
+
         .mobile-route-drag-header {
           background: #f8fafc;
           padding: 8px 16px;
@@ -301,7 +313,30 @@ export const RoutePanel: React.FC<RoutePanelProps> = ({
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
+        }
+
+        .mobile-route-expand-hint {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+          padding: 2px 0;
+        }
+
+        .mobile-route-expand-arrow {
+          width: 22px;
+          height: 22px;
+          color: #3B82F6;
+          animation: routeBounceUp 1.2s ease-in-out infinite;
+        }
+
+        .mobile-route-expand-label {
+          font-size: 10px;
+          font-weight: 600;
+          color: #3B82F6;
+          letter-spacing: 0.4px;
+          text-transform: uppercase;
         }
 
         .mobile-route-drag-handle {

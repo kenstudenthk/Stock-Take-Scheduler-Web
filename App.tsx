@@ -27,6 +27,8 @@ import { MobileMapView } from "./components/MobileMapView";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ErrorReport } from "./components/ErrorReport";
 import { Login } from "./components/Login";
+import { PWAInstallGuide } from "./components/PWAInstallGuide";
+import { usePWADetection } from "./hooks/usePWADetection";
 import SharePointService from "./services/SharePointService";
 import { TokenService } from "./services/TokenService";
 
@@ -106,6 +108,11 @@ const TruckFlagNotice: React.FC = () => (
 );
 
 function App() {
+  const { isPWA, platform } = usePWADetection();
+  const [pwaGuideDismissed, setPWAGuideDismissed] = useState<boolean>(
+    () => localStorage.getItem('pwa-guide-dismissed') === 'true',
+  );
+
   const [selectedMenuKey, setSelectedMenuKey] = useState<View>(View.DASHBOARD);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("theme");
@@ -450,6 +457,18 @@ function App() {
         return null;
     }
   };
+
+  if (!isPWA && !pwaGuideDismissed) {
+    return (
+      <PWAInstallGuide
+        platform={platform}
+        onDismiss={() => {
+          localStorage.setItem('pwa-guide-dismissed', 'true');
+          setPWAGuideDismissed(true);
+        }}
+      />
+    );
+  }
 
   return (
     <ConfigProvider

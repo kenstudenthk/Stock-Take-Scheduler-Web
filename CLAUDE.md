@@ -197,6 +197,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: (1) Added "Route" text label to navigate button in `TopShopPanel`. (2) Moved `setSelectedShopId`, `setShowRoutePanel(true)`, `setIsPanelExpanded(false)` BEFORE the GPS guard in `handleNavigate` so panel always opens. (3) `RoutePanel` now renders a "Route unavailable" message instead of `null`. (4) Added `.mobile-route-fab` floating button (centered, bottom) in `MobileMapView` that shows when a shop is selected but the route panel is closed.
 - **Rule**: ALWAYS call `setShowRoutePanel(true)` before any early-return guards in `handleNavigate`; NEVER let `RoutePanel` return null — always render a visible fallback state
 
+#### ⚠️ Known Issue: PWA Install Guide — Re-shows After Dismiss
+- **Date**: 2026-03-27
+- **Problem**: Guide re-appeared on every browser reload after dismissal
+- **Root Cause**: Dismissed state initialized from `useState(false)` instead of reading localStorage
+- **Fix**: Lazy initializer reads `localStorage.getItem('pwa-guide-dismissed') === 'true'`
+- **Rule**: ALWAYS initialize dismissed/seen flags from a localStorage lazy initializer; NEVER use `useState(false)` for persistent UI state
+
 ---
 
 ## Development Commands

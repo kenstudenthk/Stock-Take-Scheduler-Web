@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, Navigation, ChevronDown, ChevronUp } from 'lucide-react';
-import { Select } from 'antd';
+import { Select, DatePicker } from 'antd';
+import dayjs from 'dayjs';
 import { Shop } from '../../types';
 
 interface TopShopPanelProps {
@@ -13,6 +14,8 @@ interface TopShopPanelProps {
   groupCounts: Record<number, number>;
   expanded: boolean;
   onExpandChange: (expanded: boolean) => void;
+  selectedDate: ReturnType<typeof dayjs>;
+  onDateChange: (date: ReturnType<typeof dayjs> | null) => void;
 }
 
 const CATEGORY_COLORS: Record<number, string> = {
@@ -30,7 +33,9 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
   onNavigate,
   groupCounts,
   expanded,
-  onExpandChange
+  onExpandChange,
+  selectedDate,
+  onDateChange,
 }) => {
   const formatDistance = (distanceKm?: number): string => {
     if (distanceKm === undefined) return '--';
@@ -71,7 +76,17 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
           />
         </div>
         
-        <button 
+        <DatePicker
+          value={selectedDate}
+          onChange={onDateChange}
+          format="D MMM"
+          allowClear={false}
+          size="small"
+          style={{ width: 96, flexShrink: 0 }}
+          getPopupContainer={(trigger) => trigger.parentElement || document.body}
+        />
+
+        <button
           className="mobile-top-toggle-btn"
           onClick={() => onExpandChange(!expanded)}
         >
@@ -87,7 +102,7 @@ export const TopShopPanel: React.FC<TopShopPanelProps> = ({
         <div className="mobile-top-list">
           {sortedShops.length === 0 ? (
             <div className="p-4 text-center text-slate-400 text-sm">
-              No shops scheduled for today in this group.
+              No shops scheduled on {selectedDate.format('D MMM')} in this group.
             </div>
           ) : (
             sortedShops.map((shop) => {

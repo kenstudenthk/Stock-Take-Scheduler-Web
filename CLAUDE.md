@@ -204,6 +204,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Lazy initializer reads `localStorage.getItem('pwa-guide-dismissed') === 'true'`
 - **Rule**: ALWAYS initialize dismissed/seen flags from a localStorage lazy initializer; NEVER use `useState(false)` for persistent UI state
 
+#### ⚠️ Known Issue: MobileMapView — Date Hardcoded to Today
+- **Date**: 2026-03-27
+- **Problem**: Map only showed today's scheduled shops; no way to view other dates
+- **Root Cause**: `todayShops` and `groupCounts` useMemos used `dayjs()` (hardcoded now) instead of a stateful date
+- **Fix**: Added `selectedDate` state (Dayjs, default today) in `MobileMapView.tsx`; passed to `TopShopPanel` as `DatePicker`; replaced `dayjs()` in both useMemos with `selectedDate.format('YYYY-MM-DD')`
+- **Rule**: ALWAYS use a stateful `selectedDate` (not `dayjs()`) in MobileMapView date filters; NEVER hardcode `dayjs()` as a filter value
+
 ---
 
 ## Development Commands

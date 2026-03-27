@@ -51,6 +51,7 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
   const markersRef = useRef<{ [key: string]: any }>({});
   const userMarkerRef = useRef<any>(null);
 
+  const [selectedDate, setSelectedDate] = useState<ReturnType<typeof dayjs>>(dayjs());
   const [selectedGroup, setSelectedGroup] = useState<number | null>(1); // Default to Group A
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
   const [showRoutePanel, setShowRoutePanel] = useState(false);
@@ -74,15 +75,15 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
     clearRoute,
   } = useAMapRoute();
 
-  // Filter shops: today's date + selected group
+  // Filter shops: selected date + selected group
   const todayShops = useMemo(() => {
-    const today = dayjs().format('YYYY-MM-DD');
+    const dateStr = selectedDate.format('YYYY-MM-DD');
     return shops.filter(s =>
       s.groupId === selectedGroup &&
       s.scheduledDate &&
-      dayjs(s.scheduledDate).format('YYYY-MM-DD') === today
+      dayjs(s.scheduledDate).format('YYYY-MM-DD') === dateStr
     );
-  }, [shops, selectedGroup]);
+  }, [shops, selectedGroup, selectedDate]);
 
   // Add distance to shops if user position is known
   const shopsWithDistance = useMemo(() => {
@@ -98,19 +99,19 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
     });
   }, [todayShops, userPosition]);
 
-  // Group counts for selector
+  // Group counts for selector (reflects selected date)
   const groupCounts = useMemo(() => {
-    const today = dayjs().format('YYYY-MM-DD');
+    const dateStr = selectedDate.format('YYYY-MM-DD');
     const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
     shops.forEach(s => {
-      if (s.scheduledDate && dayjs(s.scheduledDate).format('YYYY-MM-DD') === today) {
+      if (s.scheduledDate && dayjs(s.scheduledDate).format('YYYY-MM-DD') === dateStr) {
         if (s.groupId && counts[s.groupId] !== undefined) {
           counts[s.groupId]++;
         }
       }
     });
     return counts;
-  }, [shops]);
+  }, [shops, selectedDate]);
 
   // Selected shop object
   const selectedShop = useMemo(() => {
@@ -287,6 +288,8 @@ export const MobileMapView: React.FC<MobileMapViewProps> = ({ shops }) => {
         groupCounts={groupCounts}
         expanded={isPanelExpanded}
         onExpandChange={setIsPanelExpanded}
+        selectedDate={selectedDate}
+        onDateChange={(date) => setSelectedDate(date ?? dayjs())}
       />
 
       {/* Map Container */}

@@ -4960,3 +4960,201 @@ body.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
 .login-tab-btn:not(.login-tab-btn--active):hover {
   color: rgba(255,255,255,0.85);
 }
+
+/* ============================================================
+   PWA INSTALL GUIDE
+   ============================================================ */
+.pwa-guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg-main);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px 16px 48px;
+}
+
+.pwa-guide-card {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Header */
+.pwa-guide-header {
+  text-align: center;
+  padding: 32px 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.pwa-guide-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+}
+
+.pwa-guide-title {
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.pwa-guide-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 340px;
+}
+
+/* Platform tabs */
+.pwa-guide-tabs {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-header, #f1f5f9);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 28px;
+}
+
+body.dark .pwa-guide-tabs {
+  background: #1e293b;
+}
+
+.pwa-guide-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  padding: 8px 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.pwa-guide-tab--active {
+  background: var(--primary-teal, #0d9488);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.pwa-guide-tab:not(.pwa-guide-tab--active):hover {
+  color: var(--text-main);
+}
+
+/* Steps */
+.pwa-guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pwa-guide-step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.pwa-guide-step-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pwa-guide-step-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-teal, #0d9488);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pwa-guide-step-connector {
+  width: 2px;
+  flex: 1;
+  min-height: 36px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--primary-teal, #0d9488) 0px,
+    var(--primary-teal, #0d9488) 4px,
+    transparent 4px,
+    transparent 10px
+  );
+  opacity: 0.35;
+  margin: 4px 0;
+}
+
+.pwa-guide-step-content {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding-bottom: 28px;
+  flex: 1;
+}
+
+.pwa-guide-step:last-child .pwa-guide-step-content {
+  padding-bottom: 0;
+}
+
+.pwa-guide-step-icon {
+  color: var(--primary-teal, #0d9488);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pwa-guide-step-text {
+  flex: 1;
+}
+
+.pwa-guide-step-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+
+.pwa-guide-step-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Footer */
+.pwa-guide-footer {
+  text-align: center;
+  padding-top: 32px;
+}
+
+.pwa-guide-dismiss {
+  font-size: 13px !important;
+  color: var(--text-secondary) !important;
+  height: auto !important;
+  padding: 4px 8px !important;
+}
+
+.pwa-guide-dismiss:hover {
+  color: var(--text-main) !important;
+}

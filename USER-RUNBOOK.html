@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>User Runbook — Stock Take Scheduler Web</title>
+<style>
+  :root {
+    --teal-950: #0b1413;
+    --teal-900: #0f1e1c;
+    --teal-800: #132422;
+    --teal-700: #1a332f;
+    --paper: #f6faf8;
+    --paper-card: #ffffff;
+    --ink: #16241f;
+    --ink-soft: #4a5f58;
+    --line: #dbe6e1;
+    --line-soft: #e9f0ed;
+    --accent: #0d9488;
+    --accent-soft: #e3f6f2;
+    --accent-2: #2dd4bf;
+    --cta: #ea7c1c;
+    --cta-soft: #fdf1e2;
+    --code-bg: #eef3f1;
+    --shadow: 0 1px 2px rgba(15, 30, 27, 0.05), 0 8px 24px -12px rgba(15, 30, 27, 0.18);
+    --radius: 10px;
+    --font-head: 'Rubik', 'Poppins', 'Segoe UI Semibold', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Nunito Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'SFMono-Regular', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: var(--teal-950);
+      --paper-card: var(--teal-800);
+      --ink: #e7f3ef;
+      --ink-soft: #9db6ae;
+      --line: #22403a;
+      --line-soft: #1a332f;
+      --accent: #2dd4bf;
+      --accent-soft: #12312c;
+      --accent-2: #5eead4;
+      --cta: #fb923c;
+      --cta-soft: #2c2013;
+      --code-bg: #102420;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 28px -14px rgba(0, 0, 0, 0.6);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent); text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent); text-underline-offset: 2px; }
+  a:hover { color: var(--accent-2); }
+  a:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    padding: 0.12em 0.45em;
+    border-radius: 5px;
+    color: var(--accent);
+  }
+
+  /* ── Shell ─────────────────────────────────────────────────────────── */
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  header.masthead {
+    padding: 40px 0 28px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 28px;
+  }
+  .eyebrow {
+    font-family: var(--font-head);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  h1.title {
+    font-family: var(--font-head);
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 10px;
+    text-wrap: balance;
+  }
+  .lede {
+    max-width: 62ch;
+    color: var(--ink-soft);
+    font-size: 16.5px;
+    margin: 0 0 20px;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-head);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    background: var(--paper-card);
+  }
+  .chip--role-full { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: var(--accent-soft); color: var(--accent); }
+  .chip--role-view { color: var(--ink-soft); }
+  .chip--date { color: var(--ink-soft); }
+
+  /* ── Layout: sidebar + content ────────────────────────────────────── */
+
+  .layout {
+    display: grid;
+    grid-template-columns: 236px minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+  nav.toc .toc-label {
+    font-family: var(--font-head);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 12px;
+  }
+  nav.toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  nav.toc a {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 7px 8px;
+    border-radius: 7px;
+    color: var(--ink-soft);
+    font-size: 13.6px;
+    text-decoration: none;
+    line-height: 1.4;
+  }
+  nav.toc a:hover { background: var(--line-soft); color: var(--ink); }
+  nav.toc .num {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--accent);
+    flex: 0 0 auto;
+    width: 1.4em;
+  }
+
+  details.toc-mobile { display: none; }
+
+  main.content { min-width: 0; }
+
+  section.rb-section {
+    padding: 40px 0;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 20px;
+  }
+  section.rb-section:last-of-type { border-bottom: none; }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .sec-num {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  h2.sec-title {
+    font-family: var(--font-head);
+    font-size: 23px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--font-head);
+    font-size: 15.5px;
+    font-weight: 700;
+    margin: 26px 0 10px;
+    color: var(--ink);
+  }
+  h4 {
+    font-family: var(--font-head);
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 20px 0 8px;
+  }
+  section.rb-section > p, section.rb-section > ul, section.rb-section > ol { max-width: 68ch; }
+  p { margin: 0 0 12px; }
+  ul, ol { padding-left: 1.3em; margin: 0 0 14px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+  strong { font-weight: 700; color: var(--ink); }
+
+  /* ── Callouts ──────────────────────────────────────────────────────── */
+
+  .callout {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--cta);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin: 0 0 18px;
+    box-shadow: var(--shadow);
+    max-width: 68ch;
+  }
+  .callout-text { font-size: 14px; color: var(--ink-soft); }
+  .callout-text .callout-label {
+    display: block;
+    font-family: var(--font-head);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cta);
+    margin-bottom: 3px;
+  }
+
+  .callout--tip { border-left-color: var(--accent); }
+  .callout--tip .callout-label { color: var(--accent); }
+
+  /* ── Tables ────────────────────────────────────────────────────────── */
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin: 0 0 20px;
+    box-shadow: var(--shadow);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.8px;
+    min-width: 420px;
+    background: var(--paper-card);
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    white-space: nowrap;
+  }
+  td:last-child, th:last-child { white-space: normal; }
+  thead th {
+    font-family: var(--font-head);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--line-soft);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--accent-soft); }
+  .yes { color: var(--accent); font-weight: 700; }
+  .no { color: var(--ink-soft); }
+
+  /* ── Feature grid (module cards inside a section) ─────────────────── */
+
+  .card {
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    max-width: 68ch;
+    margin-bottom: 16px;
+  }
+
+  /* ── FAQ accordion ─────────────────────────────────────────────────── */
+
+  details.faq {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper-card);
+    margin-bottom: 8px;
+    max-width: 68ch;
+    box-shadow: var(--shadow);
+  }
+  details.faq + details.faq { margin-top: 8px; }
+  details.faq summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 13px 16px;
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: 14.2px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  details.faq summary::-webkit-details-marker { display: none; }
+  details.faq summary::after {
+    content: "+";
+    font-size: 18px;
+    color: var(--accent);
+    flex: 0 0 auto;
+    transition: transform 160ms ease;
+  }
+  details.faq[open] summary::after { transform: rotate(45deg); }
+  details.faq .faq-body {
+    padding: 0 16px 15px;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  details.faq .faq-body p:last-child { margin-bottom: 0; }
+
+  /* ── Footer ────────────────────────────────────────────────────────── */
+
+  footer.rb-footer {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* ── Responsive ────────────────────────────────────────────────────── */
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; gap: 0; }
+    nav.toc.desktop-only { display: none; }
+    details.toc-mobile {
+      display: block;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+      margin: 0 -24px 24px;
+      padding: 0 24px;
+    }
+    details.toc-mobile summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 14px 0;
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 13.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--ink);
+    }
+    details.toc-mobile summary::-webkit-details-marker { display: none; }
+    details.toc-mobile summary::after { content: "▾"; color: var(--accent); }
+    details.toc-mobile[open] summary::after { content: "▴"; }
+    details.toc-mobile .toc-mobile-body { padding-bottom: 14px; }
+    details.toc-mobile ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+    details.toc-mobile a { display: flex; gap: 8px; padding: 6px 4px; font-size: 13px; color: var(--ink-soft); text-decoration: none; }
+    details.toc-mobile .num { font-family: var(--font-mono); color: var(--accent); font-size: 11px; }
+    .shell { padding: 0 16px 72px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="masthead">
+    <p class="eyebrow">Stock Take Scheduler Web</p>
+    <h1 class="title">User Runbook</h1>
+    <p class="lede">A field-ready reference for planning, running, and troubleshooting stock takes across HK &amp; Macau shops — for Admins, App Owners, and Field Engineers.</p>
+    <div class="meta-row">
+      <span class="chip chip--date">Last updated 2026-07-09</span>
+      <span class="chip chip--role-full">Admin — full access</span>
+      <span class="chip chip--role-full">App Owner — full access</span>
+      <span class="chip chip--role-view">User — dashboard view only</span>
+    </div>
+  </header>
+
+  <details class="toc-mobile">
+    <summary>On this page — 14 sections</summary>
+    <div class="toc-mobile-body">
+      <ol>
+        <li><a href="#s1"><span class="num">01</span>Getting Started</a></li>
+        <li><a href="#s2"><span class="num">02</span>Login &amp; Account</a></li>
+        <li><a href="#s3"><span class="num">03</span>Dashboard</a></li>
+        <li><a href="#s4"><span class="num">04</span>Schedule Generator</a></li>
+        <li><a href="#s5"><span class="num">05</span>Calendar</a></li>
+        <li><a href="#s6"><span class="num">06</span>Shops (List &amp; Map)</a></li>
+        <li><a href="#s7"><span class="num">07</span>Inventory</a></li>
+        <li><a href="#s8"><span class="num">08</span>Time Card</a></li>
+        <li><a href="#s9"><span class="num">09</span>Reports</a></li>
+        <li><a href="#s10"><span class="num">10</span>Permission Mgmt</a></li>
+        <li><a href="#s11"><span class="num">11</span>Settings &amp; Token</a></li>
+        <li><a href="#s12"><span class="num">12</span>Mobile Map (FE)</a></li>
+        <li><a href="#s13"><span class="num">13</span>Error Reporting</a></li>
+        <li><a href="#s14"><span class="num">14</span>FAQ</a></li>
+      </ol>
+    </div>
+  </details>
+
+  <div class="layout">
+    <nav class="toc desktop-only" aria-label="Table of contents">
+      <p class="toc-label">On this page</p>
+      <ol>
+        <li><a href="#s1"><span class="num">01</span>Getting Started</a></li>
+        <li><a href="#s2"><span class="num">02</span>Login &amp; Account</a></li>
+        <li><a href="#s3"><span class="num">03</span>Dashboard</a></li>
+        <li><a href="#s4"><span class="num">04</span>Schedule Generator</a></li>
+        <li><a href="#s5"><span class="num">05</span>Calendar</a></li>
+        <li><a href="#s6"><span class="num">06</span>Shops (List &amp; Map)</a></li>
+        <li><a href="#s7"><span class="num">07</span>Inventory</a></li>
+        <li><a href="#s8"><span class="num">08</span>Time Card</a></li>
+        <li><a href="#s9"><span class="num">09</span>Reports</a></li>
+        <li><a href="#s10"><span class="num">10</span>Permission Mgmt</a></li>
+        <li><a href="#s11"><span class="num">11</span>Settings &amp; Token</a></li>
+        <li><a href="#s12"><span class="num">12</span>Mobile Map (FE)</a></li>
+        <li><a href="#s13"><span class="num">13</span>Error Reporting</a></li>
+        <li><a href="#s14"><span class="num">14</span>FAQ</a></li>
+      </ol>
+    </nav>
+
+    <main class="content">
+
+      <!-- 1 ───────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s1">
+        <div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title">Getting Started</h2></div>
+
+        <h3>What is this app?</h3>
+        <p>Stock Take Scheduler Web helps you plan and manage inventory stock takes across all HKT/PCCW retail shops in Hong Kong and Macau. You can:</p>
+        <ul>
+          <li>Generate optimized schedules that avoid weekends and public holidays</li>
+          <li>Track which shops are planned, completed, or need rescheduling</li>
+          <li>View shops on a map with route navigation</li>
+          <li>Track inventory assets per shop</li>
+          <li>Export schedules to Excel or PDF</li>
+        </ul>
+
+        <h3>How to access</h3>
+        <ol>
+          <li>Open the app URL in your browser (Chrome or Edge recommended)</li>
+          <li>If you're not using the installed app yet, you'll see a <strong>full-screen Install Guide</strong> with tabs for iPhone/iPad, Android, and Desktop — each with numbered steps for your device. Tap <strong>&ldquo;Continue in Browser →&rdquo;</strong> to skip installing. This guide is remembered once dismissed and won't reappear on that device.</li>
+          <li>You'll land on the <strong>Login</strong> page</li>
+        </ol>
+
+        <h3>User roles</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Role</th><th>What you can do</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Admin</strong></td><td>Everything — generate schedules, manage shops, manage users, manage inventory</td></tr>
+              <tr><td><strong>App Owner</strong></td><td>Same as Admin</td></tr>
+              <tr><td><strong>User</strong></td><td>View dashboard only</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2 ───────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s2">
+        <div class="sec-head"><span class="sec-num">02</span><h2 class="sec-title">Login &amp; Account</h2></div>
+
+        <h3>Logging in</h3>
+        <ol>
+          <li>Enter your <strong>Alias Email</strong> (company email)</li>
+          <li>Enter your <strong>Password</strong></li>
+          <li>Click <strong>Login</strong></li>
+        </ol>
+
+        <h3>First-time setup</h3>
+        <p>If you don't have an account:</p>
+        <ol>
+          <li>Click the <strong>Register</strong> tab</li>
+          <li>Fill in your Name, Company Email, Alias Email, and Password</li>
+          <li>Click <strong>Register</strong></li>
+          <li>Your account is created with <strong>User</strong> role. Ask an Admin to upgrade it if you need more access.</li>
+        </ol>
+
+        <h3>Changing your password</h3>
+        <ol>
+          <li>On the Login page, use the <strong>Change Password</strong> option</li>
+          <li>Enter your Alias Email, old password, and new password</li>
+          <li>Click <strong>Confirm</strong></li>
+        </ol>
+
+        <h3>Connection issues at login</h3>
+        <p>If you see a red connection indicator, the SharePoint token may be expired. Click <strong>&ldquo;Go to Settings&rdquo;</strong> to update it — see <a href="#s11">Section 11</a>.</p>
+      </section>
+
+      <!-- 3 ───────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s3">
+        <div class="sec-head"><span class="sec-num">03</span><h2 class="sec-title">Dashboard</h2></div>
+        <p>Your home page — a bird's-eye view of all stock take operations.</p>
+
+        <h3>Statistics cards</h3>
+        <ul>
+          <li><strong>Total Active Shops</strong> — all shops excluding &ldquo;Closed&rdquo;</li>
+          <li><strong>Completed</strong> — shops marked &ldquo;Done&rdquo; this year</li>
+          <li><strong>Remaining</strong> — unplanned shops still needing scheduling</li>
+          <li><strong>By Status</strong> — breakdown of Planned / Unplanned / Done</li>
+        </ul>
+
+        <h3>Shop cards</h3>
+        <p>Organized by scheduled date. Each card shows shop name and brand, region and district, schedule status (color-coded), and group assignment (A/B/C) as a colored left border.</p>
+
+        <h3>Shop actions <span style="font-weight:400;color:var(--ink-soft);">(Admin / App Owner only)</span></h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Action</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Reschedule</strong></td><td>Opens the Smart Reschedule modal — pick a new date and group</td></tr>
+              <tr><td><strong>Move to Pool</strong></td><td>Removes the schedule date and puts the shop in the Reschedule Pool</td></tr>
+              <tr><td><strong>Close</strong></td><td>Marks the shop as &ldquo;Closed&rdquo; (removed from active scheduling)</td></tr>
+              <tr><td><strong>Resume</strong></td><td>Re-activates a closed shop, back to &ldquo;Pending&rdquo;</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>If shops are waiting in the Reschedule Pool, an orange spinning badge in the header shows the count.</p>
+        <div class="callout callout--tip">
+          <div class="callout-text"><span class="callout-label">Good to know</span>Data does not auto-refresh. Click <strong>Refresh Data</strong> (top-left) to pull in changes made by other users.</div>
+        </div>
+      </section>
+
+      <!-- 4 ───────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s4">
+        <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-title">Schedule Generator</h2></div>
+        <div class="callout">
+          <div class="callout-text"><span class="callout-label">Required permission</span><code>generate_schedule</code> — Admin / App Owner</div>
+        </div>
+        <p>Creates optimized stock take schedules using a 3-step wizard.</p>
+
+        <h3>Step 1 — Configure</h3>
+        <ol>
+          <li><strong>Select Regions</strong> — HK Island, Kowloon, N.T., Lantau, Macau. Leave empty for all.</li>
+          <li><strong>Select Districts</strong> — optionally narrow down further</li>
+          <li><strong>Include MTR Shops</strong> — toggle MTR-located shops in or out</li>
+          <li><strong>Start Date</strong> — when scheduling should begin</li>
+          <li><strong>Shops Per Day</strong> — default 9</li>
+          <li><strong>Groups Per Day</strong> — default 3, labeled A/B/C</li>
+        </ol>
+        <p>The stats banner at the top shows how many unplanned shops match your filters.</p>
+
+        <h3>Step 2 — Preview</h3>
+        <p>After clicking <strong>Generate</strong>, a preview table shows date, group, shop name, brand, and district for every shop. The algorithm automatically skips weekends and Hong Kong public holidays, and groups shops geographically so each group covers nearby shops. Review carefully before proceeding.</p>
+
+        <h3>Step 3 — Sync to SharePoint</h3>
+        <p>Click <strong>Confirm &amp; Sync</strong> to save. You'll see a progress bar, a success/failure summary, and the option to retry any failed items.</p>
+
+        <h4>Reschedule Pool tab</h4>
+        <p>Switch to the <strong>Reschedule Pool</strong> tab to generate schedules specifically for shops previously moved to the pool — same 3-step wizard.</p>
+
+        <h4>Reset functions</h4>
+        <div class="callout">
+          <div class="callout-text"><span class="callout-label">Required permission</span><code>reset_schedule</code> — Admin / App Owner</div>
+        </div>
+        <ul>
+          <li><strong>Reset by Date Range</strong> — clear schedules within a specific range</li>
+          <li><strong>Reset All</strong> — clear all planned schedules (requires confirmation)</li>
+        </ul>
+      </section>
+
+      <!-- 5 ───────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s5">
+        <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-title">Calendar</h2></div>
+        <p>A monthly calendar view of every scheduled stock take.</p>
+
+        <h3>Viewing schedules</h3>
+        <ul>
+          <li>Each day shows colored chips for scheduled shops — <strong>Blue</strong> (A), <strong>Purple</strong> (B), <strong>Orange</strong> (C)</li>
+          <li>Click a date to see full details of everything scheduled that day</li>
+          <li>Public holidays are marked with a badge</li>
+        </ul>
+
+        <h3>Navigation</h3>
+        <p>Use the <strong>&lt; &gt;</strong> arrows to move between months, or click <strong>Today</strong> to jump back.</p>
+
+        <h3>Exporting</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Format</th><th>What you get</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Excel (.xlsx)</strong></td><td>Full schedule data with shop details, dates, groups</td></tr>
+              <tr><td><strong>PDF</strong></td><td>Formatted table suitable for printing</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Both exports let you select a custom date range.</p>
+      </section>
+
+      <!-- 6 ───────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s6">
+        <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-title">Shops (Master List &amp; Map)</h2></div>
+        <p>Toggle between <strong>Table</strong> and <strong>Map</strong> views using the switch at the top of the page.</p>
+
+        <h3>Table view — filtering (9 options)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Filter</th><th>How to use</th></tr></thead>
+            <tbody>
+              <tr><td>Region</td><td>HK, KN, NT, Islands, or MO</td></tr>
+              <tr><td>District</td><td>50+ specific districts</td></tr>
+              <tr><td>Brand</td><td>CSL, 1O1O, SUN Mobile, etc.</td></tr>
+              <tr><td>MTR Status</td><td>MTR shops only or non-MTR only</td></tr>
+              <tr><td>Schedule Status</td><td>Planned, Unplanned, Done, Rescheduled</td></tr>
+              <tr><td>Master Status</td><td>Active or Closed</td></tr>
+              <tr><td>Shop Name / Code / Address</td><td>Free text search</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Inline editing <span style="text-transform:none;font-weight:400;">(Admin / App Owner)</span></h4>
+        <p>Click the phone or contact-name cell to edit directly — it auto-saves.</p>
+
+        <h4>Call logging</h4>
+        <p>Each row has a call-tracking button: <strong>Log Call</strong> (grey, none yet), <strong>Called</strong> (green, reached), <strong>No Answer</strong> (orange, attempted). Click to log an attempt with a timestamp.</p>
+
+        <h3>Map view</h3>
+        <p>An interactive AMap with color-coded markers by region. Click any marker for the shop's details, filter markers by region/brand/status, and zoom or pan freely — the map starts fitted to show every shop.</p>
+      </section>
+
+      <!-- 7 ───────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s7">
+        <div class="sec-head"><span class="sec-num">07</span><h2 class="sec-title">Inventory</h2></div>
+        <div class="callout">
+          <div class="callout-text"><span class="callout-label">Required permission</span><code>manage_inventory</code> — Admin / App Owner</div>
+        </div>
+        <p>Track and manage inventory assets across all shops.</p>
+
+        <h3>Viewing inventory</h3>
+        <p>Filter by <strong>Shop</strong>, <strong>Product Type</strong>, <strong>Status</strong>, or <strong>Brand</strong>. Each row shows Asset Item ID, Brand, Product Name, Serial Number, CMDB reference, IP Address, and Status.</p>
+
+        <h3>Asset details</h3>
+        <p>Click any row to view or edit In-Use Status, Product Status, Stock Take 2026 Status, App Sync Status, Remarks, and Photos (upload or view existing).</p>
+
+        <div class="callout callout--tip">
+          <div class="callout-text"><span class="callout-label">Shortcut</span>From the Dashboard, click a shop to jump straight to its pre-filtered Inventory view.</div>
+        </div>
+      </section>
+
+      <!-- 8 ───────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s8">
+        <div class="sec-head"><span class="sec-num">08</span><h2 class="sec-title">Time Card</h2></div>
+        <p>View field engineer (FE) check-in and check-out records.</p>
+
+        <h3>What it shows</h3>
+        <ul>
+          <li><strong>FE Name</strong> — who checked in/out</li>
+          <li><strong>Action</strong> — Check In or Check Out</li>
+          <li><strong>Shop Name</strong> — which shop</li>
+          <li><strong>Action Time</strong> — when it happened</li>
+          <li><strong>Role</strong> — Main FE or Assistant</li>
+        </ul>
+
+        <h3>Filters &amp; stats</h3>
+        <p>Filter by FE Name, Shop Name, Action type, Role, or date range. Stat cards at the top show Total entries, Unique FEs, Check Ins, and Check Outs.</p>
+      </section>
+
+      <!-- 9 ───────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s9">
+        <div class="sec-head"><span class="sec-num">09</span><h2 class="sec-title">Reports</h2></div>
+        <p>Strategic analytics for management.</p>
+        <ul>
+          <li><strong>Schedule Progress</strong> — planned vs. completed vs. remaining</li>
+          <li><strong>Business Unit Breakdown</strong> — stats by business unit</li>
+          <li><strong>Regional Stats</strong> — completion rates by region</li>
+        </ul>
+      </section>
+
+      <!-- 10 ──────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s10">
+        <div class="sec-head"><span class="sec-num">10</span><h2 class="sec-title">Permission Management</h2></div>
+        <div class="callout">
+          <div class="callout-text"><span class="callout-label">Required role</span>Admin only</div>
+        </div>
+
+        <h3>Viewing members</h3>
+        <p>Shows every registered user with Name, Email, Current Role, and Account Status (Active/Inactive).</p>
+
+        <h3>Changing a user's role</h3>
+        <ol>
+          <li>Find the user in the list</li>
+          <li>Click the role dropdown</li>
+          <li>Select the new role — it saves immediately to SharePoint</li>
+        </ol>
+
+        <h3>Activating / deactivating accounts</h3>
+        <p>Toggle a user's status between Active and Inactive. Inactive users cannot log in.</p>
+
+        <h3>Role permissions reference</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Permission</th><th>Admin</th><th>App Owner</th><th>User</th></tr></thead>
+            <tbody>
+              <tr><td>View Dashboard</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Reschedule Shops</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+              <tr><td>Close / Resume Shops</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+              <tr><td>Edit Shop Details</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+              <tr><td>Generate Schedules</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+              <tr><td>Reset Schedules</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+              <tr><td>Manage Inventory</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+              <tr><td>Manage Users</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+              <tr><td>View Settings</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 11 ──────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s11">
+        <div class="sec-head"><span class="sec-num">11</span><h2 class="sec-title">Settings &amp; Token Management</h2></div>
+
+        <h3>Why tokens?</h3>
+        <p>The app connects to SharePoint through Microsoft's Graph API, which requires an <strong>access token</strong> valid for roughly 60 minutes. When it expires: a red animated banner reads &ldquo;TOKEN EXPIRED: UPDATE IN SETTINGS&rdquo;, data stops loading, and any save/sync operation will fail.</p>
+
+        <h3>How to refresh the token</h3>
+        <ol>
+          <li>Go to <a href="https://developer.microsoft.com/en-us/graph/graph-explorer">Microsoft Graph Explorer</a></li>
+          <li>Sign in with your Microsoft account (must have SharePoint access)</li>
+          <li>Confirm you have the <strong>Sites.ReadWrite.All</strong> permission</li>
+          <li>Open the <strong>Access Token</strong> tab and copy the entire token</li>
+          <li>Open the app's <strong>Settings</strong> page, paste the token, click <strong>Save</strong></li>
+        </ol>
+
+        <div class="callout callout--tip">
+          <div class="callout-text"><span class="callout-label">Token auto-sync</span>Once saved, the token syncs automatically to every other open session via Cloudflare — everyone picks it up within 5 minutes. You don't need to update it yourself if a teammate already did.</div>
+        </div>
+
+        <h3>Connection status</h3>
+        <p>The Settings page shows a status dot: <strong>Green</strong> — connected; <strong>Red</strong> — token expired or connection failed.</p>
+      </section>
+
+      <!-- 12 ──────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s12">
+        <div class="sec-head"><span class="sec-num">12</span><h2 class="sec-title">Mobile Map Navigation (Field Engineers)</h2></div>
+        <p>On screens ≤640px, you're taken to the <strong>Mobile Map</strong> view automatically after login — built for navigating between shops during stock takes.</p>
+
+        <h3>Features</h3>
+        <ol>
+          <li><strong>Date Picker</strong> — view shops scheduled for any date, not just today. Defaults to today.</li>
+          <li><strong>Group Selector</strong> — switch between Group A, B, or C</li>
+          <li><strong>Shop List</strong> — sorted by distance, filtered to the selected date + group</li>
+          <li><strong>GPS Location</strong> — on-demand button (saves battery); your position shows as a blue pulsing dot</li>
+          <li><strong>Distance</strong> — straight-line distance to each shop</li>
+        </ol>
+
+        <h3>Route navigation</h3>
+        <p>Tap a shop, then tap the floating <strong>Route</strong> button to get directions:</p>
+        <ul>
+          <li><strong>Walking Route</strong> — shown if the shop is within 1km, with turn-by-turn directions and estimated time</li>
+          <li><strong>Transit Route</strong> — bus/MTR directions with route numbers, via stops, transfer points, and MTR entrance/exit info</li>
+        </ul>
+        <div class="callout callout--tip">
+          <div class="callout-text"><span class="callout-label">If a route can't be found</span>The panel shows a &ldquo;Route unavailable&rdquo; message instead of staying blank — try again once you have a solid GPS fix.</div>
+        </div>
+
+        <h3>Tips</h3>
+        <ul>
+          <li>Tap any route segment header to zoom the map to that segment</li>
+          <li>The bottom sheet is collapsible — drag the handle to expand or minimize</li>
+          <li>GPS only activates when you press the button — it doesn't track you continuously</li>
+          <li>Use the date picker to check tomorrow's route before you head out</li>
+        </ul>
+      </section>
+
+      <!-- 13 ──────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s13">
+        <div class="sec-head"><span class="sec-num">13</span><h2 class="sec-title">Error Reporting</h2></div>
+        <p>If you hit a bug or issue:</p>
+        <ol>
+          <li>Click <strong>Report Bug</strong> in the sidebar</li>
+          <li>Pick a category — UI/Display, Data Sync, Feature Request, or Other</li>
+          <li>Describe what happened</li>
+          <li>Click <strong>Submit</strong></li>
+        </ol>
+        <p>Your report saves to SharePoint with your user info and timestamp. The development team reviews reports regularly.</p>
+      </section>
+
+      <!-- 14 ──────────────────────────────────────────────────────── -->
+      <section class="rb-section" id="s14">
+        <div class="sec-head"><span class="sec-num">14</span><h2 class="sec-title">FAQ &amp; Troubleshooting</h2></div>
+
+        <details class="faq">
+          <summary>The app shows &ldquo;TOKEN EXPIRED&rdquo; — what do I do?</summary>
+          <div class="faq-body"><p>Go to Settings and paste a fresh token from <a href="https://developer.microsoft.com/en-us/graph/graph-explorer">Graph Explorer</a>. Or wait — if a teammate updates the token first, your app auto-syncs within 5 minutes.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>I see no data after logging in</summary>
+          <div class="faq-body"><p>Check the connection status in Settings. If it's red, update the token, then click &ldquo;Refresh Data&rdquo;.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>The map isn't showing</summary>
+          <div class="faq-body"><p>The map requires an AMap API key. If the map area is blank, contact your Admin to verify the AMap configuration.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>I generated a schedule but don't see it in the Calendar</summary>
+          <div class="faq-body"><p>Click &ldquo;Refresh Data&rdquo; — the Calendar reads from the same data source and should show it after refresh.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>A shop was scheduled on a public holiday</summary>
+          <div class="faq-body"><p>Check whether the holiday is in the system's list (covers 2025–2028). If it's newly announced, ask the development team to add it.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>I accidentally closed a shop</summary>
+          <div class="faq-body"><p>An Admin or App Owner can click the shop card on the Dashboard and choose <strong>Resume</strong>.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>I can't see certain menu items</summary>
+          <div class="faq-body"><p>Menu items are role-based. A &ldquo;User&rdquo; role only sees the Dashboard — ask an Admin to upgrade your role for more access.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>The schedule generation seems wrong</summary>
+          <div class="faq-body"><p>Double-check your filters: are you targeting the right regions/districts, is &ldquo;Include MTR Shops&rdquo; set correctly, and is the start date right?</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>How do I export the schedule?</summary>
+          <div class="faq-body"><p>Go to Calendar → use Export to Excel or Export to PDF. Both let you choose a custom date range.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>The app feels slow</summary>
+          <div class="faq-body"><p>Make sure you're on a stable network, try &ldquo;Refresh Data&rdquo; in case cached data is stale, and on the map view keep the tab active only when you need it — rendering can be intensive.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>I submitted a bug report but nothing happened</summary>
+          <div class="faq-body"><p>Reports save straight to SharePoint and are reviewed periodically. For urgent issues, contact your Admin directly.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>Can I use this app on my phone?</summary>
+          <div class="faq-body"><p>Yes — it's a PWA. If not installed yet, you'll see a full-screen install guide with device-specific steps (iPhone/iPad, Android, Desktop), or tap &ldquo;Continue in Browser →&rdquo; to skip it. Once installed it behaves like a native app, and on mobile you get the dedicated Mobile Map view with a date picker for checking any day's route in advance.</p></div>
+        </details>
+
+        <details class="faq">
+          <summary>Multiple people updated the same shop — whose change wins?</summary>
+          <div class="faq-body"><p>Last write wins — there's no conflict detection. If two people edit the same shop at once, the most recent save overwrites the earlier one. Coordinate with your team to avoid clashes.</p></div>
+        </details>
+      </section>
+
+      <footer class="rb-footer">
+        <span>Stock Take Scheduler Web — User Runbook</span>
+        <span>Questions not covered here? Use Error Reporting or ask your Admin.</span>
+      </footer>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

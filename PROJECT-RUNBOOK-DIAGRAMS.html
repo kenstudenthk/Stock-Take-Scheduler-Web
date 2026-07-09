@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project RunBook Diagrams — Stock Take Scheduler Web</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --primary: #05043e;
+    --accent: #0D9488;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+  }
+  .header {
+    background: var(--primary); color: #fff;
+    padding: 32px 48px; text-align: center;
+  }
+  .header h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  .header p { font-size: 14px; color: rgba(255,255,255,0.6); }
+  .header .badge {
+    display: inline-block; margin-top: 10px;
+    background: rgba(13,148,136,0.2); color: var(--accent);
+    padding: 4px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+  }
+  .header .link {
+    display: inline-block; margin-top: 8px;
+    color: rgba(255,255,255,0.5); font-size: 12px; text-decoration: none;
+  }
+  .header .link:hover { color: #fff; }
+  .content { padding: 32px 48px 80px; max-width: 1400px; margin: 0 auto; }
+  .diagram-section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px 32px; margin-bottom: 32px;
+    box-shadow: var(--shadow); overflow-x: auto;
+  }
+  .diagram-section h2 {
+    font-size: 20px; font-weight: 700; color: var(--primary);
+    margin-bottom: 6px; display: flex; align-items: center; gap: 10px;
+  }
+  .diagram-section h2 .icon {
+    width: 32px; height: 32px; background: var(--accent); color: #fff;
+    border-radius: 8px; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 16px; flex-shrink: 0;
+  }
+  .diagram-section .desc {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 20px;
+  }
+  .mermaid { display: flex; justify-content: center; }
+  .mermaid svg { max-width: 100%; height: auto; }
+  code {
+    background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+    font-size: 13px; font-family: 'SF Mono', Consolas, monospace; color: #be185d;
+  }
+  @media (max-width: 768px) {
+    .header { padding: 24px 20px; }
+    .header h1 { font-size: 22px; }
+    .content { padding: 20px 16px 60px; }
+    .diagram-section { padding: 16px; }
+  }
+  @media print {
+    .diagram-section { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Project RunBook — Diagrams</h1>
+  <p>Architecture, algorithms, and operational flowcharts for developers</p>
+  <div class="badge">Developers &middot; DevOps &middot; App Owners</div>
+  <br>
+  <a class="link" href="USER-RUNBOOK-DIAGRAMS.html">&larr; View User RunBook Diagrams</a>
+</div>
+
+<div class="content">
+
+  <!-- Project Mindmap -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#128466;</span> Project RunBook — Mind Map</h2>
+    <div class="desc">Technical architecture and operational knowledge for developers</div>
+    <pre class="mermaid">
+mindmap
+  root((Project RunBook))
+    Tech Stack
+      React 18 TypeScript 5.7
+      Vite 6
+      Ant Design 5
+      Tailwind CSS 3
+      FullCalendar 6
+      AMap JS API
+      bcryptjs
+      ExcelJS jsPDF
+      dayjs
+    Architecture
+      SPA No Backend Server
+      SharePoint Source of Truth
+      Cloudflare Worker Token Sync
+      PWA with Workbox
+    SharePoint Lists
+      Shop List
+      Member List
+      Inventory List
+      Error Log
+      Time Card
+    State Management
+      All in App.tsx
+      graphToken localStorage
+      allShops in memory
+      currentUser sessionStorage
+      isDarkMode localStorage
+    Services
+      SharePointService.ts
+      TokenService.ts
+      api.ts
+    Utilities
+      scheduleGeneration.ts
+      batchOperations.ts
+      coordTransform.ts
+      kmeans.ts
+      loadAMap.ts
+    Auth and RBAC
+      bcrypt Password Hash
+      3 Roles Admin Owner User
+      ROLE_PERMISSIONS types.ts
+      hasPermission guard
+    CI CD Pipeline
+      pr-verification tsc build
+      claude-code AI review
+      gemini-review AI review
+      pr-autofix-and-verify
+    Security
+      sanitizeFilterValue OData
+      React JSX escaping
+      Worker has no auth
+    Operations
+      Token expires 60min
+      Holiday data 2025 to 2028
+      Batch 5 concurrent
+      Exponential backoff retry
+    Known Issues
+      orderby non-indexed columns
+      999 item pagination limit
+      Linter hook file clearing
+      Token sync no auth
+    </pre>
+  </div>
+
+  <!-- System Architecture Flow -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#127959;</span> System Architecture</h2>
+    <div class="desc">How data flows between the browser, SharePoint, and Cloudflare</div>
+    <pre class="mermaid">
+flowchart TB
+    subgraph Browser["Browser - PWA / Desktop"]
+      direction TB
+      APP["App.tsx - Root State"] --> SP_SVC[SharePointService.ts]
+      APP --> TK_SVC[TokenService.ts]
+      APP --> AMAP[AMap JS API]
+      APP --> DASH[Dashboard]
+      APP --> CAL[Calendar]
+      APP --> GEN[Generator]
+      APP --> SHOPS_C[Shops]
+      APP --> INV_C[Inventory]
+      APP --> TC_C[TimeCard]
+    end
+
+    subgraph SharePoint["Microsoft Graph API"]
+      direction TB
+      SHOP_L[(Shop List)]
+      MEM_L[(Member List)]
+      INV_L[(Inventory List)]
+      ERR_L[(Error Log)]
+      TC_L[(Time Card)]
+    end
+
+    subgraph Cloudflare["Cloudflare Worker"]
+      direction TB
+      KV[(KV TOKEN_STORE)]
+      PROXY[Image Proxy]
+    end
+
+    subgraph Storage["Browser Storage"]
+      LS["localStorage: graphToken, theme"]
+      SS["sessionStorage: currentUser"]
+    end
+
+    SP_SVC -->|"CRUD with Bearer Token"| SHOP_L
+    SP_SVC -->|"CRUD"| MEM_L
+    SP_SVC -->|"CRUD"| INV_L
+    TK_SVC -->|"GET / POST"| KV
+    SP_SVC -->|"POST /image-proxy"| PROXY
+    PROXY -->|"Cookie Auth"| SHOP_L
+    APP <--> LS
+    APP <--> SS
+
+    style Browser fill:#eff6ff,stroke:#3b82f6
+    style SharePoint fill:#fef3c7,stroke:#f59e0b
+    style Cloudflare fill:#f0fdfa,stroke:#0D9488
+    style Storage fill:#f1f5f9,stroke:#94a3b8
+    </pre>
+  </div>
+
+  <!-- Data Fetch Flow -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#128259;</span> Data Fetch & Token Lifecycle</h2>
+    <div class="desc">How data is loaded on app start and how tokens are managed</div>
+    <pre class="mermaid">
+flowchart TD
+    A([App Mounts]) --> B[Read token from localStorage]
+    B --> C{Token exists?}
+
+    C -->|No| D[Show token error state]
+    D --> E[User pastes token in Settings]
+    E --> F[Save to localStorage]
+    F --> G[Broadcast to Cloudflare KV]
+
+    C -->|Yes| H[Fetch remote token from Cloudflare]
+    H --> I{Remote token newer?}
+    I -->|Yes| J[Update localStorage]
+    I -->|No| K[Keep local token]
+    J --> L
+    K --> L
+
+    L[fetchAllData] --> M["Fetch Shop List (top 999)"]
+    L --> N["Fetch Inventory (paginated)"]
+    L --> O["Fetch Time Cards (paginated)"]
+
+    M --> P{Response OK?}
+    P -->|401| Q[Set hasTokenError true]
+    P -->|200| R[Map to Shop array, setAllShops]
+
+    N --> S[Map to InventoryItem array]
+    O --> T[Map to TimeCardEntry array]
+
+    R & S & T --> U([App Ready])
+    Q --> D
+
+    G --> V[Start 5-min poll interval]
+    V --> H
+
+    style A fill:#05043e,color:#fff,stroke:none
+    style U fill:#10b981,color:#fff,stroke:none
+    style Q fill:#ef4444,color:#fff,stroke:none
+    style L fill:#0D9488,color:#fff,stroke:none
+    </pre>
+  </div>
+
+  <!-- Schedule Algorithm Flow -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#9881;</span> Schedule Generation Algorithm</h2>
+    <div class="desc">Internal logic of <code>utils/scheduleGeneration.ts</code></div>
+    <pre class="mermaid">
+flowchart TD
+    A([generateSchedule]) --> B["Input: pool, startDate, shopsPerDay, groupsPerDay"]
+
+    B --> C[currentDate = getNextWorkingDay]
+    C --> D{"shopIndex less than pool.length?"}
+
+    D -->|No| E([Return scheduled array])
+
+    D -->|Yes| F[Slice next N shops]
+    F --> G[Assign each shop]
+    G --> G1["scheduledDate = currentDate"]
+    G --> G2["groupId = idx mod groupsPerDay + 1"]
+
+    G1 & G2 --> HH[shopIndex += shopsPerDay]
+    HH --> II[currentDate = next day]
+
+    II --> JJ{isWorkingDay?}
+    JJ -->|No Weekend| KK[Skip to next day]
+    JJ -->|No Holiday| KK
+    KK --> JJ
+    JJ -->|Yes| D
+
+    style A fill:#05043e,color:#fff,stroke:none
+    style E fill:#10b981,color:#fff,stroke:none
+    </pre>
+
+    <h3 style="margin-top:24px; font-size:16px; font-weight:600; color:#1e293b;">Helper Functions</h3>
+    <pre class="mermaid">
+flowchart LR
+    subgraph isWorkingDay["isWorkingDay check"]
+      W1{Saturday?} -->|Yes| W4[return false]
+      W1 -->|No| W2{Sunday?}
+      W2 -->|Yes| W4
+      W2 -->|No| W3{In HK HOLIDAYS?}
+      W3 -->|Yes| W4
+      W3 -->|No| W5[return true]
+    end
+
+    style W4 fill:#ef4444,color:#fff,stroke:none
+    style W5 fill:#10b981,color:#fff,stroke:none
+    </pre>
+
+    <pre class="mermaid">
+flowchart LR
+    subgraph filterSchedulePool["filterSchedulePool"]
+      FP1[status is Unplanned] --> FP5[Filtered pool]
+      FP2[Match selectedRegions] --> FP5
+      FP3[Match selectedDistricts] --> FP5
+      FP4[Match MTR toggle] --> FP5
+    end
+
+    style FP5 fill:#0D9488,color:#fff,stroke:none
+    </pre>
+  </div>
+
+  <!-- Batch Operations Flow -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#9889;</span> Batch Operations & Retry Logic</h2>
+    <div class="desc">How <code>utils/batchOperations.ts</code> handles concurrent API calls</div>
+    <pre class="mermaid">
+flowchart TD
+    A([executeBatch]) --> B["Split items into chunks of 5"]
+
+    B --> C[Process chunk in parallel]
+    C --> D{Each item}
+
+    D --> EE[Attempt operation]
+    EE --> FF{Success?}
+    FF -->|Yes| GG[Add to successful list]
+
+    FF -->|No| HHH{4xx error?}
+    HHH -->|Yes Client error| III[Add to failed list, no retry]
+
+    HHH -->|No Server error| JJJ{Retries left?}
+    JJJ -->|Yes| KKK["Wait with exponential backoff"]
+    KKK --> EE
+    JJJ -->|No| III
+
+    GG & III --> LL{More chunks?}
+    LL -->|Yes| MM["Wait 100ms between batches"]
+    MM --> C
+    LL -->|No| NN[Return BatchResult]
+
+    NN --> OO{Any failures?}
+    OO -->|Yes| PP[retryFailed, one more attempt]
+    OO -->|No| QQ([All done])
+    PP --> QQ
+
+    style A fill:#05043e,color:#fff,stroke:none
+    style QQ fill:#10b981,color:#fff,stroke:none
+    style III fill:#ef4444,color:#fff,stroke:none
+    style KKK fill:#f59e0b,color:#fff,stroke:none
+    </pre>
+  </div>
+
+  <!-- Adding New Feature Flowchart -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#10133;</span> How to Add a New Feature</h2>
+    <div class="desc">Decision tree for common extension tasks</div>
+    <pre class="mermaid">
+flowchart TD
+    A([New Feature Request]) --> B{What type?}
+
+    B -->|New SharePoint List| C1[1. Create list in SPO]
+    C1 --> C2[2. Add ID to config.ts]
+    C2 --> C3[3. Add VITE var to .env.example]
+    C3 --> C4[4. Add URL getter to API_URLS]
+    C4 --> C5[5. Add FIELDS to constants.ts]
+    C5 --> C6[6. Add interface to types.ts]
+    C6 --> C7[7. Add fetch in App.tsx]
+    C7 --> C8[8. Add methods to SharePointService]
+    C8 --> Z
+
+    B -->|New Page| D1[1. Add View enum in types.ts]
+    D1 --> D2[2. Create component file]
+    D2 --> D3[3. Add case in renderContent]
+    D3 --> D4[4. Add nav item in Layout.tsx]
+    D4 --> D5[5. Wire props in App.tsx]
+    D5 --> Z
+
+    B -->|New Holiday Year| E1E[1. Get dates from gov.hk]
+    E1E --> E2E[2. Add year key to HK_HOLIDAYS]
+    E2E --> Z
+
+    B -->|Bug Fix| F1F[1. Write reproducing test]
+    F1F --> F2F[2. Fix the bug]
+    F2F --> F3F[3. Add Known Pitfall to CLAUDE.md]
+    F3F --> F4F[4. Update UPDATE.md changelog]
+    F4F --> Z
+
+    Z([PR then CI then Merge])
+
+    style A fill:#05043e,color:#fff,stroke:none
+    style Z fill:#10b981,color:#fff,stroke:none
+    </pre>
+  </div>
+
+  <!-- CI/CD Pipeline -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#128640;</span> CI/CD Pipeline</h2>
+    <div class="desc">What happens when you push code or open a PR</div>
+    <pre class="mermaid">
+flowchart LR
+    A([Push or PR]) --> B[GitHub Actions]
+
+    B --> C[pr-verification]
+    C --> C1[npm install]
+    C1 --> C2[tsc noEmit]
+    C2 --> C3[npm run build]
+
+    B --> D[claude-code]
+    D --> D1[Claude AI Review]
+    D1 --> D2[Comment on Bugs, Security, Perf]
+
+    B --> ECI[gemini-review]
+    ECI --> E1CI[Gemini AI Review]
+
+    B --> FCI[pr-autofix-and-verify]
+    FCI --> F1CI[Auto-fix and Verify]
+
+    C3 --> G{All Pass?}
+    G -->|Yes| HCI([Merge to main])
+    G -->|No| ICI[Fix Issues]
+    ICI --> A
+
+    style A fill:#05043e,color:#fff,stroke:none
+    style HCI fill:#10b981,color:#fff,stroke:none
+    style ICI fill:#ef4444,color:#fff,stroke:none
+    </pre>
+  </div>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryTextColor: '#1e293b',
+      primaryBorderColor: '#3b82f6',
+      secondaryColor: '#f0fdfa',
+      secondaryTextColor: '#1e293b',
+      secondaryBorderColor: '#0D9488',
+      tertiaryColor: '#fef3c7',
+      tertiaryTextColor: '#1e293b',
+      tertiaryBorderColor: '#f59e0b',
+      lineColor: '#94a3b8',
+      textColor: '#1e293b',
+      fontSize: '14px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
+    },
+    flowchart: { curve: 'basis', padding: 20, htmlLabels: true, useMaxWidth: true },
+    mindmap: { padding: 20, useMaxWidth: true }
+  });
+</script>
+
+</body>
+</html>

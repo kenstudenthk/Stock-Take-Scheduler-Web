@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User RunBook Diagrams — Stock Take Scheduler Web</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --primary: #05043e;
+    --accent: #0D9488;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+  }
+  .header {
+    background: var(--primary); color: #fff;
+    padding: 32px 48px; text-align: center;
+  }
+  .header h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  .header p { font-size: 14px; color: rgba(255,255,255,0.6); }
+  .header .badge {
+    display: inline-block; margin-top: 10px;
+    background: rgba(13,148,136,0.2); color: var(--accent);
+    padding: 4px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+  }
+  .header .link {
+    display: inline-block; margin-top: 8px;
+    color: rgba(255,255,255,0.5); font-size: 12px; text-decoration: none;
+  }
+  .header .link:hover { color: #fff; }
+  .content { padding: 32px 48px 80px; max-width: 1400px; margin: 0 auto; }
+  .diagram-section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px 32px; margin-bottom: 32px;
+    box-shadow: var(--shadow); overflow-x: auto;
+  }
+  .diagram-section h2 {
+    font-size: 20px; font-weight: 700; color: var(--primary);
+    margin-bottom: 6px; display: flex; align-items: center; gap: 10px;
+  }
+  .diagram-section h2 .icon {
+    width: 32px; height: 32px; background: var(--accent); color: #fff;
+    border-radius: 8px; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 16px; flex-shrink: 0;
+  }
+  .diagram-section .desc {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 20px;
+  }
+  .mermaid { display: flex; justify-content: center; }
+  .mermaid svg { max-width: 100%; height: auto; }
+  @media (max-width: 768px) {
+    .header { padding: 24px 20px; }
+    .header h1 { font-size: 22px; }
+    .content { padding: 20px 16px 60px; }
+    .diagram-section { padding: 16px; }
+  }
+  @media print {
+    .diagram-section { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>User RunBook — Diagrams</h1>
+  <p>Flowcharts and mind maps for end users, admins, and field engineers</p>
+  <div class="badge">End Users &middot; Admins &middot; App Owners &middot; Field Engineers</div>
+  <br>
+  <a class="link" href="PROJECT-RUNBOOK-DIAGRAMS.html">View Project RunBook Diagrams &rarr;</a>
+</div>
+
+<div class="content">
+
+  <!-- User Mindmap -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#128466;</span> User RunBook — Mind Map</h2>
+    <div class="desc">Complete overview of all features and workflows available to end users</div>
+    <pre class="mermaid">
+mindmap
+  root((Stock Take Scheduler))
+    Getting Started
+      PWA Install
+      Browser Access
+      Chrome or Edge
+    Roles
+      Admin Full Access
+      App Owner Full Access
+      User Dashboard Only
+    Login and Account
+      Alias Email Login
+      Register New Account
+      Change Password
+      Connection Status
+    Dashboard
+      Statistics Cards
+        Total Active
+        Completed
+        Remaining
+      Shop Cards by Date
+      Shop Actions
+        Reschedule
+        Move to Pool
+        Close Shop
+        Resume Shop
+      Reschedule Pool Badge
+      Refresh Data
+    Schedule Generator
+      Step 1 Configure
+        Select Regions
+        Select Districts
+        MTR Toggle
+        Start Date
+        Shops Per Day
+        Groups Per Day
+      Step 2 Preview
+        Auto Skip Weekends
+        Auto Skip Holidays
+        Geographic Grouping
+      Step 3 Sync
+        Progress Bar
+        Retry Failed
+      Reschedule Pool Tab
+      Reset Functions
+    Calendar
+      Monthly View
+      Group Colors A B C
+      Public Holidays
+      Export Excel
+      Export PDF
+    Shops
+      Table View
+        9 Filter Options
+        Inline Editing
+        Call Logging
+      Map View
+        AMap Markers
+        Region Colors
+        Click for Details
+    Inventory
+      Filter by Shop
+      Asset Details
+      Photo Upload
+      Status Tracking
+    Time Card
+      FE Check In Out
+      Filter by Date
+      Stats Cards
+    Reports
+      Schedule Progress
+      Business Unit
+      Regional Stats
+    Permission Mgmt
+      View Members
+      Change Roles
+      Activate Deactivate
+    Settings
+      Token Management
+      Auto Sync 5min
+      Connection Health
+    Mobile Map
+      Group Selector
+      GPS Location
+      Walking Route
+      Transit Route
+      Distance Display
+    Error Reporting
+      Bug Report Form
+      Category Selection
+      Auto Capture Info
+    </pre>
+  </div>
+
+  <!-- User Login Flow -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#128274;</span> Login & Authentication Flow</h2>
+    <div class="desc">How users authenticate and what happens on success or failure</div>
+    <pre class="mermaid">
+flowchart TD
+    A([Open App]) --> B{First Visit?}
+    B -->|Yes| C[PWA Install Guide]
+    C --> D{Install or Skip?}
+    D -->|Install| E[Install PWA]
+    D -->|Skip| F[Continue in Browser]
+    E --> F
+    B -->|No| F
+
+    F --> G[Login Page]
+    G --> H{Have Account?}
+    H -->|No| I[Register Tab]
+    I --> J[Fill Name + Email + Password]
+    J --> K[Account Created as User Role]
+    K --> G
+
+    H -->|Yes| L[Enter Alias Email + Password]
+    L --> M{Token Valid?}
+    M -->|No| N[Red Connection Indicator]
+    N --> O[Go to Settings]
+    O --> P[Paste New Token]
+    P --> M
+
+    M -->|Yes| Q{Credentials OK?}
+    Q -->|No| R[Error Message]
+    R --> L
+    Q -->|Yes| S{Mobile Screen?}
+    S -->|"Yes, 640px or less"| T[Mobile Map View]
+    S -->|No| U[Dashboard]
+
+    style A fill:#0D9488,color:#fff,stroke:none
+    style T fill:#05043e,color:#fff,stroke:none
+    style U fill:#05043e,color:#fff,stroke:none
+    style N fill:#ef4444,color:#fff,stroke:none
+    style K fill:#3b82f6,color:#fff,stroke:none
+    </pre>
+  </div>
+
+  <!-- Schedule Generation Flow -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#128197;</span> Schedule Generation Workflow</h2>
+    <div class="desc">End-to-end flow from configuration to SharePoint sync</div>
+    <pre class="mermaid">
+flowchart TD
+    A([Generator Page]) --> B{Which Tab?}
+
+    B -->|Regular Schedule| C[Step 1: Configure]
+    B -->|Reschedule Pool| D[Pool Tab]
+
+    C --> C1[Select Regions]
+    C --> C2[Select Districts]
+    C --> C3[MTR Toggle]
+    C --> C4[Set Start Date]
+    C --> C5[Shops/Day + Groups/Day]
+
+    C1 & C2 & C3 & C4 & C5 --> E[Click Generate]
+
+    E --> F{Unplanned Shops Found?}
+    F -->|No| G[No shops match filters]
+    G --> C
+    F -->|Yes| H[Step 2: Preview Table]
+
+    H --> I[Review: Date + Group + Shop]
+    I --> J{Approve?}
+    J -->|No / Edit| C
+    J -->|Yes| K[Step 3: Confirm & Sync]
+
+    K --> L[Batch Update to SharePoint]
+    L --> M[Progress Bar]
+    M --> N{All Succeeded?}
+    N -->|Yes| O([Schedule Saved])
+    N -->|Partial| P[Retry Failed Items]
+    P --> L
+
+    D --> D1[Load Pool Shops]
+    D1 --> D2[Same Configure Flow]
+    D2 --> E
+
+    style A fill:#0D9488,color:#fff,stroke:none
+    style O fill:#10b981,color:#fff,stroke:none
+    style G fill:#f59e0b,color:#fff,stroke:none
+    style H fill:#3b82f6,color:#fff,stroke:none
+    </pre>
+  </div>
+
+  <!-- Dashboard Actions Flow -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#9889;</span> Dashboard Shop Actions</h2>
+    <div class="desc">Decision tree for shop management actions from the Dashboard</div>
+    <pre class="mermaid">
+flowchart TD
+    A([Dashboard]) --> B[Click Shop Card]
+    B --> C{Choose Action}
+
+    C -->|Reschedule| D[Smart Reschedule Modal]
+    D --> D1[Pick New Date]
+    D --> D2[Select Group]
+    D1 & D2 --> D3{Confirm?}
+    D3 -->|Yes| D4[Update SharePoint]
+    D3 -->|Move to Pool| E1
+
+    C -->|Move to Pool| E1[Clear Date + Set Rescheduled]
+    E1 --> E2[Shop enters Reschedule Pool]
+    E2 --> E3[Generate Pool Schedule later]
+
+    C -->|Close| F1[Confirm Close]
+    F1 --> F2["Status: Closed"]
+    F2 --> F3[Removed from active scheduling]
+
+    C -->|Resume| G1["Status: Pending"]
+    G1 --> G2[Shop re-enters active pool]
+
+    D4 --> H([Refresh Data])
+    E2 --> H
+    F2 --> H
+    G1 --> H
+
+    style A fill:#05043e,color:#fff,stroke:none
+    style H fill:#0D9488,color:#fff,stroke:none
+    style E2 fill:#f59e0b,color:#fff,stroke:none
+    style F2 fill:#ef4444,color:#fff,stroke:none
+    style G2 fill:#10b981,color:#fff,stroke:none
+    </pre>
+  </div>
+
+  <!-- Token Management Flow -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#128273;</span> Token Refresh & Auto-Sync</h2>
+    <div class="desc">How the Graph API token is refreshed and shared across all users</div>
+    <pre class="mermaid">
+flowchart LR
+    subgraph UserA["User A"]
+      A1[See Truck Banner] --> A2[Open Graph Explorer]
+      A2 --> A3[Sign In + Copy Token]
+      A3 --> A4[Paste in Settings]
+    end
+
+    A4 --> B[(localStorage)]
+    A4 --> C[(Cloudflare KV)]
+
+    subgraph AutoSync["Auto-Sync"]
+      C --> D{Every 5 min poll}
+      D --> E[User B fetches token]
+      D --> F[User C fetches token]
+      D --> G[User D fetches token]
+    end
+
+    E --> E1[localStorage updated]
+    F --> F1[localStorage updated]
+    G --> G1[localStorage updated]
+
+    E1 & F1 & G1 --> H([All sessions refreshed])
+
+    style A1 fill:#ef4444,color:#fff,stroke:none
+    style H fill:#10b981,color:#fff,stroke:none
+    style C fill:#f59e0b,color:#000,stroke:none
+    </pre>
+  </div>
+
+  <!-- Mobile Map Flow -->
+  <div class="diagram-section">
+    <h2><span class="icon">&#128241;</span> Mobile Map Navigation (Field Engineers)</h2>
+    <div class="desc">How field engineers use the mobile map to navigate between shops</div>
+    <pre class="mermaid">
+flowchart TD
+    A([Login on Mobile]) --> B[Auto-redirect to Mobile Map]
+    B --> C[Select Group A / B / C]
+    C --> D[See Todays Shops sorted by Distance]
+
+    D --> E[Tap GPS Button]
+    E --> F[Blue Pulsing Dot on Map]
+
+    D --> G[Tap a Shop]
+    G --> H{Distance?}
+
+    H -->|Under 1km| I[Walking Route]
+    I --> I1[Turn-by-turn Directions]
+    I --> I2[Estimated Walking Time]
+
+    H -->|Over 1km| J[Transit Route]
+    J --> J1[Bus/MTR Routes]
+    J --> J2[Transfer Points]
+    J --> J3[MTR Entrance/Exit Info]
+
+    I1 & I2 --> K[Navigate to Shop]
+    J1 & J2 & J3 --> K
+
+    K --> L[Arrive at Shop]
+    L --> M[Check In via Time Card]
+    M --> N[Complete Stock Take]
+    N --> O[Check Out]
+    O --> D
+
+    style A fill:#05043e,color:#fff,stroke:none
+    style F fill:#3b82f6,color:#fff,stroke:none
+    style L fill:#10b981,color:#fff,stroke:none
+    style K fill:#0D9488,color:#fff,stroke:none
+    </pre>
+  </div>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryTextColor: '#1e293b',
+      primaryBorderColor: '#3b82f6',
+      secondaryColor: '#f0fdfa',
+      secondaryTextColor: '#1e293b',
+      secondaryBorderColor: '#0D9488',
+      tertiaryColor: '#fef3c7',
+      tertiaryTextColor: '#1e293b',
+      tertiaryBorderColor: '#f59e0b',
+      lineColor: '#94a3b8',
+      textColor: '#1e293b',
+      fontSize: '14px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
+    },
+    flowchart: { curve: 'basis', padding: 20, htmlLabels: true, useMaxWidth: true },
+    mindmap: { padding: 20, useMaxWidth: true }
+  });
+</script>
+
+</body>
+</html>

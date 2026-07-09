@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project RunBook — Stock Take Scheduler Web</title>
+<style>
+  :root {
+    --primary: #05043e;
+    --accent: #0D9488;
+    --accent-light: #ccfbf1;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --code-bg: #f1f5f9;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  .page-wrapper { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 270px;
+    background: var(--primary);
+    color: #fff;
+    padding: 24px 0;
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 100;
+    transition: transform 0.3s;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-header h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+  .sidebar-header .subtitle {
+    font-size: 11px; color: rgba(255,255,255,0.5);
+    margin-top: 4px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .sidebar-header .audience {
+    font-size: 10px; color: var(--accent); margin-top: 6px;
+    background: rgba(13,148,136,0.15); padding: 3px 8px; border-radius: 4px; display: inline-block;
+  }
+
+  .sidebar nav a {
+    display: block; padding: 7px 20px;
+    color: rgba(255,255,255,0.7); text-decoration: none;
+    font-size: 12.5px; transition: all 0.2s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar nav a:hover, .sidebar nav a.active {
+    color: #fff; background: rgba(255,255,255,0.08);
+    border-left-color: var(--accent);
+  }
+  .sidebar nav a .num {
+    display: inline-block; width: 24px;
+    color: var(--accent); font-weight: 600; font-size: 11px;
+  }
+  .sidebar nav .divider {
+    height: 1px; background: rgba(255,255,255,0.08);
+    margin: 8px 20px;
+  }
+
+  .menu-toggle {
+    display: none; position: fixed; top: 12px; left: 12px; z-index: 200;
+    background: var(--primary); color: #fff; border: none; border-radius: 8px;
+    width: 40px; height: 40px; font-size: 20px; cursor: pointer;
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Main */
+  .main {
+    margin-left: 270px; flex: 1;
+    padding: 40px 48px 80px; max-width: 920px;
+  }
+
+  .page-title { font-size: 30px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+  .page-meta {
+    font-size: 13px; color: var(--text-muted);
+    margin-bottom: 40px; padding-bottom: 20px;
+    border-bottom: 2px solid var(--border);
+  }
+
+  /* Sections */
+  section { margin-bottom: 48px; scroll-margin-top: 24px; }
+
+  h2 {
+    font-size: 20px; font-weight: 700; color: var(--primary);
+    margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2 .section-num {
+    background: var(--accent); color: #fff;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+
+  h3 { font-size: 16px; font-weight: 600; color: var(--text); margin: 24px 0 10px; }
+  h4 { font-size: 14px; font-weight: 600; color: var(--text-muted); margin: 18px 0 8px; }
+  p { margin-bottom: 12px; }
+
+  /* Cards */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 22px; margin: 16px 0;
+    box-shadow: var(--shadow);
+  }
+  .card.info { border-left: 4px solid var(--accent); background: #f0fdfa; }
+  .card.warning { border-left: 4px solid #f59e0b; background: #fffbeb; }
+  .card.danger { border-left: 4px solid #ef4444; background: #fef2f2; }
+  .card.tip { border-left: 4px solid #3b82f6; background: #eff6ff; }
+  .card-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .card.info .card-label { color: var(--accent); }
+  .card.warning .card-label { color: #d97706; }
+  .card.danger .card-label { color: #dc2626; }
+  .card.tip .card-label { color: #2563eb; }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+    font-size: 13.5px; border-radius: 8px; overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  thead th {
+    background: var(--primary); color: #fff;
+    padding: 9px 14px; text-align: left;
+    font-weight: 600; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  tbody td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+  tbody tr:nth-child(even) { background: #fafbfc; }
+  tbody tr:hover { background: #e0f2fe; }
+
+  /* Lists */
+  ul, ol { margin: 8px 0 16px 24px; }
+  li { margin-bottom: 5px; }
+  li strong { color: var(--primary); }
+
+  /* Steps */
+  .steps { counter-reset: step; list-style: none; margin-left: 0; padding-left: 0; }
+  .steps li {
+    counter-increment: step; position: relative;
+    padding-left: 38px; margin-bottom: 10px;
+  }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 1px;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Code */
+  code {
+    background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
+    font-size: 13px; font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    color: #be185d;
+  }
+
+  pre {
+    background: #1e293b; color: #e2e8f0;
+    padding: 16px 20px; border-radius: 8px;
+    overflow-x: auto; margin: 12px 0;
+    font-size: 13px; line-height: 1.6;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  pre .comment { color: #94a3b8; }
+  pre .string { color: #86efac; }
+  pre .cmd { color: #93c5fd; }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    background: #1e293b; color: #e2e8f0;
+    padding: 20px 24px; border-radius: 10px;
+    overflow-x: auto; margin: 16px 0;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 13px; line-height: 1.5;
+    white-space: pre;
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Badge */
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-green { background: #d1fae5; color: #065f46; }
+  .badge-orange { background: #fed7aa; color: #9a3412; }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-purple { background: #ede9fe; color: #5b21b6; }
+  .badge-gray { background: #f1f5f9; color: #475569; }
+  .badge-teal { background: #ccfbf1; color: #115e59; }
+
+  a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  a:hover { text-decoration: underline; }
+
+  /* File tree */
+  .file-tree {
+    background: #1e293b; color: #e2e8f0;
+    padding: 16px 20px; border-radius: 8px;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 13px; line-height: 1.7; margin: 12px 0;
+    white-space: pre;
+  }
+  .file-tree .dir { color: #93c5fd; }
+  .file-tree .file { color: #86efac; }
+  .file-tree .desc { color: #94a3b8; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .menu-toggle { display: flex; align-items: center; justify-content: center; }
+    .main { margin-left: 0; padding: 24px 20px 60px; }
+    .page-title { font-size: 22px; }
+    table { font-size: 12.5px; }
+    thead th, tbody td { padding: 7px 10px; }
+    .arch-diagram, .file-tree { font-size: 11px; padding: 12px 16px; }
+  }
+
+  @media print {
+    .sidebar, .menu-toggle { display: none; }
+    .main { margin-left: 0; max-width: 100%; }
+    .card, table { break-inside: avoid; }
+    pre, .arch-diagram, .file-tree { white-space: pre-wrap; }
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
+
+<div class="page-wrapper">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <h2>Stock Take Scheduler</h2>
+    <div class="subtitle">Project RunBook</div>
+    <div class="audience">Dev &middot; DevOps &middot; App Owners</div>
+  </div>
+  <nav>
+    <a href="#overview"><span class="num">1.</span> Project Overview</a>
+    <a href="#architecture"><span class="num">2.</span> Architecture</a>
+    <a href="#dev-setup"><span class="num">3.</span> Dev Setup</a>
+    <a href="#build-deploy"><span class="num">4.</span> Build & Deploy</a>
+    <div class="divider"></div>
+    <a href="#source-files"><span class="num">5.</span> Key Source Files</a>
+    <a href="#state"><span class="num">6.</span> State Management</a>
+    <a href="#auth"><span class="num">7.</span> Auth & RBAC</a>
+    <a href="#cloudflare"><span class="num">8.</span> Cloudflare Worker</a>
+    <div class="divider"></div>
+    <a href="#schedule-algo"><span class="num">9.</span> Schedule Algorithm</a>
+    <a href="#amap"><span class="num">10.</span> Map Integration</a>
+    <a href="#known-issues"><span class="num">11.</span> Known Issues</a>
+    <a href="#monitoring"><span class="num">12.</span> Monitoring</a>
+    <div class="divider"></div>
+    <a href="#security"><span class="num">13.</span> Security</a>
+    <a href="#dependencies"><span class="num">14.</span> Dependencies</a>
+    <a href="#add-sp-list"><span class="num">15.</span> Add SP List</a>
+    <a href="#add-page"><span class="num">16.</span> Add New Page</a>
+    <a href="#holidays"><span class="num">17.</span> Holiday Data</a>
+    <a href="#troubleshooting"><span class="num">18.</span> Troubleshooting</a>
+  </nav>
+</aside>
+
+<!-- Main Content -->
+<main class="main">
+
+<h1 class="page-title">Project RunBook</h1>
+<div class="page-meta">Audience: Developers, DevOps, App Owners &middot; Last updated: 2026-06-24</div>
+
+<!-- 1. Overview -->
+<section id="overview">
+  <h2><span class="section-num">1</span> Project Overview</h2>
+  <p><strong>Stock Take Scheduler Web</strong> is an internal React SPA used by PCCW/HKT retail operations to plan, schedule, and track inventory stock takes across 300+ shops in Hong Kong and Macau.</p>
+
+  <table>
+    <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Repo</strong></td><td><code>kenstudenthk/Stock-Take-Scheduler-Web</code></td></tr>
+      <tr><td><strong>Stack</strong></td><td>React 18 + TypeScript 5.7 + Vite 6</td></tr>
+      <tr><td><strong>UI</strong></td><td>Ant Design 5 + Tailwind CSS 3</td></tr>
+      <tr><td><strong>Backend</strong></td><td>Microsoft Graph API &rarr; SharePoint Online (no custom backend server)</td></tr>
+      <tr><td><strong>Map</strong></td><td>AMap JS API (GCJ-02 coordinate system)</td></tr>
+      <tr><td><strong>Token Sync</strong></td><td>Cloudflare Worker + KV (<code>stock-take-token-sync</code>)</td></tr>
+      <tr><td><strong>PWA</strong></td><td><code>vite-plugin-pwa</code> with Workbox (app shell caching)</td></tr>
+      <tr><td><strong>CI</strong></td><td>GitHub Actions (type-check + build on PR)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 2. Architecture -->
+<section id="architecture">
+  <h2><span class="section-num">2</span> Architecture</h2>
+
+  <div class="arch-diagram">&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;  Browser (PWA / Desktop)                                     &#9474;
+&#9474;  React SPA &#9472;&#9472;&#9472; Ant Design &#9472;&#9472;&#9472; Tailwind &#9472;&#9472;&#9472; FullCalendar  &#9474;
+&#9474;       &#9474;              &#9474;                                        &#9474;
+&#9474;  SharePointService  TokenService   AMap JS API                &#9474;
+&#9474;       &#9474;              &#9474;                                        &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9532;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9532;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+        &#9474;              &#9474;
+        &#9660;              &#9660;
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; MS Graph API &#9474;  &#9474; Cloudflare Worker (KV)            &#9474;
+&#9474; (SharePoint) &#9474;  &#9474; GET/POST /    &#8594; token sync        &#9474;
+&#9474;              &#9474;  &#9474; POST /image-proxy &#8594; SPO images   &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+
+  <h3>Data Flow</h3>
+  <ol class="steps">
+    <li>User pastes a Graph API token in Settings &rarr; stored in <code>localStorage</code> and broadcast to Cloudflare KV.</li>
+    <li>Other users/sessions auto-fetch the shared token from KV every 5 minutes.</li>
+    <li>All CRUD goes through <code>SharePointService.ts</code> &rarr; Microsoft Graph API &rarr; SharePoint lists.</li>
+    <li>No server-side database; SharePoint Online is the single source of truth.</li>
+  </ol>
+
+  <h3>SharePoint Lists</h3>
+  <table>
+    <thead><tr><th>List</th><th>Config Key</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Shop List</td><td><code>shopListId</code></td><td>All shops: code, name, region, status, schedule</td></tr>
+      <tr><td>Member List</td><td><code>memberListId</code></td><td>User accounts, roles, password hashes</td></tr>
+      <tr><td>Inventory List</td><td><code>inventoryListId</code></td><td>Asset tracking per shop</td></tr>
+      <tr><td>Error Log</td><td><code>errorLogListId</code></td><td>In-app bug reports</td></tr>
+      <tr><td>Time Card</td><td><code>timeCardListId</code></td><td>FE check-in/check-out records</td></tr>
+    </tbody>
+  </table>
+  <p>IDs are in <code>constants/config.ts</code> with env var overrides (<code>VITE_*</code>).</p>
+</section>
+
+<!-- 3. Dev Setup -->
+<section id="dev-setup">
+  <h2><span class="section-num">3</span> Local Development Setup</h2>
+
+  <h3>Prerequisites</h3>
+  <ul>
+    <li>Node.js 18+ (20 recommended)</li>
+    <li>npm (comes with Node)</li>
+    <li>A valid Microsoft Graph API token with <code>Sites.ReadWrite.All</code> permission</li>
+    <li>(Optional) AMap API key for map features</li>
+  </ul>
+
+  <h3>Quick Start</h3>
+  <pre><code><span class="cmd">git clone</span> <span class="string">https://github.com/kenstudenthk/Stock-Take-Scheduler-Web.git</span>
+<span class="cmd">cd</span> Stock-Take-Scheduler-Web
+<span class="cmd">npm install</span>
+<span class="cmd">npm run dev</span>          <span class="comment"># → http://localhost:3000</span></code></pre>
+
+  <h3>Environment Variables</h3>
+  <p>Copy <code>.env.example</code> to <code>.env</code> and fill in values. The app works without <code>.env</code> using fallback values in <code>constants/config.ts</code>.</p>
+  <table>
+    <thead><tr><th>Variable</th><th>Required</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>VITE_SHAREPOINT_SITE_ID</code></td><td><span class="badge badge-gray">No</span></td><td>SharePoint site identifier</td></tr>
+      <tr><td><code>VITE_SHOP_LIST_ID</code></td><td><span class="badge badge-gray">No</span></td><td>Shop list GUID</td></tr>
+      <tr><td><code>VITE_MEMBER_LIST_ID</code></td><td><span class="badge badge-gray">No</span></td><td>Member list GUID</td></tr>
+      <tr><td><code>VITE_INVENTORY_LIST_ID</code></td><td><span class="badge badge-gray">No</span></td><td>Inventory list GUID</td></tr>
+      <tr><td><code>VITE_ERROR_LOG_LIST_ID</code></td><td><span class="badge badge-gray">No</span></td><td>Error log list GUID</td></tr>
+      <tr><td><code>VITE_TIME_CARD_LIST_ID</code></td><td><span class="badge badge-gray">No</span></td><td>Time card list GUID</td></tr>
+      <tr><td><code>VITE_AMAP_API_KEY</code></td><td><span class="badge badge-orange">Map</span></td><td>AMap JS API key</td></tr>
+      <tr><td><code>VITE_AMAP_SECURITY_CODE</code></td><td><span class="badge badge-orange">Map</span></td><td>AMap security code</td></tr>
+      <tr><td><code>GEMINI_API_KEY</code></td><td><span class="badge badge-gray">No</span></td><td>Gemini API (if using AI features)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Available Commands</h3>
+  <pre><code><span class="cmd">npm run dev</span>       <span class="comment"># Start dev server on port 3000</span>
+<span class="cmd">npm run build</span>     <span class="comment"># Production build (tsc + vite)</span>
+<span class="cmd">npm run preview</span>   <span class="comment"># Preview production build locally</span>
+<span class="cmd">npm run tsc</span>       <span class="comment"># Type-check only (no emit)</span>
+<span class="cmd">npm run lint</span>      <span class="comment"># ESLint check</span></code></pre>
+</section>
+
+<!-- 4. Build & Deploy -->
+<section id="build-deploy">
+  <h2><span class="section-num">4</span> Build & Deployment</h2>
+
+  <h3>Production Build</h3>
+  <pre><code><span class="cmd">npm run build</span></code></pre>
+  <p>Output goes to <code>dist/</code>. The build includes:</p>
+  <ul>
+    <li>Minified JS/CSS bundles</li>
+    <li>PWA service worker and manifest</li>
+    <li>Static assets (icons, HTML)</li>
+  </ul>
+
+  <h3>Deployment</h3>
+  <p>The app is a static SPA. Deploy <code>dist/</code> to any static hosting:</p>
+  <ul>
+    <li><strong>Cloudflare Pages</strong> (recommended &mdash; already has Worker infra)</li>
+    <li><strong>Azure Static Web Apps</strong></li>
+    <li><strong>Netlify / Vercel</strong></li>
+    <li><strong>GitHub Pages</strong></li>
+  </ul>
+  <p>No server-side runtime required.</p>
+
+  <h3>CI/CD Pipeline</h3>
+  <table>
+    <thead><tr><th>Workflow</th><th>Trigger</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>pr-verification.yml</code></td><td>PR &rarr; main</td><td><code>npm install</code> &rarr; <code>tsc --noEmit</code> &rarr; <code>npm run build</code></td></tr>
+      <tr><td><code>claude-code.yml</code></td><td>PR opened/synced</td><td>Claude Code AI review (bugs, security, performance)</td></tr>
+      <tr><td><code>pr-autofix-and-verify.yml</code></td><td>PR</td><td>Auto-fix + verify</td></tr>
+      <tr><td><code>gemini-review.yml</code></td><td>PR</td><td>Gemini AI review</td></tr>
+    </tbody>
+  </table>
+  <p>All CI runs on <code>ubuntu-latest</code> with Node 20.</p>
+</section>
+
+<!-- 5. Source Files -->
+<section id="source-files">
+  <h2><span class="section-num">5</span> Key Source Files</h2>
+
+  <h3>Core</h3>
+  <table>
+    <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>App.tsx</code></td><td>Root component &mdash; state management, routing, data fetching</td></tr>
+      <tr><td><code>types.ts</code></td><td>All TypeScript interfaces, enums, RBAC definitions</td></tr>
+      <tr><td><code>constants.ts</code></td><td><code>SP_FIELDS</code> and <code>INV_FIELDS</code> &mdash; SharePoint column name mappings</td></tr>
+      <tr><td><code>constants/config.ts</code></td><td>API URLs, IDs, token config, batch settings</td></tr>
+      <tr><td><code>constants/holidays.ts</code></td><td>HK public holidays 2025&ndash;2028</td></tr>
+      <tr><td><code>constants/groups.ts</code></td><td>Group A/B/C color and label config</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Services</h3>
+  <table>
+    <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>services/SharePointService.ts</code></td><td>All Graph API calls (CRUD for shops, members, inventory, time cards)</td></tr>
+      <tr><td><code>services/TokenService.ts</code></td><td>Cloudflare KV token fetch/broadcast</td></tr>
+      <tr><td><code>services/api.ts</code></td><td>API utilities</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Utilities</h3>
+  <table>
+    <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>utils/scheduleGeneration.ts</code></td><td><code>isWorkingDay</code>, <code>getNextWorkingDay</code>, <code>filterSchedulePool</code>, <code>generateSchedule</code></td></tr>
+      <tr><td><code>utils/batchOperations.ts</code></td><td>Concurrent API batch processor with retry and exponential backoff</td></tr>
+      <tr><td><code>utils/coordTransform.ts</code></td><td>WGS-84 &rarr; GCJ-02 coordinate conversion for AMap</td></tr>
+      <tr><td><code>utils/kmeans.ts</code></td><td>K-means clustering for geographic shop grouping</td></tr>
+      <tr><td><code>utils/loadAMap.ts</code></td><td><code>loadAMap()</code> promise + <code>useAMap()</code> hook</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Components</h3>
+  <table>
+    <thead><tr><th>Component</th><th>Page</th></tr></thead>
+    <tbody>
+      <tr><td><code>Dashboard.tsx</code></td><td>Stats overview, shop actions (Reschedule/Pool/Close/Resume)</td></tr>
+      <tr><td><code>Calendar.tsx</code></td><td>FullCalendar month view, Excel/PDF export</td></tr>
+      <tr><td><code>Generator.tsx</code></td><td>Schedule generation wizard (Configure &rarr; Preview &rarr; Sync)</td></tr>
+      <tr><td><code>Shops.tsx</code></td><td>Unified wrapper: ShopList (table) + Locations (map) with Segmented toggle</td></tr>
+      <tr><td><code>ShopList.tsx</code></td><td>Filterable shop table with inline editing</td></tr>
+      <tr><td><code>Locations.tsx</code></td><td>AMap interactive map with batched markers</td></tr>
+      <tr><td><code>Inventory.tsx</code></td><td>Asset tracking and inventory CRUD</td></tr>
+      <tr><td><code>Permission.tsx</code></td><td>Role management (Admin only)</td></tr>
+      <tr><td><code>Reports.tsx</code></td><td>Strategic analytics (schedule progress, BU breakdown)</td></tr>
+      <tr><td><code>TimeCard.tsx</code></td><td>FE attendance tracking</td></tr>
+      <tr><td><code>Login.tsx</code></td><td>Authentication (alias email + bcrypt password)</td></tr>
+      <tr><td><code>Settings.tsx</code></td><td>Token management and API config</td></tr>
+      <tr><td><code>MobileMapView/</code></td><td>Mobile PWA map navigation for field engineers</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 6. State -->
+<section id="state">
+  <h2><span class="section-num">6</span> State Management</h2>
+  <p>All state lives in <code>App.tsx</code> (no Redux/Zustand):</p>
+  <table>
+    <thead><tr><th>State</th><th>Storage</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td><code>graphToken</code></td><td><code>localStorage</code> (<code>stockTakeToken</code>)</td><td>Persisted across sessions</td></tr>
+      <tr><td><code>allShops</code></td><td>In-memory (fetched on load)</td><td>Session-lived</td></tr>
+      <tr><td><code>allInventory</code></td><td>In-memory (paginated fetch)</td><td>Session-lived</td></tr>
+      <tr><td><code>allTimeCards</code></td><td>In-memory</td><td>Session-lived</td></tr>
+      <tr><td><code>currentUser</code></td><td><code>sessionStorage</code> (<code>currentUser</code>)</td><td>Tab-scoped</td></tr>
+      <tr><td><code>isDarkMode</code></td><td><code>localStorage</code> (<code>theme</code>)</td><td>Persisted</td></tr>
+    </tbody>
+  </table>
+  <p>Data refresh: Manual "Refresh Data" button or automatic on login/token change.</p>
+</section>
+
+<!-- 7. Auth -->
+<section id="auth">
+  <h2><span class="section-num">7</span> Authentication & Authorization</h2>
+
+  <h3>Authentication Flow</h3>
+  <ol class="steps">
+    <li>User enters <strong>Alias Email</strong> + <strong>Password</strong> on Login page</li>
+    <li><code>SharePointService.getUserByAliasEmail()</code> queries the Member List</li>
+    <li>Password verified against <code>PasswordHash</code> field using <code>bcryptjs</code></li>
+    <li>On success, user object stored in <code>sessionStorage</code></li>
+  </ol>
+
+  <h3>Role-Based Access Control (RBAC)</h3>
+  <table>
+    <thead><tr><th>Role</th><th>Permissions</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-red">Admin</span></td><td>All actions (full access)</td></tr>
+      <tr><td><span class="badge badge-purple">App Owner</span></td><td>All actions (same as Admin)</td></tr>
+      <tr><td><span class="badge badge-blue">User</span></td><td><code>view_dashboard</code> only</td></tr>
+    </tbody>
+  </table>
+  <p>Permissions defined in <code>types.ts</code> &rarr; <code>ROLE_PERMISSIONS</code>. UI checks <code>hasPermission(user, action)</code> or <code>hasAdminAccess(user)</code>.</p>
+
+  <h3>Token Management</h3>
+  <ul>
+    <li>Graph API tokens expire after ~60 minutes (Azure AD default)</li>
+    <li>App warns at 45 minutes via animated truck banner</li>
+    <li>Token shared across users via Cloudflare Worker KV</li>
+    <li>Any user can update the token; it auto-syncs to all sessions within 5 minutes</li>
+  </ul>
+</section>
+
+<!-- 8. Cloudflare -->
+<section id="cloudflare">
+  <h2><span class="section-num">8</span> Cloudflare Worker</h2>
+  <p><strong>Worker name:</strong> <code>stock-take-token-sync</code><br>
+  <strong>URL:</strong> <code>https://stock-take-token-sync.f6v9zfjpcs.workers.dev/</code></p>
+
+  <h3>Endpoints</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-green">GET</span></td><td><code>/</code></td><td>Return stored Graph API token from KV</td></tr>
+      <tr><td><span class="badge badge-blue">POST</span></td><td><code>/</code></td><td>Store new Graph API token to KV</td></tr>
+      <tr><td><span class="badge badge-blue">POST</span></td><td><code>/image-proxy</code></td><td>Proxy SharePoint list attachment images (requires <code>X-SP-Cookie</code> header)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>KV Namespace</h3>
+  <ul>
+    <li><strong>Binding:</strong> <code>TOKEN_STORE</code></li>
+    <li><strong>Key:</strong> <code>graph_token</code></li>
+    <li>CORS enabled for all origins</li>
+  </ul>
+  <p>Source: <code>cloudflare-worker/worker.js</code></p>
+</section>
+
+<!-- 9. Schedule Algorithm -->
+<section id="schedule-algo">
+  <h2><span class="section-num">9</span> Schedule Generation Algorithm</h2>
+  <p>Located in <code>utils/scheduleGeneration.ts</code>:</p>
+
+  <ol class="steps">
+    <li><strong>Filter pool</strong> &mdash; by region, district, MTR status; only <code>Unplanned</code> shops</li>
+    <li><strong>Start from given date</strong> &mdash; skip to next working day if needed</li>
+    <li><strong>Assign shops</strong> &mdash; N shops per day (default 9), cycling through groups (default 3: A/B/C)</li>
+    <li><strong>Skip non-working days</strong> &mdash; weekends (Sat/Sun) and HK public holidays (2025&ndash;2028)</li>
+    <li><strong>K-means clustering</strong> &mdash; geographic grouping so shops in same group are geographically close</li>
+  </ol>
+
+  <h3>Reschedule Pool</h3>
+  <div class="card info">
+    <div class="card-label">Pool Entry Criteria</div>
+    Shops enter the pool when: <code>status === 'Rescheduled'</code> AND <code>scheduledDate</code> is empty.<br>
+    Pool generation uses the same algorithm but writes to separate state (<code>poolGeneratedResult</code>).
+  </div>
+</section>
+
+<!-- 10. AMap -->
+<section id="amap">
+  <h2><span class="section-num">10</span> Map Integration (AMap)</h2>
+  <table>
+    <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td><strong>API</strong></td><td>AMap JS API v2</td></tr>
+      <tr><td><strong>Coordinate system</strong></td><td>GCJ-02 (Chinese standard); WGS-84 input converted via <code>utils/coordTransform.ts</code></td></tr>
+      <tr><td><strong>Loading</strong></td><td><code>utils/loadAMap.ts</code> polls every 50ms with 10s timeout</td></tr>
+      <tr><td><strong>Hook</strong></td><td><code>useAMap()</code> &rarr; <code>{ amap, loading, error }</code></td></tr>
+      <tr><td><strong>Performance</strong></td><td>Batched marker creation (80/frame), DOM class toggling, 2D only</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Mobile Map (screens &le;640px)</h3>
+  <p>Renders <code>MobileMapView</code> with:</p>
+  <ul>
+    <li>Group selector dropdown</li>
+    <li>Today's schedule filter</li>
+    <li>GPS geolocation (on-demand)</li>
+    <li>Haversine distance calculation</li>
+    <li>Walking/transit route planning via AMap plugins (<code>AMap.Walking</code>, <code>AMap.Transfer</code>)</li>
+  </ul>
+</section>
+
+<!-- 11. Known Issues -->
+<section id="known-issues">
+  <h2><span class="section-num">11</span> Known Operational Issues</h2>
+
+  <div class="card warning">
+    <div class="card-label">Token Expiry</div>
+    <strong>Symptom:</strong> Animated truck banner appears; API calls return 401<br>
+    <strong>Resolution:</strong> Any admin goes to <a href="https://developer.microsoft.com/en-us/graph/graph-explorer" target="_blank">Graph Explorer</a>, signs in, copies token, pastes in Settings page<br>
+    <strong>Auto-sync:</strong> New token broadcasts to all sessions via Cloudflare KV within 5 minutes
+  </div>
+
+  <div class="card danger">
+    <div class="card-label">SharePoint $orderby on Non-Indexed Columns</div>
+    <strong>Symptom:</strong> Empty data or 400 error from Graph API<br>
+    <strong>Rule:</strong> NEVER use <code>$orderby=fields/&lt;Column&gt;</code> unless that column is indexed in SharePoint<br>
+    <strong>Workaround:</strong> Sort client-side using Ant Design table <code>defaultSortOrder</code>
+  </div>
+
+  <div class="card warning">
+    <div class="card-label">SharePoint 999-Item Limit</div>
+    <strong>Symptom:</strong> Missing data when list has &gt;999 items<br>
+    <strong>Resolution:</strong> Inventory fetch uses <code>@odata.nextLink</code> pagination (already implemented)
+  </div>
+
+  <div class="card danger">
+    <div class="card-label">Linter Hook File Clearing</div>
+    <strong>Symptom:</strong> File content becomes 0 bytes after Edit tool<br>
+    <strong>Affected files:</strong> <code>types.ts</code>, <code>services/SharePointService.ts</code><br>
+    <strong>Workaround:</strong> Use Write tool with full content; restore from <code>git show HEAD:&lt;file&gt;</code> if wiped
+  </div>
+</section>
+
+<!-- 12. Monitoring -->
+<section id="monitoring">
+  <h2><span class="section-num">12</span> Monitoring & Debugging</h2>
+
+  <h3>Browser Console</h3>
+  <p>The app logs with emoji prefixes:</p>
+  <table>
+    <thead><tr><th>Prefix</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>&#10004;</code></td><td>Success</td></tr>
+      <tr><td><code>&#10008;</code></td><td>Error</td></tr>
+      <tr><td><code>&#128260;</code></td><td>Sync/update operation</td></tr>
+      <tr><td><code>[Inventory]</code>, <code>[TimeCard]</code></td><td>Module-scoped logs</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Error Boundary</h3>
+  <p><code>ErrorBoundary.tsx</code> catches React rendering errors and shows a recovery UI.</p>
+
+  <h3>Error Reports</h3>
+  <p>Users can submit bug reports via the in-app Error Report modal &rarr; saved to the Error Log SharePoint list.</p>
+
+  <h3>Health Check</h3>
+  <ol class="steps">
+    <li>Open Settings page &rarr; check "SharePoint Connection" status indicator</li>
+    <li>If <span class="badge badge-red">Red</span>: token expired or network issue</li>
+    <li>If <span class="badge badge-green">Green</span>: Graph API connection healthy</li>
+  </ol>
+</section>
+
+<!-- 13. Security -->
+<section id="security">
+  <h2><span class="section-num">13</span> Security Considerations</h2>
+  <table>
+    <thead><tr><th>Area</th><th>Implementation</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Password storage</strong></td><td>bcryptjs hash (never stored in plaintext)</td></tr>
+      <tr><td><strong>OData injection</strong></td><td><code>sanitizeFilterValue()</code> escapes single quotes</td></tr>
+      <tr><td><strong>XSS</strong></td><td>React's default JSX escaping; no <code>dangerouslySetInnerHTML</code></td></tr>
+      <tr><td><strong>Token storage</strong></td><td><code>localStorage</code> (client-only); shared via Cloudflare KV (no auth &mdash; internal use)</td></tr>
+      <tr><td><strong>CORS</strong></td><td>Cloudflare Worker allows <code>*</code> origin (acceptable for internal tool)</td></tr>
+      <tr><td><strong>Secrets in code</strong></td><td>SharePoint list IDs in <code>config.ts</code> (not secret); tokens never committed</td></tr>
+    </tbody>
+  </table>
+
+  <div class="card danger">
+    <div class="card-label">Security Risks to Monitor</div>
+    <ul style="margin-bottom:0">
+      <li>Cloudflare Worker has no authentication &mdash; anyone with the URL can read/write the token</li>
+      <li>Graph API token grants <code>Sites.ReadWrite.All</code> &mdash; broad SharePoint access</li>
+      <li>No CSRF protection (SPA with token-based auth)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 14. Dependencies -->
+<section id="dependencies">
+  <h2><span class="section-num">14</span> Dependency Management</h2>
+
+  <h3>Key Dependencies</h3>
+  <table>
+    <thead><tr><th>Package</th><th>Version</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>react</code></td><td>^18.3.1</td><td>UI framework</td></tr>
+      <tr><td><code>antd</code></td><td>^5.24.1</td><td>Component library</td></tr>
+      <tr><td><code>tailwindcss</code></td><td>^3.4.17</td><td>Utility CSS</td></tr>
+      <tr><td><code>@fullcalendar/react</code></td><td>^6.1.20</td><td>Calendar view</td></tr>
+      <tr><td><code>exceljs</code></td><td>^4.4.0</td><td>Excel export</td></tr>
+      <tr><td><code>jspdf</code> + <code>jspdf-autotable</code></td><td>^4.1.0 / ^5.0.7</td><td>PDF export</td></tr>
+      <tr><td><code>bcryptjs</code></td><td>^3.0.3</td><td>Password hashing</td></tr>
+      <tr><td><code>dayjs</code></td><td>^1.11.13</td><td>Date manipulation</td></tr>
+      <tr><td><code>recharts</code></td><td>^3.8.1</td><td>Charts in Reports</td></tr>
+      <tr><td><code>axios</code></td><td>^1.7.9</td><td>HTTP client (limited use)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Updating Dependencies</h3>
+  <pre><code><span class="cmd">npm outdated</span>              <span class="comment"># Check for updates</span>
+<span class="cmd">npm update</span>                <span class="comment"># Update within semver range</span>
+<span class="cmd">npm install</span> &lt;pkg&gt;@latest  <span class="comment"># Major version upgrade (test thoroughly)</span></code></pre>
+  <p>Always run <code>npm run build</code> after dependency updates to verify no breaking changes.</p>
+</section>
+
+<!-- 15. Add SP List -->
+<section id="add-sp-list">
+  <h2><span class="section-num">15</span> Adding a New SharePoint List</h2>
+  <ol class="steps">
+    <li>Create the list in SharePoint Online</li>
+    <li>Add list ID to <code>constants/config.ts</code> under <code>SHAREPOINT_CONFIG</code></li>
+    <li>Add env var override (<code>VITE_*_LIST_ID</code>) to <code>.env.example</code></li>
+    <li>Add API URL getter to <code>API_URLS</code> in <code>constants/config.ts</code></li>
+    <li>Add field mappings to <code>constants.ts</code> (new <code>*_FIELDS</code> object)</li>
+    <li>Add fetch logic in <code>App.tsx</code> (inside <code>fetchAllData</code>)</li>
+    <li>Create TypeScript interface in <code>types.ts</code></li>
+    <li>Add service methods in <code>SharePointService.ts</code></li>
+  </ol>
+</section>
+
+<!-- 16. Add Page -->
+<section id="add-page">
+  <h2><span class="section-num">16</span> Adding a New Page/View</h2>
+  <ol class="steps">
+    <li>Add enum value to <code>View</code> in <code>types.ts</code></li>
+    <li>Create component in <code>components/</code></li>
+    <li>Add <code>case</code> to <code>renderContent()</code> in <code>App.tsx</code></li>
+    <li>Add nav item in <code>Layout.tsx</code></li>
+    <li>Import and wire props in <code>App.tsx</code></li>
+  </ol>
+</section>
+
+<!-- 17. Holidays -->
+<section id="holidays">
+  <h2><span class="section-num">17</span> Holiday Data Maintenance</h2>
+  <p>Public holidays are hardcoded in <code>constants/holidays.ts</code> (2025&ndash;2028).</p>
+
+  <div class="card warning">
+    <div class="card-label">Annual Task</div>
+    Before each year, add the next year's holidays from <a href="https://www.gov.hk/en/about/abouthk/holiday/" target="_blank">gov.hk</a>.
+  </div>
+
+  <p>Format: <code>'YYYY-MM-DD'</code> strings in the <code>HK_HOLIDAYS</code> record, keyed by year number.</p>
+</section>
+
+<!-- 18. Troubleshooting -->
+<section id="troubleshooting">
+  <h2><span class="section-num">18</span> Troubleshooting Quick Reference</h2>
+  <table>
+    <thead><tr><th>Problem</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>No data loads</td><td>Token expired</td><td>Update token in Settings</td></tr>
+      <tr><td>401 errors in console</td><td>Token expired</td><td>Update token in Settings</td></tr>
+      <tr><td>Map doesn't render</td><td>Missing AMap API key</td><td>Add <code>VITE_AMAP_API_KEY</code> to <code>.env</code></td></tr>
+      <tr><td>Inventory missing items</td><td>Pagination issue</td><td>Check <code>@odata.nextLink</code> handling</td></tr>
+      <tr><td>Schedule skips a day</td><td>Day is holiday or weekend</td><td>Check <code>constants/holidays.ts</code></td></tr>
+      <tr><td>Build fails</td><td>Type errors</td><td>Run <code>npm run tsc -- --noEmit</code> to see errors</td></tr>
+      <tr><td>PWA not updating</td><td>Service worker cached</td><td>Hard refresh or clear site data</td></tr>
+      <tr><td>Token not syncing</td><td>Cloudflare Worker down</td><td>Check Worker status at Cloudflare dashboard</td></tr>
+      <tr><td>Empty Time Card page</td><td><code>$orderby</code> on non-indexed column</td><td>Ensure no server-side sort in Graph URL</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.sidebar nav a');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(link => link.classList.remove('active'));
+      const active = document.querySelector(`.sidebar nav a[href="#${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(section => observer.observe(section));
+
+navLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.remove('open');
+  });
+});
+</script>
+
+</body>
+</html>

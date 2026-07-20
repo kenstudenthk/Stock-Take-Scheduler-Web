@@ -211,6 +211,20 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Added `selectedDate` state (Dayjs, default today) in `MobileMapView.tsx`; passed to `TopShopPanel` as `DatePicker`; replaced `dayjs()` in both useMemos with `selectedDate.format('YYYY-MM-DD')`
 - **Rule**: ALWAYS use a stateful `selectedDate` (not `dayjs()`) in MobileMapView date filters; NEVER hardcode `dayjs()` as a filter value
 
+#### ⚠️ Known Issue: kmeans.ts — Non-Deterministic Init, Duplicate Holiday Table, UTC Date Bug
+- **Date**: 2026-07-20
+- **Problem**: (1) `performKmeans` seeded centroids with `Math.random()` — same input produced different schedules on every run. (2) `kmeans.ts` had its own hardcoded `HK_PUBLIC_HOLIDAYS_2026` table plus `isBusinessDay`/`nextBusinessDay`, duplicating `constants/holidays.ts` and destined to expire in 2027. (3) `generateSchedulesByDate` took a `Date` and formatted via `toISOString()` (UTC) — a DatePicker Date (HK local midnight) shifted the schedule back one day. (4) Shops with missing coords defaulted to `(0,0)`, dragging centroids into the Atlantic.
+- **Root Cause**: File was ported from a Python Streamlit prototype and never aligned with the app's dayjs/holidays utilities.
+- **Fix**: Deterministic centroid init (sort by lat+lng, pick k evenly spaced); removed the local holiday table and date helpers in favour of `isWorkingDay`/`getNextWorkingDay` from `utils/scheduleGeneration.ts`; `ScheduleParams.startDate` changed to a `YYYY-MM-DD` string handled with dayjs; shops without valid coords are filtered out with a console warning before clustering.
+- **Rule**: NEVER use `Math.random()` in schedule generation (results must be reproducible); NEVER duplicate holiday/working-day logic — always import from `utils/scheduleGeneration.ts`; ALWAYS pass dates as `YYYY-MM-DD` strings, never `Date` + `toISOString()`
+
+#### ⚠️ Known Issue: Generator — Schedule Generation Ignored Coordinates (kmeans wired in)
+- **Date**: 2026-07-20
+- **Problem**: `handleGenerate` used sequential `generateSchedule` (SharePoint return order), so same-day groups could span HK Island, Kowloon, and NT despite all shops having lat/lng. `kmeans.ts` existed but had zero importers.
+- **Root Cause**: The geo pipeline was ported from a Python prototype but never wired into the Generator; the T1-6 refactor extracted only the non-geo path.
+- **Fix**: Added `generateGeoSchedule()` in `utils/kmeans.ts` — runs `performKmeans(pool, groupsPerDay)` → `generateSchedulesByDate` → flattens to the same flat `Shop[]` shape (`scheduledDate` + `groupId`) the preview table and `saveToSharePoint` consume. `generateSchedulesByDate` reworked to per-cluster queues: each group pulls from a single cluster (largest-remaining first) so groups never mix clusters at boundaries. Shops with invalid coords are appended sequentially after the geo days so none are dropped. `Generator.tsx` `handleGenerate` now calls `generateGeoSchedule`; pool generation (`handleGeneratePool`) still uses sequential `generateSchedule`.
+- **Rule**: ALWAYS use `generateGeoSchedule()` for main schedule generation; NEVER let a day-group span multiple K-means clusters; ALWAYS append coordless shops instead of silently dropping them
+
 ---
 
 ## Development Commands

@@ -1,25 +1,53 @@
+import dayjs from 'dayjs';
 import { Shop, ShopCluster } from '../types';
+import { getNextWorkingDay, generateSchedule } from './scheduleGeneration';
 
 // ============================================================================
 // 🎯 K-means 聚類演算法
 // ============================================================================
+
+/**
+ * Returns true if the shop has usable coordinates.
+ * (0, 0) is treated as missing — it is in the Gulf of Guinea, not HK/Macau.
+ */
+const hasValidCoords = (shop: Shop): boolean =>
+  Number.isFinite(shop.latitude) &&
+  Number.isFinite(shop.longitude) &&
+  !(shop.latitude === 0 && shop.longitude === 0);
 
 export const performKmeans = (
   shops: Shop[],
   k: number,
   maxIterations: number = 10
 ): ShopCluster[] => {
-  if (shops.length === 0 || k <= 0) {
+  // Shops without coordinates would all collapse into a phantom (0,0) cluster
+  // and drag centroids far away from HK — exclude them up front.
+  const validShops = shops.filter(hasValidCoords);
+  const skipped = shops.length - validShops.length;
+  if (skipped > 0) {
+    console.warn(`⚠️ K-means: skipped ${skipped} shop(s) with missing coordinates`);
+  }
+
+  if (validShops.length === 0 || k <= 0) {
     return [];
   }
 
   const startTime = performance.now();
 
-  // ✅ Step 1: Initialize k centroids randomly
+  // ✅ Step 1: Deterministic centroid initialization.
+  // Sort by (lat + lng) and pick k evenly spaced shops so the same input
+  // always produces the same schedule, with well-spread starting centroids.
+  const sortedByCoord = [...validShops].sort(
+    (a, b) => a.latitude + a.longitude - (b.latitude + b.longitude)
+  );
   const centroids: Array<[number, number]> = [];
   for (let i = 0; i < k; i++) {
-    const randomShop = shops[Math.floor(Math.random() * shops.length)];
-    centroids.push([randomShop.latitude || 0, randomShop.longitude || 0]);
+    const pickIndex = Math.min(
+      Math.floor((i * sortedByCoord.length) / k),
+      sortedByCoord.length - 1
+    );
+    const seedShop = sortedByCoord[pickIndex];
+    centroids.push([seedShop.latitude, seedShop.longitude]);
   }
 
   let iterations = 0;
@@ -29,17 +57,14 @@ export const performKmeans = (
   while (iterations < maxIterations && !converged) {
     const clusters: Array<Shop[]> = centroids.map(() => []);
 
-    shops.forEach(shop => {
+    validShops.forEach(shop => {
       let minDistance = Infinity;
       let closestCluster = 0;
 
-      const shopLat = shop.latitude || 0;
-      const shopLng = shop.longitude || 0;
-
       for (let i = 0; i < centroids.length; i++) {
         const distance = calculateDistance(
-          shopLat,
-          shopLng,
+          shop.latitude,
+          shop.longitude,
           centroids[i][0],
           centroids[i][1]
         );
@@ -60,11 +85,9 @@ export const performKmeans = (
       }
 
       const avgLat =
-        cluster.reduce((sum, shop) => sum + (shop.latitude || 0), 0) /
-        cluster.length;
+        cluster.reduce((sum, shop) => sum + shop.latitude, 0) / cluster.length;
       const avgLng =
-        cluster.reduce((sum, shop) => sum + (shop.longitude || 0), 0) /
-        cluster.length;
+        cluster.reduce((sum, shop) => sum + shop.longitude, 0) / cluster.length;
 
       return [avgLat, avgLng];
     });
@@ -77,17 +100,14 @@ export const performKmeans = (
   // ✅ Step 3: Final assignment
   const clusterShopsMap: Array<Shop[]> = centroids.map(() => []);
 
-  shops.forEach(shop => {
+  validShops.forEach(shop => {
     let minDistance = Infinity;
     let closestCluster = 0;
 
-    const shopLat = shop.latitude || 0;
-    const shopLng = shop.longitude || 0;
-
     for (let i = 0; i < centroids.length; i++) {
       const distance = calculateDistance(
-        shopLat,
-        shopLng,
+        shop.latitude,
+        shop.longitude,
         centroids[i][0],
         centroids[i][1]
       );
@@ -105,7 +125,7 @@ export const performKmeans = (
     .map((centroid, index) => {
       const clusterShops = clusterShopsMap[index];
       const groupLabel = String.fromCharCode(65 + index) as 'A' | 'B' | 'C' | 'D' | 'E';
-      
+
       return {
         groupId: groupLabel,
         groupLabel: groupLabel,
@@ -125,43 +145,14 @@ export const performKmeans = (
 };
 
 // ============================================================================
-// 🗓️ 日期與商業日期檢查
-// ============================================================================
-
-const HK_PUBLIC_HOLIDAYS_2026 = [
-  '2026-01-01', '2026-02-17', '2026-02-18', '2026-02-19',
-  '2026-04-04', '2026-04-05', '2026-05-01', '2026-05-15',
-  '2026-06-10', '2026-07-01', '2026-09-11', '2026-10-11',
-  '2026-12-25', '2026-12-26',
-];
-
-export function isBusinessDay(date: Date): boolean {
-  const day = date.getDay();
-  const dateStr = date.toISOString().split('T')[0];
-  
-  if (day === 0 || day === 6) return false;
-  if (HK_PUBLIC_HOLIDAYS_2026.includes(dateStr)) return false;
-  
-  return true;
-}
-
-export function nextBusinessDay(date: Date): Date {
-  let d = new Date(date);
-  d.setDate(d.getDate() + 1);
-  
-  while (!isBusinessDay(d)) {
-    d.setDate(d.getDate() + 1);
-  }
-  
-  return d;
-}
-
-// ============================================================================
 // 📅 日期分配邏輯 - 完整版（關鍵邏輯）
 // ============================================================================
+// Working-day rules (weekends + public holidays) come from
+// scheduleGeneration.ts / constants/holidays.ts — the single source of truth.
 
 export interface ScheduleParams {
-  startDate: Date;
+  /** Start date as YYYY-MM-DD. Kept as a string to avoid Date/UTC off-by-one issues. */
+  startDate: string;
   shopsPerDay: number;
   groupsPerDay: number;
 }
@@ -191,63 +182,53 @@ export const generateSchedulesByDate = (
 ): DaySchedule[] => {
   const { startDate, shopsPerDay, groupsPerDay } = params;
   const schedules: DaySchedule[] = [];
-  
+
   if (clusters.length === 0) return [];
-  
-  // ===== 展平所有店舖到一個列表 =====
-  const allShops: Array<Shop & { clusterLabel: string }> = [];
-  
-  clusters.forEach((cluster) => {
-    cluster.shops.forEach((shop) => {
-      allShops.push({
-        ...shop,
-        clusterLabel: cluster.groupLabel,
-      });
-    });
-  });
-  
-  const totalShops = allShops.length;
-  let shopIndex = 0;
-  let currentDate = new Date(startDate);
-  
+
+  // ===== 每個 cluster 一條隊列（組不跨 cluster，保持地理純度）=====
+  const queues = clusters.map((cluster) => ({
+    label: cluster.groupLabel,
+    shops: [...cluster.shops],
+  }));
+
+  const totalShops = queues.reduce((sum, q) => sum + q.shops.length, 0);
+  let remaining = totalShops;
+  let currentDate = getNextWorkingDay(dayjs(startDate));
+
   // ===== 逐日分配 =====
-  while (shopIndex < totalShops) {
-    // 跳過非商業日（週末 & 公假）
-    while (!isBusinessDay(currentDate)) {
-      currentDate = nextBusinessDay(currentDate);
-    }
-    
-    const dateStr = currentDate.toISOString().split('T')[0];
-    const dayOfWeek = currentDate.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      timeZone: 'Asia/Hong_Kong'
-    });
-    
+  while (remaining > 0) {
+    const dateStr = currentDate.format('YYYY-MM-DD');
+    const dayOfWeek = currentDate.format('dddd');
+
     const groups: DaySchedule['groups'] = [];
-    const shopsPerGroup = shopsPerDay / groupsPerDay;
-    
-    // ===== 該日內建立 N 個小組 =====
-    for (let groupNo = 1; groupNo <= groupsPerDay; groupNo++) {
-      const groupShops: Array<Shop & { clusterLabel: string }> = [];
-      
-      for (let i = 0; i < shopsPerGroup && shopIndex < totalShops; i++) {
-        groupShops.push(allShops[shopIndex++]);
-      }
-      
-      if (groupShops.length === 0) break;
-      
+    const shopsPerGroup = Math.ceil(shopsPerDay / groupsPerDay);
+
+    // ===== 該日內建立 N 個小組，每組只從一個 cluster 取店 =====
+    for (let groupNo = 1; groupNo <= groupsPerDay && remaining > 0; groupNo++) {
+      // Pull from the cluster with the most shops left (deterministic on ties)
+      const queue = queues.reduce((a, b) =>
+        b.shops.length > a.shops.length ? b : a
+      );
+      if (queue.shops.length === 0) break;
+
+      const take = Math.min(shopsPerGroup, queue.shops.length);
+      const groupShops: Array<Shop & { clusterLabel: string }> = queue.shops
+        .splice(0, take)
+        .map((shop) => ({ ...shop, clusterLabel: queue.label }));
+      remaining -= take;
+
       const groupDistance = calculateGroupDistance(groupShops);
       const groupTime = groupShops.length * 15;
-      
+
       groups.push({
         groupNo,
-        clusterLabel: groupShops[0]?.clusterLabel || '',
+        clusterLabel: queue.label,
         shops: groupShops,
         groupDistance,
         groupTime,
       });
     }
-    
+
     if (groups.length > 0) {
       schedules.push({
         date: dateStr,
@@ -258,12 +239,12 @@ export const generateSchedulesByDate = (
         dayTotalTime: groups.reduce((sum, g) => sum + g.groupTime, 0),
       });
     }
-    
-    currentDate.setDate(currentDate.getDate() + 1);
+
+    currentDate = getNextWorkingDay(currentDate.add(1, 'day'));
   }
-  
+
   console.log(`✅ Schedule generated: ${schedules.length} business days, ${totalShops} shops`);
-  
+
   return schedules;
 };
 
@@ -273,18 +254,18 @@ export const generateSchedulesByDate = (
 
 function calculateGroupDistance(shops: Array<Shop & { clusterLabel?: string }>): number {
   if (shops.length <= 1) return 0;
-  
+
   let totalDistance = 0;
   for (let i = 0; i < shops.length - 1; i++) {
-    const lat1 = shops[i].latitude || 0;
-    const lng1 = shops[i].longitude || 0;
-    const lat2 = shops[i + 1].latitude || 0;
-    const lng2 = shops[i + 1].longitude || 0;
-    
-    const dist = calculateDistance(lat1, lng1, lat2, lng2);
+    const dist = calculateDistance(
+      shops[i].latitude,
+      shops[i].longitude,
+      shops[i + 1].latitude,
+      shops[i + 1].longitude
+    );
     totalDistance += dist;
   }
-  
+
   return totalDistance;
 }
 
@@ -312,6 +293,78 @@ export const toRad = (deg: number): number => (deg * Math.PI) / 180;
 // ============================================================================
 // 🔍 輔助函數
 // ============================================================================
+
+// ============================================================================
+// 🔗 Generator 對接 — 地理排程一條龍
+// ============================================================================
+
+export interface GeoScheduleParams {
+  pool: Shop[];
+  /** YYYY-MM-DD */
+  startDate: string;
+  shopsPerDay: number;
+  groupsPerDay: number;
+}
+
+/**
+ * Geo-aware drop-in replacement for generateSchedule():
+ * 1. K-means clusters the pool by lat/lng (k = groupsPerDay)
+ * 2. Assigns working-day dates cluster-by-cluster so same-day groups stay
+ *    geographically close
+ * 3. Flattens back to the flat Shop[] shape (scheduledDate + groupId) that
+ *    the Generator preview table and saveToSharePoint already consume
+ *
+ * Shops without valid coordinates are skipped by K-means; they are appended
+ * sequentially after the geo-scheduled days so no shop is silently dropped.
+ */
+export function generateGeoSchedule(params: GeoScheduleParams): Shop[] {
+  const { pool, startDate, shopsPerDay, groupsPerDay } = params;
+
+  const clusters = performKmeans(pool, groupsPerDay);
+  const daySchedules = generateSchedulesByDate(clusters, {
+    startDate,
+    shopsPerDay,
+    groupsPerDay,
+  });
+
+  const scheduled: Shop[] = [];
+  daySchedules.forEach((day) => {
+    day.groups.forEach((group) => {
+      group.shops.forEach((shop) => {
+        const { clusterLabel: _clusterLabel, ...rest } =
+          shop as Shop & { clusterLabel?: string };
+        scheduled.push({
+          ...rest,
+          scheduledDate: day.date,
+          groupId: group.groupNo,
+        });
+      });
+    });
+  });
+
+  // Shops performKmeans skipped (missing coords) still need dates —
+  // continue sequentially from the day after the last geo-scheduled date.
+  const scheduledIds = new Set(scheduled.map((s) => s.id));
+  const leftovers = pool.filter((s) => !scheduledIds.has(s.id));
+  if (leftovers.length > 0) {
+    const lastDate = scheduled.length > 0
+      ? scheduled[scheduled.length - 1].scheduledDate
+      : undefined;
+    const resumeDate = lastDate
+      ? dayjs(lastDate).add(1, 'day').format('YYYY-MM-DD')
+      : startDate;
+    scheduled.push(
+      ...generateSchedule({
+        pool: leftovers,
+        startDate: resumeDate,
+        shopsPerDay,
+        groupsPerDay,
+      })
+    );
+  }
+
+  return scheduled;
+}
 
 const hasConverged = (
   oldCentroids: Array<[number, number]>,

@@ -64,6 +64,7 @@ import {
   formatBatchResult,
 } from "../utils/batchOperations";
 import { isWorkingDay, getNextWorkingDay, filterSchedulePool, generateSchedule } from "../utils/scheduleGeneration";
+import { generateGeoSchedule } from "../utils/kmeans";
 import StatCard from "./StatCard";
 
 dayjs.extend(isBetween);
@@ -551,8 +552,9 @@ export const Generator: React.FC<{
         return;
       }
 
-      // Generate schedule using shared utility
-      const scheduled = generateSchedule({
+      // Geo-aware generation: K-means clusters by lat/lng so same-day
+      // groups stay geographically close; coordless shops appended at end
+      const scheduled = generateGeoSchedule({
         pool,
         startDate,
         shopsPerDay,

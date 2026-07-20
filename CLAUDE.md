@@ -225,6 +225,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Added `generateGeoSchedule()` in `utils/kmeans.ts` — runs `performKmeans(pool, groupsPerDay)` → `generateSchedulesByDate` → flattens to the same flat `Shop[]` shape (`scheduledDate` + `groupId`) the preview table and `saveToSharePoint` consume. `generateSchedulesByDate` reworked to per-cluster queues: each group pulls from a single cluster (largest-remaining first) so groups never mix clusters at boundaries. Shops with invalid coords are appended sequentially after the geo days so none are dropped. `Generator.tsx` `handleGenerate` now calls `generateGeoSchedule`; pool generation (`handleGeneratePool`) still uses sequential `generateSchedule`.
 - **Rule**: ALWAYS use `generateGeoSchedule()` for main schedule generation; NEVER let a day-group span multiple K-means clusters; ALWAYS append coordless shops instead of silently dropping them
 
+#### ⚠️ Known Issue: kmeans.ts — Within-Cluster Order Was SharePoint Order (Groups Not Close)
+- **Date**: 2026-07-20
+- **Problem**: After wiring K-means into the Generator, most groups were fine but some contained far-apart shops in different districts (real data showed groups spanning ~11 km)
+- **Root Cause**: With k = groupsPerDay there are only a few large clusters, and shops INSIDE each cluster kept SharePoint return order. Slicing an unordered queue can pair shops from opposite ends of a cluster into one group
+- **Fix**: Added `orderByNearestNeighbor()` in `utils/kmeans.ts` — each cluster queue is ordered as a greedy nearest-neighbor path (start at westernmost shop, deterministic tie-break), so consecutive slices are geographically contiguous. Repro test: interleaved 20-shop line, worst in-group distance dropped 11.3 km → 3.1 km
+- **Rule**: ALWAYS order cluster queues with `orderByNearestNeighbor()` before slicing into day-groups; NEVER slice shops into groups in SharePoint return order
+
 ---
 
 ## Development Commands

@@ -186,9 +186,11 @@ export const generateSchedulesByDate = (
   if (clusters.length === 0) return [];
 
   // ===== 每個 cluster 一條隊列（組不跨 cluster，保持地理純度）=====
+  // Nearest-neighbor ordering turns each cluster into a contiguous
+  // geographic path, so consecutive slices (= day groups) stay close.
   const queues = clusters.map((cluster) => ({
     label: cluster.groupLabel,
-    shops: [...cluster.shops],
+    shops: orderByNearestNeighbor(cluster.shops),
   }));
 
   const totalShops = queues.reduce((sum, q) => sum + q.shops.length, 0);
@@ -251,6 +253,50 @@ export const generateSchedulesByDate = (
 // ============================================================================
 // 📍 距離計算
 // ============================================================================
+
+/**
+ * Orders shops into a greedy nearest-neighbor path: start from the
+ * westernmost shop (min lng, tie-broken by min lat — deterministic),
+ * then repeatedly walk to the closest unvisited shop. Consecutive
+ * slices of the result are geographically contiguous.
+ */
+function orderByNearestNeighbor(shops: Shop[]): Shop[] {
+  if (shops.length <= 2) return [...shops];
+
+  const remaining = [...shops];
+  let startIdx = 0;
+  for (let i = 1; i < remaining.length; i++) {
+    if (
+      remaining[i].longitude < remaining[startIdx].longitude ||
+      (remaining[i].longitude === remaining[startIdx].longitude &&
+        remaining[i].latitude < remaining[startIdx].latitude)
+    ) {
+      startIdx = i;
+    }
+  }
+
+  const path: Shop[] = remaining.splice(startIdx, 1);
+  while (remaining.length > 0) {
+    const current = path[path.length - 1];
+    let nearestIdx = 0;
+    let nearestDist = Infinity;
+    for (let i = 0; i < remaining.length; i++) {
+      const d = calculateDistance(
+        current.latitude,
+        current.longitude,
+        remaining[i].latitude,
+        remaining[i].longitude
+      );
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearestIdx = i;
+      }
+    }
+    path.push(remaining.splice(nearestIdx, 1)[0]);
+  }
+
+  return path;
+}
 
 function calculateGroupDistance(shops: Array<Shop & { clusterLabel?: string }>): number {
   if (shops.length <= 1) return 0;

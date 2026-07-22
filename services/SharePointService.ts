@@ -98,7 +98,7 @@ class SharePointService {
     }
   }
 
-  async registerMember(data: {
+  async registerNewMember(data: {
     name: string;
     userEmail: string;
     aliasEmail: string;

@@ -44,6 +44,7 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 import { Shop, User, hasPermission, InventoryItem } from "../types";
+import { API_URLS } from "../constants/config";
 import { ShopFormModal } from "./ShopFormModal";
 import { ShopDetailModal } from "./ShopDetailModal";
 import { SP_FIELDS } from "../constants";
@@ -313,7 +314,7 @@ export const ShopList: React.FC<{
 
     try {
       const res = await fetch(
-        `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+        `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
         {
           method: "PATCH",
           headers: {

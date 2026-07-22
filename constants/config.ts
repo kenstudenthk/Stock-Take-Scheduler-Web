@@ -7,21 +7,21 @@
 export const SHAREPOINT_CONFIG = {
   siteId:
     import.meta.env.VITE_SHAREPOINT_SITE_ID ||
-    "pccw0.sharepoint.com:/sites/BonniesTeam:",
+    "pccw0.sharepoint.com:/sites/MX_Assets_Audit:",
   shopListId:
-    import.meta.env.VITE_SHOP_LIST_ID || "ce3a752e-7609-4468-81f8-8babaf503ad8",
+    import.meta.env.VITE_SHOP_LIST_ID || "142ee1aa-c0d0-4846-91f9-0b9b8a6c0e83",
   memberListId:
     import.meta.env.VITE_MEMBER_LIST_ID ||
-    "c01997f9-3589-45ff-bccc-d9b0f16d6770",
+    "5239aa9c-32a3-4372-b6ef-01f117bafb98",
   inventoryListId:
     import.meta.env.VITE_INVENTORY_LIST_ID ||
-    "2f2dff1c-8ce1-4B7B-9FF8-083A0BA1BB48",
+    "4febed7a-6b09-42c5-8ff9-9ae6331faeb2",
   errorLogListId:
     import.meta.env.VITE_ERROR_LOG_LIST_ID ||
-    "5d722abb-ab79-4fc5-b03c-099580db85ba",
+    "2bb7f712-dcaa-4b7c-aaa9-0055d32afffc",
   timeCardListId:
     import.meta.env.VITE_TIME_CARD_LIST_ID ||
-    "3e44f050-b344-4ca7-9e44-34f0be6be04e",
+    "47e29fdc-ab5b-4cce-873f-9d81a7f17cd2",
 } as const;
 
 // API Base URLs

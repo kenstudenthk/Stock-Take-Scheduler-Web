@@ -57,7 +57,7 @@ import isBetween from "dayjs/plugin/isBetween";
 import { Shop, User, hasPermission } from "../types";
 import { SP_FIELDS } from "../constants";
 import { getAllHolidays } from "../constants/holidays";
-import { GENERATOR_DEFAULTS, BATCH_CONFIG } from "../constants/config";
+import { GENERATOR_DEFAULTS, BATCH_CONFIG, API_URLS } from "../constants/config";
 import {
   executeBatch,
   BatchResult,
@@ -641,7 +641,7 @@ export const Generator: React.FC<{
         poolGeneratedResult,
         async (shop) => {
           const response = await fetch(
-            `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+            `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
             {
               method: "PATCH",
               headers: {
@@ -703,7 +703,7 @@ export const Generator: React.FC<{
         generatedResult,
         async (shop) => {
           const response = await fetch(
-            `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+            `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
             {
               method: "PATCH",
               headers: {
@@ -800,7 +800,7 @@ export const Generator: React.FC<{
         plannedShops,
         async (shop) => {
           const response = await fetch(
-            `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+            `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
             {
               method: "PATCH",
               headers: {
@@ -883,7 +883,7 @@ export const Generator: React.FC<{
             targets,
             async (shop) => {
               const response = await fetch(
-                `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+                `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
                 {
                   method: "PATCH",
                   headers: {

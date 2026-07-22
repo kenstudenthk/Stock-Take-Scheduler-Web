@@ -24,6 +24,7 @@ import {
   ShopOutlined,
 } from "@ant-design/icons";
 import { Shop, User, hasPermission } from "../types";
+import { API_URLS } from "../constants/config";
 import { SP_FIELDS } from "../constants";
 
 const { Title, Text } = Typography;
@@ -157,8 +158,8 @@ export const ShopFormModal: React.FC<Props> = ({
     setLoading(true);
     const isEdit = !!shop;
     const url = isEdit
-      ? `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`
-      : `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items`;
+      ? `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`
+      : `${API_URLS.shopList}/items`;
     const payload = {
       [SP_FIELDS.SHOP_NAME]: values.name,
       [SP_FIELDS.SHOP_CODE]: values.code,
@@ -233,7 +234,7 @@ export const ShopFormModal: React.FC<Props> = ({
       onOk: async () => {
         setLoading(true);
         try {
-          const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`;
+          const url = `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`;
           const res = await fetch(url, {
             method: "PATCH",
             headers: {

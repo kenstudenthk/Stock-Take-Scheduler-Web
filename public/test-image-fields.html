@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SPO Image Field Test</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #0f172a; color: #e2e8f0; }
+    h2 { color: #38bdf8; }
+    pre { background: #1e293b; padding: 16px; border-radius: 8px; overflow: auto; font-size: 13px; }
+    .ok { color: #4ade80; }
+    .warn { color: #fb923c; }
+    .err { color: #f87171; }
+    img { max-width: 200px; border: 2px solid #38bdf8; border-radius: 6px; margin: 8px 0; display: block; }
+    .label { color: #94a3b8; font-size: 12px; margin-top: 12px; }
+    button { background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    button:hover { background: #0369a1; }
+    input { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; padding: 8px 12px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 10px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <h2>SPO ProductImage / ProductImage2 Field Test</h2>
+  <p class="warn">Token is read automatically from localStorage (stockTakeToken). Paste a new one below only if needed.</p>
+
+  <label class="label">Override Token (optional)</label>
+  <input id="tokenInput" type="text" placeholder="Leave blank to use localStorage token" />
+
+  <label class="label">CMDB value to look up</label>
+  <input id="cmdbInput" type="text" value="043680019" />
+
+  <button onclick="runTest()">Run Test</button>
+
+  <div id="output" style="margin-top:20px;"></div>
+
+  <script>
+    const SITE = 'https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/MX_Assets_Audit:';
+    const INV_LIST = `${SITE}/lists/4febed7a-6b09-42c5-8ff9-9ae6331faeb2`;
+
+    function extractUrl(val) {
+      if (!val) return '';
+      let obj = val;
+      if (typeof val === 'string') {
+        try { obj = JSON.parse(val); } catch { return val; }
+      }
+      if (typeof obj === 'string') return obj;
+      if (obj.Url) return obj.Url;
+      if (obj.serverUrl && obj.serverRelativeUrl) return `${obj.serverUrl}${obj.serverRelativeUrl}`;
+      if (obj.url) return obj.url;
+      return '';
+    }
+
+    function out(html) {
+      document.getElementById('output').innerHTML += html;
+    }
+
+    async function runTest() {
+      document.getElementById('output').innerHTML = '';
+      const token = document.getElementById('tokenInput').value.trim()
+        || localStorage.getItem('stockTakeToken') || '';
+      const cmdb = document.getElementById('cmdbInput').value.trim();
+
+      if (!token) {
+        out(`<p class="err">❌ No token found. Paste one in the box above or log in to the app first.</p>`);
+        return;
+      }
+
+      out(`<p>🔍 Searching for CMDB = <b>${cmdb}</b>…</p>`);
+
+      const url = `${INV_LIST}/items?$expand=fields($select=CMDB,ProductImage,ProductImage2,Asset_x0020_Name,SerialNo)&$filter=fields/CMDB eq '${cmdb}'&$top=5`;
+      out(`<div class="label">Request URL:</div><pre>${url}</pre>`);
+
+      try {
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Prefer: 'HonorNonIndexedQueriesWarningMayFailOverTime',
+            ConsistencyLevel: 'eventual',
+          }
+        });
+
+        if (!res.ok) {
+          const txt = await res.text();
+          out(`<p class="err">❌ HTTP ${res.status}: ${res.statusText}</p><pre>${txt}</pre>`);
+          return;
+        }
+
+        const data = await res.json();
+        out(`<p class="ok">✅ Response OK — ${data.value?.length ?? 0} item(s) found</p>`);
+
+        if (!data.value || data.value.length === 0) {
+          out(`<p class="warn">⚠️ No items matched. Check CMDB value or field name.</p>`);
+          // Try without filter to see raw field names
+          await fetchSample(token);
+          return;
+        }
+
+        data.value.forEach((item, i) => {
+          const f = item.fields || {};
+          out(`<h3 style="color:#f0abfc">Item ${i + 1} — id: ${item.id}</h3>`);
+          out(`<div class="label">Asset Name:</div><pre>${f.Asset_x0020_Name || '—'}</pre>`);
+          out(`<div class="label">SerialNo:</div><pre>${f.SerialNo || '—'}</pre>`);
+
+          // Raw values
+          out(`<div class="label">ProductImage (raw):</div><pre>${JSON.stringify(f.ProductImage, null, 2)}</pre>`);
+          out(`<div class="label">ProductImage2 (raw):</div><pre>${JSON.stringify(f.ProductImage2, null, 2)}</pre>`);
+
+          // Extracted URLs
+          const url1 = extractUrl(f.ProductImage);
+          const url2 = extractUrl(f.ProductImage2);
+          out(`<div class="label">ProductImage URL (extracted):</div><pre class="${url1 ? 'ok' : 'err'}">${url1 || '(empty)'}</pre>`);
+          out(`<div class="label">ProductImage2 URL (extracted):</div><pre class="${url2 ? 'ok' : 'err'}">${url2 || '(empty)'}</pre>`);
+
+          if (url1) {
+            out(`<div class="label">ProductImage preview:</div><img src="${url1}" onerror="this.style.border='2px solid #f87171'; this.alt='BROKEN: ' + this.src" />`);
+          }
+          if (url2) {
+            out(`<div class="label">ProductImage2 preview:</div><img src="${url2}" onerror="this.style.border='2px solid #f87171'; this.alt='BROKEN: ' + this.src" />`);
+          }
+        });
+
+      } catch (e) {
+        out(`<p class="err">❌ Fetch error: ${e.message}</p>`);
+      }
+    }
+
+    async function fetchSample(token) {
+      out(`<hr/><p>🔎 Fetching first inventory item to show actual field names…</p>`);
+      const res = await fetch(`${INV_LIST}/items?$expand=fields($select=*)&$top=1`, {
+        headers: { Authorization: `Bearer ${token}`, Prefer: 'HonorNonIndexedQueriesWarningMayFail' }
+      });
+      if (!res.ok) return;
+      const d = await res.json();
+      const fields = d.value?.[0]?.fields || {};
+      const imageFields = Object.entries(fields).filter(([k]) =>
+        /image|photo|picture|img/i.test(k)
+      );
+      out(`<div class="label">Image-related fields found in first item:</div><pre>${JSON.stringify(Object.fromEntries(imageFields), null, 2)}</pre>`);
+      out(`<div class="label">All field keys:</div><pre style="font-size:11px">${Object.keys(fields).sort().join('\n')}</pre>`);
+    }
+  </script>
+</body>
+</html>

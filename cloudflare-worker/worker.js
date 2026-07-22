@@ -8,7 +8,7 @@
  *                         Requires X-SP-Cookie header: "rtFa=xxx; FedAuth=yyy"
  */
 
-const SPO_SITE = "https://pccw0.sharepoint.com/sites/BonniesTeam";
+const SPO_SITE = "https://pccw0.sharepoint.com/sites/MX_Assets_Audit";
 const LIST_PATH = "Lists/Stock%20Take%20Record%202025/Attachments";
 
 export default {

@@ -26,7 +26,7 @@ import {
   LogoutOutlined,
   CloudSyncOutlined,
 } from "@ant-design/icons";
-import { TOKEN_CONFIG } from "../constants/config";
+import { TOKEN_CONFIG, API_URLS } from "../constants/config";
 
 const { Title, Text, Link } = Typography;
 const { TextArea } = Input;
@@ -54,10 +54,8 @@ export const Settings: React.FC<Props> = ({
     "valid" | "warning" | "expired"
   >("valid");
 
-  const shopListUrl =
-    "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8";
-  const invListUrl =
-    "https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/2f2dff1c-8ce1-4B7B-9FF8-083A0BA1BB48";
+  const shopListUrl = API_URLS.shopList;
+  const invListUrl = API_URLS.inventoryList;
   const graphExplorerUrl =
     "https://developer.microsoft.com/en-us/graph/graph-explorer";
 

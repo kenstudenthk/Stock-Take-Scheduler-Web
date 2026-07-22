@@ -232,6 +232,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Added `orderByNearestNeighbor()` in `utils/kmeans.ts` — each cluster queue is ordered as a greedy nearest-neighbor path (start at westernmost shop, deterministic tie-break), so consecutive slices are geographically contiguous. Repro test: interleaved 20-shop line, worst in-group distance dropped 11.3 km → 3.1 km
 - **Rule**: ALWAYS order cluster queues with `orderByNearestNeighbor()` before slicing into day-groups; NEVER slice shops into groups in SharePoint return order
 
+#### ⚠️ Known Issue: SharePoint Site Migration — 8 Components Had Hardcoded URLs Bypassing config.ts
+- **Date**: 2026-07-22
+- **Problem**: Migrating from `pccw0.sharepoint.com:/sites/BonniesTeam:` to `pccw0.sharepoint.com:/sites/MX_Assets_Audit:` required editing 8 component files (`AddShopModal.tsx`, `Dashboard.tsx`, `ErrorReport.tsx`, `Generator.tsx`, `Settings.tsx`, `ShopFormModal.tsx`, `ShopList.tsx`) plus `cloudflare-worker/worker.js` and `public/*.html`, even though `constants/config.ts` + `API_URLS` already existed for exactly this purpose
+- **Root Cause**: Several components built full Graph API URLs inline (`https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/<id>/items/...`) instead of importing `API_URLS.shopList` / `API_URLS.inventoryList` / `API_URLS.errorLogList` from `constants/config.ts`
+- **Fix**: Replaced all hardcoded site/list URLs in the 8 components with `API_URLS.*` references from `constants/config.ts`; updated `SHAREPOINT_CONFIG` fallback values and `.env`/`.env.example` to the new site (`MX_Assets_Audit`) and new Shop/Member/Inventory/ErrorLog/TimeCard list IDs; updated `cloudflare-worker/worker.js`'s `SPO_SITE` constant and the dev-only `public/get-sp-token.html` / `public/test-image-fields.html` links
+- **Rule**: NEVER build a Graph API URL by hand in a component — ALWAYS use `API_URLS.<listName>` from `constants/config.ts` so future site migrations only require an `.env` change. If a new component needs a SharePoint list URL, add a getter to `API_URLS` rather than inlining `https://graph.microsoft.com/...`
+
 ---
 
 ## Development Commands

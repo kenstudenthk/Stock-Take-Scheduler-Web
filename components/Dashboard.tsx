@@ -25,6 +25,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { Shop, User, hasPermission, InventoryItem } from "../types";
+import { API_URLS } from "../constants/config";
 import { SP_FIELDS } from "../constants";
 import { isHoliday } from "../constants/holidays";
 import StatCard from "./StatCard";
@@ -145,7 +146,7 @@ export const Dashboard: React.FC<{
 
     try {
       const res = await fetch(
-        `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${targetShop.sharePointItemId}/fields`,
+        `${API_URLS.shopList}/items/${targetShop.sharePointItemId}/fields`,
         {
           method: "PATCH",
           headers: {
@@ -179,7 +180,7 @@ export const Dashboard: React.FC<{
       onOk: async () => {
         try {
           await fetch(
-            `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+            `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
             {
               method: "PATCH",
               headers: {
@@ -207,7 +208,7 @@ export const Dashboard: React.FC<{
       onOk: async () => {
         try {
           await fetch(
-            `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+            `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
             {
               method: "PATCH",
               headers: {
@@ -235,7 +236,7 @@ export const Dashboard: React.FC<{
       onOk: async () => {
         try {
           await fetch(
-            `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/ce3a752e-7609-4468-81f8-8babaf503ad8/items/${shop.sharePointItemId}/fields`,
+            `${API_URLS.shopList}/items/${shop.sharePointItemId}/fields`,
             {
               method: "PATCH",
               headers: {

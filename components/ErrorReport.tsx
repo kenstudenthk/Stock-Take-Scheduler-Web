@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Form, Input, Select, Button, message, Space, Typography } from 'antd';
 import { BugOutlined, SendOutlined } from '@ant-design/icons';
+import { API_URLS } from '../constants/config';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -23,8 +24,7 @@ export const ErrorReport: React.FC<Props> = ({ visible, onCancel, token }) => {
 
     setSubmitting(true);
     try {
-      // ✅ 使用您提供的 SharePoint List URL
-      const url = `https://graph.microsoft.com/v1.0/sites/pccw0.sharepoint.com:/sites/BonniesTeam:/lists/5d722abb-ab79-4fc5-b03c-099580db85ba/items`;
+      const url = `${API_URLS.errorLogList}/items`;
 
       const response = await fetch(url, {
         method: 'POST',

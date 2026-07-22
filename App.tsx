@@ -255,7 +255,7 @@ function App() {
           const f = item.fields || {};
           return {
             id: item.id,
-            mirrorId: f[INV_FIELDS.MIRROR_ID] || "",
+            mirrorId: item.id || "",
             shopCode: (f[INV_FIELDS.SHOP_CODE] || "").trim(),
             businessUnit: f[INV_FIELDS.BUSINESS_UNIT] || "",
             shopBrand: f[INV_FIELDS.SHOP_BRAND] || "",

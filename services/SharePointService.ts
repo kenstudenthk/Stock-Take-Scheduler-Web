@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { SHAREPOINT_CONFIG, API_URLS } from "../constants/config";
-import { SP_FIELDS } from "../constants";
+import { SP_FIELDS, MEMBER_FIELDS, TIME_CARD_FIELDS } from "../constants";
 import { User, UserRole, TimeCardEntry } from "../types";
 
 interface SaveSchedulePayload {
@@ -58,7 +58,7 @@ class SharePointService {
     try {
       // Sanitize email input to prevent OData injection
       const sanitizedEmail = this.sanitizeFilterValue(aliasemail);
-      const url = `${API_URLS.memberList}/items?$filter=fields/AliasEmail eq '${sanitizedEmail}'&$expand=fields`;
+      const url = `${API_URLS.memberList}/items?$filter=fields/${MEMBER_FIELDS.ALIAS_EMAIL} eq '${sanitizedEmail}'&$expand=fields`;
 
       const response = await fetch(url, {
         headers: {
@@ -80,10 +80,15 @@ class SharePointService {
       const data = await response.json();
       if (data.value && data.value.length > 0) {
         const fields = data.value[0].fields;
-        // Map SharePoint field 'Role' to 'UserRole' expected by the app
         return {
-          ...fields,
-          UserRole: fields.Role || "User",
+          id: data.value[0].id,
+          Name: fields[MEMBER_FIELDS.NAME] || fields.Title || "",
+          UserEmail: fields[MEMBER_FIELDS.USER_EMAIL] || "",
+          AliasEmail: fields[MEMBER_FIELDS.ALIAS_EMAIL] || "",
+          PasswordHash: fields[MEMBER_FIELDS.PASSWORD_HASH] || "",
+          UserRole: fields[MEMBER_FIELDS.ROLE] || "User",
+          AccountStatus: fields[MEMBER_FIELDS.ACCOUNT_STATUS] || "Active",
+          AccountCreateDate: fields[MEMBER_FIELDS.ACCOUNT_CREATE_DATE] || "",
         };
       }
       return null;
@@ -103,13 +108,13 @@ class SharePointService {
       const payload = {
         fields: {
           Title: data.name,
-          Name: data.name,
-          UserEmail: data.userEmail,
-          AliasEmail: data.aliasEmail,
-          PasswordHash: data.passwordHash,
-          Role: "User",
-          AccountStatus: "Active",
-          AccountCreateDate: new Date().toISOString(),
+          [MEMBER_FIELDS.NAME]: data.name,
+          [MEMBER_FIELDS.USER_EMAIL]: data.userEmail,
+          [MEMBER_FIELDS.ALIAS_EMAIL]: data.aliasEmail,
+          [MEMBER_FIELDS.PASSWORD_HASH]: data.passwordHash,
+          [MEMBER_FIELDS.ROLE]: "User",
+          [MEMBER_FIELDS.ACCOUNT_STATUS]: "Active",
+          [MEMBER_FIELDS.ACCOUNT_CREATE_DATE]: new Date().toISOString(),
           "User@Claims": `i:0#.f|membership|${data.aliasEmail}`,
         },
       };
@@ -139,7 +144,7 @@ class SharePointService {
   async updatePasswordByEmail(email: string, hash: string) {
     try {
       const sanitizedEmail = this.sanitizeFilterValue(email);
-      const searchUrl = `${API_URLS.memberList}/items?$filter=fields/AliasEmail eq '${sanitizedEmail}'&$expand=fields`;
+      const searchUrl = `${API_URLS.memberList}/items?$filter=fields/${MEMBER_FIELDS.ALIAS_EMAIL} eq '${sanitizedEmail}'&$expand=fields`;
 
       const searchRes = await fetch(searchUrl, {
         headers: {
@@ -170,7 +175,7 @@ class SharePointService {
           Authorization: `Bearer ${this.graphToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ PasswordHash: hash }),
+        body: JSON.stringify({ [MEMBER_FIELDS.PASSWORD_HASH]: hash }),
       });
 
       if (updateRes.ok) {
@@ -371,12 +376,12 @@ class SharePointService {
       if (data.value && data.value.length > 0) {
         return data.value.map((item: any) => ({
           id: item.id,
-          Name: item.fields?.Name || item.fields?.Title || "",
-          UserEmail: item.fields?.UserEmail || "",
-          AliasEmail: item.fields?.AliasEmail || "",
-          UserRole: (item.fields?.Role as UserRole) || "User",
-          AccountStatus: item.fields?.AccountStatus || "Active",
-          AccountCreateDate: item.fields?.AccountCreateDate || "",
+          Name: item.fields?.[MEMBER_FIELDS.NAME] || item.fields?.Title || "",
+          UserEmail: item.fields?.[MEMBER_FIELDS.USER_EMAIL] || "",
+          AliasEmail: item.fields?.[MEMBER_FIELDS.ALIAS_EMAIL] || "",
+          UserRole: (item.fields?.[MEMBER_FIELDS.ROLE] as UserRole) || "User",
+          AccountStatus: item.fields?.[MEMBER_FIELDS.ACCOUNT_STATUS] || "Active",
+          AccountCreateDate: item.fields?.[MEMBER_FIELDS.ACCOUNT_CREATE_DATE] || "",
         }));
       }
       return [];
@@ -395,7 +400,7 @@ class SharePointService {
           Authorization: `Bearer ${this.graphToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ Role: newRole }),
+        body: JSON.stringify({ [MEMBER_FIELDS.ROLE]: newRole }),
       });
 
       if (response.ok) {
@@ -424,7 +429,7 @@ class SharePointService {
           Authorization: `Bearer ${this.graphToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ AccountStatus: status }),
+        body: JSON.stringify({ [MEMBER_FIELDS.ACCOUNT_STATUS]: status }),
       });
 
       if (response.ok) {
@@ -445,7 +450,7 @@ class SharePointService {
   }
 
   async getTimeCardEntries(): Promise<TimeCardEntry[]> {
-    const url = `${API_URLS.timeCardList}/items?$expand=fields($select=FEName,ActionTime,Action,ShopName,Role)&$top=999`;
+    const url = `${API_URLS.timeCardList}/items?$expand=fields($select=${TIME_CARD_FIELDS.FE_NAME},${TIME_CARD_FIELDS.ACTION_TIME},${TIME_CARD_FIELDS.ACTION},${TIME_CARD_FIELDS.SHOP_NAME},${TIME_CARD_FIELDS.ROLE})&$top=999`;
     const entries: TimeCardEntry[] = [];
     let nextLink: string | undefined = url;
 
@@ -463,11 +468,11 @@ class SharePointService {
         const f = item.fields;
         entries.push({
           id: item.id,
-          feName: f.FEName || "",
-          actionTime: f.ActionTime || "",
-          action: f.Action || "Check In",
-          shopName: f.ShopName || "",
-          role: f.Role || "Main",
+          feName: f[TIME_CARD_FIELDS.FE_NAME] || "",
+          actionTime: f[TIME_CARD_FIELDS.ACTION_TIME] || "",
+          action: f[TIME_CARD_FIELDS.ACTION] || "Check In",
+          shopName: f[TIME_CARD_FIELDS.SHOP_NAME] || "",
+          role: f[TIME_CARD_FIELDS.ROLE] || "Main",
         });
       });
       nextLink = data["@odata.nextLink"];

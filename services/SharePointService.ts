@@ -63,7 +63,7 @@ class SharePointService {
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${this.graphToken}`,
-          Prefer: "HonorNonIndexedQueriesWarningMayFailOverTime",
+          Prefer: "HonorNonIndexedQueriesWarningMayFailRandomly",
           ConsistencyLevel: "eventual",
         },
       });
@@ -149,7 +149,7 @@ class SharePointService {
       const searchRes = await fetch(searchUrl, {
         headers: {
           Authorization: `Bearer ${this.graphToken}`,
-          Prefer: "HonorNonIndexedQueriesWarningMayFail",
+          Prefer: "HonorNonIndexedQueriesWarningMayFailRandomly",
           ConsistencyLevel: "eventual",
         },
       });

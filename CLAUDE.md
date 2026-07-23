@@ -253,6 +253,13 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Renamed `SharePointService.registerMember` to `registerNewMember` to match the call site
 - **Rule**: NEVER type a service prop as `any` when it has a concrete class (e.g. `SharePointService`) — type it properly so method-name typos surface at compile time instead of silently failing at runtime
 
+#### ⚠️ Known Issue: Login — "Account not found" After Member List Field Remap (Wrong Prefer Header)
+- **Date**: 2026-07-23
+- **Problem**: After remapping `MEMBER_FIELDS.ALIAS_EMAIL` to `field_3` for the new `MX_Assets_Audit` Member List, login always failed with "Account not found" even for accounts confirmed to exist in the new list
+- **Root Cause**: `getUserByAliasEmail` and `updatePasswordByEmail` in `SharePointService.ts` filter with `$filter=fields/field_3 eq '...'`. `field_3` is not an indexed column, and Graph API rejected the request with a 400: `Field 'field_3' cannot be referenced in filter or orderby as it is not indexed. Provide the 'Prefer: HonorNonIndexedQueriesWarningMayFailRandomly' header...`. The code sent `Prefer: "HonorNonIndexedQueriesWarningMayFailOverTime"` / `"HonorNonIndexedQueriesWarningMayFail"` — neither matches the exact string Graph API requires — so every request 400'd and the `!response.ok` branch silently returned `null`, which the UI displayed as "Account not found" instead of a connection/query error
+- **Fix**: Changed both `Prefer` headers to the exact required value `"HonorNonIndexedQueriesWarningMayFailRandomly"`
+- **Rule**: When adding a `$filter`/`$orderby` on a SharePoint column, copy the exact `Prefer` header string from the Graph API 400 error response — do NOT guess or reuse a similarly-named `HonorNonIndexedQueries...` variant from elsewhere in the codebase, they are not interchangeable. This workaround is Microsoft's own "may fail randomly on large lists" caveat, not a permanent fix — recommend the user mark frequently-filtered columns (e.g. `Alias Email`) as **Indexed** in SharePoint list settings for a stable long-term fix. ALSO: never let a `!response.ok` branch collapse a real API error into a generic "not found" UI message — log/surface the actual status and error body so this class of bug is diagnosable without opening devtools.
+
 ---
 
 ## Development Commands

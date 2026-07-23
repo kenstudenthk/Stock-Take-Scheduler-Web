@@ -239,6 +239,20 @@ After EVERY bug fix, issue resolution, or feature addition:
 - **Fix**: Replaced all hardcoded site/list URLs in the 8 components with `API_URLS.*` references from `constants/config.ts`; updated `SHAREPOINT_CONFIG` fallback values and `.env`/`.env.example` to the new site (`MX_Assets_Audit`) and new Shop/Member/Inventory/ErrorLog/TimeCard list IDs; updated `cloudflare-worker/worker.js`'s `SPO_SITE` constant and the dev-only `public/get-sp-token.html` / `public/test-image-fields.html` links
 - **Rule**: NEVER build a Graph API URL by hand in a component — ALWAYS use `API_URLS.<listName>` from `constants/config.ts` so future site migrations only require an `.env` change. If a new component needs a SharePoint list URL, add a getter to `API_URLS` rather than inlining `https://graph.microsoft.com/...`
 
+#### ⚠️ Known Issue: SharePoint Field Rename Migration — Member/Inventory/Shop Lists Switched to Generic field_N Names
+- **Date**: 2026-07-22
+- **Problem**: The new `MX_Assets_Audit` Shop List, Inventory List, Member List, and Time Card List were created fresh in SharePoint, so all custom columns got auto-generated internal names (`field_1`, `field_2`, ...) instead of the descriptive internal names the old lists happened to have (`AliasEmail`, `PasswordHash`, `ShopName`, etc.)
+- **Root Cause**: SharePoint assigns internal column names at creation time based on how the column was added; recreating a list from scratch (rather than renaming columns in place) does not preserve old internal names even if the display names match
+- **Fix**: Remapped `SP_FIELDS` (Shop List) and `INV_FIELDS` (Inventory List) in `constants.ts` to the new `field_N` values; added new `MEMBER_FIELDS` and `TIME_CARD_FIELDS` constants (Member List and Time Card List previously had no centralized field map — `SharePointService.ts` used hardcoded literal names like `AliasEmail`/`PasswordHash`/`Role`/`FEName` directly in fetch bodies and OData filters). Ambiguous column matches (`BRAND_ICON` among `IconURL`/`Brandicon`/`Brand_Logo`; the `field_22`/`field_23` gap between `W to W` and `UploadPhoto`) were confirmed with the user rather than guessed. `Mirror_ID` no longer exists in the new Inventory List — `mirrorId` is now sourced from the SharePoint item's built-in `id` instead of a `fields` lookup.
+- **Rule**: NEVER assume a recreated/duplicated SharePoint list keeps the same internal column names as the display names suggest — always get the actual internal `field_N` mapping from the user (or `$expand=fields($select=*)` on a real item) before wiring up a new list. ALWAYS centralize every list's field map as a `*_FIELDS` constant in `constants.ts` (never hardcode literal SharePoint field names inline in a service/component), so a future column rename only touches one object.
+
+#### ⚠️ Known Issue: Login — Register Button Called Non-Existent `registerNewMember` Method
+- **Date**: 2026-07-22
+- **Problem**: Clicking "Create Account" in `Login.tsx` always failed — `sharePointService.registerNewMember(...)` doesn't exist
+- **Root Cause**: `SharePointService.ts` defines the method as `registerMember`, but `Login.tsx` calls it as `registerNewMember`; `LoginProps.sharePointService` is typed `any`, so `tsc` never caught the mismatch
+- **Fix**: Renamed `SharePointService.registerMember` to `registerNewMember` to match the call site
+- **Rule**: NEVER type a service prop as `any` when it has a concrete class (e.g. `SharePointService`) — type it properly so method-name typos surface at compile time instead of silently failing at runtime
+
 ---
 
 ## Development Commands
